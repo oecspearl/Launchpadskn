@@ -49,8 +49,9 @@ export function AuthProvider({ children }) {
           setIsLoading(true); // Set loading while fetching profile
           try {
             await loadUserProfile(session.user.id);
-          } finally {
-            setIsLoading(false); // Always stop loading
+          } catch (error) {
+            console.error('[AuthContext] Error loading profile after SIGNED_IN:', error);
+            setIsLoading(false); // Stop loading on error
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
