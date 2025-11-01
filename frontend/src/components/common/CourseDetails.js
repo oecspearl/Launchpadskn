@@ -8,9 +8,8 @@ import {
   FaBook, FaUsers, FaClipboardList, FaFileAlt,
   FaCalendarAlt, FaChartBar, FaDownload
 } from 'react-icons/fa';
-import { adminService } from '../../services/api';
-import { instructorService } from '../../services/instructorService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import supabaseService from '../../services/supabaseService';
 
 function CourseDetails() {
   const { courseId } = useParams();
@@ -30,34 +29,48 @@ function CourseDetails() {
   const fetchCourseData = async () => {
     setLoading(true);
     try {
-      // Fetch course data
-      const courseData = await adminService.getCourseById(courseId);
-      setCourse(courseData.data || courseData);
-      
-      // Fetch enrollments if user is admin or instructor
-      if (user?.role === 'ADMIN' || user?.role === 'INSTRUCTOR') {
-        try {
-          const enrollmentData = await adminService.getEnrollmentsByCourse(courseId);
-          setEnrollments(enrollmentData.data || enrollmentData || []);
-        } catch (enrollmentErr) {
-          console.warn("Could not fetch enrollments:", enrollmentErr);
-          setEnrollments([]);
-        }
-      }
-      
-      // Fetch course content
+      // NOTE: This is a legacy component for the old "course" model
+      // The new system uses Subjects instead. This component is kept for backward compatibility.
+      // Try to fetch as subject first
       try {
-        const contentData = await instructorService.getCourseContents(courseId);
-        setCourseContent(contentData || []);
-      } catch (contentErr) {
-        console.warn("Could not fetch course content:", contentErr);
-        setCourseContent([]);
+        const subjectData = await supabaseService.getSubjectById(parseInt(courseId));
+        if (subjectData) {
+          // Convert subject to course-like format for display
+          setCourse({
+            id: subjectData.subject_id,
+            code: subjectData.cxc_code || subjectData.subject_code || `SUBJ-${subjectData.subject_id}`,
+            title: subjectData.subject_name,
+            description: subjectData.description || 'No description available',
+            creditHours: subjectData.credit_hours || 0,
+            semester: 'N/A',
+            academicYear: 'N/A',
+            isActive: subjectData.is_active !== false,
+            department: { name: subjectData.department_name || 'General' }
+          });
+          
+          // Fetch lessons as course content
+          try {
+            // Get lessons for this subject (we'd need class-subject-id, but for now show empty)
+            setCourseContent([]);
+          } catch (contentErr) {
+            console.warn("Could not fetch course content:", contentErr);
+            setCourseContent([]);
+          }
+          
+          setEnrollments([]); // Enrollments don't apply to new structure
+          setError(null);
+          return;
+        }
+      } catch (subjectErr) {
+        console.warn("Not a subject ID, trying legacy course lookup:", subjectErr);
       }
       
-      setError(null);
+      // If not found as subject, show error
+      setError("Course not found. The course model has been replaced with Subjects in the new hierarchical structure. Please use the Subject view instead.");
+      setCourse(null);
     } catch (err) {
       console.error("Error fetching course data:", err);
-      setError("Failed to load course details.");
+      setError("Failed to load course details. This feature may be deprecated. Please use the new Subject-based navigation.");
     } finally {
       setLoading(false);
     }
@@ -93,13 +106,27 @@ function CourseDetails() {
   if (error || !course) {
     return (
       <Container className="mt-5">
-        <Alert variant="danger">{error || "Course not found"}</Alert>
+        <Alert variant="warning">
+          <Alert.Heading>Legacy Feature</Alert.Heading>
+          <p>{error || "Course not found"}</p>
+          <p className="mb-0">
+            <strong>Note:</strong> The course model has been replaced with a hierarchical structure (School → Form → Class → Subject → Lesson). 
+            Please use the new Subject-based navigation from your dashboard.
+          </p>
+        </Alert>
       </Container>
     );
   }
 
   return (
     <Container fluid className="p-4">
+      <Alert variant="info" className="mb-4">
+        <Alert.Heading>Legacy Component</Alert.Heading>
+        <p className="mb-0">
+          This is a legacy course view. The new system uses <strong>Subjects</strong> instead of Courses. 
+          For the full hierarchical structure, please navigate via Forms → Classes → Subjects.
+        </p>
+      </Alert>
       {/* Course Header */}
       <Card className="shadow-sm mb-4">
         <Card.Body>
