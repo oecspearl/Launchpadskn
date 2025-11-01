@@ -39,8 +39,17 @@ function AdminDashboard() {
   const fetchDashboardStats = async () => {
       try {
         console.log('[AdminDashboard] Fetching stats...');
-        // Get dashboard stats from Supabase
-        const data = await supabaseService.getDashboardStats();
+        console.log('[AdminDashboard] Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
+        
+        // Set a timeout for the fetch operation
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Dashboard fetch timeout')), 3000)
+        );
+        
+        // Get dashboard stats from Supabase with timeout
+        const dataPromise = supabaseService.getDashboardStats();
+        const data = await Promise.race([dataPromise, timeoutPromise]);
+        
         console.log('[AdminDashboard] Stats received:', data);
         
         // Get pending enrollments (if using old course structure)
@@ -74,7 +83,9 @@ function AdminDashboard() {
         setError(null);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
-        // Set default stats on error - don't block the UI
+        console.error("Error details:", err.message, err.stack);
+        
+        // Set default stats on error - always show dashboard
         setStats({
           totalUsers: 0,
           totalCourses: 0,
@@ -84,23 +95,37 @@ function AdminDashboard() {
           pendingRequests: []
         });
         setIsLoading(false);
-        // Don't set error for now - just show empty stats
-        // setError('Failed to load dashboard statistics. Using default values.');
+        setError(null); // Don't show error - just show empty dashboard
       }
     };
 
   // Fetch dashboard statistics when component mounts
   useEffect(() => {
     console.log('[AdminDashboard] useEffect triggered, user:', user);
+    
+    // Always stop loading after max 5 seconds, even if fetch fails
+    const timeoutId = setTimeout(() => {
+      console.warn('[AdminDashboard] Timeout reached, stopping loading');
+      if (isLoading) {
+        setIsLoading(false);
+        setError(null); // Don't show error, just show empty dashboard
+      }
+    }, 5000);
+    
     if (user) {
-      fetchDashboardStats();
+      fetchDashboardStats().finally(() => {
+        clearTimeout(timeoutId);
+      });
     } else {
-      // If no user, still stop loading after a timeout
+      // If no user, stop loading after a shorter timeout
       setTimeout(() => {
         console.warn('[AdminDashboard] No user after timeout, stopping loading');
         setIsLoading(false);
+        clearTimeout(timeoutId);
       }, 2000);
     }
+    
+    return () => clearTimeout(timeoutId);
   }, [user]);
 
   // Periodic refresh every 30 seconds for real-time updates
