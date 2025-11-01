@@ -29,17 +29,19 @@ class AuthService {
         
         // Profile found - use it
         userData = {
-          userId: profile.user_id,
+          userId: profile.user_id || authData.user.id,
           email: authData.user.email,
-          name: profile.name,
-          role: profile.role,
+          name: profile.name || 'Admin User',
+          role: (profile.role || 'ADMIN').toUpperCase().trim(),
           token: authData.session.access_token,
           refreshToken: authData.session.refresh_token,
           loginTime: Date.now()
         };
+        
+        console.log('[AuthService] Profile found, userData:', userData);
       } catch (profileError) {
         // Profile not found - try to find by email instead
-        console.warn('Profile not found by UUID, trying by email:', profileError);
+        console.warn('[AuthService] Profile not found by UUID, trying by email:', profileError);
         
         try {
           // Try finding by email as fallback
@@ -51,6 +53,7 @@ class AuthService {
           
           if (emailProfile && !emailError) {
             // Found by email - link the UUID and use it
+            console.log('[AuthService] Found profile by email, linking UUID');
             await supabase
               .from('users')
               .update({ id: authData.user.id })
@@ -60,19 +63,25 @@ class AuthService {
               userId: emailProfile.user_id,
               email: emailProfile.email,
               name: emailProfile.name || 'Admin User',
-              role: emailProfile.role || 'ADMIN',
+              role: (emailProfile.role || 'ADMIN').toUpperCase().trim(),
               token: authData.session.access_token,
               refreshToken: authData.session.refresh_token,
               loginTime: Date.now()
             };
           } else {
             // Still not found - use auth metadata or defaults
-            console.warn('Profile not found by email either, using defaults');
+            console.warn('[AuthService] Profile not found by email either, creating new profile');
+            
+            // Determine role from email or metadata
+            const isAdminEmail = authData.user.email.toLowerCase().includes('admin');
+            const defaultRole = isAdminEmail ? 'ADMIN' : 'STUDENT';
+            const role = (authData.user.user_metadata?.role || defaultRole).toUpperCase().trim();
+            
             userData = {
               userId: authData.user.id,
               email: authData.user.email,
               name: authData.user.user_metadata?.name || 'Admin User',
-              role: authData.user.user_metadata?.role || (authData.user.email.includes('admin') ? 'ADMIN' : 'STUDENT'),
+              role: role,
               token: authData.session.access_token,
               refreshToken: authData.session.refresh_token,
               loginTime: Date.now()
@@ -80,6 +89,7 @@ class AuthService {
             
             // Try to create profile in users table
             try {
+              console.log('[AuthService] Attempting to create user profile in database');
               const { error: createError } = await supabase
                 .from('users')
                 .insert({
@@ -92,20 +102,25 @@ class AuthService {
                 });
               
               if (createError) {
-                console.warn('Could not create profile:', createError);
+                console.error('[AuthService] Could not create profile:', createError);
+                // Still continue with login even if profile creation fails
+              } else {
+                console.log('[AuthService] Profile created successfully');
               }
             } catch (createError) {
-              console.warn('Could not create profile:', createError);
+              console.error('[AuthService] Error creating profile:', createError);
+              // Still continue with login
             }
           }
         } catch (emailLookupError) {
-          console.error('Error in email lookup fallback:', emailLookupError);
-          // Final fallback
+          console.error('[AuthService] Error in email lookup fallback:', emailLookupError);
+          // Final fallback - ensure admin gets ADMIN role
+          const isAdminEmail = authData.user.email.toLowerCase().includes('admin');
           userData = {
             userId: authData.user.id,
             email: authData.user.email,
             name: 'Admin User',
-            role: 'ADMIN', // Default to ADMIN for admin@ email
+            role: isAdminEmail ? 'ADMIN' : 'STUDENT',
             token: authData.session.access_token,
             refreshToken: authData.session.refresh_token,
             loginTime: Date.now()
