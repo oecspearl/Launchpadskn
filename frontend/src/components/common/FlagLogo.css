@@ -1,0 +1,164 @@
+/* Saint Kitts and Nevis Flag Logo */
+.flag-logo-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.flag-logo {
+  position: relative;
+  width: 60px;
+  height: 40px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.flag-logo-small {
+  --flag-width: 45px;
+  --flag-height: 30px;
+}
+
+.flag-logo-medium {
+  --flag-width: 60px;
+  --flag-height: 40px;
+}
+
+.flag-logo-large {
+  --flag-width: 90px;
+  --flag-height: 60px;
+}
+
+.flag-logo-small .flag-logo,
+.flag-logo-medium .flag-logo,
+.flag-logo-large .flag-logo {
+  width: var(--flag-width);
+  height: var(--flag-height);
+}
+
+/* Flag triangles */
+.flag-triangle {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  clip-path: polygon(0% 0%, 100% 100%, 0% 100%);
+}
+
+.flag-green {
+  background-color: #009639;
+  z-index: 1;
+}
+
+.flag-red {
+  background-color: #CE1126;
+  clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
+  z-index: 1;
+}
+
+/* Diagonal band with yellow borders */
+.flag-diagonal {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  transform: rotate(-45deg);
+  transform-origin: center;
+  left: 50%;
+  top: 50%;
+  margin-left: -71%;
+  margin-top: -71%;
+  width: 141%;
+  height: 141%;
+}
+
+.flag-diagonal-black {
+  position: absolute;
+  width: 12%;
+  height: 100%;
+  left: 44%;
+  background-color: #000000;
+  z-index: 3;
+}
+
+.flag-diagonal-yellow {
+  position: absolute;
+  width: 1.5%;
+  height: 100%;
+  background-color: #FCD116;
+  z-index: 4;
+}
+
+.flag-diagonal-yellow:first-of-type {
+  left: calc(44% - 1.5%);
+}
+
+.flag-diagonal-yellow:last-of-type {
+  left: calc(44% + 12%);
+}
+
+/* Stars */
+.flag-star {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  background-color: #FFFFFF;
+  clip-path: polygon(
+    50% 0%,
+    61% 35%,
+    98% 35%,
+    68% 57%,
+    79% 91%,
+    50% 70%,
+    21% 91%,
+    32% 57%,
+    2% 35%,
+    39% 35%
+  );
+  z-index: 5;
+}
+
+.flag-star-top {
+  left: calc(50% - 4px);
+  top: 25%;
+}
+
+.flag-star-bottom {
+  left: calc(50% - 4px);
+  top: 65%;
+}
+
+/* Logo text */
+.flag-logo-text {
+  font-weight: 700;
+  color: #000000;
+  white-space: nowrap;
+}
+
+/* Navbar specific sizing */
+.navbar .flag-logo {
+  width: 50px;
+  height: 33px;
+}
+
+.navbar .flag-logo-text {
+  font-size: 1.2rem;
+  color: #FFFFFF;
+}
+
+@media (max-width: 768px) {
+  .flag-logo-container {
+    gap: 0.5rem;
+  }
+  
+  .navbar .flag-logo {
+    width: 40px;
+    height: 27px;
+  }
+  
+  .navbar .flag-logo-text {
+    font-size: 1rem;
+  }
+}
+
+

@@ -1,0 +1,165 @@
+{
+  "info": {
+    "name": "Institution Service API",
+    "description": "API collection for testing Institution Service endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8091",
+      "type": "string"
+    },
+    {
+      "key": "gatewayUrl",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Institutions",
+      "item": [
+        {
+          "name": "Create Institution",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Harvard University\",\n  \"location\": \"Cambridge, MA\",\n  \"contact\": \"info@harvard.edu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/institutions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "institutions"]
+            }
+          }
+        },
+        {
+          "name": "Get All Institutions",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/institutions",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "institutions"]
+            }
+          }
+        },
+        {
+          "name": "Get Institution by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/institutions/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "institutions", "1"]
+            }
+          }
+        },
+        {
+          "name": "Update Institution",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Harvard University Updated\",\n  \"location\": \"Cambridge, Massachusetts\",\n  \"contact\": \"contact@harvard.edu\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/institutions/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "institutions", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Departments",
+      "item": [
+        {
+          "name": "Create Department",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Computer Science\",\n  \"code\": \"CS\",\n  \"description\": \"Department of Computer Science\",\n  \"institutionId\": 1\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/departments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "departments"]
+            }
+          }
+        },
+        {
+          "name": "Get All Departments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/departments",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "departments"]
+            }
+          }
+        },
+        {
+          "name": "Get Departments by Institution",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/departments/institution/1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "departments", "institution", "1"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Gateway Tests",
+      "item": [
+        {
+          "name": "Get Institutions via Gateway",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{gatewayUrl}}/api/institutions",
+              "host": ["{{gatewayUrl}}"],
+              "path": ["api", "institutions"]
+            }
+          }
+        },
+        {
+          "name": "Get Departments via Gateway",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{gatewayUrl}}/api/departments",
+              "host": ["{{gatewayUrl}}"],
+              "path": ["api", "departments"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

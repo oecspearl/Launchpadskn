@@ -1,0 +1,78 @@
+spring:
+  application:
+    name: course-service
+  config:
+    import: optional:configserver:http://localhost:8888
+  cloud:
+    inetutils:
+      preferred-networks:
+        - 127.0.0
+      default-hostname: localhost
+      default-ip-address: 127.0.0.1
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://db.zdcniidpqppwjyosooge.supabase.co:5432/postgres?sslmode=require
+    username: postgres
+    password: ${SUPABASE_DB_PASSWORD:jafric_@!karla@2a@m@nda}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 15MB
+  devtools:
+    livereload:
+      port: 35730
+
+server:
+  port: 8092
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    ip-address: 127.0.0.1
+    hostname: localhost
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.scholarspace.courseservice: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.engine.transaction.jta.platform: ERROR
+
+# Application Configuration
+app:
+  jwt:
+    secret: your_secret_key_here_should_be_at_least_32_characters_long
+    expiration: 86400000
+  upload:
+    dir: C:\\LaunchPadSKN\\uploads\\
+
+# Swagger Configuration
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method

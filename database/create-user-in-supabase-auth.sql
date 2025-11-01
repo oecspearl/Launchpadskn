@@ -1,0 +1,116 @@
+-- LaunchPad SKN - Create User in Supabase Auth
+-- Helper script showing how to create users via Supabase Dashboard or API
+-- 
+-- NOTE: This is for reference. You'll create users via:
+-- 1. Supabase Dashboard → Authentication → Add User
+-- 2. Or via Supabase Auth API from your frontend
+-- 3. Or via Supabase Admin API (requires service role key)
+
+-- ============================================
+-- OPTION 1: Manual Creation via Dashboard
+-- ============================================
+-- 
+-- Steps:
+-- 1. Go to Supabase Dashboard → Authentication → Users
+-- 2. Click "Add user" → "Create new user"
+-- 3. Enter email and password
+-- 4. Set user metadata:
+--    {
+--      "name": "Admin User",
+--      "role": "ADMIN"
+--    }
+-- 5. Save
+-- 6. Copy the UUID from the created user
+-- 7. Link it with your users table:
+--
+--    SELECT link_user_with_auth(1, 'paste-uuid-here');
+
+-- ============================================
+-- OPTION 2: Via Supabase Admin API (Service Role)
+-- ============================================
+--
+-- This requires SERVICE_ROLE_KEY (never expose in frontend!)
+-- Use only from secure backend or Supabase Edge Functions
+--
+-- Example (Node.js):
+-- const { createClient } = require('@supabase/supabase-js');
+-- const supabaseAdmin = createClient(
+--   'https://your-project.supabase.co',
+--   SERVICE_ROLE_KEY
+-- );
+--
+-- const { data, error } = await supabaseAdmin.auth.admin.createUser({
+--   email: 'admin@launchpadskn.com',
+--   password: 'Admin123!',
+--   email_confirm: true, // Skip email confirmation
+--   user_metadata: {
+--     name: 'Admin User',
+--     role: 'ADMIN'
+--   }
+-- });
+
+-- ============================================
+-- OPTION 3: Create Admin User (Example)
+-- ============================================
+--
+-- For your existing admin user:
+-- 1. Create in Supabase Auth:
+--    - Email: admin@launchpadskn.com
+--    - Password: Admin123!
+--    - Metadata: { "name": "Admin User", "role": "ADMIN" }
+--
+-- 2. After creation, get the UUID and link:
+--    UPDATE users 
+--    SET id = 'auth-user-uuid-here'
+--    WHERE email = 'admin@launchpadskn.com';
+
+-- ============================================
+-- OPTION 4: Migration Script (Bulk Import)
+-- ============================================
+--
+-- If you have many existing users, create a migration script:
+--
+-- CREATE OR REPLACE FUNCTION migrate_users_to_auth()
+-- RETURNS TABLE(email TEXT, user_id BIGINT) AS $$
+-- DECLARE
+--     user_record RECORD;
+--     auth_uuid UUID;
+-- BEGIN
+--     FOR user_record IN SELECT * FROM users WHERE id IS NULL LOOP
+--         -- Create auth user (requires Admin API call)
+--         -- This would be done via external script/API
+--         
+--         -- After auth user created, link:
+--         -- UPDATE users SET id = auth_uuid WHERE user_id = user_record.user_id;
+--         
+--         RETURN QUERY SELECT user_record.email, user_record.user_id;
+--     END LOOP;
+-- END;
+-- $$ LANGUAGE plpgsql;
+
+-- ============================================
+-- RECOMMENDED: Use Supabase Dashboard for First User
+-- ============================================
+--
+-- For now, create admin user manually:
+-- 1. Dashboard → Authentication → Add User
+-- 2. Link to existing users table record
+-- 3. Test login
+-- 4. For production, use registration flow or Admin API
+
+-- ============================================
+-- VERIFY LINKED USERS
+-- ============================================
+-- 
+-- Check which users are linked:
+-- SELECT 
+--     u.user_id,
+--     u.email,
+--     u.name,
+--     u.role,
+--     u.id as auth_user_id,
+--     CASE WHEN u.id IS NULL THEN 'Not Linked' ELSE 'Linked' END as status
+-- FROM users u
+-- ORDER BY u.user_id;
+
+

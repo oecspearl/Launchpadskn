@@ -1,0 +1,174 @@
+/* Saint Kitts and Nevis Flag Color Scheme */
+
+:root {
+  /* Primary Flag Colors */
+  --skn-green: #009639;
+  --skn-red: #CE1126;
+  --skn-black: #000000;
+  --skn-yellow: #FCD116;
+  --skn-white: #FFFFFF;
+  
+  /* Color Variations */
+  --skn-green-light: #33AD63;
+  --skn-green-dark: #00702B;
+  --skn-red-light: #D84356;
+  --skn-red-dark: #A50E20;
+  --skn-yellow-light: #FDDB4A;
+  --skn-yellow-dark: #F0C014;
+  
+  /* Application Colors based on flag */
+  --primary-color: var(--skn-green);
+  --primary-hover: var(--skn-green-dark);
+  --secondary-color: var(--skn-red);
+  --secondary-hover: var(--skn-red-dark);
+  --accent-color: var(--skn-yellow);
+  --accent-hover: var(--skn-yellow-dark);
+  --text-dark: var(--skn-black);
+  --text-light: var(--skn-white);
+  --bg-light: #F5F5F5;
+  --bg-green-tint: #E8F5ED;
+  --bg-red-tint: #F5E8E8;
+  --bg-yellow-tint: #FDF9E8;
+}
+
+/* Bootstrap Override with Flag Colors */
+.btn-primary {
+  background-color: var(--skn-green) !important;
+  border-color: var(--skn-green-dark) !important;
+  color: var(--skn-white) !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active {
+  background-color: var(--skn-green-dark) !important;
+  border-color: var(--skn-green-dark) !important;
+  color: var(--skn-white) !important;
+}
+
+.btn-secondary {
+  background-color: var(--skn-red) !important;
+  border-color: var(--skn-red-dark) !important;
+  color: var(--skn-white) !important;
+}
+
+.btn-secondary:hover,
+.btn-secondary:focus,
+.btn-secondary:active {
+  background-color: var(--skn-red-dark) !important;
+  border-color: var(--skn-red-dark) !important;
+  color: var(--skn-white) !important;
+}
+
+.btn-warning,
+.btn-outline-warning {
+  background-color: var(--skn-yellow);
+  border-color: var(--skn-yellow-dark);
+  color: var(--skn-black);
+}
+
+/* Links */
+a {
+  color: var(--skn-green);
+}
+
+a:hover {
+  color: var(--skn-green-dark);
+}
+
+/* Cards */
+.card {
+  border-left: 4px solid var(--skn-green);
+}
+
+.card.border-primary {
+  border-color: var(--skn-green) !important;
+}
+
+.card.border-secondary {
+  border-color: var(--skn-red) !important;
+}
+
+/* Form Focus */
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--skn-green);
+  box-shadow: 0 0 0 0.2rem rgba(0, 150, 57, 0.25);
+}
+
+/* Navbar */
+.navbar-dark {
+  background-color: var(--skn-black) !important;
+  border-bottom: 3px solid var(--skn-yellow);
+}
+
+.navbar-dark .nav-link {
+  color: var(--skn-white) !important;
+}
+
+.navbar-dark .nav-link:hover {
+  color: var(--skn-yellow) !important;
+}
+
+/* Alerts */
+.alert-success {
+  background-color: var(--bg-green-tint);
+  border-color: var(--skn-green);
+  color: var(--skn-green-dark);
+}
+
+.alert-danger {
+  background-color: var(--bg-red-tint);
+  border-color: var(--skn-red);
+  color: var(--skn-red-dark);
+}
+
+.alert-warning {
+  background-color: var(--bg-yellow-tint);
+  border-color: var(--skn-yellow);
+  color: var(--skn-black);
+}
+
+/* Badges */
+.badge.bg-primary {
+  background-color: var(--skn-green) !important;
+}
+
+.badge.bg-secondary {
+  background-color: var(--skn-red) !important;
+}
+
+.badge.bg-warning {
+  background-color: var(--skn-yellow) !important;
+  color: var(--skn-black) !important;
+}
+
+/* Backgrounds */
+.bg-skad-green {
+  background-color: var(--skn-green) !important;
+  color: var(--skn-white) !important;
+}
+
+.bg-skad-red {
+  background-color: var(--skn-red) !important;
+  color: var(--skn-white) !important;
+}
+
+.bg-skad-yellow {
+  background-color: var(--skn-yellow) !important;
+  color: var(--skn-black) !important;
+}
+
+.bg-skad-light-green {
+  background-color: var(--bg-green-tint) !important;
+}
+
+.bg-skad-light-red {
+  background-color: var(--bg-red-tint) !important;
+}
+
+.bg-skad-light-yellow {
+  background-color: var(--bg-yellow-tint) !important;
+}
+
+

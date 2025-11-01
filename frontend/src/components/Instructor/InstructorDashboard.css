@@ -1,0 +1,217 @@
+/* InstructorDashboard.css */
+
+.instructor-dashboard {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+  }
+  
+  .dashboard-header {
+    border-bottom: 1px solid #eaedf1;
+  }
+  
+  /* Stats Icons */
+  .stats-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+  }
+  
+  .progress-sm {
+    height: 5px;
+    border-radius: 10px;
+  }
+  
+  /* Dashboard Tabs */
+  .dashboard-tabs .nav-link {
+    color: #6c757d;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border: none;
+    position: relative;
+  }
+  
+  .dashboard-tabs .nav-link.active {
+    color: #0d6efd;
+    background-color: transparent;
+    border: none;
+  }
+  
+  .dashboard-tabs .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #0d6efd;
+  }
+  
+  /* Instructor Profile */
+  .avatar-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+  }
+  
+  .instructor-stats {
+    display: flex;
+    text-align: center;
+    margin-top: auto;
+    border-top: 1px solid #eaedf1;
+    padding-top: 15px;
+  }
+  
+  .stat-item {
+    flex: 1;
+  }
+  
+  .stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.25rem;
+  }
+  
+  .stat-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0;
+  }
+  
+  /* Course Grid and Cards */
+  .course-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 20px;
+  }
+  
+  .course-card {
+    transition: transform 0.2s ease;
+  }
+  
+  .course-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .course-title {
+    margin-bottom: 5px;
+    font-weight: 600;
+  }
+  
+  .course-code {
+    font-size: 0.875rem;
+    margin-bottom: 15px;
+  }
+  
+  /* Quick Actions */
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+  }
+  
+  .quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1.25rem 1rem;
+    border-radius: 10px;
+    background-color: #f8f9fa;
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  
+  .quick-action-btn:hover {
+    background-color: #e9ecef;
+    color: #212529;
+    text-decoration: none;
+  }
+  
+  .action-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+  
+  /* Notification Menu Styling */
+  .notification-menu {
+    width: 350px;
+    padding: 0;
+    max-height: 450px;
+    overflow-y: auto;
+  }
+  
+  .notification-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #eaedf1;
+  }
+  
+  .notification-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .notification-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+  }
+  
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 992px) {
+    .course-grid {
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+    
+    .quick-actions {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .course-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .notification-menu {
+      width: 300px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .quick-actions {
+      grid-template-columns: 1fr;
+    }
+    
+    .dashboard-header h1 {
+      font-size: 1.5rem;
+    }
+  }

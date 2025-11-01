@@ -1,0 +1,556 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Container, Row, Col, Card, Button, Spinner, Alert, 
+  Table, Modal, Form, Badge, Tabs, Tab
+} from 'react-bootstrap';
+import { 
+  FaPlus, FaEdit, FaTrash, FaBook, FaGraduationCap
+} from 'react-icons/fa';
+import { useAuth } from '../../contexts/AuthContextSupabase';
+import supabaseService from '../../services/supabaseService';
+import { supabase } from '../../config/supabase';
+
+function SubjectManagement() {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [activeTab, setActiveTab] = useState('subjects');
+  
+  // Data
+  const [subjects, setSubjects] = useState([]);
+  const [formOfferings, setFormOfferings] = useState([]);
+  const [schools, setSchools] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [forms, setForms] = useState([]);
+  
+  // Modal state for subjects
+  const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [editingSubject, setEditingSubject] = useState(null);
+  const [subjectData, setSubjectData] = useState({
+    school_id: '',
+    subject_name: '',
+    subject_code: '',
+    cxc_code: '',
+    department_id: '',
+    description: ''
+  });
+  
+  // Modal state for form offerings
+  const [showOfferingModal, setShowOfferingModal] = useState(false);
+  const [offeringData, setOfferingData] = useState({
+    subject_id: '',
+    form_id: '',
+    curriculum_framework: '',
+    learning_outcomes: ''
+  });
+  
+  useEffect(() => {
+    fetchData();
+  }, []);
+  
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Get schools
+      const { data: schoolsData } = await supabase
+        .from('institutions')
+        .select('*')
+        .order('name');
+      setSchools(schoolsData || []);
+      
+      // Get departments
+      const { data: departmentsData } = await supabase
+        .from('departments')
+        .select('*')
+        .order('name');
+      setDepartments(departmentsData || []);
+      
+      // Get forms
+      const { data: formsData } = await supabase
+        .from('forms')
+        .select('*')
+        .eq('is_active', true)
+        .order('form_number');
+      setForms(formsData || []);
+      
+      // Get subjects
+      const { data: subjectsData } = await supabase
+        .from('subjects')
+        .select(`
+          *,
+          department:departments(name)
+        `)
+        .eq('is_active', true)
+        .order('subject_name');
+      setSubjects(subjectsData || []);
+      
+      // Get form offerings
+      const { data: offeringsData } = await supabase
+        .from('subject_form_offerings')
+        .select(`
+          *,
+          subject:subjects(*),
+          form:forms(*)
+        `)
+        .order('form_id');
+      setFormOfferings(offeringsData || []);
+      
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Error fetching data:', err);
+      setError('Failed to load data');
+      setIsLoading(false);
+    }
+  };
+  
+  const handleOpenSubjectModal = (subject = null) => {
+    if (subject) {
+      setEditingSubject(subject);
+      setSubjectData({
+        school_id: subject.school_id || '',
+        subject_name: subject.subject_name || '',
+        subject_code: subject.subject_code || '',
+        cxc_code: subject.cxc_code || '',
+        department_id: subject.department_id || '',
+        description: subject.description || ''
+      });
+    } else {
+      setEditingSubject(null);
+      setSubjectData({
+        school_id: schools[0]?.institution_id || '',
+        subject_name: '',
+        subject_code: '',
+        cxc_code: '',
+        department_id: '',
+        description: ''
+      });
+    }
+    setShowSubjectModal(true);
+  };
+  
+  const handleOpenOfferingModal = () => {
+    setOfferingData({
+      subject_id: '',
+      form_id: '',
+      curriculum_framework: '',
+      learning_outcomes: ''
+    });
+    setShowOfferingModal(true);
+  };
+  
+  const handleCloseModals = () => {
+    setShowSubjectModal(false);
+    setShowOfferingModal(false);
+    setEditingSubject(null);
+    setSubjectData({});
+    setOfferingData({});
+    setSuccess(null);
+    setError(null);
+  };
+  
+  const handleSubmitSubject = async (e) => {
+    e.preventDefault();
+    try {
+      setError(null);
+      setSuccess(null);
+      
+      if (editingSubject) {
+        const { data, error: updateError } = await supabase
+          .from('subjects')
+          .update({ ...subjectData, updated_at: new Date().toISOString() })
+          .eq('subject_id', editingSubject.subject_id)
+          .select()
+          .single();
+        
+        if (updateError) throw updateError;
+        setSuccess('Subject updated successfully');
+      } else {
+        await supabaseService.createSubject(subjectData);
+        setSuccess('Subject created successfully');
+      }
+      
+      handleCloseModals();
+      fetchData();
+    } catch (err) {
+      console.error('Error saving subject:', err);
+      setError(err.message || 'Failed to save subject');
+    }
+  };
+  
+  const handleSubmitOffering = async (e) => {
+    e.preventDefault();
+    try {
+      setError(null);
+      setSuccess(null);
+      
+      await supabaseService.createSubjectOffering(
+        offeringData.subject_id,
+        offeringData.form_id,
+        {
+          curriculum_framework: offeringData.curriculum_framework || null,
+          learning_outcomes: offeringData.learning_outcomes || null
+        }
+      );
+      
+      setSuccess('Subject offering created successfully');
+      handleCloseModals();
+      fetchData();
+    } catch (err) {
+      console.error('Error creating offering:', err);
+      setError(err.message || 'Failed to create subject offering');
+    }
+  };
+  
+  const handleDeleteSubject = async (subjectId) => {
+    if (window.confirm('Are you sure you want to delete this subject? This will affect all classes using it.')) {
+      try {
+        const { error } = await supabase
+          .from('subjects')
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq('subject_id', subjectId);
+        
+        if (error) throw error;
+        setSuccess('Subject deleted successfully');
+        fetchData();
+      } catch (err) {
+        console.error('Error deleting subject:', err);
+        setError(err.message || 'Failed to delete subject');
+      }
+    }
+  };
+  
+  if (isLoading) {
+    return (
+      <Container className="mt-4">
+        <div className="text-center py-5">
+          <Spinner animation="border" role="status">
+            <span className="visually-hidden">Loading...</span>
+          </Spinner>
+        </div>
+      </Container>
+    );
+  }
+  
+  return (
+    <Container fluid className="mt-4">
+      <Row className="mb-4">
+        <Col>
+          <div className="d-flex justify-content-between align-items-center">
+            <h2>Subject Management</h2>
+            <Button variant="primary" onClick={() => handleOpenSubjectModal()}>
+              <FaPlus className="me-2" />
+              Create Subject
+            </Button>
+          </div>
+        </Col>
+      </Row>
+      
+      {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
+      {success && <Alert variant="success" dismissible onClose={() => setSuccess(null)}>{success}</Alert>}
+      
+      <Tabs
+        activeKey={activeTab}
+        onSelect={(k) => setActiveTab(k)}
+        className="mb-4"
+      >
+        <Tab eventKey="subjects" title="Subjects">
+          <Card className="border-0 shadow-sm">
+            <Card.Body>
+              {subjects.length === 0 ? (
+                <div className="text-center py-5">
+                  <p className="text-muted mb-0">No subjects created yet</p>
+                  <Button variant="primary" className="mt-3" onClick={() => handleOpenSubjectModal()}>
+                    Create First Subject
+                  </Button>
+                </div>
+              ) : (
+                <Table responsive hover>
+                  <thead>
+                    <tr>
+                      <th>Subject Name</th>
+                      <th>Subject Code</th>
+                      <th>CXC Code</th>
+                      <th>Department</th>
+                      <th>School</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {subjects.map((subject) => (
+                      <tr key={subject.subject_id}>
+                        <td><strong>{subject.subject_name}</strong></td>
+                        <td><Badge bg="primary">{subject.subject_code}</Badge></td>
+                        <td>{subject.cxc_code || '-'}</td>
+                        <td>{subject.department?.name || 'N/A'}</td>
+                        <td>
+                          {schools.find(s => s.institution_id === subject.school_id)?.name || 'N/A'}
+                        </td>
+                        <td>
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm" 
+                            className="me-2"
+                            onClick={() => handleOpenSubjectModal(subject)}
+                          >
+                            <FaEdit />
+                          </Button>
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm"
+                            onClick={() => handleDeleteSubject(subject.subject_id)}
+                          >
+                            <FaTrash />
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </Card.Body>
+          </Card>
+        </Tab>
+        
+        <Tab eventKey="offerings" title="Form Offerings">
+          <Row className="mb-3">
+            <Col>
+              <Button variant="outline-primary" onClick={handleOpenOfferingModal}>
+                <FaPlus className="me-2" />
+                Add Subject to Form
+              </Button>
+            </Col>
+          </Row>
+          
+          <Card className="border-0 shadow-sm">
+            <Card.Body>
+              {formOfferings.length === 0 ? (
+                <div className="text-center py-5">
+                  <p className="text-muted mb-0">No subject offerings created yet</p>
+                </div>
+              ) : (
+                <Table responsive hover>
+                  <thead>
+                    <tr>
+                      <th>Subject</th>
+                      <th>Form</th>
+                      <th>Academic Year</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {formOfferings.map((offering) => (
+                      <tr key={offering.offering_id}>
+                        <td><strong>{offering.subject?.subject_name}</strong></td>
+                        <td>{offering.form?.form_name}</td>
+                        <td>{offering.form?.academic_year}</td>
+                        <td>
+                          <Button 
+                            variant="outline-info" 
+                            size="sm"
+                            onClick={() => {
+                              // TODO: View/edit offering details
+                            }}
+                          >
+                            View
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
+              )}
+            </Card.Body>
+          </Card>
+        </Tab>
+      </Tabs>
+      
+      {/* Subject Create/Edit Modal */}
+      <Modal show={showSubjectModal} onHide={handleCloseModals} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {editingSubject ? 'Edit Subject' : 'Create New Subject'}
+          </Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleSubmitSubject}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>School *</Form.Label>
+              <Form.Select
+                value={subjectData.school_id}
+                onChange={(e) => setSubjectData({ ...subjectData, school_id: e.target.value })}
+                required
+              >
+                <option value="">Select School</option>
+                {schools.map(school => (
+                  <option key={school.institution_id} value={school.institution_id}>
+                    {school.name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Subject Name *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={subjectData.subject_name}
+                    onChange={(e) => setSubjectData({ ...subjectData, subject_name: e.target.value })}
+                    placeholder="e.g., Mathematics, English Language"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Subject Code *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={subjectData.subject_code}
+                    onChange={(e) => setSubjectData({ ...subjectData, subject_code: e.target.value.toUpperCase() })}
+                    placeholder="e.g., MATH, ENG"
+                    required
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>CXC Code</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={subjectData.cxc_code}
+                    onChange={(e) => setSubjectData({ ...subjectData, cxc_code: e.target.value.toUpperCase() })}
+                    placeholder="e.g., CSEC Math: 01"
+                  />
+                  <Form.Text className="text-muted">
+                    CSEC/CAPE subject code if applicable
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Department</Form.Label>
+                  <Form.Select
+                    value={subjectData.department_id}
+                    onChange={(e) => setSubjectData({ ...subjectData, department_id: e.target.value || null })}
+                  >
+                    <option value="">No department</option>
+                    {departments.map(dept => (
+                      <option key={dept.department_id} value={dept.department_id}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+            
+            <Form.Group className="mb-3">
+              <Form.Label>Description</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={subjectData.description}
+                onChange={(e) => setSubjectData({ ...subjectData, description: e.target.value })}
+                placeholder="Optional description"
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCloseModals}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit">
+              {editingSubject ? 'Update' : 'Create'} Subject
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+      
+      {/* Form Offering Modal */}
+      <Modal show={showOfferingModal} onHide={handleCloseModals} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Add Subject to Form</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleSubmitOffering}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>Subject *</Form.Label>
+              <Form.Select
+                value={offeringData.subject_id}
+                onChange={(e) => setOfferingData({ ...offeringData, subject_id: e.target.value })}
+                required
+              >
+                <option value="">Select Subject</option>
+                {subjects.map(subject => (
+                  <option key={subject.subject_id} value={subject.subject_id}>
+                    {subject.subject_name} ({subject.subject_code})
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            
+            <Form.Group className="mb-3">
+              <Form.Label>Form *</Form.Label>
+              <Form.Select
+                value={offeringData.form_id}
+                onChange={(e) => setOfferingData({ ...offeringData, form_id: e.target.value })}
+                required
+              >
+                <option value="">Select Form</option>
+                {forms.map(form => (
+                  <option key={form.form_id} value={form.form_id}>
+                    {form.form_name} ({form.academic_year})
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            
+            <Form.Group className="mb-3">
+              <Form.Label>Curriculum Framework</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                value={offeringData.curriculum_framework}
+                onChange={(e) => setOfferingData({ ...offeringData, curriculum_framework: e.target.value })}
+                placeholder="Link to CXC/CSEC/CAPE standards, curriculum details"
+              />
+            </Form.Group>
+            
+            <Form.Group className="mb-3">
+              <Form.Label>Learning Outcomes</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                value={offeringData.learning_outcomes}
+                onChange={(e) => setOfferingData({ ...offeringData, learning_outcomes: e.target.value })}
+                placeholder="Learning objectives and outcomes for this form level"
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={handleCloseModals}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit">
+              Create Offering
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
+    </Container>
+  );
+}
+
+export default SubjectManagement;
+
+

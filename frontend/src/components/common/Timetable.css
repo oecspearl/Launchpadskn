@@ -1,0 +1,182 @@
+.timetable-container {
+  width: 100%;
+}
+
+.timetable-table {
+  font-size: 0.9rem;
+}
+
+.timetable-table thead th {
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  padding: 12px 8px;
+  font-weight: 600;
+  text-align: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.timetable-table thead th.time-column {
+  background-color: #ffffff;
+  border-right: 2px solid #dee2e6;
+  min-width: 80px;
+}
+
+.day-column {
+  min-width: 120px;
+  vertical-align: middle;
+}
+
+.day-column.today {
+  background-color: #e7f3ff !important;
+}
+
+.day-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.day-name {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #495057;
+}
+
+.day-date {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+.time-column,
+.time-cell {
+  background-color: #f8f9fa;
+  border-right: 2px solid #dee2e6;
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.time-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.time-start {
+  font-weight: 600;
+  color: #495057;
+}
+
+.time-end {
+  font-size: 0.75rem;
+  color: #6c757d;
+}
+
+.lesson-cell {
+  padding: 4px;
+  vertical-align: top;
+  border: 1px solid #e9ecef;
+  min-height: 80px;
+  position: relative;
+}
+
+.lesson-cell.today {
+  background-color: #f0f8ff;
+}
+
+.empty-slot {
+  height: 70px;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.lesson-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 8px;
+  border-radius: 6px;
+  height: 100%;
+  min-height: 70px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.lesson-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.lesson-subject {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+
+.lesson-class {
+  font-size: 0.75rem;
+  opacity: 0.9;
+  margin-bottom: 4px;
+}
+
+.lesson-location,
+.lesson-time {
+  font-size: 0.7rem;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.break-row {
+  background-color: #f8f9fa;
+}
+
+.break-cell {
+  padding: 8px;
+  font-style: italic;
+  color: #6c757d;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .timetable-table {
+    font-size: 0.75rem;
+  }
+  
+  .day-column {
+    min-width: 90px;
+  }
+  
+  .lesson-subject {
+    font-size: 0.75rem;
+  }
+  
+  .lesson-class,
+  .lesson-location,
+  .lesson-time {
+    font-size: 0.65rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  .timetable-container {
+    break-inside: avoid;
+  }
+  
+  .lesson-card {
+    break-inside: avoid;
+  }
+}
+
+

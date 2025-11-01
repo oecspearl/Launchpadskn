@@ -1,0 +1,23 @@
+{
+  "name": "LaunchPad SKN",
+  "description": "Caribbean Secondary School Learning Management System",
+  "repository": "https://github.com/your-username/ScholarSpace-Online-Learning-System",
+  "logo": "https://node-js-sample.herokuapp.com/node.png",
+  "keywords": ["react", "education", "lms", "supabase"],
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "REACT_APP_SUPABASE_URL": {
+      "description": "Your Supabase project URL",
+      "required": true
+    },
+    "REACT_APP_SUPABASE_ANON_KEY": {
+      "description": "Your Supabase anonymous key",
+      "required": true
+    }
+  }
+}
+

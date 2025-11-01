@@ -1,0 +1,83 @@
+# Example Supabase Configuration Files
+# Copy these configurations to your respective application.yml files
+# Replace [YOUR-PROJECT-REF] and [YOUR-PASSWORD] with your actual Supabase credentials
+
+# ============================================
+# USER SERVICE - application.yml
+# File: user-service/src/main/resources/application.yml
+# ============================================
+# Replace the datasource section with:
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://[YOUR-PROJECT-REF].supabase.co:6543/postgres?sslmode=require&currentSchema=scholarspace_users
+    username: postgres.[YOUR-PROJECT-REF]
+    password: [YOUR-PASSWORD]
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: scholarspace_users
+        format_sql: true
+
+# ============================================
+# INSTITUTION SERVICE - application.yml
+# File: institution-service/src/main/resources/application.yml
+# ============================================
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://[YOUR-PROJECT-REF].supabase.co:6543/postgres?sslmode=require&currentSchema=scholarspace_institutions
+    username: postgres.[YOUR-PROJECT-REF]
+    password: [YOUR-PASSWORD]
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: scholarspace_institutions
+        format_sql: true
+
+# ============================================
+# COURSE SERVICE - application.yml
+# File: course-service/src/main/resources/application.yml
+# ============================================
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://[YOUR-PROJECT-REF].supabase.co:6543/postgres?sslmode=require&currentSchema=scholarspace_courses
+    username: postgres.[YOUR-PROJECT-REF]
+    password: [YOUR-PASSWORD]
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: scholarspace_courses
+        format_sql: true
+
+# ============================================
+# EXAMPLE WITH ENVIRONMENT VARIABLES
+# More secure approach - set these as environment variables
+# ============================================
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://${SUPABASE_HOST}:6543/postgres?sslmode=require&currentSchema=${SUPABASE_SCHEMA}
+    username: ${SUPABASE_USER}
+    password: ${SUPABASE_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: ${SUPABASE_SCHEMA}
+
+# Environment variables to set:
+# SUPABASE_HOST=your-project-ref.supabase.co
+# SUPABASE_USER=postgres.your-project-ref
+# SUPABASE_PASSWORD=your-password
+# SUPABASE_SCHEMA=scholarspace_users (or scholarspace_institutions, scholarspace_courses)
+
+

@@ -1,0 +1,190 @@
+/* AdminDashboard.css */
+
+.admin-dashboard {
+    background-color: #f8f9fa;
+    min-height: 100vh;
+  }
+  
+  .dashboard-header {
+    border-bottom: 1px solid #eaedf1;
+  }
+  
+  /* Stats Cards Styling */
+  .dashboard-card {
+    transition: transform 0.2s;
+  }
+  
+  .dashboard-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .stats-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+  }
+  
+  .progress-sm {
+    height: 5px;
+    border-radius: 10px;
+  }
+  
+  /* Dashboard Tabs */
+  .dashboard-tabs .nav-link {
+    color: #6c757d;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border: none;
+    position: relative;
+  }
+  
+  .dashboard-tabs .nav-link.active {
+    color: #0d6efd;
+    background-color: transparent;
+    border: none;
+  }
+  
+  .dashboard-tabs .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #0d6efd;
+  }
+  
+  /* Quick Actions Styling */
+  .quick-actions {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+  }
+  
+  .quick-action-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 1rem;
+    border-radius: 10px;
+    background-color: #f8f9fa;
+    color: #495057;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  
+  .quick-action-btn:hover {
+    background-color: #e9ecef;
+    color: #212529;
+  }
+  
+  .action-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  
+  /* Activity Timeline Styling */
+  .activity-timeline {
+    position: relative;
+  }
+  
+  .activity-item {
+    display: flex;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  
+  .activity-item:last-child {
+    margin-bottom: 0;
+  }
+  
+  .activity-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    margin-right: 15px;
+    flex-shrink: 0;
+  }
+  
+  .activity-content {
+    flex-grow: 1;
+  }
+  
+  /* Notification Menu Styling */
+  .notification-menu {
+    width: 350px;
+    padding: 0;
+    max-height: 450px;
+    overflow-y: auto;
+  }
+  
+  .notification-item {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #eaedf1;
+  }
+  
+  .notification-item:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .notification-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+  }
+  
+  .btn-icon {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 992px) {
+    .quick-actions {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .stats-cards {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .notification-menu {
+      width: 300px;
+    }
+  }
+  
+  @media (max-width: 576px) {
+    .stats-cards {
+      grid-template-columns: 1fr;
+    }
+    
+    .dashboard-header h1 {
+      font-size: 1.5rem;
+    }
+  }

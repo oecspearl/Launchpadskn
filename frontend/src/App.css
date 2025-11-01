@@ -1,0 +1,110 @@
+.App {
+  text-align: center;
+}
+
+.App-logo {
+  height: 40vmin;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .App-logo {
+    animation: App-logo-spin infinite 20s linear;
+  }
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
+
+@keyframes App-logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Login Component Enhancements - Saint Kitts and Nevis Flag Colors */
+.login-container {
+  background: linear-gradient(135deg, #009639 0%, #CE1126 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(-45deg, transparent 44%, #000000 44%, #000000 56%, transparent 56%);
+  opacity: 0.3;
+  z-index: 0;
+}
+
+.login-container .card {
+  position: relative;
+  z-index: 1;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.login-type-toggle .btn {
+  transition: all 0.3s ease;
+  border-radius: 20px;
+}
+
+.login-type-toggle .btn:hover {
+  transform: translateY(-2px);
+}
+
+.ad-login-info {
+  background: linear-gradient(45deg, #e3f2fd, #f3e5f5);
+  border-left: 4px solid #2196f3;
+}
+
+.database-login-info {
+  background: linear-gradient(45deg, #E8F5ED, #e8f5e8);
+  border-left: 4px solid #009639;
+}
+
+/* Animation for login type switch */
+.login-form-transition {
+  transition: all 0.3s ease-in-out;
+}
+
+/* AD Login specific styling */
+.ad-login .form-control {
+  border-color: #2196f3;
+}
+
+.ad-login .input-group-text {
+  background-color: #e3f2fd;
+  border-color: #2196f3;
+  color: #1976d2;
+}
+
+/* Database Login specific styling - Using SKN Green */
+.database-login .form-control {
+  border-color: #009639;
+}
+
+.database-login .input-group-text {
+  background-color: #E8F5ED;
+  border-color: #009639;
+  color: #00702B;
+}
