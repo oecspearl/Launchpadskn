@@ -46,10 +46,16 @@ export function AuthProvider({ children }) {
         
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('[AuthContext] SIGNED_IN event, loading profile for:', session.user.email);
-          await loadUserProfile(session.user.id);
+          setIsLoading(true); // Set loading while fetching profile
+          try {
+            await loadUserProfile(session.user.id);
+          } finally {
+            setIsLoading(false); // Always stop loading
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsAuthenticated(false);
+          setIsLoading(false);
           localStorage.removeItem('user');
           localStorage.removeItem('token');
           sessionStorage.removeItem('sessionActive');

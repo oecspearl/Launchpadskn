@@ -41,30 +41,36 @@ function AdminDashboard() {
     try {
       console.log('[AdminDashboard] Starting to fetch stats...');
       
-      // Fetch stats with individual timeouts
+      // Fetch stats with aggressive timeout (1.5 seconds max)
       const statsPromise = supabaseService.getDashboardStats();
       const statsTimeout = new Promise((resolve) => 
-        setTimeout(() => resolve({ totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalForms: 0, totalClasses: 0 }), 2000)
+        setTimeout(() => {
+          console.warn('[AdminDashboard] Stats fetch timed out, using defaults');
+          resolve({ totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalForms: 0, totalClasses: 0 });
+        }, 1500)
       );
       
       const data = await Promise.race([statsPromise, statsTimeout]);
       console.log('[AdminDashboard] Stats received:', data);
       
-      // Fetch recent activity with timeout
+      // Fetch recent activity with timeout (1 second max)
       let recentActivity = [];
       try {
         const activityPromise = supabaseService.getRecentActivity(5);
         const activityTimeout = new Promise((resolve) => 
-          setTimeout(() => resolve([]), 1500)
+          setTimeout(() => {
+            console.warn('[AdminDashboard] Activity fetch timed out, using empty array');
+            resolve([]);
+          }, 1000)
         );
         recentActivity = await Promise.race([activityPromise, activityTimeout]);
-        console.log('[AdminDashboard] Activity received:', recentActivity.length);
+        console.log('[AdminDashboard] Activity received:', recentActivity?.length || 0);
       } catch (activityError) {
         console.warn('[AdminDashboard] Activity fetch failed:', activityError);
         recentActivity = [];
       }
       
-      // Update state
+      // Update state immediately
       setStats({
         totalUsers: data?.totalUsers || 0,
         totalCourses: data?.totalSubjects || data?.totalCourses || 0,
@@ -72,7 +78,7 @@ function AdminDashboard() {
         totalStudents: data?.totalStudents || 0,
         totalForms: data?.totalForms || 0,
         totalClasses: data?.totalClasses || 0,
-        recentActivity: recentActivity.length > 0 ? recentActivity : []
+        recentActivity: Array.isArray(recentActivity) ? recentActivity : []
       });
       
       setIsLoading(false);
@@ -81,7 +87,7 @@ function AdminDashboard() {
     } catch (err) {
       console.error('[AdminDashboard] Error fetching data:', err);
       
-      // Set defaults on error - dashboard should still display
+      // Set defaults immediately on error - dashboard should still display
       setStats({
         totalUsers: 0,
         totalCourses: 0,
@@ -100,29 +106,51 @@ function AdminDashboard() {
   useEffect(() => {
     console.log('[AdminDashboard] Component mounted, user:', user?.email);
     
-    // Always stop loading after max 3 seconds
-    const maxTimeout = setTimeout(() => {
-      console.warn('[AdminDashboard] Max timeout reached, forcing display');
+    // If no user, don't fetch
+    if (!user) {
+      console.warn('[AdminDashboard] No user, skipping fetch');
       setIsLoading(false);
-      if (stats.totalUsers === 0 && stats.totalCourses === 0) {
-        // If no stats loaded, set defaults
-        setStats(prev => ({
-          ...prev,
-          totalUsers: prev.totalUsers || 0,
-          totalCourses: prev.totalCourses || 0,
-          totalInstructors: prev.totalInstructors || 0,
-          totalStudents: prev.totalStudents || 0
-        }));
-      }
-    }, 3000);
+      return;
+    }
     
-    // Fetch data
-    fetchDashboardStats().finally(() => {
+    // Always stop loading after max 2 seconds (reduced from 3)
+    const maxTimeout = setTimeout(() => {
+      console.warn('[AdminDashboard] Max timeout reached, forcing display with defaults');
+      setIsLoading(false);
+      setStats({
+        totalUsers: 0,
+        totalCourses: 0,
+        totalInstructors: 0,
+        totalStudents: 0,
+        totalForms: 0,
+        totalClasses: 0,
+        recentActivity: []
+      });
+    }, 2000);
+    
+    // Fetch data with timeout protection
+    const fetchPromise = fetchDashboardStats();
+    const timeoutPromise = new Promise(resolve => setTimeout(() => {
+      console.warn('[AdminDashboard] Fetch timeout, using defaults');
+      setIsLoading(false);
+      setStats({
+        totalUsers: 0,
+        totalCourses: 0,
+        totalInstructors: 0,
+        totalStudents: 0,
+        totalForms: 0,
+        totalClasses: 0,
+        recentActivity: []
+      });
+      resolve();
+    }, 2000));
+    
+    Promise.race([fetchPromise, timeoutPromise]).finally(() => {
       clearTimeout(maxTimeout);
     });
     
     return () => clearTimeout(maxTimeout);
-  }, []); // Only run once on mount
+  }, [user]); // Re-run when user changes
 
   // Show loading spinner while fetching data (max 3 seconds)
   if (isLoading) {
