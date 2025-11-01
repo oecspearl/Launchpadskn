@@ -90,10 +90,8 @@ export function AuthProvider({ children }) {
 
     // Safety timeout: force loading to false after 10 seconds max
     const globalTimeout = setTimeout(() => {
-      if (isLoading) {
-        console.warn('[AuthContext] Global timeout - forcing isLoading to false');
-        setIsLoading(false);
-      }
+      console.warn('[AuthContext] Global timeout - forcing isLoading to false');
+      setIsLoading(false);
     }, 10000);
 
     // Cleanup subscription on unmount
@@ -101,7 +99,7 @@ export function AuthProvider({ children }) {
       subscription.unsubscribe();
       clearTimeout(globalTimeout);
     };
-  }, []);
+  }, []); // Empty deps - only run once on mount
 
   // Load user profile from users table
   const loadUserProfile = async (userId) => {

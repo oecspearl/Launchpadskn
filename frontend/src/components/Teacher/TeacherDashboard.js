@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Container, Row, Col, Card, Button, Spinner, Alert, 
   Badge, Tab, Tabs, ListGroup
@@ -29,33 +29,8 @@ function TeacherDashboard() {
   const [weekLessons, setWeekLessons] = useState([]);
   const [upcomingAssessments, setUpcomingAssessments] = useState([]);
   
-  // Fetch teacher data
-  useEffect(() => {
-    console.log('[TeacherDashboard] useEffect triggered, user:', user);
-    
-    // Always set a maximum timeout to prevent infinite loading
-    const maxTimeout = setTimeout(() => {
-      console.warn('[TeacherDashboard] Max timeout reached, stopping loading');
-      setIsLoading(false);
-    }, 5000);
-    
-    if (user && (user.userId || user.id)) {
-      fetchTeacherData().finally(() => {
-        clearTimeout(maxTimeout);
-      });
-    } else {
-      // If no user, stop loading after shorter timeout
-      setTimeout(() => {
-        console.warn('[TeacherDashboard] No user after timeout, stopping loading');
-        setIsLoading(false);
-        clearTimeout(maxTimeout);
-      }, 2000);
-    }
-    
-    return () => clearTimeout(maxTimeout);
-  }, [user]);
-  
-  const fetchTeacherData = async () => {
+  // Fetch teacher data function
+  const fetchTeacherData = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -121,7 +96,35 @@ function TeacherDashboard() {
       setError(null); // Don't show error - just show empty dashboard
       setIsLoading(false);
     }
-  };
+  }, [user]);
+  
+  // Fetch teacher data on mount/user change
+  useEffect(() => {
+    console.log('[TeacherDashboard] useEffect triggered, user:', user);
+    
+    // Always set a maximum timeout to prevent infinite loading
+    const maxTimeout = setTimeout(() => {
+      console.warn('[TeacherDashboard] Max timeout reached, stopping loading');
+      setIsLoading(false);
+    }, 5000);
+    
+    if (user && (user.userId || user.id)) {
+      fetchTeacherData().then(() => {
+        clearTimeout(maxTimeout);
+      }).catch(() => {
+        clearTimeout(maxTimeout);
+      });
+    } else {
+      // If no user, stop loading after shorter timeout
+      setTimeout(() => {
+        console.warn('[TeacherDashboard] No user after timeout, stopping loading');
+        setIsLoading(false);
+        clearTimeout(maxTimeout);
+      }, 2000);
+    }
+    
+    return () => clearTimeout(maxTimeout);
+  }, [user, fetchTeacherData]);
   
   const getSubjectName = (classSubject) => {
     return classSubject?.subject_offering?.subject?.subject_name || 
