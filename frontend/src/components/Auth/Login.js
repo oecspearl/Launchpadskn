@@ -58,12 +58,16 @@ function Login() {
         
         console.log('[Login] Determined dashboard path:', dashboardPath);
         
-        if (dashboardPath !== '/login' && window.location.pathname === '/login') {
-          console.log('[Login] Executing redirect to:', dashboardPath);
+        const currentPath = window.location.pathname;
+        
+        // Redirect if not already on dashboard or login page
+        if (dashboardPath !== '/login' && currentPath !== dashboardPath && currentPath !== '/login') {
+          console.log('[Login] Executing redirect from', currentPath, 'to:', dashboardPath);
           
           // Immediate redirect using window.location (most reliable)
           setTimeout(() => {
-            if (window.location.pathname === '/login') {
+            const stillOnWrongPath = window.location.pathname !== dashboardPath;
+            if (stillOnWrongPath) {
               console.log('[Login] Forcing redirect with window.location');
               window.location.replace(dashboardPath);
             }
@@ -73,8 +77,24 @@ function Login() {
           navigate(dashboardPath, { replace: true });
         } else if (dashboardPath === '/login') {
           console.warn('[Login] Invalid role, cannot determine dashboard. Role:', role);
+        } else if (currentPath === dashboardPath) {
+          console.log('[Login] Already on correct dashboard:', currentPath);
+        } else if (currentPath === '/login' && dashboardPath !== '/login') {
+          console.log('[Login] On login page but authenticated, redirecting to:', dashboardPath);
+          // User is authenticated but on login page, redirect
+          setTimeout(() => {
+            window.location.replace(dashboardPath);
+          }, 100);
+          navigate(dashboardPath, { replace: true });
         } else {
-          console.log('[Login] Already on correct page:', window.location.pathname);
+          console.log('[Login] On root path, redirecting authenticated user to dashboard');
+          // User is on root path (/) and authenticated, redirect to dashboard
+          if (currentPath === '/' && dashboardPath !== '/login') {
+            setTimeout(() => {
+              window.location.replace(dashboardPath);
+            }, 100);
+            navigate(dashboardPath, { replace: true });
+          }
         }
       } else {
         console.warn('[Login] No role found in user object:', actualUser);
