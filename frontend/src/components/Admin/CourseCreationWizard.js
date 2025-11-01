@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Form, Button, Row, Col, Alert, ProgressBar, Card } from 'react-bootstrap';
 import { FaBuilding, FaUniversity, FaBook, FaChalkboardTeacher } from 'react-icons/fa';
-import institutionService from '../../services/institutionService';
-import api from '../../services/api';
+import supabaseService from '../../services/supabaseService';
 
 function CourseCreationWizard({ show, onHide, onCourseCreated }) {
   const [currentStep, setCurrentStep] = useState(1);
@@ -79,28 +78,32 @@ function CourseCreationWizard({ show, onHide, onCourseCreated }) {
 
   const fetchInstitutions = async () => {
     try {
-      const data = await institutionService.getAllInstitutions();
-      setInstitutions(data);
+      const data = await supabaseService.getAllInstitutions();
+      setInstitutions(data || []);
     } catch (error) {
       setError('Failed to fetch institutions');
+      setInstitutions([]);
     }
   };
 
   const fetchDepartments = async (institutionId) => {
     try {
-      const data = await institutionService.getDepartmentsByInstitution(institutionId);
-      setDepartments(data);
+      // Departments are deprecated - return empty array
+      setDepartments([]);
     } catch (error) {
-      setError('Failed to fetch departments');
+      console.error('Departments deprecated:', error);
+      setDepartments([]);
     }
   };
 
   const fetchCourses = async (departmentId) => {
     try {
-      const response = await api.get(`/courses/department/${departmentId}`);
-      setCourses(response.data);
+      // Fetch subjects as replacement for courses
+      const subjects = await supabaseService.getSubjectsBySchool(null);
+      setCourses(subjects || []);
     } catch (error) {
-      console.error('Failed to fetch courses for prerequisites');
+      console.error('Failed to fetch courses (subjects) for prerequisites');
+      setCourses([]);
     }
   };
 

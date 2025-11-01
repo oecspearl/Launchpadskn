@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Table, Form, InputGroup, Badge, Alert, Modal } from 'react-bootstrap';
 import { FaPlus, FaSearch, FaBook, FaEdit, FaEye, FaFilter } from 'react-icons/fa';
-import api from '../../services/api';
-import institutionService from '../../services/institutionService';
+import supabaseService from '../../services/supabaseService';
 import CourseCreationWizard from './CourseCreationWizard';
 import Breadcrumb from '../common/Breadcrumb';
 
@@ -59,16 +58,28 @@ function EnhancedCourseManagement() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [coursesData, institutionsData] = await Promise.all([
-        api.get('/courses'),
-        institutionService.getAllInstitutions()
+      // Fetch subjects (replacing courses) and institutions from Supabase
+      const [subjectsData, institutionsData] = await Promise.all([
+        supabaseService.getSubjectsBySchool(null),
+        supabaseService.getAllInstitutions()
       ]);
       
-      setCourses(coursesData.data);
-      setInstitutions(institutionsData);
+      // Transform subjects to legacy course format
+      const coursesData = (subjectsData || []).map(subject => ({
+        id: subject.subject_id,
+        code: subject.subject_code || subject.cxc_code || '',
+        title: subject.subject_name,
+        description: subject.description || '',
+        isActive: subject.is_active !== false
+      }));
+      
+      setCourses(coursesData);
+      setInstitutions(institutionsData || []);
     } catch (error) {
-      setError('Failed to fetch data');
+      setError('Failed to fetch data. Please use Subject Management instead.');
       console.error('Error fetching data:', error);
+      setCourses([]);
+      setInstitutions([]);
     } finally {
       setLoading(false);
     }
@@ -76,10 +87,11 @@ function EnhancedCourseManagement() {
 
   const fetchDepartments = async (institutionId) => {
     try {
-      const data = await institutionService.getDepartmentsByInstitution(institutionId);
-      setDepartments(data);
+      // Departments are deprecated - return empty array
+      setDepartments([]);
     } catch (error) {
       console.error('Error fetching departments:', error);
+      setDepartments([]);
     }
   };
 
@@ -176,6 +188,16 @@ function EnhancedCourseManagement() {
   return (
     <Container fluid className="py-4">
       <Breadcrumb items={breadcrumbItems} />
+      
+      <Alert variant="warning" className="mb-4">
+        <Alert.Heading>Legacy Feature - Deprecated</Alert.Heading>
+        <p className="mb-2">
+          <strong>Note:</strong> Course Management has been replaced with Subject Management in the hierarchical structure.
+        </p>
+        <p className="mb-0">
+          Please use <strong>Subject Management</strong> (<a href="/admin/subjects">/admin/subjects</a>) instead.
+        </p>
+      </Alert>
       
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}

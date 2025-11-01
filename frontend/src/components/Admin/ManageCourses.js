@@ -4,7 +4,7 @@ import {
   Modal, Spinner, Alert, Badge
 } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
-import { adminService } from '../../services/api';
+import supabaseService from '../../services/supabaseService';
 
 function ManageCourses() {
   // State for courses and UI
@@ -12,6 +12,7 @@ function ManageCourses() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [deprecationWarning] = useState('⚠️ This is a legacy component. Courses have been replaced with Subjects in the hierarchical structure (School → Form → Class → Subject → Lesson).');
   const [showModal, setShowModal] = useState(false);
   const [currentCourse, setCurrentCourse] = useState({
     courseId: null,
@@ -32,31 +33,42 @@ function ManageCourses() {
     fetchDepartments();
   }, []);
 
-  // Function to fetch all courses
+  // Function to fetch all courses (legacy - now uses Subjects)
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      const response = await adminService.getAllCourses();
-      console.log('Fetched courses:', response);
+      // Fetch subjects from Supabase as replacement for courses
+      const subjects = await supabaseService.getSubjectsBySchool(null); // Get all subjects
       
-      setCourses(response.data || []);
+      // Transform subjects to legacy course format for compatibility
+      const coursesData = (subjects || []).map(subject => ({
+        courseId: subject.subject_id,
+        courseCode: subject.subject_code || subject.cxc_code || '',
+        courseName: subject.subject_name,
+        description: subject.description || '',
+        creditHours: 3, // Default
+        isActive: subject.is_active !== false,
+        department: { name: 'General' } // Legacy field
+      }));
+      
+      console.log('Fetched subjects (as courses):', coursesData);
+      setCourses(coursesData);
       setError(null);
     } catch (err) {
-      console.error("Error fetching courses:", err);
-      setError("Failed to load courses. Please try again later.");
+      console.error("Error fetching courses (subjects):", err);
+      setError("Failed to load courses. Please use Subject Management instead.");
       setCourses([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Function to fetch all departments
+  // Function to fetch all departments (legacy - no longer used)
   const fetchDepartments = async () => {
     try {
-      const response = await adminService.getAllDepartments();
-      console.log('Fetched departments:', response);
-      
-      setDepartments(response.data || []);
+      // Departments are deprecated - show empty array
+      console.log('Departments are deprecated in new hierarchical structure');
+      setDepartments([]);
     } catch (err) {
       console.error("Error fetching departments:", err);
       setDepartments([]);
@@ -230,6 +242,18 @@ function ManageCourses() {
 
   return (
     <Container fluid className="p-4">
+      <Alert variant="warning" className="mb-4">
+        <Alert.Heading>Legacy Feature - Deprecated</Alert.Heading>
+        <p className="mb-2">
+          <strong>Note:</strong> This component manages the old "courses" model which has been replaced.
+        </p>
+        <p className="mb-2">
+          The new system uses a hierarchical structure: <strong>School → Form → Class → Subject → Lesson</strong>
+        </p>
+        <p className="mb-0">
+          Please use <strong>Subject Management</strong> (<a href="/admin/subjects">/admin/subjects</a>) instead.
+        </p>
+      </Alert>
       <Card className="shadow-sm">
         <Card.Header className="bg-white">
           <div className="d-flex justify-content-between align-items-center">

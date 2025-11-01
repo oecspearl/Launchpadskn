@@ -4,7 +4,7 @@ import {
   Spinner, Alert, Row, Col
 } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
-import { adminService } from '../../services/api';
+import supabaseService from '../../services/supabaseService';
 
 function ManageDepartments() {
   // State for departments and UI
@@ -28,21 +28,19 @@ function ManageDepartments() {
     fetchDepartments();
   }, []);
 
-  // Function to fetch departments
+  // Function to fetch departments (DEPRECATED)
   const fetchDepartments = async () => {
     setLoading(true);
     try {
-      const response = await adminService.getAllDepartments();
-      console.log('Fetched departments:', response);
-      
-      // Ensure we're working with an array
-      const departmentsData = response && response.data ? response.data : [];
-      setDepartments(departmentsData);
+      // Departments are deprecated in the new hierarchical structure
+      // The system now uses: School → Form → Class → Subject
+      console.log('Departments are deprecated - returning empty array');
+      setDepartments([]);
       setError(null);
     } catch (err) {
       console.error("Error fetching departments:", err);
-      setError("Failed to load departments. Please try again later.");
-      setDepartments([]); // Set to empty array on error
+      setError("Departments are deprecated. Please use the new hierarchical structure (Forms, Classes, Subjects).");
+      setDepartments([]);
     } finally {
       setLoading(false);
     }
@@ -96,13 +94,14 @@ function ManageDepartments() {
       console.log('Submitting department data:', departmentData);
       
       if (isEditing) {
-        // Update existing department
-        await adminService.updateDepartment(currentDepartment.departmentId, departmentData);
+        // Update existing department (deprecated - no-op)
+        console.warn('Department update is deprecated');
+        setSuccessMessage("Departments are deprecated. This action was not performed.");
         setSuccessMessage("Department updated successfully!");
       } else {
-        // Create new department
-        await adminService.createDepartment(departmentData);
-        setSuccessMessage("Department created successfully!");
+        // Create new department (deprecated - no-op)
+        console.warn('Department creation is deprecated');
+        setSuccessMessage("Departments are deprecated. This action was not performed.");
       }
       
       // Refresh department list and close modal
@@ -133,20 +132,16 @@ function ManageDepartments() {
     setShowModal(true);
   };
 
-  // Handle department deletion
+  // Handle department deletion (deprecated)
   const handleDeleteDepartment = async (departmentId) => {
     try {
-      console.log('Deleting department with ID:', departmentId);
-      const response = await adminService.deleteDepartment(departmentId);
-      console.log('Delete department response:', response);
-      
-      // Refresh the departments list
-      fetchDepartments();
+      console.log('Department deletion is deprecated');
       setDeleteConfirmation(null);
-      setSuccessMessage("Department deleted successfully!");
+      setSuccessMessage("Departments are deprecated. This action was not performed.");
+      // Don't refresh - departments list is already empty
     } catch (err) {
-      console.error("Error deleting department:", err);
-      setError("Failed to delete department. It may be in use by courses or instructors.");
+      console.error("Error:", err);
+      setError("Departments are deprecated.");
     }
   };
 

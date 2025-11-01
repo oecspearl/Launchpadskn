@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge } from 'react-bootstrap';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaBuilding, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGlobe, FaUniversity, FaChevronDown, FaChevronRight } from 'react-icons/fa';
-import institutionService from '../../services/institutionService';
+import supabaseService from '../../services/supabaseService';
 import Breadcrumb from '../common/Breadcrumb';
 
 function InstitutionManagement() {
@@ -45,11 +45,12 @@ function InstitutionManagement() {
   const fetchInstitutions = async () => {
     try {
       setLoading(true);
-      const data = await institutionService.getAllInstitutions();
-      setInstitutions(data);
+      const data = await supabaseService.getAllInstitutions();
+      setInstitutions(data || []);
     } catch (error) {
       setError('Failed to fetch institutions');
       console.error('Error fetching institutions:', error);
+      setInstitutions([]);
     } finally {
       setLoading(false);
     }
@@ -106,10 +107,10 @@ function InstitutionManagement() {
 
     try {
       if (editingInstitution) {
-        await institutionService.updateInstitution(editingInstitution.institutionId, formData);
+        await supabaseService.updateInstitution(editingInstitution.institution_id || editingInstitution.institutionId, formData);
         setSuccess('Institution updated successfully');
       } else {
-        await institutionService.createInstitution(formData);
+        await supabaseService.createInstitution(formData);
         setSuccess('Institution created successfully');
       }
       
@@ -118,19 +119,19 @@ function InstitutionManagement() {
         handleCloseModal();
       }, 1500);
     } catch (error) {
-      setError(error.response?.data?.error || 'Operation failed');
+      setError(error.message || 'Operation failed');
     }
   };
 
   const handleDelete = async (institution) => {
     if (window.confirm(`Are you sure you want to delete ${institution.name}? This action cannot be undone.`)) {
       try {
-        await institutionService.deleteInstitution(institution.institutionId);
+        await supabaseService.deleteInstitution(institution.institution_id || institution.institutionId);
         setSuccess('Institution deleted successfully');
         await fetchInstitutions();
         setTimeout(() => setSuccess(''), 3000);
       } catch (error) {
-        setError(error.response?.data?.error || 'Failed to delete institution');
+        setError(error.message || 'Failed to delete institution');
         setTimeout(() => setError(''), 3000);
       }
     }
@@ -144,10 +145,11 @@ function InstitutionManagement() {
       newExpanded.add(institutionId);
       if (!departments[institutionId]) {
         try {
-          const depts = await institutionService.getDepartmentsByInstitution(institutionId);
-          setDepartments(prev => ({ ...prev, [institutionId]: depts }));
+          // Departments are deprecated - return empty array
+          setDepartments(prev => ({ ...prev, [institutionId]: [] }));
         } catch (error) {
-          console.error('Error fetching departments:', error);
+          console.error('Departments deprecated:', error);
+          setDepartments(prev => ({ ...prev, [institutionId]: [] }));
         }
       }
     }
@@ -180,23 +182,12 @@ function InstitutionManagement() {
   const handleDeptSubmit = async (e) => {
     e.preventDefault();
     try {
-      if (editingDepartment) {
-        await institutionService.updateDepartment(editingDepartment.departmentId, deptFormData);
-        setSuccess('Department updated successfully');
-      } else {
-        await institutionService.createDepartment({
-          ...deptFormData,
-          institutionId: selectedInstitution.institutionId
-        });
-        setSuccess('Department created successfully');
-      }
+      // Departments are deprecated - show warning
+      setSuccess('Departments are deprecated in the new hierarchical structure. This action was not performed.');
       setShowDeptModal(false);
-      // Refresh departments for this institution
-      const depts = await institutionService.getDepartmentsByInstitution(selectedInstitution.institutionId);
-      setDepartments(prev => ({ ...prev, [selectedInstitution.institutionId]: depts }));
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
-      setError(error.response?.data?.error || `Failed to ${editingDepartment ? 'update' : 'create'} department`);
+      setError('Departments are deprecated.');
     }
   };
 

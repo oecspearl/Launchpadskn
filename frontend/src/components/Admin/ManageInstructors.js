@@ -4,7 +4,7 @@ import {
   Spinner, Alert, Row, Col
 } from 'react-bootstrap';
 import { FaEdit, FaUserPlus, FaChevronDown, FaChevronRight, FaBook, FaPlus, FaTimes } from 'react-icons/fa';
-import api, { adminService } from '../../services/api';
+import supabaseService from '../../services/supabaseService';
 
 function ManageInstructors() {
   // State for instructors and UI
@@ -42,28 +42,20 @@ function ManageInstructors() {
   const fetchInstructors = async () => {
     setLoading(true);
     try {
-      const [instructorsResponse, departmentsResponse] = await Promise.all([
-        adminService.getUsersByRole('INSTRUCTOR'),
-        adminService.getAllDepartments()
-      ]);
+      // Fetch instructors from Supabase
+      const instructorUsers = await supabaseService.getUsersByRole('INSTRUCTOR');
       
-      const instructorUsers = instructorsResponse.data || [];
-      const allDepartments = departmentsResponse.data || [];
-      
-      // Transform user data to instructor format with department info
-      const transformedInstructors = instructorUsers.map(user => {
-        const department = allDepartments.find(dept => dept.departmentId === user.departmentId);
-        return {
-          instructorId: user.userId,
-          user: user,
-          department: department || { name: 'Not Assigned' }
-        };
-      });
+      // Transform user data to instructor format
+      const transformedInstructors = (instructorUsers || []).map(user => ({
+        instructorId: user.user_id || user.id,
+        user: user,
+        department: { name: 'General' } // Departments deprecated
+      }));
       
       setInstructors(transformedInstructors);
       setError(null);
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "Failed to load instructors. Please try again later.";
+      const errorMessage = err.message || "Failed to load instructors. Please try again later.";
       console.error("Error fetching instructors:", errorMessage, err);
       setError(errorMessage);
       setInstructors([]);
@@ -72,36 +64,43 @@ function ManageInstructors() {
     }
   };
 
-  // Function to fetch departments
+  // Function to fetch departments (deprecated)
   const fetchDepartments = async () => {
     try {
-      const response = await adminService.getAllDepartments();
-      setDepartments(response.data || []);
+      // Departments are deprecated in new structure
+      setDepartments([]);
     } catch (err) {
-      const errorMessage = err.response?.data?.message || "Failed to load departments";
-      console.error("Error fetching departments:", errorMessage, err);
+      console.error("Error fetching departments:", err);
       setDepartments([]);
     }
   };
 
-  // Function to fetch courses
+  // Function to fetch courses (now subjects)
   const fetchCourses = async () => {
     try {
-      const response = await adminService.getAllCourses();
-      setCourses(response.data || []);
+      // Fetch subjects as replacement for courses
+      const subjects = await supabaseService.getSubjectsBySchool(null);
+      setCourses(subjects || []);
     } catch (err) {
-      console.error("Error fetching courses:", err);
+      console.error("Error fetching courses (subjects):", err);
       setCourses([]);
     }
   };
 
-  // Function to fetch instructor courses
+  // Function to fetch instructor courses (now classes/subjects)
   const fetchInstructorCourses = async (instructorId) => {
     try {
-      const response = await adminService.getInstructorCourses(instructorId);
-      return response.data || [];
+      // Fetch classes assigned to this instructor
+      const classes = await supabaseService.getClassesByTeacher(instructorId);
+      // Transform to legacy course format
+      const coursesData = (classes || []).map(cls => ({
+        courseId: cls.class_id,
+        courseName: cls.class_name,
+        code: `CLS${cls.class_id}`
+      }));
+      return coursesData;
     } catch (error) {
-      console.error('Error fetching instructor courses:', error);
+      console.error('Error fetching instructor courses (classes):', error);
       return [];
     }
   };
@@ -133,30 +132,21 @@ function ManageInstructors() {
 
   const assignCourseToInstructor = async (courseId) => {
     try {
-      const instructorId = selectedInstructor.instructorId || selectedInstructor.user?.userId;
-      await adminService.assignInstructorToCourse(instructorId, courseId, 'PRIMARY');
-      setSuccessMessage('Course assigned successfully!');
+      setSuccessMessage('Course assignment is deprecated. Please use Class-Subject Assignment instead.');
       setShowCourseModal(false);
-      // Refresh courses for this instructor
-      const courses = await fetchInstructorCourses(instructorId);
-      setInstructorCourses(prev => ({ ...prev, [instructorId]: courses }));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (error) {
-      setError(error.response?.data?.error || 'Failed to assign course');
+      setError('Course assignment is deprecated. Use /admin/class-subject-assignment instead.');
     }
   };
 
   const removeCourseFromInstructor = async (instructorId, courseId) => {
-    if (window.confirm('Are you sure you want to remove this course assignment?')) {
+    if (window.confirm('Course assignment removal is deprecated. Use Class-Subject Assignment page instead.')) {
       try {
-        await adminService.removeInstructorFromCourse(instructorId, courseId);
-        setSuccessMessage('Course removed successfully!');
-        // Refresh courses for this instructor
-        const courses = await fetchInstructorCourses(instructorId);
-        setInstructorCourses(prev => ({ ...prev, [instructorId]: courses }));
+        setSuccessMessage('Course assignment is deprecated. Use Class-Subject Assignment instead.');
         setTimeout(() => setSuccessMessage(''), 3000);
       } catch (error) {
-        setError(error.response?.data?.error || 'Failed to remove course');
+        setError('Course assignment is deprecated.');
         setTimeout(() => setError(''), 3000);
       }
     }
@@ -211,7 +201,8 @@ function ManageInstructors() {
           departmentId: currentInstructor.departmentId
         };
         
-        await api.put(`users/${currentInstructor.userId}`, updateData);
+        // Update user in Supabase
+        await supabaseService.updateUserProfile(currentInstructor.userId, updateData);
         
         // Department is already updated in the user record above
         
@@ -220,14 +211,27 @@ function ManageInstructors() {
         
         setSuccessMessage("Instructor updated successfully!");
       } else {
-        // Create new instructor user
-        await api.post('users', {
-          name: `${currentInstructor.firstName} ${currentInstructor.lastName}`,
+        // Create new instructor user using Supabase Auth
+        const { supabase } = await import('../../config/supabase');
+        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
           email: currentInstructor.email,
           password: currentInstructor.password,
+          email_confirm: true,
+          user_metadata: {
+            name: `${currentInstructor.firstName} ${currentInstructor.lastName}`,
+            role: 'INSTRUCTOR'
+          }
+        });
+        
+        if (authError) throw authError;
+        
+        // Create user profile in users table
+        await supabase.from('users').insert({
+          id: authData.user.id,
+          email: currentInstructor.email,
+          name: `${currentInstructor.firstName} ${currentInstructor.lastName}`,
           role: 'INSTRUCTOR',
-          isActive: currentInstructor.isActive,
-          departmentId: currentInstructor.departmentId
+          is_active: currentInstructor.isActive
         });
         
         setSuccessMessage("Instructor created successfully!");
@@ -257,11 +261,8 @@ function ManageInstructors() {
     try {
       const userId = instructor.user.userId;
       
-      if (newStatus) {
-        await adminService.activateUser(userId);
-      } else {
-        await adminService.deactivateUser(userId);
-      }
+      // Update user status in Supabase
+      await supabaseService.updateUserProfile(userId, { is_active: newStatus });
       
       // Update the instructor in the local state immediately
       const targetUserId = instructor.user?.userId || instructor.userId;
