@@ -154,7 +154,14 @@ function EnhancedCourseManagement() {
 
   const handleSaveEdit = async () => {
     try {
-      const response = await api.put(`/courses/${editingCourse.id}`, editFormData);
+      // Update subject instead of course (deprecated)
+      const subjectData = {
+        subject_name: editFormData.title,
+        subject_code: editFormData.code,
+        description: editFormData.description,
+        is_active: editFormData.isActive !== false
+      };
+      const response = await supabaseService.updateSubject(editingCourse.id, subjectData);
       setCourses(prev => prev.map(course => 
         course.id === editingCourse.id ? response.data : course
       ));

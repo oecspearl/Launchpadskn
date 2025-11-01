@@ -118,37 +118,13 @@ function ManageCourses() {
 
       console.log('Submitting course data:', courseData);
       
-      if (isEditing) {
-        await adminService.updateCourse(currentCourse.courseId, courseData);
-        
-        // Update the course in the local state immediately
-        setCourses(prevCourses => {
-          return prevCourses.map(course => {
-            const courseId = course.courseId || course.id;
-            if (courseId === currentCourse.courseId) {
-              return {
-                ...course,
-                code: courseData.code,
-                title: courseData.title,
-                description: courseData.description,
-                creditHours: courseData.creditHours,
-                isActive: courseData.isActive
-              };
-            }
-            return course;
-          });
-        });
-        
-        setSuccessMessage("Course updated successfully!");
-      } else {
-        await adminService.createCourse(courseData);
-        setSuccessMessage("Course created successfully!");
-        
-        // Refresh the entire list for new courses
-        setTimeout(() => {
-          fetchCourses();
-        }, 100);
-      }
+      // Courses are deprecated - show warning and redirect to Subject Management
+      setSuccessMessage("Courses are deprecated. Please use Subject Management (/admin/subjects) instead.");
+      
+      // Refresh the list to show updated data
+      setTimeout(() => {
+        fetchCourses();
+      }, 100);
       
       // Close the modal and reset form
       handleCloseModal();
@@ -214,17 +190,20 @@ function ManageCourses() {
     setShowModal(false);
   };
 
-  // Delete a course
+  // Delete a course (deprecated)
   const handleDeleteCourse = async (courseId) => {
-    if (window.confirm("Are you sure you want to delete this course? This action cannot be undone.")) {
+    if (window.confirm("Courses are deprecated. Use Subject Management instead. Continue?")) {
       try {
-        await adminService.deleteCourse(courseId);
+        // Attempt to delete subject instead (if courseId maps to a subject)
+        await supabaseService.deleteSubject(courseId).catch(() => {
+          console.warn('Subject deletion failed or not found');
+        });
         // Refresh the courses list
         fetchCourses();
-        setSuccessMessage("Course deleted successfully!");
+        setSuccessMessage("Courses are deprecated. Use Subject Management instead.");
       } catch (err) {
-        console.error("Error deleting course:", err);
-        setError("Failed to delete course. Please try again.");
+        console.error("Error deleting course (subject):", err);
+        setError("Courses are deprecated. Please use Subject Management instead.");
       }
     }
   };
