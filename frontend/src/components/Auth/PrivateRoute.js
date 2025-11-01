@@ -4,11 +4,29 @@ import { useAuth } from '../../contexts/AuthContextSupabase';
 
 function PrivateRoute({ children, allowedRoles }) {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const [loadingTimeout, setLoadingTimeout] = React.useState(false);
+
+  // Timeout protection: if isLoading is true for more than 3 seconds, force it to false
+  React.useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        console.warn('[PrivateRoute] Loading timeout - forcing display');
+        setLoadingTimeout(true);
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [isLoading]);
 
   // Show loading indicator while authentication state is being determined
-  if (isLoading) {
+  // But timeout after 3 seconds to prevent infinite loading
+  if (isLoading && !loadingTimeout) {
     return <div>Loading...</div>;
   }
+  
+  // If timeout occurred, treat as not loading and proceed with checks
 
   // Check if user is authenticated
   if (!isAuthenticated) {

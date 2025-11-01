@@ -47,11 +47,24 @@ export function AuthProvider({ children }) {
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('[AuthContext] SIGNED_IN event, loading profile for:', session.user.email);
           setIsLoading(true); // Set loading while fetching profile
+          
+          // Timeout protection: force loading to false after 5 seconds
+          const timeout = setTimeout(() => {
+            console.warn('[AuthContext] Profile loading timeout, forcing isLoading to false');
+            setIsLoading(false);
+          }, 5000);
+          
           try {
             await loadUserProfile(session.user.id);
+            clearTimeout(timeout);
           } catch (error) {
             console.error('[AuthContext] Error loading profile after SIGNED_IN:', error);
+            clearTimeout(timeout);
             setIsLoading(false); // Stop loading on error
+          } finally {
+            // Ensure loading is always cleared
+            clearTimeout(timeout);
+            setIsLoading(false);
           }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
@@ -65,16 +78,28 @@ export function AuthProvider({ children }) {
           if (session.access_token) {
             localStorage.setItem('token', session.access_token);
           }
-          await loadUserProfile(session.user.id);
+          await loadUserProfile(session.user.id).catch(() => {
+            // Ensure loading is cleared even on error
+            setIsLoading(false);
+          });
         }
       }
     );
 
     initializeAuth();
 
+    // Safety timeout: force loading to false after 10 seconds max
+    const globalTimeout = setTimeout(() => {
+      if (isLoading) {
+        console.warn('[AuthContext] Global timeout - forcing isLoading to false');
+        setIsLoading(false);
+      }
+    }, 10000);
+
     // Cleanup subscription on unmount
     return () => {
       subscription.unsubscribe();
+      clearTimeout(globalTimeout);
     };
   }, []);
 

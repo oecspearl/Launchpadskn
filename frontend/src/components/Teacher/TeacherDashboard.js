@@ -32,15 +32,27 @@ function TeacherDashboard() {
   // Fetch teacher data
   useEffect(() => {
     console.log('[TeacherDashboard] useEffect triggered, user:', user);
+    
+    // Always set a maximum timeout to prevent infinite loading
+    const maxTimeout = setTimeout(() => {
+      console.warn('[TeacherDashboard] Max timeout reached, stopping loading');
+      setIsLoading(false);
+    }, 5000);
+    
     if (user && (user.userId || user.id)) {
-      fetchTeacherData();
+      fetchTeacherData().finally(() => {
+        clearTimeout(maxTimeout);
+      });
     } else {
-      // If no user, stop loading after timeout
+      // If no user, stop loading after shorter timeout
       setTimeout(() => {
         console.warn('[TeacherDashboard] No user after timeout, stopping loading');
         setIsLoading(false);
+        clearTimeout(maxTimeout);
       }, 2000);
     }
+    
+    return () => clearTimeout(maxTimeout);
   }, [user]);
   
   const fetchTeacherData = async () => {

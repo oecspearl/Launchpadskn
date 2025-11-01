@@ -35,15 +35,27 @@ function StudentDashboard() {
   // Fetch student data
   useEffect(() => {
     console.log('[StudentDashboard] useEffect triggered, user:', user);
+    
+    // Always set a maximum timeout to prevent infinite loading
+    const maxTimeout = setTimeout(() => {
+      console.warn('[StudentDashboard] Max timeout reached, stopping loading');
+      setIsLoading(false);
+    }, 5000);
+    
     if (user && (user.userId || user.id)) {
-      fetchStudentData();
+      fetchStudentData().finally(() => {
+        clearTimeout(maxTimeout);
+      });
     } else {
-      // If no user, stop loading after timeout
+      // If no user, stop loading after shorter timeout
       setTimeout(() => {
         console.warn('[StudentDashboard] No user after timeout, stopping loading');
         setIsLoading(false);
+        clearTimeout(maxTimeout);
       }, 2000);
     }
+    
+    return () => clearTimeout(maxTimeout);
   }, [user]);
   
   const fetchStudentData = async () => {
@@ -148,6 +160,8 @@ function StudentDashboard() {
     } catch (err) {
       console.error('Error fetching student data:', err);
       // Show dashboard even with errors - just show empty state
+      setIsLoading(false);
+      setError(null);
       setError(null); // Don't show error - just show empty dashboard
       setIsLoading(false);
     }
