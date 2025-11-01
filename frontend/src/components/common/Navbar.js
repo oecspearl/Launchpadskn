@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContextSupabase';
 import FlagLogo from './FlagLogo';
 
 function AppNavbar() {
-  const { user, logout } = useAuth();
+  const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
 
   // Determine dashboard route based on user role
@@ -45,10 +45,10 @@ function AppNavbar() {
         {/* Brand/Logo */}
         <Navbar.Brand 
           as={Link} 
-          to={user && user.role ? getDashboardRoute() : '/'} 
+          to={user && isAuthenticated && user.role ? getDashboardRoute() : '/'} 
           className="d-flex align-items-center"
           onClick={(e) => {
-            const route = user && user.role ? getDashboardRoute() : '/';
+            const route = user && isAuthenticated && user.role ? getDashboardRoute() : '/';
             if (route && (route === '/ldashboard' || route.includes('ldashboard'))) {
               e.preventDefault();
               console.error('[Navbar] Invalid route detected:', route);
@@ -63,7 +63,7 @@ function AppNavbar() {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
 
         <Navbar.Collapse id="basic-navbar-nav">
-          {user ? (
+          {user && isAuthenticated ? (
             // Authenticated user navigation
             <Nav className="ms-auto align-items-center">
               {/* Dashboard link based on role */}
@@ -125,7 +125,7 @@ function AppNavbar() {
               </NavDropdown>
             </Nav>
           ) : (
-            // Unauthenticated user navigation
+            // Unauthenticated user navigation - only show Login/Register when not authenticated
             <Nav className="ms-auto">
               <Nav.Link as={Link} to="/login" className="me-3">
                 Login
