@@ -103,29 +103,47 @@ function AdminDashboard() {
   useEffect(() => {
     console.log('[AdminDashboard] useEffect triggered, user:', user);
     
+    let isMounted = true;
+    
     // Always stop loading after max 5 seconds, even if fetch fails
     const timeoutId = setTimeout(() => {
-      console.warn('[AdminDashboard] Timeout reached, stopping loading');
-      if (isLoading) {
+      console.warn('[AdminDashboard] Timeout reached, forcing dashboard to show');
+      if (isMounted) {
         setIsLoading(false);
-        setError(null); // Don't show error, just show empty dashboard
+        setError(null);
+        // Set default stats if not already set
+        setStats(prev => prev || {
+          totalUsers: 0,
+          totalCourses: 0,
+          totalInstructors: 0,
+          totalStudents: 0,
+          recentActivity: [],
+          pendingRequests: []
+        });
       }
     }, 5000);
     
     if (user) {
       fetchDashboardStats().finally(() => {
-        clearTimeout(timeoutId);
+        if (isMounted) {
+          clearTimeout(timeoutId);
+        }
       });
     } else {
       // If no user, stop loading after a shorter timeout
       setTimeout(() => {
         console.warn('[AdminDashboard] No user after timeout, stopping loading');
-        setIsLoading(false);
-        clearTimeout(timeoutId);
+        if (isMounted) {
+          setIsLoading(false);
+          clearTimeout(timeoutId);
+        }
       }, 2000);
     }
     
-    return () => clearTimeout(timeoutId);
+    return () => {
+      isMounted = false;
+      clearTimeout(timeoutId);
+    };
   }, [user]);
 
   // Periodic refresh every 30 seconds for real-time updates
