@@ -495,6 +495,146 @@ class SupabaseService {
     }
   }
 
+  /**
+   * Get recent activity for dashboard
+   * Fetches recent user registrations, subject/class/form creations
+   */
+  async getRecentActivity(limit = 10) {
+    try {
+      console.log('[supabaseService] getRecentActivity called');
+      
+      // Get recent users (last 7 days)
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      const [
+        recentUsersResult,
+        recentSubjectsResult,
+        recentClassesResult,
+        recentFormsResult
+      ] = await Promise.allSettled([
+        supabase
+          .from('users')
+          .select('user_id, email, name, role, created_at')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(limit),
+        supabase
+          .from('subjects')
+          .select('subject_id, subject_name, created_at')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(limit),
+        supabase
+          .from('classes')
+          .select('class_id, class_name, created_at')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(limit),
+        supabase
+          .from('forms')
+          .select('form_id, form_number, form_name, created_at')
+          .gte('created_at', sevenDaysAgo.toISOString())
+          .order('created_at', { ascending: false })
+          .limit(limit)
+      ]);
+      
+      const activities = [];
+      
+      // Process recent users
+      if (recentUsersResult.status === 'fulfilled' && recentUsersResult.value.data) {
+        recentUsersResult.value.data.forEach(user => {
+          const roleText = user.role === 'ADMIN' ? 'admin' : 
+                          user.role === 'INSTRUCTOR' ? 'instructor' : 
+                          'student';
+          activities.push({
+            id: `user-${user.user_id}`,
+            type: 'user',
+            user: user.name || user.email,
+            action: 'registered as',
+            target: roleText,
+            time: this.formatRelativeTime(user.created_at),
+            timestamp: new Date(user.created_at).getTime()
+          });
+        });
+      }
+      
+      // Process recent subjects
+      if (recentSubjectsResult.status === 'fulfilled' && recentSubjectsResult.value.data) {
+        recentSubjectsResult.value.data.forEach(subject => {
+          activities.push({
+            id: `subject-${subject.subject_id}`,
+            type: 'subject',
+            user: 'Admin',
+            action: 'created subject',
+            target: subject.subject_name,
+            time: this.formatRelativeTime(subject.created_at),
+            timestamp: new Date(subject.created_at).getTime()
+          });
+        });
+      }
+      
+      // Process recent classes
+      if (recentClassesResult.status === 'fulfilled' && recentClassesResult.value.data) {
+        recentClassesResult.value.data.forEach(cls => {
+          activities.push({
+            id: `class-${cls.class_id}`,
+            type: 'class',
+            user: 'Admin',
+            action: 'created class',
+            target: cls.class_name,
+            time: this.formatRelativeTime(cls.created_at),
+            timestamp: new Date(cls.created_at).getTime()
+          });
+        });
+      }
+      
+      // Process recent forms
+      if (recentFormsResult.status === 'fulfilled' && recentFormsResult.value.data) {
+        recentFormsResult.value.data.forEach(form => {
+          activities.push({
+            id: `form-${form.form_id}`,
+            type: 'form',
+            user: 'Admin',
+            action: 'created form',
+            target: form.form_name || `Form ${form.form_number}`,
+            time: this.formatRelativeTime(form.created_at),
+            timestamp: new Date(form.created_at).getTime()
+          });
+        });
+      }
+      
+      // Sort by timestamp and limit
+      activities.sort((a, b) => b.timestamp - a.timestamp);
+      return activities.slice(0, limit);
+      
+    } catch (error) {
+      console.error('[supabaseService] Error in getRecentActivity:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Format timestamp to relative time (e.g., "2 hours ago")
+   */
+  formatRelativeTime(timestamp) {
+    if (!timestamp) return 'N/A';
+    
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now - time;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
+    if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+    if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+    
+    return time.toLocaleDateString();
+  }
+
   // ============================================
   // HIERARCHICAL STRUCTURE - FORMS
   // ============================================

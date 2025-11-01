@@ -65,16 +65,25 @@ function AdminDashboard() {
           requestedOn: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate).toLocaleDateString() : 'N/A'
         }));
         
+        // Get recent activity from Supabase
+        let recentActivity = [];
+        try {
+          recentActivity = await supabaseService.getRecentActivity(10);
+          console.log('[AdminDashboard] Recent activity loaded:', recentActivity.length, 'items');
+        } catch (activityError) {
+          console.warn('[AdminDashboard] Could not load recent activity:', activityError);
+          // Use empty array on error
+        }
+        
         const enhancedData = {
           totalUsers: data?.totalUsers || 0,
           totalCourses: data?.totalSubjects || data?.totalCourses || 0, // Using subjects as courses for now
           totalInstructors: data?.totalInstructors || 0,
           totalStudents: data?.totalStudents || 0,
           pendingRequests,
-          recentActivity: [
-            { id: 1, type: 'enrollment', user: 'John Doe', action: 'enrolled in', target: 'Introduction to Computer Science', time: '2 hours ago' },
-            { id: 2, type: 'course', user: 'Jane Smith', action: 'created a new course', target: 'Advanced Mathematics', time: '1 day ago' },
-            { id: 3, type: 'user', user: 'Admin', action: 'approved instructor account for', target: 'Dr. Robert Johnson', time: '2 days ago' }
+          recentActivity: recentActivity.length > 0 ? recentActivity : [
+            // Fallback message if no activity
+            { id: 'no-activity', type: 'info', user: 'System', action: 'No recent activity', target: 'Start by creating forms, classes, and subjects', time: 'now' }
           ]
         };
         
@@ -308,7 +317,11 @@ function AdminDashboard() {
             </Row>
 
             {/* Quick access cards */}
-            <h5 className="mb-3">Quick Access</h5>
+            <Row className="g-4 mb-4">
+              <Col>
+                <h5 className="mb-3">Quick Access</h5>
+              </Col>
+            </Row>
             <Row className="g-4 mb-4">
               <Col md={4}>
                 <Card className="h-100 shadow-sm">
@@ -361,6 +374,56 @@ function AdminDashboard() {
                     <h5 className="card-title">Manage Institutions</h5>
                     <p className="card-text">Add, edit, or manage educational institutions.</p>
                     <Button onClick={() => setActiveTab('institutions')} variant="secondary">Go to Institutions</Button>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Recent Activity Section */}
+            <Row className="g-4">
+              <Col>
+                <h5 className="mb-3">Recent Activity</h5>
+              </Col>
+            </Row>
+            <Row>
+              <Col>
+                <Card className="shadow-sm">
+                  <Card.Body>
+                    {stats.recentActivity && stats.recentActivity.length > 0 ? (
+                      <div className="activity-timeline">
+                        {stats.recentActivity.map((activity, index) => (
+                          <div key={activity.id || index} className="activity-item">
+                            <div 
+                              className={`activity-icon ${
+                                activity.type === 'user' ? 'bg-primary' :
+                                activity.type === 'subject' ? 'bg-success' :
+                                activity.type === 'class' ? 'bg-info' :
+                                activity.type === 'form' ? 'bg-warning' :
+                                activity.type === 'info' ? 'bg-secondary' :
+                                'bg-secondary'
+                              }`}
+                            >
+                              {activity.type === 'user' ? <FaUserGraduate /> :
+                               activity.type === 'subject' ? <FaBook /> :
+                               activity.type === 'class' ? <FaUsers /> :
+                               activity.type === 'form' ? <FaChalkboardTeacher /> :
+                               <FaBell />}
+                            </div>
+                            <div className="activity-content">
+                              <p className="mb-0">
+                                <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
+                              </p>
+                              <small className="text-muted">{activity.time}</small>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <FaBell className="text-muted mb-2" size={32} />
+                        <p className="text-muted mb-0">No recent activity</p>
+                      </div>
+                    )}
                   </Card.Body>
                 </Card>
               </Col>
