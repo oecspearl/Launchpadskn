@@ -88,14 +88,20 @@ export function AuthProvider({ children }) {
       console.error('[AuthContext] No session available:', sessionError);
       setUser(null);
       setIsAuthenticated(false);
+      setIsLoading(false);
       return;
     }
     
     console.log('[AuthContext] Session found, email:', session.user.email);
     
     try {
-      // Try to get user profile from users table
-      const profile = await supabaseService.getUserProfile(userId);
+      // Try to get user profile from users table with timeout
+      const profilePromise = supabaseService.getUserProfile(userId);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+      );
+      
+      const profile = await Promise.race([profilePromise, timeoutPromise]);
       console.log('[AuthContext] Profile found in database:', profile);
       
       // Ensure role is set and valid
@@ -125,6 +131,7 @@ export function AuthProvider({ children }) {
       
       setUser(userData);
       setIsAuthenticated(true);
+      setIsLoading(false);
       console.log('[AuthContext] User profile loaded, user set:', { 
         role: userData.role, 
         email: userData.email,
@@ -132,12 +139,12 @@ export function AuthProvider({ children }) {
         finalRole: finalRole
       });
     } catch (error) {
-      console.warn('[AuthContext] Profile not found in database, using fallback:', error);
+      console.warn('[AuthContext] Profile not found in database or timeout, using fallback:', error);
       
-      // Profile doesn't exist - create minimal user from auth session
+      // Profile doesn't exist or timed out - create minimal user from auth session
       // This ensures redirect can still happen
       const email = session.user.email;
-      const isAdmin = email && email.includes('admin');
+      const isAdmin = email && email.toLowerCase().includes('admin');
       const userRole = session.user.user_metadata?.role || (isAdmin ? 'ADMIN' : 'STUDENT');
       
       // Ensure role is valid
@@ -161,6 +168,7 @@ export function AuthProvider({ children }) {
       
       setUser(userData);
       setIsAuthenticated(true);
+      setIsLoading(false);
       console.log('[AuthContext] Set fallback user from auth session:', { 
         role: userData.role, 
         email: userData.email 
@@ -187,6 +195,9 @@ export function AuthProvider({ children }) {
       } catch (createError) {
         console.warn('[AuthContext] Error creating profile:', createError);
       }
+      
+      // Ensure loading is set to false
+      setIsLoading(false);
     }
   };
 
