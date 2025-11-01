@@ -45,14 +45,16 @@ import CourseDetails from './components/common/CourseDetails';
 import Profile from './components/common/Profile';
 import ChangePassword from './components/Auth/ChangePassword';
 import FirstTimeLoginCheck from './components/Auth/FirstTimeLoginCheck';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="App">
-          <Navbar />
-          <Container className="mt-4">
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="App">
+            <Navbar />
+            <Container className="mt-4">
             <Routes>
               {/* Public Routes */}
               <Route path="/login" element={<Login />} />
@@ -318,6 +320,7 @@ function App() {
         </div>
       </Router>
     </AuthProvider>
+    </ErrorBoundary>
   );
 }
 
