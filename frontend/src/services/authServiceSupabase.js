@@ -128,6 +128,23 @@ class AuthService {
         }
       }
       
+      // Ensure role is uppercase and valid
+      const validRoles = ['ADMIN', 'INSTRUCTOR', 'STUDENT'];
+      const normalizedRole = (userData.role || '').toUpperCase().trim();
+      userData.role = validRoles.includes(normalizedRole) ? normalizedRole : 'STUDENT';
+      
+      // Special handling for admin emails
+      if (userData.email.toLowerCase().includes('admin') && userData.role !== 'ADMIN') {
+        console.warn('[AuthService] Admin email detected but role is not ADMIN, fixing...');
+        userData.role = 'ADMIN';
+      }
+      
+      console.log('[AuthService] Final userData:', { 
+        email: userData.email, 
+        role: userData.role,
+        userId: userData.userId 
+      });
+      
       // Store in localStorage for compatibility with existing code
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('token', authData.session.access_token);
