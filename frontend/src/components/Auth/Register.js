@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { Form, Button, Container, Row, Col, Card, Alert, InputGroup } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaLock, FaUserGraduate, FaChalkboardTeacher, FaUserPlus } from 'react-icons/fa';
-import AuthService from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContextSupabase';
 
 function Register() {
+  const { register: registerUser } = useAuth();
+  const navigate = useNavigate();
+  
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -20,8 +23,6 @@ function Register() {
   const [errors, setErrors] = useState({});
   const [apiError, setApiError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const navigate = useNavigate();
 
   const validateForm = () => {
     const newErrors = {};
@@ -80,13 +81,14 @@ function Register() {
     }
 
     setIsLoading(true);
+    setApiError('');
 
     try {
-      // Remove confirmPassword before sending to backend
+      // Remove confirmPassword before sending
       const { confirmPassword, ...registrationData } = formData;
       
-      // Call registration API with all fields
-      await AuthService.register(
+      // Call Supabase registration via AuthContext
+      const result = await registerUser(
         registrationData.name, 
         registrationData.email, 
         registrationData.password, 
@@ -97,16 +99,39 @@ function Register() {
         registrationData.emergencyContact
       );
       
+      console.log('Registration successful:', result);
+      
       // Redirect to login with success message
       navigate('/login', { 
         state: { 
-          message: 'Registration successful! Please log in with your new account.' 
+          message: result?.message || 'Registration successful! Please check your email to verify your account, then log in.' 
         } 
       });
     } catch (error) {
       // Handle registration errors
       console.error('Registration error:', error);
-      setApiError(error.response?.data?.error || 'Registration failed. Please try again.');
+      
+      // Extract error message from Supabase error
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
+      // Common Supabase error messages
+      if (errorMessage.includes('already registered') || errorMessage.includes('already exists')) {
+        errorMessage = 'This email is already registered. Please use a different email or try logging in.';
+      } else if (errorMessage.includes('Password')) {
+        errorMessage = 'Password does not meet requirements. Please use a stronger password.';
+      } else if (errorMessage.includes('email')) {
+        errorMessage = 'Invalid email address. Please enter a valid email.';
+      }
+      
+      setApiError(errorMessage);
       setIsLoading(false);
     }
   };
