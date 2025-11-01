@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Table, Button, Badge, Card, Alert, Spinner, Modal, Form, ButtonGroup } from 'react-bootstrap';
 import { FaDownload, FaTrash, FaEdit, FaFile, FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFileAlt } from 'react-icons/fa';
-import axios from 'axios';
+import supabaseService from '../../services/supabaseService';
 import { formatDistanceToNow } from 'date-fns';
 
-const FileList = ({ courseId, fileType, refreshTrigger }) => {
+const FileList = ({ courseId, classSubjectId, fileType, refreshTrigger }) => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -21,39 +21,33 @@ const FileList = ({ courseId, fileType, refreshTrigger }) => {
     setError('');
 
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
+      // List files from Supabase Storage
+      const bucketName = 'lesson-files';
+      const folderPath = classSubjectId 
+        ? `class-subjects/${classSubjectId}`
+        : 'general';
       
-      if (!token) {
-        throw new Error('Authentication token not found. Please login again.');
-      }
+      const filesData = await supabaseService.listFiles(bucketName, folderPath);
       
-      let url;
-      if (courseId) {
-        url = `http://localhost:9090/files/course/${courseId}`;
-        if (fileType) {
-          url += `?fileType=${fileType}`;
-        }
-      } else {
-        url = 'http://localhost:9090/files/my-files';
-      }
+      // Transform to expected format
+      const formattedFiles = (filesData || []).map((file, index) => ({
+        id: file.name || index,
+        name: file.name,
+        url: file.publicUrl || file.url,
+        fileType: fileType || file.name.split('.').pop(),
+        uploadedAt: file.createdAt || new Date().toISOString(),
+        size: file.size || 0
+      }));
 
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      setFiles(response.data);
+      setFiles(formattedFiles);
     } catch (error) {
       console.error('Error fetching files:', error);
-      setError(error.response?.data?.error || 
-               error.message || 
-               'Failed to load files. Please try again later.');
+      setError(error.message || 'Failed to load files. Please try again later.');
+      setFiles([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
-  }, [courseId, fileType]);
+  }, [classSubjectId, fileType]);
 
   // Fetch files when component mounts or refreshTrigger changes
   useEffect(() => {
@@ -73,18 +67,11 @@ const FileList = ({ courseId, fileType, refreshTrigger }) => {
 
   const handleDelete = async () => {
     try {
-      // Get token from localStorage
-      const token = localStorage.getItem('token');
+      // Delete file from Supabase Storage
+      const bucketName = 'lesson-files';
+      const filePath = fileToDelete.name || fileToDelete.id;
       
-      if (!token) {
-        throw new Error('Authentication token not found. Please login again.');
-      }
-      
-      await axios.delete(`http://localhost:9090/files/${fileToDelete.id}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      await supabaseService.deleteFile(bucketName, filePath);
 
       // Remove file from state
       setFiles(files.filter(file => file.id !== fileToDelete.id));
@@ -92,9 +79,7 @@ const FileList = ({ courseId, fileType, refreshTrigger }) => {
       setFileToDelete(null);
     } catch (error) {
       console.error('Error deleting file:', error);
-      setError(error.response?.data?.error || 
-               error.message || 
-               'Failed to delete file. Please try again later.');
+      setError(error.message || 'Failed to delete file. Please try again later.');
       setShowDeleteModal(false);
     }
   };

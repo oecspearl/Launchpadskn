@@ -1,3 +1,11 @@
+/**
+ * ⚠️ DEPRECATED: This service is no longer used.
+ * All API calls have been migrated to Supabase.
+ * Use `supabaseService.js` instead.
+ * 
+ * This file is kept for reference only.
+ */
+
 import axios from 'axios';
 
 const API_URL = 'http://localhost:8080/api/';

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Form, Button, ProgressBar, Alert, Card } from 'react-bootstrap';
 import { FaUpload, FaFileAlt, FaTrash } from 'react-icons/fa';
-import axios from 'axios';
+import supabaseService from '../../services/supabaseService';
 
-const FileUpload = ({ courseId, fileType, onUploadSuccess, isPublic = false }) => {
+const FileUpload = ({ courseId, classSubjectId, fileType, onUploadSuccess, isPublic = false }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
@@ -44,24 +44,35 @@ const FileUpload = ({ courseId, fileType, onUploadSuccess, isPublic = false }) =
         throw new Error('Authentication token not found. Please login again.');
       }
       
-      // Upload file with progress tracking
-      const response = await axios.post('http://localhost:9090/files/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`
-        },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
-        }
-      });
-
+      // Upload file to Supabase Storage
+      const bucketName = 'lesson-files'; // Or 'subject-resources' depending on context
+      const filePath = classSubjectId 
+        ? `class-subjects/${classSubjectId}/${Date.now()}-${selectedFile.name}`
+        : `general/${Date.now()}-${selectedFile.name}`;
+      
+      // Upload with progress tracking (Supabase doesn't natively support progress, so simulate)
+      setUploadProgress(10);
+      const uploadResult = await supabaseService.uploadFile(bucketName, filePath, selectedFile);
+      
+      // Simulate progress updates
+      for (let i = 20; i <= 90; i += 20) {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setUploadProgress(i);
+      }
+      
+      setUploadProgress(100);
       setSuccess('File uploaded successfully!');
       setSelectedFile(null);
       
       // Call the callback function if provided
-      if (onUploadSuccess) {
-        onUploadSuccess(response.data);
+      if (onUploadSuccess && uploadResult) {
+        onUploadSuccess({
+          id: uploadResult.path,
+          name: selectedFile.name,
+          url: uploadResult.url || uploadResult.publicUrl,
+          fileType: fileType,
+          uploadedAt: new Date().toISOString()
+        });
       }
     } catch (error) {
       console.error('Upload error:', error);

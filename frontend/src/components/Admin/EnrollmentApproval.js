@@ -5,7 +5,7 @@ import {
 } from 'react-bootstrap';
 import { FaCheck, FaTimes, FaEllipsisV, FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { adminService } from '../../services/adminService';
+import { Link } from 'react-router-dom';
 import NotificationToast from '../common/NotificationToast';
 
 function EnrollmentApproval() {
@@ -13,89 +13,42 @@ function EnrollmentApproval() {
   
   // State for enrollments and UI
   const [pendingEnrollments, setPendingEnrollments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [processingId, setProcessingId] = useState(null);
   const [notification, setNotification] = useState({ show: false, type: '', title: '', message: '' });
 
   // Fetch pending enrollments when component mounts
   useEffect(() => {
-    fetchPendingEnrollments();
+    // This component is deprecated - enrollments replaced by class assignments
+    setLoading(false);
+    setPendingEnrollments([]);
   }, []);
 
-  // Function to fetch pending enrollments
+  // Function to fetch pending enrollments - DEPRECATED
   const fetchPendingEnrollments = async () => {
-    setLoading(true);
-    try {
-      const data = await adminService.getPendingEnrollments();
-      setPendingEnrollments(data);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching pending enrollments:", err);
-      setError("Failed to load enrollment requests. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
+    // No longer used - students are assigned to classes directly
+    setPendingEnrollments([]);
   };
 
-  // Handle enrollment approval
+  // Handle enrollment approval - DEPRECATED
   const handleApproveEnrollment = async (enrollmentId) => {
-    setProcessingId(enrollmentId);
-    try {
-      await adminService.approveEnrollment(enrollmentId);
-      // Remove the approved enrollment from the list
-      setPendingEnrollments(pendingEnrollments.filter(e => e.enrollmentId !== enrollmentId));
-      setError(null);
-      setNotification({
-        show: true,
-        type: 'success',
-        title: 'Enrollment Approved',
-        message: 'Student enrollment has been approved successfully.'
-      });
-    } catch (err) {
-      console.error("Error approving enrollment:", err);
-      const errorMessage = "Failed to approve enrollment. Please try again.";
-      setError(errorMessage);
-      setNotification({
-        show: true,
-        type: 'error',
-        title: 'Approval Failed',
-        message: errorMessage
-      });
-    } finally {
-      setProcessingId(null);
-    }
+    setNotification({
+      show: true,
+      type: 'warning',
+      title: 'Feature Deprecated',
+      message: 'Course enrollment approval is no longer used. Students are assigned to classes through the Student Assignment page.'
+    });
   };
 
-  // Handle enrollment rejection
+  // Handle enrollment rejection - DEPRECATED
   const handleRejectEnrollment = async (enrollmentId) => {
-    if (window.confirm("Are you sure you want to reject this enrollment request?")) {
-      setProcessingId(enrollmentId);
-      try {
-        await adminService.rejectEnrollment(enrollmentId);
-        // Remove the rejected enrollment from the list
-        setPendingEnrollments(pendingEnrollments.filter(e => e.enrollmentId !== enrollmentId));
-        setError(null);
-        setNotification({
-          show: true,
-          type: 'warning',
-          title: 'Enrollment Rejected',
-          message: 'Student enrollment request has been rejected.'
-        });
-      } catch (err) {
-        console.error("Error rejecting enrollment:", err);
-        const errorMessage = "Failed to reject enrollment. Please try again.";
-        setError(errorMessage);
-        setNotification({
-          show: true,
-          type: 'error',
-          title: 'Rejection Failed',
-          message: errorMessage
-        });
-      } finally {
-        setProcessingId(null);
-      }
-    }
+    setNotification({
+      show: true,
+      type: 'warning',
+      title: 'Feature Deprecated',
+      message: 'Course enrollment rejection is no longer used. Students are assigned to classes through the Student Assignment page.'
+    });
   };
 
   // View student details
@@ -125,12 +78,25 @@ function EnrollmentApproval() {
 
   return (
     <Container fluid className="p-4">
+      <Alert variant="warning" className="mb-4">
+        <Alert.Heading>Legacy Feature - Deprecated</Alert.Heading>
+        <p className="mb-2">
+          <strong>Note:</strong> This component is for the old "course enrollment approval" model which has been replaced.
+        </p>
+        <p className="mb-2">
+          In the new hierarchical structure, students are assigned directly to classes by administrators.
+        </p>
+        <p className="mb-0">
+          Please use the <Link to="/admin/student-assignment">Student Assignment</Link> page to assign students to classes.
+        </p>
+      </Alert>
+      
       <Card className="shadow-sm">
         <Card.Header className="bg-white">
           <div className="d-flex justify-content-between align-items-center">
-            <h4 className="mb-0">Enrollment Requests</h4>
-            <Button variant="outline-primary" onClick={fetchPendingEnrollments}>
-              Refresh
+            <h4 className="mb-0">Enrollment Requests (Deprecated)</h4>
+            <Button variant="outline-primary" as={Link} to="/admin/student-assignment">
+              Go to Student Assignment
             </Button>
           </div>
         </Card.Header>

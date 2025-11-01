@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Alert } from 'react-bootstrap';
 import { FaSearch, FaUserGraduate, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEye, FaCheck, FaTimes } from 'react-icons/fa';
-import api from '../../services/api';
+import supabaseService from '../../services/supabaseService';
 import Breadcrumb from '../common/Breadcrumb';
 
 function StudentManagement() {
@@ -33,8 +33,21 @@ function StudentManagement() {
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/dashboard/students');
-      setStudents(response.data);
+      // Fetch students using Supabase
+      const studentsData = await supabaseService.getUsersByRole('STUDENT');
+      
+      // Transform to expected format
+      const formattedStudents = (studentsData || []).map(student => ({
+        userId: student.user_id || student.id,
+        name: student.name || student.email,
+        email: student.email,
+        isActive: student.is_active !== false,
+        phone: student.phone || '',
+        address: student.address || '',
+        dateOfBirth: student.date_of_birth || null
+      }));
+      
+      setStudents(formattedStudents);
     } catch (error) {
       setError('Failed to fetch students');
       console.error('Error fetching students:', error);
@@ -44,12 +57,8 @@ function StudentManagement() {
   };
 
   const fetchEnrollmentRequests = async () => {
-    try {
-      const response = await api.get('/enrollments/pending');
-      setEnrollmentRequests(response.data);
-    } catch (error) {
-      console.error('Error fetching enrollment requests:', error);
-    }
+    // Enrollments deprecated - replaced by class assignments
+    setEnrollmentRequests([]);
   };
 
   const filterStudents = () => {
@@ -77,27 +86,15 @@ function StudentManagement() {
   };
 
   const handleApproveEnrollment = async (enrollmentId) => {
-    try {
-      await api.put(`/enrollments/${enrollmentId}/approve`);
-      setSuccess('Enrollment approved successfully');
-      await fetchEnrollmentRequests();
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (error) {
-      setError('Failed to approve enrollment');
-      setTimeout(() => setError(''), 3000);
-    }
+    // Deprecated - use Student Assignment page instead
+    setError('Enrollment approval is deprecated. Please use Student Assignment page.');
+    setTimeout(() => setError(''), 3000);
   };
 
   const handleRejectEnrollment = async (enrollmentId) => {
-    try {
-      await api.put(`/enrollments/${enrollmentId}/reject`);
-      setSuccess('Enrollment rejected successfully');
-      await fetchEnrollmentRequests();
-      setTimeout(() => setSuccess(''), 3000);
-    } catch (error) {
-      setError('Failed to reject enrollment');
-      setTimeout(() => setError(''), 3000);
-    }
+    // Deprecated - use Student Assignment page instead
+    setError('Enrollment rejection is deprecated. Please use Student Assignment page.');
+    setTimeout(() => setError(''), 3000);
   };
 
   const getStatusBadge = (isActive) => {

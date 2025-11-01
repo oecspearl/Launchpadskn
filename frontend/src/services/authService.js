@@ -1,3 +1,11 @@
+/**
+ * ⚠️ DEPRECATED: This service is no longer used.
+ * Auth has been migrated to Supabase Auth.
+ * Use `authServiceSupabase.js` and `AuthContextSupabase.js` instead.
+ * 
+ * This file is kept for reference only.
+ */
+
 import axios from 'axios';
 
 const API_URL = 'http://localhost:8080/api/auth/';

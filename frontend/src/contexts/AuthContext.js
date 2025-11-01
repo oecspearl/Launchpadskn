@@ -1,3 +1,11 @@
+/**
+ * ⚠️ DEPRECATED: This context is no longer used.
+ * Auth has been migrated to Supabase Auth.
+ * Use `AuthContextSupabase.js` instead.
+ * 
+ * This file is kept for reference only.
+ */
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AuthService from '../services/authService';
 

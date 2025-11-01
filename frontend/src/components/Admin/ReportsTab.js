@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Alert, Badge, Table } from 'react-bootstrap';
 import { FaChartLine, FaUsers, FaBook, FaDownload, FaServer, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
-import analyticsService from '../../services/analyticsService';
+import supabaseService from '../../services/supabaseService';
 import Breadcrumb from '../common/Breadcrumb';
 
 function ReportsTab() {
@@ -27,45 +27,43 @@ function ReportsTab() {
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      // Use mock data for now since analytics endpoints don't exist
-      const mockAnalytics = {
+      
+      // Fetch real data from Supabase
+      const stats = await supabaseService.getDashboardStats();
+      
+      // Get users by role
+      const usersByRole = {
+        ADMIN: stats.totalAdmins || 0,
+        INSTRUCTOR: stats.totalInstructors || 0,
+        STUDENT: stats.totalStudents || 0
+      };
+      
+      const analyticsData = {
         userTrends: {
-          totalUsers: 150,
-          activeUsers: 120,
-          recentUsers: 25,
-          monthlyRegistrations: {
-            '2024-01': 15,
-            '2024-02': 20,
-            '2024-03': 18
-          }
+          totalUsers: stats.totalUsers || 0,
+          activeUsers: stats.totalUsers || 0, // Assume all are active for now
+          recentUsers: 0, // Can be enhanced with date filtering
+          monthlyRegistrations: {} // Can be enhanced with date grouping
         },
-        usersByRole: {
-          'ADMIN': 5,
-          'INSTRUCTOR': 25,
-          'STUDENT': 120
-        },
+        usersByRole: usersByRole,
         courseTrends: {
-          totalCourses: 45,
-          activeCourses: 38,
-          recentCourses: 8,
-          monthlyCourses: {
-            '2024-01': 5,
-            '2024-02': 3,
-            '2024-03': 7
-          }
+          totalCourses: stats.totalSubjects || 0, // Subjects replaced courses
+          activeCourses: stats.totalSubjects || 0,
+          recentCourses: 0,
+          monthlyCourses: {}
         },
         enrollmentTrends: {
-          pendingEnrollments: 12
+          pendingEnrollments: 0 // Enrollments replaced by class assignments
         },
         systemHealth: {
           userService: 'UP',
           institutionService: 'UP',
-          courseService: 'UP',
+          courseService: 'UP', // Now Subjects
           timestamp: new Date().toISOString()
         }
       };
 
-      setAnalytics(mockAnalytics);
+      setAnalytics(analyticsData);
     } catch (error) {
       setError('Failed to fetch analytics data');
       console.error('Analytics error:', error);
@@ -76,10 +74,14 @@ function ReportsTab() {
 
   const handleExport = async (type, format) => {
     try {
-      const data = await analyticsService.exportData(type, format);
+      // Export analytics data to JSON
+      const exportData = {
+        ...analytics,
+        exportedAt: new Date().toISOString()
+      };
       
       if (format === 'json') {
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;

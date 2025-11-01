@@ -1,3 +1,11 @@
+/**
+ * ⚠️ DEPRECATED: This service is no longer used.
+ * Instructor operations have been migrated to Supabase.
+ * Use `supabaseService.js` instead.
+ * 
+ * This file is kept for reference only.
+ */
+
 import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';

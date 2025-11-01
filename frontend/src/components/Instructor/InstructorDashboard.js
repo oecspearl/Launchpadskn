@@ -8,16 +8,17 @@ import {
   FaBook, FaClipboardList, FaFileUpload, FaUser,
   FaGraduationCap, FaCalendarAlt, FaBell, FaEllipsisV
 } from 'react-icons/fa';
-import { commonService } from '../../services/api';
-import { instructorService } from '../../services/api';
+import { useAuth } from '../../contexts/AuthContextSupabase';
+import supabaseService from '../../services/supabaseService';
 import { useNavigate } from 'react-router-dom';
-import './InstructorDashboard.css'; // We'll create this file for custom styling
+import './InstructorDashboard.css';
 
 function InstructorDashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   
-  // State to store instructor's courses and assignments
-  const [courses, setCourses] = useState([]);
+  // State to store instructor's classes and assignments
+  const [classes, setClasses] = useState([]);
   const [pendingAssignments, setPendingAssignments] = useState([]);
   const [upcomingDeadlines, setUpcomingDeadlines] = useState([]);
   const [recentSubmissions, setRecentSubmissions] = useState([]);
@@ -32,59 +33,52 @@ function InstructorDashboard() {
   useEffect(() => {
     const fetchInstructorData = async () => {
       try {
-        // Fetch current user profile
-        const userProfileResponse = await commonService.getCurrentUserProfile();
-        const currentUser = userProfileResponse.data;
+        if (!user?.userId) {
+          setError('User not authenticated');
+          setIsLoading(false);
+          return;
+        }
         
-        // Fetch courses assigned to the instructor
-        const coursesData = await instructorService.getInstructorCourses();
+        // Fetch classes assigned to the instructor using new structure
+        const classesData = await supabaseService.getClassesByTeacher(user.userId);
         
-        // Fetch pending assignments
-        const pendingData = await instructorService.getPendingAssignments();
+        // Get subjects for those classes
+        const classesWithSubjects = await Promise.all(
+          (classesData || []).map(async (classItem) => {
+            const subjects = await supabaseService.getSubjectsByClass(classItem.class_id);
+            return { ...classItem, subjects };
+          })
+        );
         
-        // Set instructor data from current user
-        const instructorData = { department: { name: 'Computer Science' } };
+        // Fetch pending assessments (replaces assignments)
+        const assessments = await supabaseService.getAssessmentsByClassSubject(null); // Get all for now
+        const pendingData = (assessments || []).filter(a => !a.graded).slice(0, 10);
         
         // Update state with fetched data
-        setCourses(coursesData);
+        setClasses(classesWithSubjects);
         setPendingAssignments(pendingData || []);
         
-        // Generate upcoming deadlines from course data (placeholder logic)
-        const deadlines = coursesData.slice(0, 3).map((courseAssignment, index) => {
-          const course = courseAssignment.course || courseAssignment;
-          return {
-            id: course.id || course.courseId,
-            title: `${course.title || course.courseName} - Assignment ${index + 1}`,
-            dueDate: new Date(Date.now() + (index + 1) * 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            course: course.title || course.courseName,
-            submissionsReceived: Math.floor(Math.random() * 20) + 5,
-            totalStudents: Math.floor(Math.random() * 15) + 20
-          };
-        });
+        // Generate upcoming deadlines from assessments
+        const deadlines = (assessments || []).slice(0, 5).map((assessment) => ({
+          id: assessment.assessment_id,
+          title: assessment.title || 'Assessment',
+          dueDate: assessment.due_date,
+          course: assessment.subject_name || 'Subject',
+          submissionsReceived: 0, // Can be enhanced
+          totalStudents: 0 // Can be enhanced
+        }));
         setUpcomingDeadlines(deadlines);
         
-        // Generate sample submissions data
-        const submissions = coursesData.slice(0, 5).map((courseAssignment, index) => {
-          const course = courseAssignment.course || courseAssignment;
-          return {
-            id: index + 1,
-            studentName: `Student ${index + 1}`,
-            assignment: `Assignment ${index + 1}`,
-            course: course.title || course.courseName || 'Course',
-            submittedOn: new Date(Date.now() - index * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            status: 'pending'
-          };
-        });
-        setRecentSubmissions(submissions);
+        // Set recent submissions (empty for now - can be enhanced)
+        setRecentSubmissions([]);
         
-        // Set instructor profile with real data
+        // Set instructor profile with current user data
         setInstructorProfile({
-          name: currentUser.name,
-          department: instructorData?.department?.name || 'Computer Science',
-          courses: coursesData.length,
-          students: coursesData.reduce((total, course) => {
-            const courseObj = course.course || course;
-            return total + (courseObj.enrollmentCount || 25);
+          name: user.name,
+          department: 'General', // Can be enhanced with department lookup
+          classes: classesWithSubjects.length,
+          students: classesWithSubjects.reduce((total, classItem) => {
+            return total + (classItem.enrollment_count || 0);
           }, 0),
           avgRating: 4.8 // TODO: Get from ratings system when implemented
         });
@@ -227,8 +221,8 @@ function InstructorDashboard() {
                 
                 <div className="instructor-stats">
                   <div className="stat-item">
-                    <h6 className="stat-label">Courses</h6>
-                    <p className="stat-value">{instructorProfile.courses}</p>
+                    <h6 className="stat-label">Classes</h6>
+                    <p className="stat-value">{instructorProfile.classes}</p>
                   </div>
                   <div className="stat-item">
                     <h6 className="stat-label">Students</h6>
@@ -253,8 +247,8 @@ function InstructorDashboard() {
                         <FaBook />
                       </div>
                       <div className="ms-3">
-                        <h6 className="card-subtitle text-muted mb-1">My Courses</h6>
-                        <h3 className="card-title mb-0">{courses.length}</h3>
+                        <h6 className="card-subtitle text-muted mb-1">My Classes</h6>
+                        <h3 className="card-title mb-0">{classes.length}</h3>
                       </div>
                     </div>
                     <div className="mt-3">
@@ -307,51 +301,50 @@ function InstructorDashboard() {
           <Col>
             <Card className="border-0 shadow-sm">
               <Card.Header className="bg-white border-0 pt-4 d-flex justify-content-between align-items-center">
-                <h5 className="card-title mb-0">My Courses</h5>
-                <Link to="/instructor/courses" className="text-decoration-none">
+                <h5 className="card-title mb-0">My Classes</h5>
+                <Link to="/teacher/dashboard" className="text-decoration-none">
                   View All
                 </Link>
               </Card.Header>
               <Card.Body className="pt-0">
-                {courses.length === 0 ? (
-                  <Alert variant="info">No courses assigned</Alert>
+                {classes.length === 0 ? (
+                  <Alert variant="info">No classes assigned. Please contact administrator.</Alert>
                 ) : (
                   <div className="course-grid">
-                    {courses.slice(0, 3).map((courseAssignment, index) => {
-                      const course = courseAssignment.course || courseAssignment;
-                      const courseId = course.id || course.courseId;
-                      const courseTitle = course.title || course.courseName;
-                      const courseCode = course.code || course.courseCode || `CS${courseId}`;
+                    {classes.slice(0, 3).map((classItem, index) => {
+                      const classId = classItem.class_id;
+                      const className = classItem.class_name;
+                      const formName = classItem.form_name || `Form ${classItem.form_number}`;
                       
                       return (
-                        <Card key={courseId} className="course-card border-0 shadow-sm">
+                        <Card key={classId} className="course-card border-0 shadow-sm">
                           <Card.Body>
-                            <h5 className="course-title">{courseTitle}</h5>
-                            <p className="course-code text-muted">{courseCode}</p>
+                            <h5 className="course-title">{className}</h5>
+                            <p className="course-code text-muted">{formName}</p>
                             <div className="d-flex justify-content-between align-items-center mb-3">
                               <Badge bg="light" text="dark" className="px-3 py-2">
                                 <FaGraduationCap className="me-1" />
-                                {course.enrollmentCount || course.studentsCount || 25} Students
+                                {classItem.enrollment_count || 0} Students
                               </Badge>
                               <Badge 
-                                bg={course.isActive ? 'success' : 'secondary'} 
+                                bg={classItem.is_active !== false ? 'success' : 'secondary'} 
                                 className="px-3 py-2"
                               >
-                                {course.isActive ? 'Active' : 'Inactive'}
+                                {classItem.is_active !== false ? 'Active' : 'Inactive'}
                               </Badge>
                             </div>
                             <div className="mb-3">
-                              <Badge bg="light" text="dark" className="px-3 py-2">
-                                <FaCalendarAlt className="me-1" />
-                                {course.semester || 'Spring 2024'}
+                              <Badge bg="info" className="px-3 py-2">
+                                <FaBook className="me-1" />
+                                {classItem.subjects?.length || 0} Subjects
                               </Badge>
                             </div>
                             <Button 
                               variant="primary"
                               className="w-100"
-                              onClick={() => navigate(`/courses/${courseId}`)}
+                              onClick={() => navigate(`/teacher/classes/${classId}`)}
                             >
-                              View Course
+                              View Class
                             </Button>
                           </Card.Body>
                         </Card>

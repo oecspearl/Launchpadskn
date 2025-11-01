@@ -1,3 +1,11 @@
+/**
+ * ⚠️ DEPRECATED: This service is no longer used.
+ * Analytics have been migrated to Supabase.
+ * Use `supabaseService.js` instead.
+ * 
+ * This file is kept for reference only.
+ */
+
 import api from './api';
 
 class AnalyticsService {

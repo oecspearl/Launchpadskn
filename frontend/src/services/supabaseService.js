@@ -394,6 +394,46 @@ class SupabaseService {
   // ============================================
   
   /**
+   * List files in a Supabase Storage bucket/folder
+   */
+  async listFiles(bucket, folderPath = '') {
+    try {
+      const { data, error } = await supabase.storage
+        .from(bucket)
+        .list(folderPath, {
+          limit: 100,
+          offset: 0,
+          sortBy: { column: 'created_at', order: 'desc' }
+        });
+      
+      if (error) throw error;
+      
+      // Get public URLs for each file
+      const filesWithUrls = await Promise.all(
+        (data || []).map(async (file) => {
+          const { data: urlData } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(`${folderPath}/${file.name}`);
+          
+          return {
+            name: file.name,
+            size: file.metadata?.size || 0,
+            createdAt: file.created_at,
+            updatedAt: file.updated_at,
+            url: urlData.publicUrl,
+            publicUrl: urlData.publicUrl
+          };
+        })
+      );
+      
+      return filesWithUrls;
+    } catch (error) {
+      console.error('[supabaseService] Error listing files:', error);
+      return [];
+    }
+  }
+  
+  /**
    * Upload file to Supabase Storage
    */
   async uploadFile(bucket, filePath, file) {

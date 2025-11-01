@@ -5,11 +5,13 @@ import {
 } from 'react-bootstrap';
 import { FaPlus, FaEye, FaCheck, FaClock, FaTimes } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { studentService } from '../../services/studentService';
+import { useAuth } from '../../contexts/AuthContextSupabase';
+import supabaseService from '../../services/supabaseService';
 import NotificationToast from '../common/NotificationToast';
 
 function CourseRegistration() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [availableCourses, setAvailableCourses] = useState([]);
   const [myEnrollments, setMyEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,57 +22,25 @@ function CourseRegistration() {
   const [notification, setNotification] = useState({ show: false, type: '', title: '', message: '' });
 
   useEffect(() => {
-    fetchData();
+    // Show deprecation notice
+    setError("⚠️ This is a legacy component. The course enrollment model has been replaced with the hierarchical structure (Forms → Classes → Subjects). Students are now assigned to classes by administrators. Please use the Subject view from your dashboard.");
+    setLoading(false);
+    setAvailableCourses([]);
+    setMyEnrollments([]);
   }, []);
 
   const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [courses, enrollments] = await Promise.all([
-        studentService.getAvailableCourses(),
-        studentService.getMyEnrollments()
-      ]);
-      
-      // Filter out courses already enrolled in
-      const enrolledCourseIds = enrollments.map(e => e.course.id);
-      const available = courses.filter(course => !enrolledCourseIds.includes(course.id));
-      
-      setAvailableCourses(available);
-      setMyEnrollments(enrollments);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching data:", err);
-      setError("Failed to load courses. Please try again later.");
-    } finally {
-      setLoading(false);
-    }
+    // Deprecated - no longer fetches data
+    setLoading(false);
   };
 
   const handleEnrollment = async (courseId) => {
-    setEnrolling(courseId);
-    try {
-      await studentService.enrollInCourse(courseId);
-      await fetchData(); // Refresh data
-      setError(null);
-      setNotification({
-        show: true,
-        type: 'success',
-        title: 'Enrollment Request Submitted',
-        message: 'Your enrollment request has been submitted and is pending admin approval.'
-      });
-    } catch (err) {
-      console.error("Error enrolling in course:", err);
-      const errorMessage = err.response?.data?.error || "Failed to enroll in course. Please try again.";
-      setError(errorMessage);
-      setNotification({
-        show: true,
-        type: 'error',
-        title: 'Enrollment Failed',
-        message: errorMessage
-      });
-    } finally {
-      setEnrolling(null);
-    }
+    setNotification({
+      show: true,
+      type: 'warning',
+      title: 'Feature Deprecated',
+      message: 'Course enrollment is no longer available. Students are assigned to classes by administrators through the new hierarchical structure.'
+    });
   };
 
   const handleViewCourse = (course) => {
@@ -103,7 +73,19 @@ function CourseRegistration() {
 
   return (
     <Container fluid className="p-4">
-      {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
+      <Alert variant="warning" className="mb-4">
+        <Alert.Heading>Legacy Feature - Deprecated</Alert.Heading>
+        <p className="mb-2">
+          <strong>Note:</strong> This component is for the old "course enrollment" model which has been replaced.
+        </p>
+        <p className="mb-2">
+          The new system uses a hierarchical structure: <strong>School → Form → Class → Subject → Lesson</strong>
+        </p>
+        <p className="mb-0">
+          Students are now assigned to classes by administrators. You can view your assigned subjects by navigating to <strong>Subjects</strong> from your dashboard.
+        </p>
+      </Alert>
+      {error && <Alert variant="info" dismissible onClose={() => setError(null)}>{error}</Alert>}
       
       {/* My Enrollments */}
       <Card className="shadow-sm mb-4">
