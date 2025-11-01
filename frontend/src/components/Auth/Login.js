@@ -15,7 +15,7 @@ function Login() {
   const location = useLocation();
   const { login, loginWithAD, user, isAuthenticated } = useAuth();
   
-  // Auto-redirect if already authenticated
+  // Auto-redirect if already authenticated (but only after a brief delay to ensure component renders)
   useEffect(() => {
     console.log('[Login] useEffect triggered', { 
       isAuthenticated, 
@@ -23,91 +23,68 @@ function Login() {
       pathname: window.location.pathname
     });
     
-    // Check localStorage first as it's most reliable
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    
-    // Determine if user is actually logged in
-    let actualUser = user;
-    let actualIsAuthenticated = isAuthenticated;
-    
-    if (!actualUser && storedUser && storedToken) {
-      try {
-        actualUser = JSON.parse(storedUser);
-        actualIsAuthenticated = true;
-        console.log('[Login] Using user from localStorage:', actualUser);
-      } catch (e) {
-        console.error('[Login] Error parsing stored user:', e);
-      }
-    }
-    
-    if (actualIsAuthenticated && actualUser && actualUser.role) {
-      const role = (actualUser.role || '').toLowerCase().trim();
-      console.log('[Login] User authenticated, attempting redirect...', { role, email: actualUser.email });
+    // Small delay to ensure login form renders first
+    const checkAuthTimeout = setTimeout(() => {
+      // Check localStorage first as it's most reliable
+      const storedUser = localStorage.getItem('user');
+      const storedToken = localStorage.getItem('token');
       
-      if (role) {
-        let dashboardPath = '/login';
-        
-        if (role === 'admin') {
-          dashboardPath = '/admin/dashboard';
-        } else if (role === 'instructor') {
-          dashboardPath = '/instructor/dashboard';
-        } else if (role === 'student') {
-          dashboardPath = '/student/dashboard';
+      // Determine if user is actually logged in
+      let actualUser = user;
+      let actualIsAuthenticated = isAuthenticated;
+      
+      if (!actualUser && storedUser && storedToken) {
+        try {
+          actualUser = JSON.parse(storedUser);
+          actualIsAuthenticated = true;
+          console.log('[Login] Using user from localStorage:', actualUser);
+        } catch (e) {
+          console.error('[Login] Error parsing stored user:', e);
         }
+      }
+      
+      if (actualIsAuthenticated && actualUser && actualUser.role) {
+        const role = (actualUser.role || '').toLowerCase().trim();
+        console.log('[Login] User authenticated, attempting redirect...', { role, email: actualUser.email });
         
-        console.log('[Login] Determined dashboard path:', dashboardPath);
-        
-        const currentPath = window.location.pathname;
-        
-        // Redirect if not already on dashboard or login page
-        if (dashboardPath !== '/login' && currentPath !== dashboardPath && currentPath !== '/login') {
-          console.log('[Login] Executing redirect from', currentPath, 'to:', dashboardPath);
+        if (role) {
+          let dashboardPath = '/login';
           
-          // Immediate redirect using window.location (most reliable)
-          setTimeout(() => {
-            const stillOnWrongPath = window.location.pathname !== dashboardPath;
-            if (stillOnWrongPath) {
-              console.log('[Login] Forcing redirect with window.location');
-              window.location.replace(dashboardPath);
-            }
-          }, 100);
+          if (role === 'admin') {
+            dashboardPath = '/admin/dashboard';
+          } else if (role === 'instructor') {
+            dashboardPath = '/instructor/dashboard';
+          } else if (role === 'student') {
+            dashboardPath = '/student/dashboard';
+          }
           
-          // Also try React Router navigate
-          navigate(dashboardPath, { replace: true });
-        } else if (dashboardPath === '/login') {
-          console.warn('[Login] Invalid role, cannot determine dashboard. Role:', role);
-        } else if (currentPath === dashboardPath) {
-          console.log('[Login] Already on correct dashboard:', currentPath);
-        } else if (currentPath === '/login' && dashboardPath !== '/login') {
-          console.log('[Login] On login page but authenticated, redirecting to:', dashboardPath);
-          // User is authenticated but on login page, redirect
-          setTimeout(() => {
+          console.log('[Login] Determined dashboard path:', dashboardPath);
+          
+          const currentPath = window.location.pathname;
+          
+          // Only redirect if we're on login page and user is authenticated
+          if (currentPath === '/login' && dashboardPath !== '/login') {
+            console.log('[Login] On login page but authenticated, redirecting to:', dashboardPath);
+            // User is authenticated but on login page, redirect
             window.location.replace(dashboardPath);
-          }, 100);
-          navigate(dashboardPath, { replace: true });
-        } else {
-          console.log('[Login] On root path, redirecting authenticated user to dashboard');
-          // User is on root path (/) and authenticated, redirect to dashboard
-          if (currentPath === '/' && dashboardPath !== '/login') {
-            setTimeout(() => {
-              window.location.replace(dashboardPath);
-            }, 100);
-            navigate(dashboardPath, { replace: true });
+          } else if (currentPath === '/' && dashboardPath !== '/login') {
+            console.log('[Login] On root path, redirecting authenticated user to dashboard');
+            // User is on root path (/) and authenticated, redirect to dashboard
+            window.location.replace(dashboardPath);
           }
         }
       } else {
-        console.warn('[Login] No role found in user object:', actualUser);
+        console.log('[Login] Not authenticated, showing login form', { 
+          isAuthenticated: actualIsAuthenticated, 
+          hasUser: !!actualUser, 
+          hasRole: !!actualUser?.role,
+          hasStoredUser: !!storedUser 
+        });
       }
-    } else {
-      console.log('[Login] Not authenticated yet', { 
-        isAuthenticated: actualIsAuthenticated, 
-        hasUser: !!actualUser, 
-        hasRole: !!actualUser?.role,
-        hasStoredUser: !!storedUser 
-      });
-    }
-  }, [isAuthenticated, user, navigate]);
+    }, 500); // Wait 500ms before checking auth to ensure form renders
+    
+    return () => clearTimeout(checkAuthTimeout);
+  }, [isAuthenticated, user]);
   
   // Check if there's a message from redirect (e.g., after registration)
   const message = location.state?.message || '';
