@@ -3,10 +3,10 @@ import {
   Container, Row, Col, Card, Button, Spinner, Alert, 
   Nav, Badge, Dropdown
 } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { 
   FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, 
-  FaBell
+  FaBell, FaChartLine, FaCalendarAlt
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -15,7 +15,7 @@ import StudentManagement from './StudentManagement';
 import ManageInstructors from './ManageInstructors';
 import ReportsTab from './ReportsTab';
 import EnhancedCourseManagement from './EnhancedCourseManagement';
-import './AdminDashboard.css'; // We'll create this file for custom styling
+import './AdminDashboard.css';
 
 function AdminDashboard() {
   const { user } = useAuth();
@@ -26,8 +26,9 @@ function AdminDashboard() {
     totalCourses: 0,
     totalInstructors: 0,
     totalStudents: 0,
-    recentActivity: [],
-    pendingRequests: []
+    totalForms: 0,
+    totalClasses: 0,
+    recentActivity: []
   });
 
   // Loading and error states
@@ -37,153 +38,112 @@ function AdminDashboard() {
 
   // Function to fetch dashboard statistics using Supabase
   const fetchDashboardStats = async () => {
+    try {
+      console.log('[AdminDashboard] Starting to fetch stats...');
+      
+      // Fetch stats with individual timeouts
+      const statsPromise = supabaseService.getDashboardStats();
+      const statsTimeout = new Promise((resolve) => 
+        setTimeout(() => resolve({ totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalForms: 0, totalClasses: 0 }), 2000)
+      );
+      
+      const data = await Promise.race([statsPromise, statsTimeout]);
+      console.log('[AdminDashboard] Stats received:', data);
+      
+      // Fetch recent activity with timeout
+      let recentActivity = [];
       try {
-        console.log('[AdminDashboard] Fetching stats...');
-        console.log('[AdminDashboard] Supabase URL:', process.env.REACT_APP_SUPABASE_URL);
-        
-        // Set a timeout for the fetch operation
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Dashboard fetch timeout')), 3000)
+        const activityPromise = supabaseService.getRecentActivity(5);
+        const activityTimeout = new Promise((resolve) => 
+          setTimeout(() => resolve([]), 1500)
         );
-        
-        // Get dashboard stats from Supabase with timeout
-        const dataPromise = supabaseService.getDashboardStats();
-        const data = await Promise.race([dataPromise, timeoutPromise]);
-        
-        console.log('[AdminDashboard] Stats received:', data);
-        
-        // Get pending enrollments (if using old course structure)
-        // For now, using empty array until we migrate enrollment system
-        const pendingEnrollments = [];
-        
-        // Convert pending enrollments to notification format
-        const pendingRequests = pendingEnrollments.map(enrollment => ({
-          id: enrollment.enrollmentId || enrollment.id,
-          type: 'enrollment',
-          student: enrollment.student?.name || 'Unknown',
-          course: enrollment.course?.title || 'Unknown Course',
-          requestedOn: enrollment.enrollmentDate ? new Date(enrollment.enrollmentDate).toLocaleDateString() : 'N/A'
-        }));
-        
-        // Get recent activity from Supabase
-        let recentActivity = [];
-        try {
-          recentActivity = await supabaseService.getRecentActivity(10);
-          console.log('[AdminDashboard] Recent activity loaded:', recentActivity.length, 'items');
-        } catch (activityError) {
-          console.warn('[AdminDashboard] Could not load recent activity:', activityError);
-          // Use empty array on error
-        }
-        
-        const enhancedData = {
-          totalUsers: data?.totalUsers || 0,
-          totalCourses: data?.totalSubjects || data?.totalCourses || 0, // Using subjects as courses for now
-          totalInstructors: data?.totalInstructors || 0,
-          totalStudents: data?.totalStudents || 0,
-          pendingRequests,
-          recentActivity: recentActivity.length > 0 ? recentActivity : [
-            // Fallback message if no activity
-            { id: 'no-activity', type: 'info', user: 'System', action: 'No recent activity', target: 'Start by creating forms, classes, and subjects', time: 'now' }
-          ]
-        };
-        
-        setStats(enhancedData);
-        setIsLoading(false);
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching dashboard data:", err);
-        console.error("Error details:", err.message, err.stack);
-        
-        // Set default stats on error - always show dashboard
-        setStats({
-          totalUsers: 0,
-          totalCourses: 0,
-          totalInstructors: 0,
-          totalStudents: 0,
-          recentActivity: [],
-          pendingRequests: []
-        });
-        setIsLoading(false);
-        setError(null); // Don't show error - just show empty dashboard
+        recentActivity = await Promise.race([activityPromise, activityTimeout]);
+        console.log('[AdminDashboard] Activity received:', recentActivity.length);
+      } catch (activityError) {
+        console.warn('[AdminDashboard] Activity fetch failed:', activityError);
+        recentActivity = [];
       }
-    };
+      
+      // Update state
+      setStats({
+        totalUsers: data?.totalUsers || 0,
+        totalCourses: data?.totalSubjects || data?.totalCourses || 0,
+        totalInstructors: data?.totalInstructors || 0,
+        totalStudents: data?.totalStudents || 0,
+        totalForms: data?.totalForms || 0,
+        totalClasses: data?.totalClasses || 0,
+        recentActivity: recentActivity.length > 0 ? recentActivity : []
+      });
+      
+      setIsLoading(false);
+      setError(null);
+      
+    } catch (err) {
+      console.error('[AdminDashboard] Error fetching data:', err);
+      
+      // Set defaults on error - dashboard should still display
+      setStats({
+        totalUsers: 0,
+        totalCourses: 0,
+        totalInstructors: 0,
+        totalStudents: 0,
+        totalForms: 0,
+        totalClasses: 0,
+        recentActivity: []
+      });
+      setIsLoading(false);
+      setError(null); // Don't show error, just show empty dashboard
+    }
+  };
 
   // Fetch dashboard statistics when component mounts
   useEffect(() => {
-    console.log('[AdminDashboard] useEffect triggered, user:', user);
+    console.log('[AdminDashboard] Component mounted, user:', user?.email);
     
-    let isMounted = true;
-    
-    // Always stop loading after max 5 seconds, even if fetch fails
-    const timeoutId = setTimeout(() => {
-      console.warn('[AdminDashboard] Timeout reached, forcing dashboard to show');
-      if (isMounted) {
-        setIsLoading(false);
-        setError(null);
-        // Set default stats if not already set
-        setStats(prev => prev || {
-          totalUsers: 0,
-          totalCourses: 0,
-          totalInstructors: 0,
-          totalStudents: 0,
-          recentActivity: [],
-          pendingRequests: []
-        });
+    // Always stop loading after max 3 seconds
+    const maxTimeout = setTimeout(() => {
+      console.warn('[AdminDashboard] Max timeout reached, forcing display');
+      setIsLoading(false);
+      if (stats.totalUsers === 0 && stats.totalCourses === 0) {
+        // If no stats loaded, set defaults
+        setStats(prev => ({
+          ...prev,
+          totalUsers: prev.totalUsers || 0,
+          totalCourses: prev.totalCourses || 0,
+          totalInstructors: prev.totalInstructors || 0,
+          totalStudents: prev.totalStudents || 0
+        }));
       }
-    }, 5000);
+    }, 3000);
     
-    if (user) {
-      fetchDashboardStats().finally(() => {
-        if (isMounted) {
-          clearTimeout(timeoutId);
-        }
-      });
-    } else {
-      // If no user, stop loading after a shorter timeout
-      setTimeout(() => {
-        console.warn('[AdminDashboard] No user after timeout, stopping loading');
-        if (isMounted) {
-          setIsLoading(false);
-          clearTimeout(timeoutId);
-        }
-      }, 2000);
-    }
+    // Fetch data
+    fetchDashboardStats().finally(() => {
+      clearTimeout(maxTimeout);
+    });
     
-    return () => {
-      isMounted = false;
-      clearTimeout(timeoutId);
-    };
-  }, [user]);
+    return () => clearTimeout(maxTimeout);
+  }, []); // Only run once on mount
 
-  // Periodic refresh every 30 seconds for real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchDashboardStats();
-    }, 30000); // 30 seconds
-    
-    return () => clearInterval(interval);
-  }, []);
-
-  // Show loading spinner while fetching data
+  // Show loading spinner while fetching data (max 3 seconds)
   if (isLoading) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '70vh' }}>
         <div className="text-center">
           <Spinner animation="border" variant="primary" style={{ width: '3rem', height: '3rem' }} />
-          <p className="mt-3">Loading dashboard data...</p>
+          <p className="mt-3">Loading dashboard...</p>
         </div>
       </Container>
     );
   }
 
-  // Show error message if data fetching failed
+  // Show error message if data fetching failed (but we won't show this usually)
   if (error) {
     return (
       <Container className="mt-5">
-        <Alert variant="danger">
-          <Alert.Heading>Error Loading Dashboard</Alert.Heading>
-          <p>{error}</p>
-          <Button onClick={() => window.location.reload()} variant="outline-danger">Retry</Button>
+        <Alert variant="warning">
+          <Alert.Heading>Unable to Load Dashboard Data</Alert.Heading>
+          <p>Dashboard is showing with default values. Some statistics may not be available.</p>
+          <Button onClick={fetchDashboardStats} variant="outline-primary">Retry</Button>
         </Alert>
       </Container>
     );
@@ -196,40 +156,12 @@ function AdminDashboard() {
         <Row className="align-items-center">
           <Col>
             <h1 className="mb-0">Admin Dashboard</h1>
-            <p className="text-muted mb-0">Welcome back, {user?.name || 'Admin'}</p>
+            <p className="text-muted mb-0">Welcome back, {user?.name || user?.email || 'Admin'}</p>
           </Col>
           <Col xs="auto">
-            <Dropdown align="end">
-              <Dropdown.Toggle variant="light" id="notification-dropdown" className="position-relative">
-                <FaBell />
-                <Badge pill bg="danger" className="position-absolute top-0 start-100 translate-middle">
-                  {stats.pendingRequests.length}
-                </Badge>
-              </Dropdown.Toggle>
-              <Dropdown.Menu className="shadow-sm notification-menu">
-                <Dropdown.Header>Notifications</Dropdown.Header>
-                {stats.pendingRequests.map((request, index) => (
-                  <Dropdown.Item key={index} className="notification-item">
-                    <div className="d-flex">
-                      <div className={`notification-icon ${request.type === 'enrollment' ? 'bg-info' : 'bg-warning'}`}>
-                        {request.type === 'enrollment' ? <FaUserGraduate /> : <FaChalkboardTeacher />}
-                      </div>
-                      <div className="ms-3">
-                        <p className="mb-0 fw-bold">{request.type === 'enrollment' ? 'Course Enrollment Request' : 'Instructor Approval'}</p>
-                        <p className="mb-0 small">
-                          {request.type === 'enrollment' 
-                            ? `${request.student} requested to join ${request.course}` 
-                            : `${request.name} from ${request.department} needs approval`}
-                        </p>
-                        <small className="text-muted">{request.requestedOn}</small>
-                      </div>
-                    </div>
-                  </Dropdown.Item>
-                ))}
-                <Dropdown.Divider />
-                <Dropdown.Item className="text-center text-primary">View All Notifications</Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
+            <Badge pill bg="info" className="me-2">
+              <FaBell /> {stats.recentActivity.length} activities
+            </Badge>
           </Col>
         </Row>
       </div>
@@ -262,54 +194,84 @@ function AdminDashboard() {
           <div className="dashboard-overview">
             {/* Stats cards row */}
             <Row className="g-4 mb-4">
-              <Col md={3}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body className="d-flex align-items-center">
-                    <div className="icon-bg bg-primary-light rounded p-3 me-3">
-                      <FaUsers className="text-primary" size={24} />
+              <Col md={3} sm={6}>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="d-flex align-items-center p-4">
+                    <div className="icon-bg bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                      <FaUsers className="text-primary" size={28} />
                     </div>
                     <div>
-                      <h6 className="text-muted mb-1">Total Users</h6>
-                      <h3 className="mb-0">{stats.totalUsers}</h3>
+                      <h6 className="text-muted mb-1 small">Total Users</h6>
+                      <h3 className="mb-0 fw-bold">{stats.totalUsers}</h3>
                     </div>
                   </Card.Body>
                 </Card>
               </Col>
-              <Col md={3}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body className="d-flex align-items-center">
-                    <div className="icon-bg bg-success-light rounded p-3 me-3">
-                      <FaBook className="text-success" size={24} />
+              <Col md={3} sm={6}>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="d-flex align-items-center p-4">
+                    <div className="icon-bg bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                      <FaBook className="text-success" size={28} />
                     </div>
                     <div>
-                      <h6 className="text-muted mb-1">Total Courses</h6>
-                      <h3 className="mb-0">{stats.totalCourses}</h3>
+                      <h6 className="text-muted mb-1 small">Total Subjects</h6>
+                      <h3 className="mb-0 fw-bold">{stats.totalCourses}</h3>
                     </div>
                   </Card.Body>
                 </Card>
               </Col>
-              <Col md={3}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body className="d-flex align-items-center">
-                    <div className="icon-bg bg-info-light rounded p-3 me-3">
-                      <FaChalkboardTeacher className="text-info" size={24} />
+              <Col md={3} sm={6}>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="d-flex align-items-center p-4">
+                    <div className="icon-bg bg-info bg-opacity-10 rounded-circle p-3 me-3">
+                      <FaChalkboardTeacher className="text-info" size={28} />
                     </div>
                     <div>
-                      <h6 className="text-muted mb-1">Instructors</h6>
-                      <h3 className="mb-0">{stats.totalInstructors}</h3>
+                      <h6 className="text-muted mb-1 small">Instructors</h6>
+                      <h3 className="mb-0 fw-bold">{stats.totalInstructors}</h3>
                     </div>
                   </Card.Body>
                 </Card>
               </Col>
-              <Col md={3}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body className="d-flex align-items-center">
-                    <div className="icon-bg bg-warning-light rounded p-3 me-3">
-                      <FaUserGraduate className="text-warning" size={24} />
+              <Col md={3} sm={6}>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="d-flex align-items-center p-4">
+                    <div className="icon-bg bg-warning bg-opacity-10 rounded-circle p-3 me-3">
+                      <FaUserGraduate className="text-warning" size={28} />
                     </div>
                     <div>
-                      <h6 className="text-muted mb-1">Students</h6>
-                      <h3 className="mb-0">{stats.totalStudents}</h3>
+                      <h6 className="text-muted mb-1 small">Students</h6>
+                      <h3 className="mb-0 fw-bold">{stats.totalStudents}</h3>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+            </Row>
+
+            {/* Additional stats row */}
+            <Row className="g-4 mb-4">
+              <Col md={6} sm={6}>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="d-flex align-items-center p-4">
+                    <div className="icon-bg bg-secondary bg-opacity-10 rounded-circle p-3 me-3">
+                      <FaCalendarAlt className="text-secondary" size={28} />
+                    </div>
+                    <div>
+                      <h6 className="text-muted mb-1 small">Total Forms</h6>
+                      <h3 className="mb-0 fw-bold">{stats.totalForms}</h3>
+                    </div>
+                  </Card.Body>
+                </Card>
+              </Col>
+              <Col md={6} sm={6}>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="d-flex align-items-center p-4">
+                    <div className="icon-bg bg-danger bg-opacity-10 rounded-circle p-3 me-3">
+                      <FaUsers className="text-danger" size={28} />
+                    </div>
+                    <div>
+                      <h6 className="text-muted mb-1 small">Total Classes</h6>
+                      <h3 className="mb-0 fw-bold">{stats.totalClasses}</h3>
                     </div>
                   </Card.Body>
                 </Card>
@@ -319,61 +281,61 @@ function AdminDashboard() {
             {/* Quick access cards */}
             <Row className="g-4 mb-4">
               <Col>
-                <h5 className="mb-3">Quick Access</h5>
+                <h5 className="mb-3 fw-bold">Quick Access</h5>
               </Col>
             </Row>
             <Row className="g-4 mb-4">
               <Col md={4}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body>
-                    <h5 className="card-title">Manage Forms</h5>
-                    <p className="card-text">Create and manage Forms (year groups) for schools.</p>
-                    <Button as={Link} to="/admin/forms" variant="primary">Go to Forms</Button>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="p-4">
+                    <h5 className="card-title fw-bold">Manage Forms</h5>
+                    <p className="card-text text-muted">Create and manage Forms (year groups) for schools.</p>
+                    <Button as={Link} to="/admin/forms" variant="primary" className="w-100">Go to Forms</Button>
                   </Card.Body>
                 </Card>
               </Col>
               <Col md={4}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body>
-                    <h5 className="card-title">Manage Classes</h5>
-                    <p className="card-text">Create classes within Forms and assign tutors.</p>
-                    <Button as={Link} to="/admin/classes" variant="primary">Go to Classes</Button>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="p-4">
+                    <h5 className="card-title fw-bold">Manage Classes</h5>
+                    <p className="card-text text-muted">Create classes within Forms and assign tutors.</p>
+                    <Button as={Link} to="/admin/classes" variant="primary" className="w-100">Go to Classes</Button>
                   </Card.Body>
                 </Card>
               </Col>
               <Col md={4}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body>
-                    <h5 className="card-title">Manage Subjects</h5>
-                    <p className="card-text">Create subjects and assign to Forms.</p>
-                    <Button as={Link} to="/admin/subjects" variant="primary">Go to Subjects</Button>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="p-4">
+                    <h5 className="card-title fw-bold">Manage Subjects</h5>
+                    <p className="card-text text-muted">Create subjects and assign to Forms.</p>
+                    <Button as={Link} to="/admin/subjects" variant="primary" className="w-100">Go to Subjects</Button>
                   </Card.Body>
                 </Card>
               </Col>
               <Col md={4}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body>
-                    <h5 className="card-title">Assign Students</h5>
-                    <p className="card-text">Assign students to classes.</p>
-                    <Button as={Link} to="/admin/student-assignment" variant="primary">Assign Students</Button>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="p-4">
+                    <h5 className="card-title fw-bold">Assign Students</h5>
+                    <p className="card-text text-muted">Assign students to classes.</p>
+                    <Button as={Link} to="/admin/student-assignment" variant="primary" className="w-100">Assign Students</Button>
                   </Card.Body>
                 </Card>
               </Col>
               <Col md={4}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body>
-                    <h5 className="card-title">Assign Subjects</h5>
-                    <p className="card-text">Assign subjects to classes and assign teachers.</p>
-                    <Button as={Link} to="/admin/class-subject-assignment" variant="primary">Assign Subjects</Button>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="p-4">
+                    <h5 className="card-title fw-bold">Assign Subjects</h5>
+                    <p className="card-text text-muted">Assign subjects to classes and assign teachers.</p>
+                    <Button as={Link} to="/admin/class-subject-assignment" variant="primary" className="w-100">Assign Subjects</Button>
                   </Card.Body>
                 </Card>
               </Col>
               <Col md={4}>
-                <Card className="h-100 shadow-sm">
-                  <Card.Body>
-                    <h5 className="card-title">Manage Institutions</h5>
-                    <p className="card-text">Add, edit, or manage educational institutions.</p>
-                    <Button onClick={() => setActiveTab('institutions')} variant="secondary">Go to Institutions</Button>
+                <Card className="h-100 shadow-sm border-0">
+                  <Card.Body className="p-4">
+                    <h5 className="card-title fw-bold">Manage Institutions</h5>
+                    <p className="card-text text-muted">Add, edit, or manage educational institutions.</p>
+                    <Button onClick={() => setActiveTab('institutions')} variant="secondary" className="w-100">Go to Institutions</Button>
                   </Card.Body>
                 </Card>
               </Col>
@@ -382,46 +344,52 @@ function AdminDashboard() {
             {/* Recent Activity Section */}
             <Row className="g-4">
               <Col>
-                <h5 className="mb-3">Recent Activity</h5>
+                <h5 className="mb-3 fw-bold">Recent Activity</h5>
               </Col>
             </Row>
             <Row>
               <Col>
-                <Card className="shadow-sm">
-                  <Card.Body>
+                <Card className="shadow-sm border-0">
+                  <Card.Body className="p-4">
                     {stats.recentActivity && stats.recentActivity.length > 0 ? (
                       <div className="activity-timeline">
                         {stats.recentActivity.map((activity, index) => (
-                          <div key={activity.id || index} className="activity-item">
-                            <div 
-                              className={`activity-icon ${
-                                activity.type === 'user' ? 'bg-primary' :
-                                activity.type === 'subject' ? 'bg-success' :
-                                activity.type === 'class' ? 'bg-info' :
-                                activity.type === 'form' ? 'bg-warning' :
-                                activity.type === 'info' ? 'bg-secondary' :
-                                'bg-secondary'
-                              }`}
-                            >
-                              {activity.type === 'user' ? <FaUserGraduate /> :
-                               activity.type === 'subject' ? <FaBook /> :
-                               activity.type === 'class' ? <FaUsers /> :
-                               activity.type === 'form' ? <FaChalkboardTeacher /> :
-                               <FaBell />}
-                            </div>
-                            <div className="activity-content">
-                              <p className="mb-0">
-                                <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
-                              </p>
-                              <small className="text-muted">{activity.time}</small>
+                          <div key={activity.id || index} className="activity-item mb-3 pb-3 border-bottom">
+                            <div className="d-flex align-items-start">
+                              <div 
+                                className={`activity-icon rounded-circle d-flex align-items-center justify-content-center me-3 ${
+                                  activity.type === 'user' ? 'bg-primary' :
+                                  activity.type === 'subject' ? 'bg-success' :
+                                  activity.type === 'class' ? 'bg-info' :
+                                  activity.type === 'form' ? 'bg-warning' :
+                                  'bg-secondary'
+                                }`}
+                                style={{ width: '40px', height: '40px', minWidth: '40px' }}
+                              >
+                                {activity.type === 'user' ? <FaUserGraduate className="text-white" /> :
+                                 activity.type === 'subject' ? <FaBook className="text-white" /> :
+                                 activity.type === 'class' ? <FaUsers className="text-white" /> :
+                                 activity.type === 'form' ? <FaChalkboardTeacher className="text-white" /> :
+                                 <FaBell className="text-white" />}
+                              </div>
+                              <div className="flex-grow-1">
+                                <p className="mb-1">
+                                  <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
+                                </p>
+                                <small className="text-muted">
+                                  <FaCalendarAlt className="me-1" />
+                                  {activity.time}
+                                </small>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-4">
-                        <FaBell className="text-muted mb-2" size={32} />
+                      <div className="text-center py-5">
+                        <FaBell className="text-muted mb-3" size={48} />
                         <p className="text-muted mb-0">No recent activity</p>
+                        <small className="text-muted">Start by creating forms, classes, and subjects</small>
                       </div>
                     )}
                   </Card.Body>
