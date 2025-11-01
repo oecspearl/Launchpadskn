@@ -167,11 +167,19 @@ function CourseCreationWizard({ show, onHide, onCourseCreated }) {
         isActive: formData.isActive
       };
 
-      const response = await api.post('/courses', courseData);
-      setSuccess('Course created successfully!');
+      // Create subject instead of course (deprecated)
+      const subjectData = {
+        subject_name: courseData.title,
+        subject_code: courseData.code,
+        description: courseData.description,
+        school_id: formData.institutionId || null,
+        is_active: courseData.isActive
+      };
+      const response = await supabaseService.createSubject(subjectData);
+      setSuccess('Subject created successfully! (Courses are deprecated)');
       
       setTimeout(() => {
-        onCourseCreated(response.data);
+        onCourseCreated(response);
         onHide();
       }, 1500);
     } catch (error) {
