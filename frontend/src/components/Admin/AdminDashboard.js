@@ -331,6 +331,15 @@ function AdminDashboard() {
                     Assign subjects to classes and assign teachers.
                   </div>
                 </Link>
+                <Link to="/teacher/curriculum" className="quick-access-card">
+                  <div className="quick-access-card-icon" style={{background: 'linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)'}}>
+                    <FaBook />
+                  </div>
+                  <div className="quick-access-card-title">Curriculum</div>
+                  <div className="quick-access-card-description">
+                    View curriculum frameworks and learning outcomes for all subjects.
+                  </div>
+                </Link>
                 <div className="quick-access-card" onClick={() => setActiveTab('institutions')} style={{cursor: 'pointer'}}>
                   <div className="quick-access-card-icon" style={{background: 'var(--secondary-gradient)'}}>
                     <FaSchool />

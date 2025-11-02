@@ -119,6 +119,10 @@ function AppNavbar() {
                   <Nav.Link as={Link} to="/admin/subjects" className="me-3">
                     Subjects
                   </Nav.Link>
+                  <Nav.Link as={Link} to="/teacher/curriculum" className="me-3">
+                    <FaBook className="me-1" />
+                    Curriculum
+                  </Nav.Link>
                 </>
               )}
 
