@@ -1,4 +1,7 @@
-/* Saint Kitts and Nevis Flag Color Scheme */
+/* ============================================
+   Saint Kitts and Nevis Flag Color Scheme
+   Enhanced with Modern Gradients & Shades
+   ============================================ */
 
 :root {
   /* Primary Flag Colors */
@@ -10,25 +13,62 @@
   
   /* Color Variations */
   --skn-green-light: #33AD63;
+  --skn-green-lighter: #66C88F;
   --skn-green-dark: #00702B;
+  --skn-green-darker: #00501F;
+  
   --skn-red-light: #D84356;
+  --skn-red-lighter: #E57585;
   --skn-red-dark: #A50E20;
+  --skn-red-darker: #7A0A17;
+  
   --skn-yellow-light: #FDDB4A;
+  --skn-yellow-lighter: #FEE57E;
   --skn-yellow-dark: #F0C014;
+  --skn-yellow-darker: #D4A810;
   
   /* Application Colors based on flag */
   --primary-color: var(--skn-green);
   --primary-hover: var(--skn-green-dark);
+  --primary-light: var(--skn-green-light);
+  --primary-gradient: linear-gradient(135deg, var(--skn-green) 0%, var(--skn-green-dark) 100%);
+  
   --secondary-color: var(--skn-red);
   --secondary-hover: var(--skn-red-dark);
+  --secondary-light: var(--skn-red-light);
+  --secondary-gradient: linear-gradient(135deg, var(--skn-red) 0%, var(--skn-red-dark) 100%);
+  
   --accent-color: var(--skn-yellow);
   --accent-hover: var(--skn-yellow-dark);
+  --accent-light: var(--skn-yellow-light);
+  --accent-gradient: linear-gradient(135deg, var(--skn-yellow) 0%, var(--skn-yellow-dark) 100%);
+  
   --text-dark: var(--skn-black);
   --text-light: var(--skn-white);
-  --bg-light: #F5F5F5;
+  --text-muted: #718096;
+  
+  /* Background Colors */
+  --bg-light: #F7FAFC;
+  --bg-white: #FFFFFF;
+  --bg-gray-50: #F9FAFB;
+  --bg-gray-100: #F3F4F6;
+  --bg-gray-200: #E5E7EB;
+  
   --bg-green-tint: #E8F5ED;
+  --bg-green-light: #F0F9F5;
   --bg-red-tint: #F5E8E8;
+  --bg-red-light: #FDF2F2;
   --bg-yellow-tint: #FDF9E8;
+  --bg-yellow-light: #FEFBF0;
+  
+  /* Border Colors */
+  --border-color: #E2E8F0;
+  --border-color-light: #F1F5F9;
+  --border-color-dark: #CBD5E0;
+  
+  /* Shadow Colors */
+  --shadow-color: rgba(0, 0, 0, 0.1);
+  --shadow-color-primary: rgba(0, 150, 57, 0.15);
 }
 
 /* Bootstrap Override with Flag Colors */
