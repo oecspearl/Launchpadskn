@@ -81,7 +81,7 @@ BEGIN
                                     E'• Analyze and appreciate Caribbean and world literature\n' ||
                                     E'• Complete School-Based Assessment requirements';
                                 
-                                -- Mathematics curriculum
+                            -- Mathematics curriculum
                             ELSIF subject_rec.subject_name = 'Mathematics' THEN
                                 curriculum_framework_text := E'CSEC Mathematics Syllabus:\n' ||
                                     E'• Number Theory and Computation\n' ||
@@ -100,8 +100,8 @@ BEGIN
                             END IF;
                         END IF;
                         
-                        -- Science subjects (Forms 1-5)
-                    ELSIF subject_rec.subject_name IN ('Biology', 'Chemistry', 'Physics', 'Integrated Science') THEN
+                    -- Science subjects
+                    ELSIF subject_rec.subject_name IN ('Biology', 'Chemistry', 'Physics', 'Integrated Science', 'Human and Social Biology') THEN
                         IF form_rec.form_number BETWEEN 1 AND 5 THEN
                             should_offer := true;
                             is_compulsory := (form_rec.form_number <= 3); -- Usually compulsory up to Form 3
@@ -120,24 +120,14 @@ BEGIN
                                 E'• Analyze and interpret scientific data\n' ||
                                 E'• Apply knowledge to Caribbean environment\n' ||
                                 E'• Complete School-Based Assessment';
-                                
-                                -- CSEC preparation subjects (Forms 4-5)
-                        ELSIF form_rec.form_number BETWEEN 4 AND 5 THEN
+                        END IF;
+                        
+                    -- Social Sciences (Forms 3-5)
+                    ELSIF subject_rec.subject_name IN ('Geography', 'Caribbean History', 'Social Studies', 'Economics') THEN
+                        IF form_rec.form_number BETWEEN 3 AND 5 THEN
                             should_offer := true;
                             is_compulsory := false;
-                            weekly_periods := 5;
-                            
-                            -- Social Sciences, Languages, Business, Technical subjects
-                        ELSIF form_rec.form_number BETWEEN 3 AND 5 THEN
-                            should_offer := true;
-                            is_compulsory := false;
-                            weekly_periods := CASE 
-                                WHEN subject_rec.subject_name IN ('Geography', 'Caribbean History', 'Social Studies', 'Economics') THEN 4
-                                WHEN subject_rec.subject_name IN ('Spanish', 'French') THEN 4
-                                WHEN subject_rec.subject_name LIKE '%Business%' OR subject_rec.subject_name LIKE '%Principles%' THEN 4
-                                WHEN subject_rec.subject_name LIKE '%Technology%' OR subject_rec.subject_name LIKE '%Drawing%' THEN 4
-                                ELSE 3
-                            END;
+                            weekly_periods := 4;
                             
                             curriculum_framework_text := E'CSEC ' || subject_rec.subject_name || E' Syllabus:\n' ||
                                 E'• Core content aligned with CXC standards\n' ||
@@ -147,6 +137,95 @@ BEGIN
                             learning_outcomes_text := E'Students will:\n' ||
                                 E'• Master ' || LOWER(subject_rec.subject_name) || E' content\n' ||
                                 E'• Apply knowledge in Caribbean context\n' ||
+                                E'• Complete assessment requirements\n' ||
+                                E'• Prepare for CSEC examinations';
+                        END IF;
+                        
+                    -- Languages (Forms 3-5)
+                    ELSIF subject_rec.subject_name IN ('Spanish', 'French', 'English B') THEN
+                        IF form_rec.form_number BETWEEN 3 AND 5 THEN
+                            should_offer := true;
+                            is_compulsory := false;
+                            weekly_periods := 4;
+                            
+                            curriculum_framework_text := E'CSEC ' || subject_rec.subject_name || E' Syllabus:\n' ||
+                                E'• Language skills (reading, writing, speaking, listening)\n' ||
+                                E'• Grammar and vocabulary\n' ||
+                                E'• Cultural awareness\n' ||
+                                E'• School-Based Assessment (SBA)';
+                            
+                            learning_outcomes_text := E'Students will:\n' ||
+                                E'• Develop proficiency in ' || LOWER(subject_rec.subject_name) || E'\n' ||
+                                E'• Master communication skills\n' ||
+                                E'• Understand cultural contexts\n' ||
+                                E'• Complete assessment requirements';
+                        END IF;
+                        
+                    -- Business Studies (Forms 4-5)
+                    ELSIF subject_rec.subject_name LIKE '%Business%' OR 
+                          subject_rec.subject_name LIKE '%Principles of%' OR
+                          subject_rec.subject_name LIKE '%Office%' OR
+                          subject_rec.subject_name LIKE '%Information Technology' THEN
+                        IF form_rec.form_number BETWEEN 4 AND 5 THEN
+                            should_offer := true;
+                            is_compulsory := false;
+                            weekly_periods := 4;
+                            
+                            curriculum_framework_text := E'CSEC ' || subject_rec.subject_name || E' Syllabus:\n' ||
+                                E'• Core business concepts\n' ||
+                                E'• Practical applications\n' ||
+                                E'• Caribbean business environment\n' ||
+                                E'• School-Based Assessment (SBA)';
+                            
+                            learning_outcomes_text := E'Students will:\n' ||
+                                E'• Master ' || LOWER(subject_rec.subject_name) || E' principles\n' ||
+                                E'• Apply business knowledge\n' ||
+                                E'• Understand Caribbean business context\n' ||
+                                E'• Complete assessment requirements';
+                        END IF;
+                        
+                    -- Technical/Vocational subjects (Forms 3-5)
+                    ELSIF subject_rec.subject_name LIKE '%Technology%' OR
+                          subject_rec.subject_name LIKE '%Drawing%' OR
+                          subject_rec.subject_name LIKE '%Building%' OR
+                          subject_rec.subject_name LIKE '%Electrical%' OR
+                          subject_rec.subject_name LIKE '%Mechanical%' OR
+                          subject_rec.subject_name LIKE '%Home Economics%' OR
+                          subject_rec.subject_name LIKE '%Food%' OR
+                          subject_rec.subject_name LIKE '%Clothing%' THEN
+                        IF form_rec.form_number BETWEEN 3 AND 5 THEN
+                            should_offer := true;
+                            is_compulsory := false;
+                            weekly_periods := 4;
+                            
+                            curriculum_framework_text := E'CSEC ' || subject_rec.subject_name || E' Syllabus:\n' ||
+                                E'• Technical skills and knowledge\n' ||
+                                E'• Practical applications\n' ||
+                                E'• Safety and best practices\n' ||
+                                E'• School-Based Assessment (SBA)';
+                            
+                            learning_outcomes_text := E'Students will:\n' ||
+                                E'• Master ' || LOWER(subject_rec.subject_name) || E' skills\n' ||
+                                E'• Apply knowledge practically\n' ||
+                                E'• Develop technical competencies\n' ||
+                                E'• Complete assessment requirements';
+                        END IF;
+                        
+                    -- Arts and Other subjects (Forms 3-5)
+                    ELSIF subject_rec.subject_name IN ('Visual Arts', 'Music', 'Theatre Arts', 'Physical Education and Sport', 'Additional Mathematics') THEN
+                        IF form_rec.form_number BETWEEN 3 AND 5 THEN
+                            should_offer := true;
+                            is_compulsory := false;
+                            weekly_periods := 3;
+                            
+                            curriculum_framework_text := E'CSEC ' || subject_rec.subject_name || E' Syllabus:\n' ||
+                                E'• Core content aligned with CXC standards\n' ||
+                                E'• Practical skills development\n' ||
+                                E'• School-Based Assessment (SBA) where applicable';
+                            
+                            learning_outcomes_text := E'Students will:\n' ||
+                                E'• Master ' || LOWER(subject_rec.subject_name) || E' content and skills\n' ||
+                                E'• Apply knowledge and skills\n' ||
                                 E'• Complete assessment requirements\n' ||
                                 E'• Prepare for CSEC examinations';
                         END IF;
