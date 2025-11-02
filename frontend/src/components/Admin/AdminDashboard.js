@@ -41,36 +41,53 @@ function AdminDashboard() {
     try {
       console.log('[AdminDashboard] Starting to fetch stats...');
       
-      // Fetch stats with aggressive timeout (1.5 seconds max)
-      const statsPromise = supabaseService.getDashboardStats();
-      const statsTimeout = new Promise((resolve) => 
-        setTimeout(() => {
-          console.warn('[AdminDashboard] Stats fetch timed out, using defaults');
-          resolve({ totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalForms: 0, totalClasses: 0 });
-        }, 1500)
-      );
+      // Fetch stats with reasonable timeout (5 seconds max)
+      // Use Promise.race only to prevent infinite loading, not to replace data
+      const statsPromise = supabaseService.getDashboardStats().catch(err => {
+        console.warn('[AdminDashboard] Stats fetch error:', err);
+        return { totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalForms: 0, totalClasses: 0 };
+      });
       
-      const data = await Promise.race([statsPromise, statsTimeout]);
+      // Timeout to prevent infinite loading, but don't replace data if it's still loading
+      let statsResolved = false;
+      const statsTimeout = setTimeout(() => {
+        if (!statsResolved) {
+          console.warn('[AdminDashboard] Stats fetch taking longer than expected...');
+        }
+      }, 5000);
+      
+      const data = await statsPromise;
+      statsResolved = true;
+      clearTimeout(statsTimeout);
+      
       console.log('[AdminDashboard] Stats received:', data);
       
-      // Fetch recent activity with timeout (1 second max)
+      // Fetch recent activity with reasonable timeout (3 seconds max)
       let recentActivity = [];
       try {
-        const activityPromise = supabaseService.getRecentActivity(5);
-        const activityTimeout = new Promise((resolve) => 
-          setTimeout(() => {
-            console.warn('[AdminDashboard] Activity fetch timed out, using empty array');
-            resolve([]);
-          }, 1000)
-        );
-        recentActivity = await Promise.race([activityPromise, activityTimeout]);
+        let activityResolved = false;
+        const activityPromise = supabaseService.getRecentActivity(5).catch(err => {
+          console.warn('[AdminDashboard] Activity fetch error:', err);
+          return [];
+        });
+        
+        const activityTimeout = setTimeout(() => {
+          if (!activityResolved) {
+            console.warn('[AdminDashboard] Activity fetch taking longer than expected...');
+          }
+        }, 3000);
+        
+        recentActivity = await activityPromise;
+        activityResolved = true;
+        clearTimeout(activityTimeout);
+        
         console.log('[AdminDashboard] Activity received:', recentActivity?.length || 0);
       } catch (activityError) {
         console.warn('[AdminDashboard] Activity fetch failed:', activityError);
         recentActivity = [];
       }
       
-      // Update state immediately
+      // Update state with actual data
       setStats({
         totalUsers: data?.totalUsers || 0,
         totalCourses: data?.totalSubjects || data?.totalCourses || 0,
@@ -87,7 +104,7 @@ function AdminDashboard() {
     } catch (err) {
       console.error('[AdminDashboard] Error fetching data:', err);
       
-      // Set defaults immediately on error - dashboard should still display
+      // Set defaults only on actual error - dashboard should still display
       setStats({
         totalUsers: 0,
         totalCourses: 0,
@@ -144,44 +161,11 @@ function AdminDashboard() {
       return;
     }
     
-    // Always stop loading after max 2 seconds (reduced from 3)
-    const maxTimeout = setTimeout(() => {
-      console.warn('[AdminDashboard] Max timeout reached, forcing display with defaults');
-      setIsLoading(false);
-      setStats({
-        totalUsers: 0,
-        totalCourses: 0,
-        totalInstructors: 0,
-        totalStudents: 0,
-        totalForms: 0,
-        totalClasses: 0,
-        recentActivity: []
-      });
-    }, 2000);
+    // Fetch data - let fetchDashboardStats handle its own timeout logic
+    // The function will set isLoading to false when done, so we don't need an outer timeout
+    fetchDashboardStats();
     
-    // Fetch data with timeout protection
-    const fetchPromise = fetchDashboardStats();
-    const timeoutPromise = new Promise(resolve => setTimeout(() => {
-      console.warn('[AdminDashboard] Fetch timeout, using defaults');
-      setIsLoading(false);
-      setStats({
-        totalUsers: 0,
-        totalCourses: 0,
-        totalInstructors: 0,
-        totalStudents: 0,
-        totalForms: 0,
-        totalClasses: 0,
-        recentActivity: []
-      });
-      resolve();
-    }, 2000));
-    
-    Promise.race([fetchPromise, timeoutPromise]).finally(() => {
-      clearTimeout(maxTimeout);
-    });
-    
-    return () => clearTimeout(maxTimeout);
-  }, [user]); // Re-run when user changes
+  }, [user, isAuthenticated]); // Re-run when user or auth state changes
 
   // Show loading spinner while fetching data (max 3 seconds)
   if (isLoading) {

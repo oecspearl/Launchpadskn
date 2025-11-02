@@ -543,9 +543,15 @@ class SupabaseService {
     try {
       console.log('[supabaseService] getRecentActivity called');
       
-      // Get recent users (last 7 days)
+      // Get recent users (last 7 days) - use a shorter time window for better performance
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
+      // Use Promise.allSettled with individual timeouts to prevent hanging
+      const activityTimeout = 2000; // 2 seconds max per query
+      
+      const createTimeoutPromise = (timeoutMs) => 
+        new Promise((resolve) => setTimeout(() => resolve({ status: 'fulfilled', value: { data: [] } }), timeoutMs));
       
       const [
         recentUsersResult,
@@ -553,30 +559,42 @@ class SupabaseService {
         recentClassesResult,
         recentFormsResult
       ] = await Promise.allSettled([
-        supabase
-          .from('users')
-          .select('user_id, email, name, role, created_at')
-          .gte('created_at', sevenDaysAgo.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(limit),
-        supabase
-          .from('subjects')
-          .select('subject_id, subject_name, created_at')
-          .gte('created_at', sevenDaysAgo.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(limit),
-        supabase
-          .from('classes')
-          .select('class_id, class_name, created_at')
-          .gte('created_at', sevenDaysAgo.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(limit),
-        supabase
-          .from('forms')
-          .select('form_id, form_number, form_name, created_at')
-          .gte('created_at', sevenDaysAgo.toISOString())
-          .order('created_at', { ascending: false })
-          .limit(limit)
+        Promise.race([
+          supabase
+            .from('users')
+            .select('user_id, email, name, role, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(limit),
+          createTimeoutPromise(activityTimeout)
+        ]),
+        Promise.race([
+          supabase
+            .from('subjects')
+            .select('subject_id, subject_name, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(limit),
+          createTimeoutPromise(activityTimeout)
+        ]),
+        Promise.race([
+          supabase
+            .from('classes')
+            .select('class_id, class_name, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(limit),
+          createTimeoutPromise(activityTimeout)
+        ]),
+        Promise.race([
+          supabase
+            .from('forms')
+            .select('form_id, form_number, form_name, created_at')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at', { ascending: false })
+            .limit(limit),
+          createTimeoutPromise(activityTimeout)
+        ])
       ]);
       
       const activities = [];
