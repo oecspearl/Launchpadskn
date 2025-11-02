@@ -35,6 +35,7 @@ import LessonPlanning from './components/Teacher/LessonPlanning';
 import AttendanceMarking from './components/Teacher/AttendanceMarking';
 import GradeEntry from './components/Teacher/GradeEntry';
 import TeacherLessonView from './components/Teacher/TeacherLessonView';
+import Curriculum from './components/Teacher/Curriculum';
 
 // Import context providers
 import { AuthProvider } from './contexts/AuthContextSupabase';
@@ -241,6 +242,15 @@ function App() {
                 element={
                   <PrivateRoute allowedRoles={['instructor']}>
                     <GradeEntry />
+                  </PrivateRoute>
+                } 
+              />
+              
+              <Route 
+                path="/teacher/curriculum" 
+                element={
+                  <PrivateRoute allowedRoles={['instructor', 'admin']}>
+                    <Curriculum />
                   </PrivateRoute>
                 } 
               />

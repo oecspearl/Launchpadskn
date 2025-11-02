@@ -1033,6 +1033,147 @@ class SupabaseService {
   }
 
   // ============================================
+  // CURRICULUM MANAGEMENT
+  // ============================================
+  
+  /**
+   * Get all curriculum content (subject-form offerings with curriculum details)
+   */
+  async getCurriculumContent(schoolId = null, formId = null, subjectId = null) {
+    // If filtering by school, first get forms for that school
+    let formIds = null;
+    if (schoolId) {
+      const { data: forms } = await supabase
+        .from('forms')
+        .select('form_id')
+        .eq('school_id', schoolId)
+        .eq('is_active', true);
+      
+      if (forms && forms.length > 0) {
+        formIds = forms.map(f => f.form_id);
+      } else {
+        // No forms found for this school, return empty
+        return [];
+      }
+    }
+    
+    let query = supabase
+      .from('subject_form_offerings')
+      .select(`
+        *,
+        subject:subjects(*),
+        form:forms(
+          *,
+          school:institutions(*)
+        )
+      `)
+      .eq('is_active', true);
+    
+    if (formIds) {
+      query = query.in('form_id', formIds);
+    } else if (formId) {
+      query = query.eq('form_id', formId);
+    }
+    
+    if (subjectId) {
+      query = query.eq('subject_id', subjectId);
+    }
+    
+    query = query.order('form_number', { ascending: true });
+    
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    return data || [];
+  }
+  
+  /**
+   * Get curriculum content for a specific subject across all forms
+   */
+  async getCurriculumBySubject(subjectId) {
+    const { data, error } = await supabase
+      .from('subject_form_offerings')
+      .select(`
+        *,
+        subject:subjects(*),
+        form:forms(
+          *,
+          school:institutions(*)
+        )
+      `)
+      .eq('subject_id', subjectId)
+      .eq('is_active', true)
+      .order('form_number', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
+  }
+  
+  /**
+   * Get curriculum content for a specific form (all subjects in that form)
+   */
+  async getCurriculumByForm(formId) {
+    const { data, error } = await supabase
+      .from('subject_form_offerings')
+      .select(`
+        *,
+        subject:subjects(*),
+        form:forms(
+          *,
+          school:institutions(*)
+        )
+      `)
+      .eq('form_id', formId)
+      .eq('is_active', true)
+      .order('subject_name', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
+  }
+  
+  /**
+   * Get subject-form offering by ID (full curriculum details)
+   */
+  async getCurriculumOfferingById(offeringId) {
+    const { data, error } = await supabase
+      .from('subject_form_offerings')
+      .select(`
+        *,
+        subject:subjects(*),
+        form:forms(
+          *,
+          school:institutions(*)
+        )
+      `)
+      .eq('offering_id', offeringId)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+  
+  /**
+   * Update curriculum framework or learning outcomes for a subject-form offering
+   */
+  async updateCurriculumOffering(offeringId, curriculumData) {
+    const { data, error } = await supabase
+      .from('subject_form_offerings')
+      .update({
+        curriculum_framework: curriculumData.curriculum_framework,
+        learning_outcomes: curriculumData.learning_outcomes,
+        weekly_periods: curriculumData.weekly_periods,
+        is_compulsory: curriculumData.is_compulsory,
+        updated_at: new Date().toISOString()
+      })
+      .eq('offering_id', offeringId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  // ============================================
   // HIERARCHICAL STRUCTURE - LESSONS
   // ============================================
   
