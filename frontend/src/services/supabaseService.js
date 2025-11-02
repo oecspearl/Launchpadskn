@@ -1079,7 +1079,8 @@ class SupabaseService {
       query = query.eq('subject_id', subjectId);
     }
     
-    query = query.order('form_number', { ascending: true });
+    // Order by form_id (forms are already ordered by form_number in the database)
+    query = query.order('form_id', { ascending: true });
     
     const { data, error } = await query;
     
