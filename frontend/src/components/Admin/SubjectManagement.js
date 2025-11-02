@@ -375,6 +375,8 @@ function SubjectManagement() {
                       <th>Subject</th>
                       <th>Form</th>
                       <th>Academic Year</th>
+                      <th>Periods/Week</th>
+                      <th>Compulsory</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
@@ -534,6 +536,7 @@ function SubjectManagement() {
                 value={offeringData.subject_id}
                 onChange={(e) => setOfferingData({ ...offeringData, subject_id: e.target.value })}
                 required
+                disabled={!!editingOffering}
               >
                 <option value="">Select Subject</option>
                 {subjects.map(subject => (
@@ -542,6 +545,11 @@ function SubjectManagement() {
                   </option>
                 ))}
               </Form.Select>
+              {editingOffering && (
+                <Form.Text className="text-muted">
+                  Subject and Form cannot be changed after creation
+                </Form.Text>
+              )}
             </Form.Group>
             
             <Form.Group className="mb-3">
@@ -550,15 +558,45 @@ function SubjectManagement() {
                 value={offeringData.form_id}
                 onChange={(e) => setOfferingData({ ...offeringData, form_id: e.target.value })}
                 required
+                disabled={!!editingOffering}
               >
                 <option value="">Select Form</option>
                 {forms.map(form => (
                   <option key={form.form_id} value={form.form_id}>
-                    {form.form_name} ({form.academic_year})
+                    {form.form_name} (Form {form.form_number}) - {form.academic_year}
                   </option>
                 ))}
               </Form.Select>
             </Form.Group>
+            
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Weekly Periods</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={offeringData.weekly_periods}
+                    onChange={(e) => setOfferingData({ ...offeringData, weekly_periods: e.target.value })}
+                    placeholder="5"
+                  />
+                  <Form.Text className="text-muted">
+                    Number of lessons per week
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Check
+                    type="checkbox"
+                    label="Compulsory Subject"
+                    checked={offeringData.is_compulsory}
+                    onChange={(e) => setOfferingData({ ...offeringData, is_compulsory: e.target.checked })}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
             
             <Form.Group className="mb-3">
               <Form.Label>Curriculum Framework</Form.Label>
