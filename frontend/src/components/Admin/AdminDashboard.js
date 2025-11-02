@@ -6,7 +6,7 @@ import {
 import { Link } from 'react-router-dom';
 import { 
   FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, 
-  FaBell, FaChartLine, FaCalendarAlt
+  FaBell, FaChartLine, FaCalendarAlt, FaSchool
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -343,61 +343,54 @@ function AdminDashboard() {
               </div>
             </div>
 
-            {/* Recent Activity Section */}
-            <Row className="g-4">
-              <Col>
-                <h5 className="mb-3 fw-bold">Recent Activity</h5>
-              </Col>
-            </Row>
-            <Row>
-              <Col>
-                <Card className="shadow-sm border-0">
-                  <Card.Body className="p-4">
-                    {stats.recentActivity && stats.recentActivity.length > 0 ? (
-                      <div className="activity-timeline">
-                        {stats.recentActivity.map((activity, index) => (
-                          <div key={activity.id || index} className="activity-item mb-3 pb-3 border-bottom">
-                            <div className="d-flex align-items-start">
-                              <div 
-                                className={`activity-icon rounded-circle d-flex align-items-center justify-content-center me-3 ${
-                                  activity.type === 'user' ? 'bg-primary' :
-                                  activity.type === 'subject' ? 'bg-success' :
-                                  activity.type === 'class' ? 'bg-info' :
-                                  activity.type === 'form' ? 'bg-warning' :
-                                  'bg-secondary'
-                                }`}
-                                style={{ width: '40px', height: '40px', minWidth: '40px' }}
-                              >
-                                {activity.type === 'user' ? <FaUserGraduate className="text-white" /> :
-                                 activity.type === 'subject' ? <FaBook className="text-white" /> :
-                                 activity.type === 'class' ? <FaUsers className="text-white" /> :
-                                 activity.type === 'form' ? <FaChalkboardTeacher className="text-white" /> :
-                                 <FaBell className="text-white" />}
-                              </div>
-                              <div className="flex-grow-1">
-                                <p className="mb-1">
-                                  <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
-                                </p>
-                                <small className="text-muted">
-                                  <FaCalendarAlt className="me-1" />
-                                  {activity.time}
-                                </small>
-                              </div>
+            {/* Recent Activity - Modern Design */}
+            <div className="mb-5">
+              <h4 className="section-title mb-4">Recent Activity</h4>
+              <div className="card-modern">
+                <div className="card-body">
+                  {stats.recentActivity && stats.recentActivity.length > 0 ? (
+                    <div>
+                      {stats.recentActivity.map((activity, index) => (
+                        <div key={activity.id || index} className="activity-item">
+                          <div className={`activity-icon ${
+                            activity.type === 'user' ? 'user' :
+                            activity.type === 'subject' ? 'subject' :
+                            activity.type === 'class' ? 'class' :
+                            activity.type === 'form' ? 'form' :
+                            'user'
+                          }`}>
+                            {activity.type === 'user' ? <FaUserGraduate /> :
+                             activity.type === 'subject' ? <FaBook /> :
+                             activity.type === 'class' ? <FaUsers /> :
+                             activity.type === 'form' ? <FaChalkboardTeacher /> :
+                             <FaBell />}
+                          </div>
+                          <div className="activity-content">
+                            <div className="activity-text">
+                              <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
+                            </div>
+                            <div className="activity-time">
+                              <FaCalendarAlt className="me-1" />
+                              {activity.time}
                             </div>
                           </div>
-                        ))}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <div className="empty-state-icon">
+                        <FaBell />
                       </div>
-                    ) : (
-                      <div className="text-center py-5">
-                        <FaBell className="text-muted mb-3" size={48} />
-                        <p className="text-muted mb-0">No recent activity</p>
-                        <small className="text-muted">Start by creating forms, classes, and subjects</small>
+                      <div className="empty-state-text">
+                        <p className="mb-1">No recent activity</p>
+                        <small>Start by creating forms, classes, and subjects</small>
                       </div>
-                    )}
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
