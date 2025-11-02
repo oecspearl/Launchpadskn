@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 40" width="60" height="40">
+  <!-- Green triangle (upper-left) -->
+  <path d="M 0,0 L 0,40 L 60,40 Z" fill="#009639"/>
+  
+  <!-- Red triangle (lower-right) -->
+  <path d="M 0,0 L 60,0 L 60,40 Z" fill="#CE1126"/>
+  
+  <!-- Black diagonal band with yellow borders -->
+  <g transform="rotate(-45 30 20)">
+    <!-- Left yellow border -->
+    <rect x="25" y="-70" width="1.5" height="141" fill="#FCD116"/>
+    
+    <!-- Black center -->
+    <rect x="26.5" y="-70" width="7" height="141" fill="#000000"/>
+    
+    <!-- Right yellow border -->
+    <rect x="33.5" y="-70" width="1.5" height="141" fill="#FCD116"/>
+    
+    <!-- Two white stars -->
+    <!-- Top star -->
+    <polygon points="30,5 31.5,8.5 35,9 32,11.5 32.5,15 30,13 27.5,15 28,11.5 25,9 28.5,8.5" fill="#FFFFFF"/>
+    
+    <!-- Bottom star -->
+    <polygon points="30,20 31.5,23.5 35,24 32,26.5 32.5,30 30,28 27.5,30 28,26.5 25,24 28.5,23.5" fill="#FFFFFF"/>
+  </g>
+</svg>
+
