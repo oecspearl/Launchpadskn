@@ -13,13 +13,13 @@ VALUES (
     'Bernard Audain''s Drive, Taylors, Basseterre, St. Kitts',
     '+1 (869) 465-2096, +1 (869) 465-2004',
     'damian.bacchus@moe.edu.kn',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- 2. Cayon High School (CHS)
 INSERT INTO institutions (name, location, phone, contact, institution_type) 
@@ -28,13 +28,13 @@ VALUES (
     'St. Mary Cayon, St. Kitts',
     '+1 (869) 465-7204',
     'tracy.wattley@moe.edu.kn',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- 3. Washington Archibald High School (WAHS)
 INSERT INTO institutions (name, location, phone, contact, institution_type) 
@@ -43,13 +43,13 @@ VALUES (
     'Taylor''s Range, Basseterre, St. Kitts',
     '+1 (869) 465-2834, +1 (869) 667-0870',
     'Roline.Taylor@moe.edu.kn',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- 4. Verchilds High School
 INSERT INTO institutions (name, location, phone, contact, institution_type) 
@@ -58,13 +58,13 @@ VALUES (
     'Verchild''s Village, St. Thomas Middle Island, St. Kitts',
     '+1 (869) 465-6283',
     'meguel.thomas@moe.edu.kn',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- 5. Charles E. Mills Secondary School (CEMSS)
 INSERT INTO institutions (name, location, phone, contact, institution_type) 
@@ -73,13 +73,13 @@ VALUES (
     'Sandy Point, St. Kitts (Formerly Sandy Point High School)',
     '+1 (869) 465-6295',
     'eisha.jackson@moe.edu.kn',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- 6. Dr. Denzil L. Douglas Secondary School
 INSERT INTO institutions (name, location, phone, contact, institution_type) 
@@ -88,13 +88,13 @@ VALUES (
     'Saddlers, St. Kitts (Formerly Saddlers Secondary School)',
     '+1 (869) 465-5804',
     'julia.byron-isaac@moe.edu.kn',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- ============================================
 -- ST. KITTS - PRIVATE SECONDARY SCHOOLS
@@ -107,13 +107,13 @@ VALUES (
     'E Independence Street, Basseterre, St. Kitts (Formerly St. Theresa''s Convent High School)',
     '+1 (869) 465-3219',
     'Contact via phone',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- 8. St. Kitts International Academy (SKI Academy)
 INSERT INTO institutions (name, location, phone, contact, website, institution_type) 
@@ -123,14 +123,14 @@ VALUES (
     '+1 (869) 466-1026',
     'skiacademy@caribsurf.com',
     'www.skiacademy.net',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
     website = EXCLUDED.website,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- 9. St. Christopher Preparatory School
 INSERT INTO institutions (name, location, phone, contact, institution_type) 
@@ -139,13 +139,13 @@ VALUES (
     'St. Kitts',
     'Contact Ministry of Education',
     'Information not publicly available',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- ============================================
 -- NEVIS - PUBLIC SECONDARY SCHOOLS
@@ -158,13 +158,13 @@ VALUES (
     'PO Box 207, Stoney Grove, Charlestown, Nevis',
     '+1 (869) 469-7316',
     'dianna.browne@moe.edu.kn',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- 11. Gingerland Secondary School
 INSERT INTO institutions (name, location, phone, contact, institution_type) 
@@ -173,13 +173,13 @@ VALUES (
     'Stonyhill, Gingerland, Nevis',
     '+1 (869) 469-3926',
     'Contact via phone or Ministry of Education Nevis',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- ============================================
 -- NEVIS - PRIVATE SECONDARY SCHOOLS
@@ -193,14 +193,14 @@ VALUES (
     '+1 (869) 469-7006',
     'nevisinternationalsecondary@sisterisles.kn',
     'www.nevisinternational.wixsite.com',
-    'SCHOOL'
+    'SECONDARY_SCHOOL'
 )
 ON CONFLICT (name) DO UPDATE SET
     location = EXCLUDED.location,
     phone = EXCLUDED.phone,
     contact = EXCLUDED.contact,
     website = EXCLUDED.website,
-    institution_type = EXCLUDED.institution_type;
+    institution_type = COALESCE(EXCLUDED.institution_type, 'SECONDARY_SCHOOL');
 
 -- ============================================
 -- VERIFICATION QUERY
@@ -208,6 +208,6 @@ ON CONFLICT (name) DO UPDATE SET
 -- Run this query after insertion to verify all schools were added:
 -- SELECT name, location, institution_type, phone, contact 
 -- FROM institutions 
--- WHERE institution_type = 'SCHOOL'
+-- WHERE institution_type = 'SECONDARY_SCHOOL'
 -- ORDER BY name;
 

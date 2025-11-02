@@ -30,7 +30,7 @@ SELECT institution_id,
     '0500',
     'CSEC English Language (English A) - Core compulsory subject for all students'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Mathematics
@@ -41,7 +41,7 @@ SELECT institution_id,
     '0502',
     'CSEC Mathematics - Core compulsory subject for all students'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- ============================================
@@ -56,7 +56,7 @@ SELECT institution_id,
     '0301',
     'CSEC Biology - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Chemistry
@@ -67,7 +67,7 @@ SELECT institution_id,
     '0302',
     'CSEC Chemistry - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Physics
@@ -78,7 +78,7 @@ SELECT institution_id,
     '0303',
     'CSEC Physics - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Human and Social Biology
@@ -89,7 +89,7 @@ SELECT institution_id,
     '0304',
     'CSEC Human and Social Biology - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Integrated Science
@@ -100,7 +100,7 @@ SELECT institution_id,
     '0305',
     'CSEC Integrated Science - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Agricultural Science
@@ -111,7 +111,7 @@ SELECT institution_id,
     '0601',
     'CSEC Agricultural Science - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- ============================================
@@ -126,7 +126,7 @@ SELECT institution_id,
     '0201',
     'CSEC Geography - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Caribbean History
@@ -137,7 +137,7 @@ SELECT institution_id,
     '0202',
     'CSEC Caribbean History - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Social Studies
@@ -148,7 +148,7 @@ SELECT institution_id,
     '0203',
     'CSEC Social Studies - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Economics
@@ -159,7 +159,7 @@ SELECT institution_id,
     '0401',
     'CSEC Economics - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- ============================================
@@ -174,7 +174,7 @@ SELECT institution_id,
     '0402',
     'CSEC Principles of Accounts - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Principles of Business
@@ -185,7 +185,7 @@ SELECT institution_id,
     '0403',
     'CSEC Principles of Business - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Office Administration
@@ -196,7 +196,7 @@ SELECT institution_id,
     '0404',
     'CSEC Office Administration - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Information Technology
@@ -207,7 +207,7 @@ SELECT institution_id,
     '0701',
     'CSEC Information Technology - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- ============================================
@@ -222,7 +222,7 @@ SELECT institution_id,
     '0102',
     'CSEC Spanish - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- French
@@ -233,7 +233,7 @@ SELECT institution_id,
     '0101',
     'CSEC French - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- English B (for non-native English speakers)
@@ -244,7 +244,7 @@ SELECT institution_id,
     '0501',
     'CSEC English B - General Proficiency (for non-native English speakers)'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- ============================================
@@ -259,7 +259,7 @@ SELECT institution_id,
     '0702',
     'CSEC Technical Drawing - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Electronic Document Preparation and Management (EDPM)
@@ -270,7 +270,7 @@ SELECT institution_id,
     '0703',
     'CSEC Electronic Document Preparation and Management (EDPM) - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Building Technology
@@ -281,7 +281,7 @@ SELECT institution_id,
     '0704',
     'CSEC Building Technology - Technical Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Electrical and Electronic Technology
@@ -292,7 +292,7 @@ SELECT institution_id,
     '0705',
     'CSEC Electrical and Electronic Technology - Technical Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Mechanical Engineering Technology
@@ -303,7 +303,7 @@ SELECT institution_id,
     '0706',
     'CSEC Mechanical Engineering Technology - Technical Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Home Economics - Food and Nutrition
@@ -314,7 +314,7 @@ SELECT institution_id,
     '0602',
     'CSEC Food and Nutrition - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Home Economics - Clothing and Textiles
@@ -325,7 +325,7 @@ SELECT institution_id,
     '0603',
     'CSEC Clothing and Textiles - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- ============================================
@@ -340,7 +340,7 @@ SELECT institution_id,
     '0801',
     'CSEC Physical Education and Sport - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Visual Arts
@@ -351,7 +351,7 @@ SELECT institution_id,
     '0802',
     'CSEC Visual Arts - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Music
@@ -362,7 +362,7 @@ SELECT institution_id,
     '0803',
     'CSEC Music - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Theatre Arts
@@ -373,7 +373,7 @@ SELECT institution_id,
     '0804',
     'CSEC Theatre Arts - General Proficiency'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- Additional Mathematics
@@ -384,7 +384,7 @@ SELECT institution_id,
     '0503',
     'CSEC Additional Mathematics - General Proficiency (for advanced math students)'
 FROM institutions
-WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
 ON CONFLICT (subject_code) DO NOTHING;
 
 -- ============================================
@@ -411,7 +411,7 @@ ON CONFLICT (subject_code) DO NOTHING;
 --     COUNT(s.subject_id) as total_subjects
 -- FROM institutions i
 -- LEFT JOIN subjects s ON i.institution_id = s.school_id
--- WHERE i.institution_type = 'SCHOOL'
+-- WHERE i.institution_type = 'SECONDARY_SCHOOL'
 -- GROUP BY i.name
 -- ORDER BY i.name;
 

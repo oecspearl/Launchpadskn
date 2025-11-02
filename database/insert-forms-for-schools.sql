@@ -27,7 +27,7 @@ BEGIN
         'Lower Secondary - Year 1 (Ages 11-12). Foundation year for secondary education with internal assessments.',
         true
     FROM institutions
-    WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
     ON CONFLICT (school_id, form_number, academic_year) DO UPDATE SET
         form_name = EXCLUDED.form_name,
         description = EXCLUDED.description,
@@ -44,7 +44,7 @@ BEGIN
         'Lower Secondary - Year 2 (Ages 12-13). Continuation of foundation studies with internal assessments.',
         true
     FROM institutions
-    WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
     ON CONFLICT (school_id, form_number, academic_year) DO UPDATE SET
         form_name = EXCLUDED.form_name,
         description = EXCLUDED.description,
@@ -61,7 +61,7 @@ BEGIN
         'Lower Secondary - Year 3 (Ages 13-14). Final year of lower secondary with internal assessments. Prepares students for CSEC track in Forms 4-5.',
         true
     FROM institutions
-    WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
     ON CONFLICT (school_id, form_number, academic_year) DO UPDATE SET
         form_name = EXCLUDED.form_name,
         description = EXCLUDED.description,
@@ -82,7 +82,7 @@ BEGIN
         'Upper Secondary - Year 1 (Ages 14-15). First year of CSEC preparation. Students begin CSEC subject studies and School-Based Assessments (SBAs).',
         true
     FROM institutions
-    WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
     ON CONFLICT (school_id, form_number, academic_year) DO UPDATE SET
         form_name = EXCLUDED.form_name,
         description = EXCLUDED.description,
@@ -99,7 +99,7 @@ BEGIN
         'Upper Secondary - Year 2 (Ages 15-16). CSEC Examination Year. Students complete SBAs and sit CSEC examinations at the end of the year.',
         true
     FROM institutions
-    WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
     ON CONFLICT (school_id, form_number, academic_year) DO UPDATE SET
         form_name = EXCLUDED.form_name,
         description = EXCLUDED.description,
@@ -120,7 +120,7 @@ BEGIN
         'Sixth Form - Lower Sixth (Ages 16-17). First year of CAPE (Caribbean Advanced Proficiency Examination) preparation. Optional post-CSEC education for students pursuing A-Level equivalent studies.',
         true
     FROM institutions
-    WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
     ON CONFLICT (school_id, form_number, academic_year) DO UPDATE SET
         form_name = EXCLUDED.form_name,
         description = EXCLUDED.description,
@@ -137,7 +137,7 @@ BEGIN
         'Sixth Form - Upper Sixth (Ages 17-18). CAPE Examination Year. Students complete CAPE coursework and sit CAPE examinations. Prepares for university admission.',
         true
     FROM institutions
-    WHERE institution_type = 'SCHOOL'
+    WHERE institution_type = 'SECONDARY_SCHOOL'
     ON CONFLICT (school_id, form_number, academic_year) DO UPDATE SET
         form_name = EXCLUDED.form_name,
         description = EXCLUDED.description,
@@ -158,7 +158,7 @@ END $$;
 --     STRING_AGG(f.form_name, ', ' ORDER BY f.form_number) as forms
 -- FROM institutions i
 -- LEFT JOIN forms f ON i.institution_id = f.school_id
--- WHERE i.institution_type = 'SCHOOL'
+-- WHERE i.institution_type = 'SECONDARY_SCHOOL'
 --     AND f.academic_year = '2024-2025'
 -- GROUP BY i.name
 -- ORDER BY i.name;
@@ -178,7 +178,7 @@ END $$;
 --     END as level
 -- FROM institutions i
 -- JOIN forms f ON i.institution_id = f.school_id
--- WHERE i.institution_type = 'SCHOOL'
+-- WHERE i.institution_type = 'SECONDARY_SCHOOL'
 --     AND f.academic_year = '2024-2025'
 -- ORDER BY i.name, f.form_number;
 
