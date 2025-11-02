@@ -9,10 +9,18 @@
   position: relative;
   width: 60px;
   height: 40px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  border-radius: 3px;
+  border: 2px solid rgba(252, 209, 22, 0.4);
+  border-radius: 12px;
   overflow: hidden;
   flex-shrink: 0;
+  transition: all var(--transition-base, 0.2s ease-in-out);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.flag-logo:hover {
+  border-color: var(--accent-color, #FCD116);
+  box-shadow: 0 4px 12px rgba(252, 209, 22, 0.3);
+  transform: scale(1.05);
 }
 
 .flag-logo-small {
@@ -139,6 +147,14 @@
 .navbar .flag-logo {
   width: 50px;
   height: 33px;
+  border: 2px solid rgba(252, 209, 22, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(252, 209, 22, 0.2);
+}
+
+.navbar .flag-logo:hover {
+  border-color: var(--accent-color, #FCD116);
+  box-shadow: 0 4px 12px rgba(252, 209, 22, 0.4);
 }
 
 .navbar .flag-logo-text {
