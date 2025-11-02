@@ -194,24 +194,17 @@ function AdminDashboard() {
 
   return (
     <div className="admin-dashboard">
-      {/* Top navbar with notifications */}
-      <div className="dashboard-header bg-white py-3 px-4 shadow-sm mb-4">
-        <Row className="align-items-center">
-          <Col>
-            <h1 className="mb-0">Admin Dashboard</h1>
-            <p className="text-muted mb-0">Welcome back, {user?.name || user?.email || 'Admin'}</p>
-          </Col>
-          <Col xs="auto">
-            <Badge pill bg="info" className="me-2">
-              <FaBell /> {stats.recentActivity.length} activities
-            </Badge>
-          </Col>
-        </Row>
+      {/* Modern Hero Header */}
+      <div className="dashboard-hero fade-in">
+        <div className="dashboard-hero-content">
+          <h1>Welcome back, {user?.name || user?.email || 'Admin'}</h1>
+          <p>Manage your institutions, students, and educational content</p>
+        </div>
       </div>
 
       <Container fluid className="px-4">
-        {/* Navigation tabs */}
-        <Nav variant="tabs" className="mb-4" activeKey={activeTab} onSelect={setActiveTab}>
+        {/* Navigation tabs - Mobile Friendly */}
+        <Nav variant="tabs" className="nav-tabs mb-4" activeKey={activeTab} onSelect={setActiveTab}>
           <Nav.Item>
             <Nav.Link eventKey="overview">Overview</Nav.Link>
           </Nav.Item>
@@ -235,154 +228,120 @@ function AdminDashboard() {
         {/* Dashboard content based on active tab */}
         {activeTab === 'overview' && (
           <div className="dashboard-overview">
-            {/* Stats cards row */}
-            <Row className="g-4 mb-4">
-              <Col md={3} sm={6}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="d-flex align-items-center p-4">
-                    <div className="icon-bg bg-primary bg-opacity-10 rounded-circle p-3 me-3">
-                      <FaUsers className="text-primary" size={28} />
-                    </div>
-                    <div>
-                      <h6 className="text-muted mb-1 small">Total Users</h6>
-                      <h3 className="mb-0 fw-bold">{stats.totalUsers}</h3>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={3} sm={6}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="d-flex align-items-center p-4">
-                    <div className="icon-bg bg-success bg-opacity-10 rounded-circle p-3 me-3">
-                      <FaBook className="text-success" size={28} />
-                    </div>
-                    <div>
-                      <h6 className="text-muted mb-1 small">Total Subjects</h6>
-                      <h3 className="mb-0 fw-bold">{stats.totalCourses}</h3>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={3} sm={6}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="d-flex align-items-center p-4">
-                    <div className="icon-bg bg-info bg-opacity-10 rounded-circle p-3 me-3">
-                      <FaChalkboardTeacher className="text-info" size={28} />
-                    </div>
-                    <div>
-                      <h6 className="text-muted mb-1 small">Instructors</h6>
-                      <h3 className="mb-0 fw-bold">{stats.totalInstructors}</h3>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={3} sm={6}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="d-flex align-items-center p-4">
-                    <div className="icon-bg bg-warning bg-opacity-10 rounded-circle p-3 me-3">
-                      <FaUserGraduate className="text-warning" size={28} />
-                    </div>
-                    <div>
-                      <h6 className="text-muted mb-1 small">Students</h6>
-                      <h3 className="mb-0 fw-bold">{stats.totalStudents}</h3>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+            {/* Modern Stats Cards */}
+            <div className="grid-responsive mb-5 slide-up">
+              <div className="stat-card-modern">
+                <div className="stat-icon-circle">
+                  <FaUsers />
+                </div>
+                <div className="stat-card-title">Total Users</div>
+                <div className="stat-value-large">{stats.totalUsers}</div>
+              </div>
+              <div className="stat-card-modern secondary">
+                <div className="stat-icon-circle" style={{background: 'var(--secondary-gradient)'}}>
+                  <FaBook />
+                </div>
+                <div className="stat-card-title">Total Subjects</div>
+                <div className="stat-value-large" style={{background: 'var(--secondary-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
+                  {stats.totalCourses}
+                </div>
+              </div>
+              <div className="stat-card-modern">
+                <div className="stat-icon-circle">
+                  <FaChalkboardTeacher />
+                </div>
+                <div className="stat-card-title">Instructors</div>
+                <div className="stat-value-large">{stats.totalInstructors}</div>
+              </div>
+              <div className="stat-card-modern accent">
+                <div className="stat-icon-circle" style={{background: 'var(--accent-gradient)', color: 'var(--skn-black)'}}>
+                  <FaUserGraduate />
+                </div>
+                <div className="stat-card-title">Students</div>
+                <div className="stat-value-large" style={{background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
+                  {stats.totalStudents}
+                </div>
+              </div>
+            </div>
 
-            {/* Additional stats row */}
-            <Row className="g-4 mb-4">
-              <Col md={6} sm={6}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="d-flex align-items-center p-4">
-                    <div className="icon-bg bg-secondary bg-opacity-10 rounded-circle p-3 me-3">
-                      <FaCalendarAlt className="text-secondary" size={28} />
-                    </div>
-                    <div>
-                      <h6 className="text-muted mb-1 small">Total Forms</h6>
-                      <h3 className="mb-0 fw-bold">{stats.totalForms}</h3>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={6} sm={6}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="d-flex align-items-center p-4">
-                    <div className="icon-bg bg-danger bg-opacity-10 rounded-circle p-3 me-3">
-                      <FaUsers className="text-danger" size={28} />
-                    </div>
-                    <div>
-                      <h6 className="text-muted mb-1 small">Total Classes</h6>
-                      <h3 className="mb-0 fw-bold">{stats.totalClasses}</h3>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+            {/* Additional Stats */}
+            <div className="grid-responsive mb-5" style={{gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))'}}>
+              <div className="stat-card-modern">
+                <div className="stat-icon-circle">
+                  <FaCalendarAlt />
+                </div>
+                <div className="stat-card-title">Total Forms</div>
+                <div className="stat-value-large">{stats.totalForms}</div>
+              </div>
+              <div className="stat-card-modern">
+                <div className="stat-icon-circle">
+                  <FaUsers />
+                </div>
+                <div className="stat-card-title">Total Classes</div>
+                <div className="stat-value-large">{stats.totalClasses}</div>
+              </div>
+            </div>
 
-            {/* Quick access cards */}
-            <Row className="g-4 mb-4">
-              <Col>
-                <h5 className="mb-3 fw-bold">Quick Access</h5>
-              </Col>
-            </Row>
-            <Row className="g-4 mb-4">
-              <Col md={4}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="p-4">
-                    <h5 className="card-title fw-bold">Manage Forms</h5>
-                    <p className="card-text text-muted">Create and manage Forms (year groups) for schools.</p>
-                    <Button as={Link} to="/admin/forms" variant="primary" className="w-100">Go to Forms</Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={4}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="p-4">
-                    <h5 className="card-title fw-bold">Manage Classes</h5>
-                    <p className="card-text text-muted">Create classes within Forms and assign tutors.</p>
-                    <Button as={Link} to="/admin/classes" variant="primary" className="w-100">Go to Classes</Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={4}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="p-4">
-                    <h5 className="card-title fw-bold">Manage Subjects</h5>
-                    <p className="card-text text-muted">Create subjects and assign to Forms.</p>
-                    <Button as={Link} to="/admin/subjects" variant="primary" className="w-100">Go to Subjects</Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={4}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="p-4">
-                    <h5 className="card-title fw-bold">Assign Students</h5>
-                    <p className="card-text text-muted">Assign students to classes.</p>
-                    <Button as={Link} to="/admin/student-assignment" variant="primary" className="w-100">Assign Students</Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={4}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="p-4">
-                    <h5 className="card-title fw-bold">Assign Subjects</h5>
-                    <p className="card-text text-muted">Assign subjects to classes and assign teachers.</p>
-                    <Button as={Link} to="/admin/class-subject-assignment" variant="primary" className="w-100">Assign Subjects</Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-              <Col md={4}>
-                <Card className="h-100 shadow-sm border-0">
-                  <Card.Body className="p-4">
-                    <h5 className="card-title fw-bold">Manage Institutions</h5>
-                    <p className="card-text text-muted">Add, edit, or manage educational institutions.</p>
-                    <Button onClick={() => setActiveTab('institutions')} variant="secondary" className="w-100">Go to Institutions</Button>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
+            {/* Quick Access - Modern Cards */}
+            <div className="mb-5">
+              <h4 className="section-title mb-4">Quick Access</h4>
+              <div className="quick-access-grid">
+                <Link to="/admin/forms" className="quick-access-card">
+                  <div className="quick-access-card-icon">
+                    <FaCalendarAlt />
+                  </div>
+                  <div className="quick-access-card-title">Manage Forms</div>
+                  <div className="quick-access-card-description">
+                    Create and manage Forms (year groups) for schools.
+                  </div>
+                </Link>
+                <Link to="/admin/classes" className="quick-access-card">
+                  <div className="quick-access-card-icon">
+                    <FaUsers />
+                  </div>
+                  <div className="quick-access-card-title">Manage Classes</div>
+                  <div className="quick-access-card-description">
+                    Create classes within Forms and assign tutors.
+                  </div>
+                </Link>
+                <Link to="/admin/subjects" className="quick-access-card">
+                  <div className="quick-access-card-icon" style={{background: 'var(--secondary-gradient)'}}>
+                    <FaBook />
+                  </div>
+                  <div className="quick-access-card-title">Manage Subjects</div>
+                  <div className="quick-access-card-description">
+                    Create subjects and assign to Forms.
+                  </div>
+                </Link>
+                <Link to="/admin/student-assignment" className="quick-access-card">
+                  <div className="quick-access-card-icon" style={{background: 'var(--accent-gradient)', color: 'var(--skn-black)'}}>
+                    <FaUserGraduate />
+                  </div>
+                  <div className="quick-access-card-title">Assign Students</div>
+                  <div className="quick-access-card-description">
+                    Assign students to classes.
+                  </div>
+                </Link>
+                <Link to="/admin/class-subject-assignment" className="quick-access-card">
+                  <div className="quick-access-card-icon">
+                    <FaChalkboardTeacher />
+                  </div>
+                  <div className="quick-access-card-title">Assign Subjects</div>
+                  <div className="quick-access-card-description">
+                    Assign subjects to classes and assign teachers.
+                  </div>
+                </Link>
+                <div className="quick-access-card" onClick={() => setActiveTab('institutions')} style={{cursor: 'pointer'}}>
+                  <div className="quick-access-card-icon" style={{background: 'var(--secondary-gradient)'}}>
+                    <FaSchool />
+                  </div>
+                  <div className="quick-access-card-title">Manage Institutions</div>
+                  <div className="quick-access-card-description">
+                    Add, edit, or manage educational institutions.
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* Recent Activity Section */}
             <Row className="g-4">

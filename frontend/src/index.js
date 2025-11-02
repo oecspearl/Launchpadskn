@@ -4,6 +4,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './styles/colors.css';
 import './styles/global.css';
 import './styles/components.css';
+import './styles/mobile-enhancements.css';
 import './index.css';
 import App from './App';
 import ErrorBoundary from './components/common/ErrorBoundary';
