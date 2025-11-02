@@ -38,12 +38,12 @@ BEGIN
 
     IF student_user_id IS NULL THEN
         -- Insert new student profile
+        -- Note: user_id is BIGSERIAL (auto-generated), id is UUID from Supabase Auth
         INSERT INTO users (
-            id, user_id, name, email, role, is_active, 
+            id, name, email, role, is_active, 
             created_at, is_first_login
         ) VALUES (
             student_uuid, 
-            student_uuid,
             'Test Student',
             student_email,
             'STUDENT',
@@ -64,7 +64,7 @@ BEGIN
             is_active = true,
             is_first_login = true,
             updated_at = NOW()
-        WHERE user_id = student_user_id;
+        WHERE user_id = student_user_id OR id = student_uuid;
         
         RAISE NOTICE 'Student profile updated in users table with user_id: %', student_user_id;
     END IF;
