@@ -526,7 +526,9 @@ function SubjectManagement() {
       {/* Form Offering Modal */}
       <Modal show={showOfferingModal} onHide={handleCloseModals} size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Add Subject to Form</Modal.Title>
+          <Modal.Title>
+            {editingOffering ? 'Edit Curriculum' : 'Add Subject to Form'}
+          </Modal.Title>
         </Modal.Header>
         <Form onSubmit={handleSubmitOffering}>
           <Modal.Body>
