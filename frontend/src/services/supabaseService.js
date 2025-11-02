@@ -698,15 +698,21 @@ class SupabaseService {
   // ============================================
   
   /**
-   * Get all forms for a school
+   * Get all forms for a school (or all forms if schoolId is null)
    */
   async getFormsBySchool(schoolId) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('forms')
       .select('*, coordinator:users!forms_coordinator_id_fkey(name, email)')
-      .eq('school_id', schoolId)
       .eq('is_active', true)
       .order('form_number', { ascending: true });
+    
+    // Only filter by school_id if it's provided
+    if (schoolId !== null && schoolId !== undefined) {
+      query = query.eq('school_id', schoolId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) throw error;
     return data;
@@ -896,15 +902,21 @@ class SupabaseService {
   // ============================================
   
   /**
-   * Get all subjects for a school
+   * Get all subjects for a school (or all subjects if schoolId is null)
    */
   async getSubjectsBySchool(schoolId) {
-    const { data, error } = await supabase
+    let query = supabase
       .from('subjects')
       .select('*, department:departments(*)')
-      .eq('school_id', schoolId)
       .eq('is_active', true)
       .order('subject_name', { ascending: true });
+    
+    // Only filter by school_id if it's provided
+    if (schoolId !== null && schoolId !== undefined) {
+      query = query.eq('school_id', schoolId);
+    }
+    
+    const { data, error } = await query;
     
     if (error) throw error;
     return data;
