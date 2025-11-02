@@ -18,7 +18,7 @@ import EnhancedCourseManagement from './EnhancedCourseManagement';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   
   // State to store dashboard statistics
   const [stats, setStats] = useState({
@@ -104,11 +104,42 @@ function AdminDashboard() {
 
   // Fetch dashboard statistics when component mounts
   useEffect(() => {
-    console.log('[AdminDashboard] Component mounted, user:', user?.email);
+    console.log('[AdminDashboard] Component mounted, user:', user?.email, 'isAuthenticated:', isAuthenticated);
     
-    // If no user, don't fetch
-    if (!user) {
-      console.warn('[AdminDashboard] No user, skipping fetch');
+    // If no user AND not authenticated, don't fetch
+    // But also check localStorage as fallback (auth state might be loading)
+    if (!user && !isAuthenticated) {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          console.log('[AdminDashboard] Found stored user, using it:', parsedUser.email);
+          // Use stored user temporarily until auth context updates
+          setStats(prev => ({ ...prev })); // Trigger a re-render
+        } catch (e) {
+          console.warn('[AdminDashboard] Could not parse stored user');
+        }
+      }
+      
+      if (!storedUser) {
+        console.warn('[AdminDashboard] No user and no stored auth, skipping fetch');
+        setIsLoading(false);
+        return;
+      }
+    }
+    
+    // If we have a user or stored auth, proceed with fetch
+    const userId = user?.userId || user?.id || (() => {
+      try {
+        const stored = localStorage.getItem('user');
+        return stored ? JSON.parse(stored).userId || JSON.parse(stored).id : null;
+      } catch {
+        return null;
+      }
+    })();
+    
+    if (!userId) {
+      console.warn('[AdminDashboard] No userId available, skipping fetch');
       setIsLoading(false);
       return;
     }

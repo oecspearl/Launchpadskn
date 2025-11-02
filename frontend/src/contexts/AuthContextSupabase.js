@@ -48,24 +48,31 @@ export function AuthProvider({ children }) {
           console.log('[AuthContext] SIGNED_IN event, loading profile for:', session.user.email);
           setIsLoading(true); // Set loading while fetching profile
           
-          // Timeout protection: force loading to false after 5 seconds
-          const timeout = setTimeout(() => {
-            console.warn('[AuthContext] Profile loading timeout, forcing isLoading to false');
-            setIsLoading(false);
-          }, 5000);
+          // Immediately set a basic user from session to prevent dashboards from showing "no user"
+          const email = session.user.email;
+          const isAdmin = email && email.toLowerCase().includes('admin');
+          const tempUser = {
+            userId: session.user.id,
+            email: email,
+            name: session.user.user_metadata?.name || email.split('@')[0],
+            role: isAdmin ? 'ADMIN' : (session.user.user_metadata?.role || 'STUDENT').toUpperCase(),
+            token: session.access_token,
+            refreshToken: session.refresh_token,
+            loginTime: Date.now()
+          };
           
-          try {
-            await loadUserProfile(session.user.id);
-            clearTimeout(timeout);
-          } catch (error) {
-            console.error('[AuthContext] Error loading profile after SIGNED_IN:', error);
-            clearTimeout(timeout);
-            setIsLoading(false); // Stop loading on error
-          } finally {
-            // Ensure loading is always cleared
-            clearTimeout(timeout);
-            setIsLoading(false);
-          }
+          // Store temp user immediately so components can use it
+          localStorage.setItem('user', JSON.stringify(tempUser));
+          localStorage.setItem('token', session.access_token);
+          setUser(tempUser);
+          setIsAuthenticated(true);
+          setIsLoading(false); // Set to false immediately so dashboards can render
+          
+          // Then load full profile in background (non-blocking)
+          loadUserProfile(session.user.id).catch(error => {
+            console.warn('[AuthContext] Background profile load failed:', error);
+            // User is already set from temp user above, so we can continue
+          });
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsAuthenticated(false);
@@ -119,14 +126,21 @@ export function AuthProvider({ children }) {
     console.log('[AuthContext] Session found, email:', session.user.email);
     
     try {
-      // Try to get user profile from users table with timeout
+      // Try to get user profile from users table with shorter timeout (2 seconds)
       const profilePromise = supabaseService.getUserProfile(userId);
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Profile fetch timeout')), 5000)
+        setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
       );
       
-      const profile = await Promise.race([profilePromise, timeoutPromise]);
-      console.log('[AuthContext] Profile found in database:', profile);
+      let profile;
+      try {
+        profile = await Promise.race([profilePromise, timeoutPromise]);
+        console.log('[AuthContext] Profile found in database:', profile);
+      } catch (raceError) {
+        // If it times out or fails, throw to fall through to fallback
+        console.warn('[AuthContext] Profile fetch failed or timed out:', raceError);
+        throw raceError;
+      }
       
       // Ensure role is set and valid
       const userRole = (profile.role || 'STUDENT').toUpperCase().trim();
