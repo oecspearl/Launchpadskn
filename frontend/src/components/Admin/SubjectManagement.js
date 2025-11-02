@@ -38,11 +38,14 @@ function SubjectManagement() {
   
   // Modal state for form offerings
   const [showOfferingModal, setShowOfferingModal] = useState(false);
+  const [editingOffering, setEditingOffering] = useState(null);
   const [offeringData, setOfferingData] = useState({
     subject_id: '',
     form_id: '',
     curriculum_framework: '',
-    learning_outcomes: ''
+    learning_outcomes: '',
+    weekly_periods: 5,
+    is_compulsory: false
   });
   
   useEffect(() => {
@@ -131,13 +134,30 @@ function SubjectManagement() {
     setShowSubjectModal(true);
   };
   
-  const handleOpenOfferingModal = () => {
-    setOfferingData({
-      subject_id: '',
-      form_id: '',
-      curriculum_framework: '',
-      learning_outcomes: ''
-    });
+  const handleOpenOfferingModal = (offering = null) => {
+    if (offering) {
+      // Editing existing offering
+      setEditingOffering(offering);
+      setOfferingData({
+        subject_id: offering.subject_id,
+        form_id: offering.form_id,
+        curriculum_framework: offering.curriculum_framework || '',
+        learning_outcomes: offering.learning_outcomes || '',
+        weekly_periods: offering.weekly_periods || 5,
+        is_compulsory: offering.is_compulsory || false
+      });
+    } else {
+      // Creating new offering
+      setEditingOffering(null);
+      setOfferingData({
+        subject_id: '',
+        form_id: '',
+        curriculum_framework: '',
+        learning_outcomes: '',
+        weekly_periods: 5,
+        is_compulsory: false
+      });
+    }
     setShowOfferingModal(true);
   };
   
@@ -145,6 +165,7 @@ function SubjectManagement() {
     setShowSubjectModal(false);
     setShowOfferingModal(false);
     setEditingSubject(null);
+    setEditingOffering(null);
     setSubjectData({});
     setOfferingData({});
     setSuccess(null);
@@ -186,21 +207,38 @@ function SubjectManagement() {
       setError(null);
       setSuccess(null);
       
-      await supabaseService.createSubjectOffering(
-        offeringData.subject_id,
-        offeringData.form_id,
-        {
-          curriculum_framework: offeringData.curriculum_framework || null,
-          learning_outcomes: offeringData.learning_outcomes || null
-        }
-      );
+      if (editingOffering) {
+        // Update existing offering
+        await supabaseService.updateCurriculumOffering(
+          editingOffering.offering_id,
+          {
+            curriculum_framework: offeringData.curriculum_framework || null,
+            learning_outcomes: offeringData.learning_outcomes || null,
+            weekly_periods: parseInt(offeringData.weekly_periods) || 5,
+            is_compulsory: offeringData.is_compulsory || false
+          }
+        );
+        setSuccess('Subject offering updated successfully');
+      } else {
+        // Create new offering
+        await supabaseService.createSubjectOffering(
+          offeringData.subject_id,
+          offeringData.form_id,
+          {
+            curriculum_framework: offeringData.curriculum_framework || null,
+            learning_outcomes: offeringData.learning_outcomes || null,
+            weekly_periods: parseInt(offeringData.weekly_periods) || 5,
+            is_compulsory: offeringData.is_compulsory || false
+          }
+        );
+        setSuccess('Subject offering created successfully');
+      }
       
-      setSuccess('Subject offering created successfully');
       handleCloseModals();
       fetchData();
     } catch (err) {
-      console.error('Error creating offering:', err);
-      setError(err.message || 'Failed to create subject offering');
+      console.error('Error saving offering:', err);
+      setError(err.message || 'Failed to save subject offering');
     }
   };
   
@@ -346,15 +384,22 @@ function SubjectManagement() {
                         <td><strong>{offering.subject?.subject_name}</strong></td>
                         <td>{offering.form?.form_name}</td>
                         <td>{offering.form?.academic_year}</td>
+                        <td>{offering.weekly_periods || 5}</td>
+                        <td>
+                          {offering.is_compulsory ? (
+                            <Badge bg="success">Required</Badge>
+                          ) : (
+                            <Badge bg="secondary">Optional</Badge>
+                          )}
+                        </td>
                         <td>
                           <Button 
-                            variant="outline-info" 
+                            variant="outline-primary" 
                             size="sm"
-                            onClick={() => {
-                              // TODO: View/edit offering details
-                            }}
+                            className="me-2"
+                            onClick={() => handleOpenOfferingModal(offering)}
                           >
-                            View
+                            <FaEdit /> Edit Curriculum
                           </Button>
                         </td>
                       </tr>
@@ -542,7 +587,7 @@ function SubjectManagement() {
               Cancel
             </Button>
             <Button variant="primary" type="submit">
-              Create Offering
+              {editingOffering ? 'Update Curriculum' : 'Create Offering'}
             </Button>
           </Modal.Footer>
         </Form>
