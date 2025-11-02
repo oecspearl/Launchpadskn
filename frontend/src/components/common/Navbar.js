@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navbar, Nav, Container, Button, NavDropdown } from 'react-bootstrap';
+import { Navbar, Nav, Container, NavDropdown } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaUser, FaBell, FaBook, FaUserGraduate } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
