@@ -6,8 +6,22 @@ import { useAuth } from '../../contexts/AuthContextSupabase';
 import FlagLogo from './FlagLogo';
 
 function AppNavbar() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
   const navigate = useNavigate();
+  
+  // Show nothing while loading auth state to prevent flickering
+  if (isLoading) {
+    return (
+      <Navbar bg="dark" variant="dark" expand="lg">
+        <Container>
+          <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">
+            <FlagLogo size="small" showText={true} />
+          </Navbar.Brand>
+          <Navbar.Toggle aria-controls="basic-navbar-nav" />
+        </Container>
+      </Navbar>
+    );
+  }
 
   // Determine dashboard route based on user role
   const getDashboardRoute = () => {
@@ -64,7 +78,7 @@ function AppNavbar() {
 
         <Navbar.Collapse id="basic-navbar-nav">
           {user && isAuthenticated ? (
-            // Authenticated user navigation
+            // Authenticated user navigation - Login/Register are hidden
             <Nav className="ms-auto align-items-center">
               {/* Dashboard link based on role */}
               <Nav.Link as={Link} to={getDashboardRoute()} className="me-3">
@@ -111,7 +125,7 @@ function AppNavbar() {
 
               {/* Profile Dropdown */}
               <NavDropdown 
-                title={<><FaUser className="me-1" />{user.name}</>} 
+                title={<><FaUser className="me-1" />{user.name || user.email}</>} 
                 id="profile-dropdown"
                 align="end"
               >
@@ -125,7 +139,7 @@ function AppNavbar() {
               </NavDropdown>
             </Nav>
           ) : (
-            // Unauthenticated user navigation - only show Login/Register when not authenticated
+            // Unauthenticated user navigation - ONLY show Login/Register when NOT authenticated
             <Nav className="ms-auto">
               <Nav.Link as={Link} to="/login" className="me-3">
                 Login
