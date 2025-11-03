@@ -330,14 +330,24 @@ function LessonPlanning() {
                       formName={classSubject?.class?.form?.form_name || ''}
                       initialTopic={lessonData.topic || ''}
                       onPlanGenerated={(plan) => {
-                        setLessonData(prev => ({
-                          ...prev,
-                          lesson_title: plan.lesson_title || prev.lesson_title,
-                          topic: prev.topic || plan.topic || '',
-                          learning_objectives: plan.learning_objectives || prev.learning_objectives,
-                          lesson_plan: plan.lesson_plan || prev.lesson_plan,
-                          homework_description: plan.homework_description || prev.homework_description
-                        }));
+                        console.log('onPlanGenerated called with plan:', plan);
+                        console.log('Current lessonData before update:', lessonData);
+                        setLessonData(prev => {
+                          const updated = {
+                            ...prev,
+                            lesson_title: plan.lesson_title ?? prev.lesson_title,
+                            topic: prev.topic || plan.topic || '',
+                            learning_objectives: plan.learning_objectives ?? prev.learning_objectives,
+                            lesson_plan: plan.lesson_plan ?? prev.lesson_plan,
+                            homework_description: plan.homework_description ?? prev.homework_description
+                          };
+                          console.log('Updated lessonData:', updated);
+                          // Force a small delay to ensure React processes the update
+                          setTimeout(() => {
+                            console.log('lessonData after timeout:', updated);
+                          }, 100);
+                          return updated;
+                        });
                       }}
                     />
                   </Accordion.Body>

@@ -54,8 +54,13 @@ function AILessonPlanner({
         learningStyle: formData.learningStyle
       });
 
+      console.log('Received lesson plan from AI:', lessonPlan);
+
       if (onPlanGenerated) {
+        console.log('Calling onPlanGenerated callback');
         onPlanGenerated(lessonPlan);
+      } else {
+        console.warn('onPlanGenerated callback is not defined');
       }
       
       // Close the form after successful generation

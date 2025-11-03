@@ -96,18 +96,33 @@ Make the lesson plan engaging, age-appropriate for ${gradeLevel}, and aligned wi
       if (jsonMatch) {
         lessonPlan = JSON.parse(jsonMatch[1]);
       } else {
-        lessonPlan = JSON.parse(content);
+        // Try to find JSON object directly
+        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          lessonPlan = JSON.parse(jsonObjectMatch[0]);
+        } else {
+          lessonPlan = JSON.parse(content);
+        }
       }
+      console.log('Successfully parsed lesson plan:', lessonPlan);
     } catch (parseError) {
       // If JSON parsing fails, try to extract structured data manually
       console.warn('Failed to parse JSON response, attempting manual extraction:', parseError);
+      console.log('Raw content:', content);
       lessonPlan = {
         lesson_title: extractField(content, 'lesson_title') || `${topic} - ${subject}`,
         learning_objectives: extractField(content, 'learning_objectives') || 'Students will learn the key concepts of this topic.',
         lesson_plan: extractField(content, 'lesson_plan') || content,
         homework_description: extractField(content, 'homework_description') || 'Complete practice exercises related to the lesson.'
       };
+      console.log('Extracted lesson plan:', lessonPlan);
     }
+
+    // Ensure all required fields exist
+    if (!lessonPlan.lesson_title) lessonPlan.lesson_title = `${topic} - ${subject}`;
+    if (!lessonPlan.learning_objectives) lessonPlan.learning_objectives = '';
+    if (!lessonPlan.lesson_plan) lessonPlan.lesson_plan = '';
+    if (!lessonPlan.homework_description) lessonPlan.homework_description = '';
 
     return lessonPlan;
   } catch (error) {
@@ -117,24 +132,33 @@ Make the lesson plan engaging, age-appropriate for ${gradeLevel}, and aligned wi
 };
 
 /**
- * Extract a field value from text content
+ * Extract a field value from text content (handles multi-line strings)
  * @param {string} content - Text content
  * @param {string} fieldName - Field name to extract
  * @returns {string} Extracted field value
  */
 const extractField = (content, fieldName) => {
-  const patterns = [
-    new RegExp(`"${fieldName}"\\s*:\\s*"([^"]+)"`, 'i'),
-    new RegExp(`${fieldName}\\s*:\\s*"([^"]+)"`, 'i'),
-    new RegExp(`${fieldName}\\s*:\\s*([^\\n]+)`, 'i')
-  ];
-
-  for (const pattern of patterns) {
-    const match = content.match(pattern);
-    if (match && match[1]) {
-      return match[1].trim();
-    }
+  // Try to match field with quoted string (handles escaped quotes and newlines)
+  const quotedPattern = new RegExp(`"${fieldName}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"`, 's');
+  let match = content.match(quotedPattern);
+  if (match && match[1]) {
+    return match[1].replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\').trim();
   }
+
+  // Try to match field with unquoted string (until next field or end)
+  const unquotedPattern = new RegExp(`"${fieldName}"\\s*:\\s*"([^"]*)"`, 'i');
+  match = content.match(unquotedPattern);
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+
+  // Try to match field without quotes (until next field, comma, or closing brace)
+  const noQuotePattern = new RegExp(`"${fieldName}"\\s*:\\s*([^,}]+)`, 'i');
+  match = content.match(noQuotePattern);
+  if (match && match[1]) {
+    return match[1].trim().replace(/^["']|["']$/g, '');
+  }
+
   return null;
 };
 
