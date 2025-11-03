@@ -149,10 +149,26 @@ function ClassSubjectAssignment() {
       setError(null);
       setSuccess(null);
       
+      // Validate required fields
+      if (!assignmentData.class_id || !assignmentData.subject_offering_id) {
+        setError('Please select both Class and Subject Offering');
+        return;
+      }
+      
+      // Convert string IDs to integers
+      const classId = parseInt(assignmentData.class_id);
+      const subjectOfferingId = parseInt(assignmentData.subject_offering_id);
+      const teacherId = assignmentData.teacher_id ? parseInt(assignmentData.teacher_id) : null;
+      
+      if (isNaN(classId) || isNaN(subjectOfferingId)) {
+        setError('Invalid class or subject offering selected');
+        return;
+      }
+      
       await supabaseService.assignSubjectToClass(
-        assignmentData.class_id,
-        assignmentData.subject_offering_id,
-        assignmentData.teacher_id || null
+        classId,
+        subjectOfferingId,
+        teacherId
       );
       
       setSuccess('Subject assigned to class successfully');
@@ -160,7 +176,18 @@ function ClassSubjectAssignment() {
       fetchData();
     } catch (err) {
       console.error('Error assigning subject:', err);
-      setError(err.message || 'Failed to assign subject');
+      // Provide more detailed error messages
+      let errorMessage = 'Failed to assign subject';
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.details) {
+        errorMessage = err.details;
+      } else if (err.code === '23505') {
+        errorMessage = 'This subject is already assigned to this class';
+      } else if (err.code === '23503') {
+        errorMessage = 'Invalid class, subject offering, or teacher selected';
+      }
+      setError(errorMessage);
     }
   };
   

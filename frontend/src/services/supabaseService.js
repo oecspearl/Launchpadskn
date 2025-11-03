@@ -1008,17 +1008,43 @@ class SupabaseService {
    * Assign subject to class
    */
   async assignSubjectToClass(classId, subjectOfferingId, teacherId) {
+    // Ensure IDs are numbers
+    const classIdNum = parseInt(classId);
+    const subjectOfferingIdNum = parseInt(subjectOfferingId);
+    const teacherIdNum = teacherId ? parseInt(teacherId) : null;
+    
+    if (isNaN(classIdNum) || isNaN(subjectOfferingIdNum)) {
+      throw new Error('Invalid class or subject offering ID');
+    }
+    
+    const insertData = {
+      class_id: classIdNum,
+      subject_offering_id: subjectOfferingIdNum,
+      is_active: true // Ensure is_active is set
+    };
+    
+    // Only include teacher_id if it's provided
+    if (teacherIdNum) {
+      insertData.teacher_id = teacherIdNum;
+    }
+    
     const { data, error } = await supabase
       .from('class_subjects')
-      .insert({
-        class_id: classId,
-        subject_offering_id: subjectOfferingId,
-        teacher_id: teacherId
-      })
+      .insert(insertData)
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      // Handle unique constraint violation (subject already assigned)
+      if (error.code === '23505') {
+        throw new Error('This subject is already assigned to this class');
+      }
+      // Handle foreign key constraint violation
+      if (error.code === '23503') {
+        throw new Error('Invalid class, subject offering, or teacher selected');
+      }
+      throw error;
+    }
     return data;
   }
   
