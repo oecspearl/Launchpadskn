@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Container, Row, Col, Card, Button, Spinner, Alert,
-  Form, Badge, Accordion, ListGroup, InputGroup
+  Form, Badge, Accordion, ListGroup, InputGroup, Modal
 } from 'react-bootstrap';
 import {
   FaBook, FaGraduationCap, FaSearch, FaFilter, FaDownload,
-  FaClock, FaCheckCircle, FaInfoCircle, FaListOl
+  FaClock, FaCheckCircle, FaInfoCircle, FaListOl, FaEye, FaChevronRight, FaEdit
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
+import { Link } from 'react-router-dom';
 import './Curriculum.css';
 
 function Curriculum() {
@@ -136,6 +137,21 @@ function Curriculum() {
         ))}
       </ul>
     );
+  };
+  
+  // Check if curriculum has structured data
+  const hasStructuredCurriculum = (offering) => {
+    return offering.curriculum_structure && 
+           offering.curriculum_structure.topics && 
+           offering.curriculum_structure.topics.length > 0;
+  };
+  
+  // Get topic count from structured curriculum
+  const getTopicCount = (offering) => {
+    if (hasStructuredCurriculum(offering)) {
+      return offering.curriculum_structure.topics.length;
+    }
+    return 0;
   };
   
   return (
@@ -297,30 +313,104 @@ function Curriculum() {
                                       <FaClock className="me-1" />
                                       {offering.weekly_periods || 5} periods/week
                                     </Badge>
+                                    {offering.curriculum_version && (
+                                      <Badge bg="secondary" className="me-2">
+                                        {offering.curriculum_version}
+                                      </Badge>
+                                    )}
                                   </div>
                                   
-                                  {/* Curriculum Framework */}
-                                  <div className="mb-3">
-                                    <h6 className="d-flex align-items-center mb-2">
-                                      <FaListOl className="me-1 text-primary" />
-                                      Curriculum Framework
-                                    </h6>
-                                    <div className="curriculum-content">
-                                      {formatCurriculumText(offering.curriculum_framework)}
-                                    </div>
-                                  </div>
-                                  
-                                  {/* Learning Outcomes */}
-                                  {offering.learning_outcomes && (
-                                    <div className="mb-2">
-                                      <h6 className="d-flex align-items-center mb-2">
-                                        <FaCheckCircle className="me-1 text-success" />
-                                        Learning Outcomes
-                                      </h6>
-                                      <div className="curriculum-content">
-                                        {formatCurriculumText(offering.learning_outcomes)}
+                                  {/* Structured Curriculum Indicator */}
+                                  {hasStructuredCurriculum(offering) ? (
+                                    <div className="mb-3">
+                                      <Alert variant="success" className="py-2 mb-3">
+                                        <div className="d-flex align-items-center justify-content-between">
+                                          <div>
+                                            <FaCheckCircle className="me-2" />
+                                            <strong>Enhanced Structured Curriculum Available</strong>
+                                            <br />
+                                            <small>
+                                              {getTopicCount(offering)} {getTopicCount(offering) === 1 ? 'Topic' : 'Topics'} with detailed units, activities, and resources
+                                            </small>
+                                          </div>
+                                        </div>
+                                      </Alert>
+                                      
+                                      {/* Front Matter Preview */}
+                                      {offering.curriculum_structure.frontMatter?.introduction && (
+                                        <div className="mb-3">
+                                          <h6 className="d-flex align-items-center mb-2">
+                                            <FaBook className="me-1 text-primary" />
+                                            Introduction
+                                          </h6>
+                                          <div className="curriculum-content">
+                                            <p>{offering.curriculum_structure.frontMatter.introduction}</p>
+                                          </div>
+                                        </div>
+                                      )}
+                                      
+                                      {/* Topics Preview */}
+                                      <div className="mb-3">
+                                        <h6 className="d-flex align-items-center mb-2">
+                                          <FaListOl className="me-1 text-primary" />
+                                          Topics ({getTopicCount(offering)})
+                                        </h6>
+                                        <ul className="curriculum-list">
+                                          {offering.curriculum_structure.topics.slice(0, 3).map((topic, idx) => (
+                                            <li key={idx}>
+                                              <strong>Topic {topic.topicNumber}:</strong> {topic.title}
+                                              {topic.instructionalUnits && (
+                                                <span className="text-muted ms-2">
+                                                  ({topic.instructionalUnits.length} {topic.instructionalUnits.length === 1 ? 'unit' : 'units'})
+                                                </span>
+                                              )}
+                                            </li>
+                                          ))}
+                                          {offering.curriculum_structure.topics.length > 3 && (
+                                            <li className="text-muted">
+                                              ... and {offering.curriculum_structure.topics.length - 3} more topics
+                                            </li>
+                                          )}
+                                        </ul>
                                       </div>
+                                      
+                                      {/* View Full Curriculum Button */}
+                                      <Button
+                                        variant="primary"
+                                        size="sm"
+                                        className="w-100"
+                                        onClick={() => setSelectedOffering(offering)}
+                                      >
+                                        <FaEye className="me-2" />
+                                        View Full Structured Curriculum
+                                      </Button>
                                     </div>
+                                  ) : (
+                                    <>
+                                      {/* Curriculum Framework (Fallback for non-structured) */}
+                                      <div className="mb-3">
+                                        <h6 className="d-flex align-items-center mb-2">
+                                          <FaListOl className="me-1 text-primary" />
+                                          Curriculum Framework
+                                        </h6>
+                                        <div className="curriculum-content">
+                                          {formatCurriculumText(offering.curriculum_framework)}
+                                        </div>
+                                      </div>
+                                      
+                                      {/* Learning Outcomes */}
+                                      {offering.learning_outcomes && (
+                                        <div className="mb-2">
+                                          <h6 className="d-flex align-items-center mb-2">
+                                            <FaCheckCircle className="me-1 text-success" />
+                                            Learning Outcomes
+                                          </h6>
+                                          <div className="curriculum-content">
+                                            {formatCurriculumText(offering.learning_outcomes)}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
                                   )}
                                 </Card.Body>
                                 <Card.Footer className="text-muted">
