@@ -1,0 +1,40 @@
+/* Teacher Class Management Styles */
+
+.teacher-class-management {
+  padding: 20px 0;
+}
+
+.teacher-class-management .card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.teacher-class-management .card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+.teacher-class-management .badge {
+  padding: 8px 12px;
+  font-size: 0.9rem;
+}
+
+.teacher-class-management .table {
+  margin-bottom: 0;
+}
+
+.teacher-class-management .list-group-item {
+  border-left: none;
+  border-right: none;
+  padding: 1rem 0;
+}
+
+.teacher-class-management .list-group-item:first-child {
+  border-top: none;
+  padding-top: 0.5rem;
+}
+
+.teacher-class-management .list-group-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0.5rem;
+}
+

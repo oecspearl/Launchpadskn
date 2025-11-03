@@ -36,6 +36,7 @@ import AttendanceMarking from './components/Teacher/AttendanceMarking';
 import GradeEntry from './components/Teacher/GradeEntry';
 import TeacherLessonView from './components/Teacher/TeacherLessonView';
 import Curriculum from './components/Teacher/Curriculum';
+import TeacherClassManagement from './components/Teacher/TeacherClassManagement';
 
 // Import context providers
 import { AuthProvider } from './contexts/AuthContextSupabase';
@@ -204,8 +205,7 @@ function App() {
                 path="/teacher/classes/:classId" 
                 element={
                   <PrivateRoute allowedRoles={['instructor']}>
-                    {/* TODO: Create ClassManagement component */}
-                    <div>Class Management - Coming Soon</div>
+                    <TeacherClassManagement />
                   </PrivateRoute>
                 } 
               />
