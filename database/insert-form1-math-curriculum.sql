@@ -19,7 +19,7 @@
 
 DO $$
 DECLARE
-  v_offering_id BIGINT := {OFFERING_ID_HERE};  -- <<< REPLACE THIS with actual offering_id
+  v_offering_id BIGINT := 36;  -- <<< REPLACE THIS with actual offering_id
   v_json JSONB;
   v_found BOOLEAN := false;
 BEGIN
@@ -597,13 +597,12 @@ BEGIN
     ]
   }'::jsonb;
 
-  -- Update the existing offering
-  UPDATE subject_form_offerings
-  SET curriculum_structure = v_json,
-      curriculum_version = 'Form 1 Mathematics — Enhanced Curriculum v2 (SKN, 2023)',
-      curriculum_updated_at = NOW(),
-      updated_at = NOW()
-  WHERE offering_id = v_offering_id;
+   -- Update the existing offering
+   UPDATE subject_form_offerings
+   SET curriculum_structure = v_json,
+       curriculum_version = 'Form 1 Mathematics — Enhanced Curriculum v2 (SKN, 2023)',
+       curriculum_updated_at = NOW()
+   WHERE offering_id = v_offering_id;
 
   -- Verify the update
   IF NOT FOUND THEN
