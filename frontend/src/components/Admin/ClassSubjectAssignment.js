@@ -109,8 +109,7 @@ function ClassSubjectAssignment() {
             subject:subjects(*)
           ),
           teacher:users!class_subjects_teacher_id_fkey(name, email)
-        `)
-        .eq('is_active', true);
+        `);
       
       if (selectedClass !== 'all') {
         assignmentQuery = assignmentQuery.eq('class_id', selectedClass);
@@ -192,11 +191,11 @@ function ClassSubjectAssignment() {
   };
   
   const handleRemove = async (classSubjectId) => {
-    if (window.confirm('Are you sure you want to remove this subject from the class?')) {
+    if (window.confirm('Are you sure you want to remove this subject from the class? This action cannot be undone.')) {
       try {
         const { error } = await supabase
           .from('class_subjects')
-          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .delete()
           .eq('class_subject_id', classSubjectId);
         
         if (error) throw error;

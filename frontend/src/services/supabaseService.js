@@ -1019,8 +1019,7 @@ class SupabaseService {
     
     const insertData = {
       class_id: classIdNum,
-      subject_offering_id: subjectOfferingIdNum,
-      is_active: true // Ensure is_active is set
+      subject_offering_id: subjectOfferingIdNum
     };
     
     // Only include teacher_id if it's provided
