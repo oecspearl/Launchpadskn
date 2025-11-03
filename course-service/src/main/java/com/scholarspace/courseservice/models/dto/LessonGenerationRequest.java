@@ -14,5 +14,6 @@ public class LessonGenerationRequest {
     private String topic;
     private String lessonDate;
     private Integer duration;
+    private Map<String, Object> teacherPreferences;
 }
 

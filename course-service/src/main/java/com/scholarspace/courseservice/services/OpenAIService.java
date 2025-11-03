@@ -198,15 +198,102 @@ public class OpenAIService {
         
         int duration = request.getDuration() != null ? request.getDuration() : 45;
         
+        // Add teacher preferences if provided
+        Map<String, Object> preferences = request.getTeacherPreferences();
+        if (preferences != null && !preferences.isEmpty()) {
+            prompt.append("TEACHER PREFERENCES AND REQUIREMENTS:\n");
+            
+            if (preferences.get("focusArea") != null && !preferences.get("focusArea").toString().isEmpty()) {
+                prompt.append("Focus Area: ").append(preferences.get("focusArea")).append("\n");
+            }
+            
+            if (preferences.get("studentLevel") != null && !preferences.get("studentLevel").toString().isEmpty()) {
+                prompt.append("Student Level: ").append(preferences.get("studentLevel")).append("\n");
+            }
+            
+            if (preferences.get("teachingStyle") != null && !preferences.get("teachingStyle").toString().isEmpty()) {
+                String style = preferences.get("teachingStyle").toString();
+                prompt.append("Preferred Teaching Style: ").append(style).append("\n");
+                // Add guidance based on teaching style
+                switch (style) {
+                    case "interactive":
+                        prompt.append("  - Emphasize discussion, questioning, and student participation\n");
+                        break;
+                    case "hands-on":
+                        prompt.append("  - Include practical activities, experiments, or manipulatives\n");
+                        break;
+                    case "collaborative":
+                        prompt.append("  - Incorporate group work and peer learning opportunities\n");
+                        break;
+                    case "lecture":
+                        prompt.append("  - Structure with clear presentation and note-taking opportunities\n");
+                        break;
+                    case "multimodal":
+                        prompt.append("  - Use a variety of teaching methods and activities\n");
+                        break;
+                }
+            }
+            
+            if (preferences.get("keyConcepts") != null && !preferences.get("keyConcepts").toString().isEmpty()) {
+                prompt.append("Key Concepts to Cover: ").append(preferences.get("keyConcepts")).append("\n");
+            }
+            
+            if (preferences.get("learningApproach") != null && !preferences.get("learningApproach").toString().isEmpty()) {
+                String approach = preferences.get("learningApproach").toString();
+                prompt.append("Learning Approach: ").append(approach).append("\n");
+                // Add guidance based on learning approach
+                switch (approach) {
+                    case "inquiry-based":
+                        prompt.append("  - Structure around student questions and discovery\n");
+                        break;
+                    case "problem-based":
+                        prompt.append("  - Center on real-world problems and solutions\n");
+                        break;
+                    case "project-based":
+                        prompt.append("  - Include a project or extended task\n");
+                        break;
+                    case "flipped":
+                        prompt.append("  - Prepare content for pre-class review, focus on application in class\n");
+                        break;
+                    case "gamified":
+                        prompt.append("  - Include game elements, challenges, or competition\n");
+                        break;
+                }
+            }
+            
+            if (preferences.get("specialRequirements") != null && !preferences.get("specialRequirements").toString().isEmpty()) {
+                prompt.append("Special Requirements: ").append(preferences.get("specialRequirements")).append("\n");
+            }
+            
+            prompt.append("\n");
+        }
+        
         prompt.append("Please generate a complete lesson plan that:\n");
         prompt.append("1. Aligns with the curriculum framework and learning outcomes provided above\n");
         prompt.append("2. Is appropriate for ").append(formName).append(subjectName).append("\n");
-        prompt.append("3. Includes a clear lesson title\n");
+        
+        if (preferences != null && preferences.get("focusArea") != null && !preferences.get("focusArea").toString().isEmpty()) {
+            prompt.append("3. Focuses specifically on: ").append(preferences.get("focusArea")).append("\n");
+        } else {
+            prompt.append("3. Includes a clear lesson title\n");
+        }
+        
         prompt.append("4. Specifies the topic being covered\n");
         prompt.append("5. Lists clear, measurable learning objectives (3-5 objectives)\n");
-        prompt.append("6. Provides a detailed lesson plan with activities, teaching strategies, and assessment methods\n");
-        prompt.append("7. Is suitable for a ").append(duration).append("-minute class period\n");
-        prompt.append("8. Incorporates inclusive teaching strategies and assessment methods from the curriculum\n\n");
+        
+        if (preferences != null && preferences.get("keyConcepts") != null && !preferences.get("keyConcepts").toString().isEmpty()) {
+            prompt.append("6. Covers the key concepts: ").append(preferences.get("keyConcepts")).append("\n");
+        }
+        
+        prompt.append("7. Provides a detailed lesson plan with activities, teaching strategies, and assessment methods\n");
+        prompt.append("8. Is suitable for a ").append(duration).append("-minute class period\n");
+        prompt.append("9. Incorporates inclusive teaching strategies and assessment methods from the curriculum\n");
+        
+        if (preferences != null && preferences.get("specialRequirements") != null && !preferences.get("specialRequirements").toString().isEmpty()) {
+            prompt.append("10. Addresses the following special requirements: ").append(preferences.get("specialRequirements")).append("\n");
+        }
+        
+        prompt.append("\n");
         
         prompt.append("Format your response as a JSON object with the following structure:\n");
         prompt.append("{\n");

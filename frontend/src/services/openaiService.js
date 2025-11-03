@@ -17,9 +17,10 @@ const LESSON_GENERATION_ENDPOINT = `${API_BASE_URL}/api/lessons/generate`;
  * @param {string} params.topic - Optional specific topic for the lesson
  * @param {string} params.lessonDate - Date of the lesson
  * @param {number} params.duration - Duration in minutes (optional)
+ * @param {Object} params.teacherPreferences - Teacher's preferences and requirements
  * @returns {Promise<Object>} Generated lesson data
  */
-const generateLesson = async ({ curriculumData, topic, lessonDate, duration = 45 }) => {
+const generateLesson = async ({ curriculumData, topic, lessonDate, duration = 45, teacherPreferences = null }) => {
   try {
     // Get auth token from localStorage (Supabase JWT or backend token)
     const token = localStorage.getItem('token') || localStorage.getItem('supabase.auth.token');
@@ -36,7 +37,8 @@ const generateLesson = async ({ curriculumData, topic, lessonDate, duration = 45
       curriculumData: curriculumData,
       topic: topic || null,
       lessonDate: lessonDate,
-      duration: duration
+      duration: duration,
+      teacherPreferences: teacherPreferences || null
     };
     
     const response = await fetch(LESSON_GENERATION_ENDPOINT, {
