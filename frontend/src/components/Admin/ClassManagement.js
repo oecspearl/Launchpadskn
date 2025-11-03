@@ -76,11 +76,40 @@ function ClassManagement() {
         query = query.eq('form_id', selectedForm);
       }
       
-      const { data: classesData } = await query.order('form_id').order('class_name');
-      setClasses(classesData || []);
+      const { data: classesData, error: classesError } = await query.order('form_id').order('class_name');
+      
+      let finalClassesData = classesData || [];
+      
+      if (classesError) {
+        console.error('Error fetching classes:', classesError);
+        // Try simpler query without foreign key
+        const { data: simpleData, error: simpleError } = await supabase
+          .from('classes')
+          .select('*')
+          .eq('is_active', true)
+          .order('form_id')
+          .order('class_name');
+        
+        if (simpleError) {
+          throw simpleError;
+        }
+        
+        // Manually join form data
+        const classesWithForm = (simpleData || []).map(cls => {
+          const form = formsData?.find(f => f.form_id === cls.form_id);
+          const tutor = formTutors?.find(t => t.user_id === cls.form_tutor_id);
+          return {
+            ...cls,
+            form: form || null,
+            form_tutor: tutor ? { name: tutor.name, email: tutor.email } : null
+          };
+        });
+        finalClassesData = classesWithForm;
+      }
       
       // Get enrollment count for each class
-      const classesWithCounts = await Promise.all((classesData || []).map(async (cls) => {
+      const currentClasses = finalClassesData;
+      const classesWithCounts = await Promise.all(currentClasses.map(async (cls) => {
         const { count } = await supabase
           .from('student_class_assignments')
           .select('*', { count: 'exact', head: true })
@@ -143,13 +172,35 @@ function ClassManagement() {
       setError(null);
       setSuccess(null);
       
+      // Clean up classData: convert empty strings to null for optional fields
+      const cleanedData = {
+        ...classData,
+        form_id: classData.form_id ? parseInt(classData.form_id) : null,
+        capacity: classData.capacity ? parseInt(classData.capacity) : 35,
+        form_tutor_id: classData.form_tutor_id ? parseInt(classData.form_tutor_id) : null,
+        room_number: classData.room_number || null,
+        description: classData.description || null,
+        class_code: classData.class_code || null
+      };
+      
+      // Validate required fields
+      if (!cleanedData.form_id) {
+        throw new Error('Form is required');
+      }
+      if (!cleanedData.class_name || cleanedData.class_name.trim() === '') {
+        throw new Error('Class name is required');
+      }
+      if (!cleanedData.academic_year || cleanedData.academic_year.trim() === '') {
+        throw new Error('Academic year is required');
+      }
+      
       if (editingClass) {
         // Update class
-        await supabaseService.updateClass(editingClass.class_id, classData);
+        await supabaseService.updateClass(editingClass.class_id, cleanedData);
         setSuccess('Class updated successfully');
       } else {
         // Create class
-        await supabaseService.createClass(classData);
+        await supabaseService.createClass(cleanedData);
         setSuccess('Class created successfully');
       }
       
