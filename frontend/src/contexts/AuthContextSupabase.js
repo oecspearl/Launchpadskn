@@ -161,7 +161,9 @@ export function AuthProvider({ children }) {
       // Combine profile and auth data
       // Map snake_case DB fields to camelCase for consistency
       const userData = {
-        userId: profile.user_id || session.user.id,
+        userId: profile.user_id || session.user.id, // Keep userId for backward compatibility (may be UUID initially)
+        user_id: profile.user_id, // Always include numeric user_id from database
+        id: session.user.id, // UUID from Supabase Auth
         email: session.user.email,
         name: profile.name || session.user.email.split('@')[0],
         role: finalRole, // Ensure role is always valid

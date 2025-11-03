@@ -1049,8 +1049,19 @@ class SupabaseService {
   
   /**
    * Get classes for a teacher (across all subjects)
+   * @param {number|string} teacherId - The numeric user_id (BIGINT), not UUID
    */
   async getClassesByTeacher(teacherId) {
+    // Ensure teacherId is a number (BIGINT)
+    const teacherIdNum = typeof teacherId === 'string' && !teacherId.includes('-') 
+      ? parseInt(teacherId) 
+      : teacherId;
+    
+    // If it's still not a number or is a UUID, we need the numeric user_id
+    if (isNaN(teacherIdNum) || typeof teacherIdNum !== 'number') {
+      throw new Error('Invalid teacher ID: must be numeric user_id, not UUID');
+    }
+    
     const { data, error } = await supabase
       .from('class_subjects')
       .select(`
@@ -1063,7 +1074,7 @@ class SupabaseService {
           subject:subjects(*)
         )
       `)
-      .eq('teacher_id', teacherId);
+      .eq('teacher_id', teacherIdNum);
     
     if (error) throw error;
     return data;
@@ -1300,11 +1311,20 @@ class SupabaseService {
    * Get lessons for a teacher
    */
   async getLessonsByTeacher(teacherId, startDate, endDate) {
+    // Ensure teacherId is a number (BIGINT)
+    const teacherIdNum = typeof teacherId === 'string' && !teacherId.includes('-') 
+      ? parseInt(teacherId) 
+      : teacherId;
+    
+    if (isNaN(teacherIdNum) || typeof teacherIdNum !== 'number') {
+      throw new Error('Invalid teacher ID: must be numeric user_id, not UUID');
+    }
+    
     // Get all class-subjects for teacher
     const { data: classSubjects } = await supabase
       .from('class_subjects')
       .select('class_subject_id')
-      .eq('teacher_id', teacherId);
+      .eq('teacher_id', teacherIdNum);
     
     if (!classSubjects || classSubjects.length === 0) return [];
     

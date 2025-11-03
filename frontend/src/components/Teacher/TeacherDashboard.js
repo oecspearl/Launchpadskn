@@ -35,7 +35,17 @@ function TeacherDashboard() {
       setIsLoading(true);
       setError(null);
       
-      const teacherId = user.userId || user.id;
+      // Use user_id (integer) for teacher_id lookup, not UUID
+      // user.userId might be UUID initially, user.user_id is the numeric ID from database
+      const teacherId = user.user_id || user.userId || user.id;
+      
+      // If teacherId is still a UUID string, we need to wait for the profile to load
+      // or query by UUID first to get the numeric user_id
+      if (!teacherId || (typeof teacherId === 'string' && teacherId.includes('-'))) {
+        console.warn('[TeacherDashboard] Waiting for numeric user_id to load');
+        setIsLoading(false);
+        return;
+      }
       
       // Get all classes this teacher teaches
       const classes = await supabaseService.getClassesByTeacher(teacherId);
