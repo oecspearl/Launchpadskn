@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Container, Row, Col, Card, Button, Spinner, Alert, 
-  Form, Modal, Badge
+  Form, Modal, Badge, Accordion
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  FaCalendarAlt, FaClock, FaMapMarkerAlt, FaBook, FaSave, FaPlus, FaMagic
+  FaCalendarAlt, FaClock, FaMapMarkerAlt, FaBook, FaSave, FaPlus
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
-import openaiService from '../../services/openaiService';
 import { supabase } from '../../config/supabase';
+import AILessonPlanner from './AILessonPlanner';
 
 function LessonPlanning() {
   const { classSubjectId } = useParams();
@@ -26,17 +26,6 @@ function LessonPlanning() {
   const [lessons, setLessons] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
-  const [curriculumData, setCurriculumData] = useState(null);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [showAIGenerationModal, setShowAIGenerationModal] = useState(false);
-  const [aiGenerationForm, setAiGenerationForm] = useState({
-    focusArea: '',
-    teachingStyle: '',
-    studentLevel: '',
-    keyConcepts: '',
-    specialRequirements: '',
-    learningApproach: ''
-  });
   const [lessonData, setLessonData] = useState({
     class_subject_id: classSubjectId || '',
     lesson_date: '',
@@ -80,19 +69,6 @@ function LessonPlanning() {
         .single();
       
       setClassSubject(csData);
-      
-      // Fetch curriculum data if subject offering exists
-      if (csData?.subject_offering?.offering_id) {
-        try {
-          const curriculum = await supabaseService.getCurriculumOfferingById(
-            csData.subject_offering.offering_id
-          );
-          setCurriculumData(curriculum);
-        } catch (err) {
-          console.warn('Could not fetch curriculum data:', err);
-          // Continue without curriculum - AI can still generate lessons
-        }
-      }
       
       // Get lessons
       const lessonList = await supabaseService.getLessonsByClassSubject(classSubjectId);
@@ -150,96 +126,6 @@ function LessonPlanning() {
     setLessonData({});
     setSuccess(null);
     setError(null);
-    setIsGenerating(false);
-  };
-
-  const handleOpenAIGenerationModal = () => {
-    setShowAIGenerationModal(true);
-    // Pre-fill some fields if available
-    setAiGenerationForm({
-      focusArea: lessonData.topic || '',
-      teachingStyle: '',
-      studentLevel: classSubject?.class?.form?.form_name || '',
-      keyConcepts: '',
-      specialRequirements: '',
-      learningApproach: ''
-    });
-  };
-
-  const handleCloseAIGenerationModal = () => {
-    setShowAIGenerationModal(false);
-    setAiGenerationForm({
-      focusArea: '',
-      teachingStyle: '',
-      studentLevel: '',
-      keyConcepts: '',
-      specialRequirements: '',
-      learningApproach: ''
-    });
-    setError(null);
-  };
-
-  const handleGenerateLesson = async () => {
-    if (!curriculumData && !classSubject?.subject_offering) {
-      setError('Curriculum data not available. Please ensure the subject has curriculum assigned.');
-      return;
-    }
-
-    try {
-      setIsGenerating(true);
-      setError(null);
-      setSuccess(null);
-
-      // Prepare curriculum data for OpenAI
-      const curriculumForAI = curriculumData || {
-        subject: classSubject?.subject_offering?.subject,
-        form: classSubject?.class?.form,
-        curriculum_framework: classSubject?.subject_offering?.curriculum_framework,
-        learning_outcomes: classSubject?.subject_offering?.learning_outcomes,
-        curriculum_structure: classSubject?.subject_offering?.curriculum_structure
-      };
-
-      // Calculate duration from times if available
-      let duration = 45; // default
-      if (lessonData.start_time && lessonData.end_time) {
-        const start = new Date(`2000-01-01T${lessonData.start_time}`);
-        const end = new Date(`2000-01-01T${lessonData.end_time}`);
-        duration = Math.round((end - start) / 60000); // Convert to minutes
-      }
-
-      // Generate lesson using OpenAI with form data
-      const generatedLesson = await openaiService.generateLesson({
-        curriculumData: curriculumForAI,
-        topic: aiGenerationForm.focusArea || lessonData.topic || null,
-        lessonDate: lessonData.lesson_date,
-        duration: duration,
-        teacherPreferences: {
-          focusArea: aiGenerationForm.focusArea,
-          teachingStyle: aiGenerationForm.teachingStyle,
-          studentLevel: aiGenerationForm.studentLevel,
-          keyConcepts: aiGenerationForm.keyConcepts,
-          specialRequirements: aiGenerationForm.specialRequirements,
-          learningApproach: aiGenerationForm.learningApproach
-        }
-      });
-
-      // Populate form fields with generated content
-      setLessonData({
-        ...lessonData,
-        lesson_title: generatedLesson.lesson_title || lessonData.lesson_title,
-        topic: generatedLesson.topic || aiGenerationForm.focusArea || lessonData.topic,
-        learning_objectives: generatedLesson.learning_objectives || lessonData.learning_objectives,
-        lesson_plan: generatedLesson.lesson_plan || lessonData.lesson_plan
-      });
-
-      setSuccess('Lesson plan generated successfully! Please review and adjust as needed.');
-      handleCloseAIGenerationModal();
-    } catch (err) {
-      console.error('Error generating lesson:', err);
-      setError(err.message || 'Failed to generate lesson plan. Please try again.');
-    } finally {
-      setIsGenerating(false);
-    }
   };
   
   const handleSubmit = async (e) => {
@@ -430,6 +316,35 @@ function LessonPlanning() {
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
+            {/* AI Lesson Planner */}
+            {!editingLesson && (
+              <Accordion className="mb-4">
+                <Accordion.Item eventKey="0">
+                  <Accordion.Header>
+                    <FaBook className="me-2" />
+                    Use AI to Generate Lesson Plan
+                  </Accordion.Header>
+                  <Accordion.Body>
+                    <AILessonPlanner
+                      subjectName={classSubject?.subject_offering?.subject?.subject_name || ''}
+                      formName={classSubject?.class?.form?.form_name || ''}
+                      initialTopic={lessonData.topic || ''}
+                      onPlanGenerated={(plan) => {
+                        setLessonData(prev => ({
+                          ...prev,
+                          lesson_title: plan.lesson_title || prev.lesson_title,
+                          topic: prev.topic || plan.topic || '',
+                          learning_objectives: plan.learning_objectives || prev.learning_objectives,
+                          lesson_plan: plan.lesson_plan || prev.lesson_plan,
+                          homework_description: plan.homework_description || prev.homework_description
+                        }));
+                      }}
+                    />
+                  </Accordion.Body>
+                </Accordion.Item>
+              </Accordion>
+            )}
+            
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -467,32 +382,13 @@ function LessonPlanning() {
             </Row>
             
             <Form.Group className="mb-3">
-              <div className="d-flex justify-content-between align-items-center mb-2">
-                <Form.Label className="mb-0">Lesson Title</Form.Label>
-                {!editingLesson && (
-                  <Button
-                    variant="outline-primary"
-                    size="sm"
-                    onClick={handleOpenAIGenerationModal}
-                    disabled={isGenerating}
-                    className="d-flex align-items-center"
-                  >
-                    <FaMagic className="me-2" />
-                    Generate with AI
-                  </Button>
-                )}
-              </div>
+              <Form.Label>Lesson Title</Form.Label>
               <Form.Control
                 type="text"
                 value={lessonData.lesson_title}
                 onChange={(e) => setLessonData({ ...lessonData, lesson_title: e.target.value })}
                 placeholder="e.g., Introduction to Algebra"
               />
-              {!editingLesson && curriculumData && (
-                <Form.Text className="text-muted">
-                  AI will generate a lesson plan based on the curriculum for {classSubject?.subject_offering?.subject?.subject_name} - {classSubject?.class?.form?.form_name}
-                </Form.Text>
-              )}
             </Form.Group>
             
             <Form.Group className="mb-3">
@@ -501,7 +397,7 @@ function LessonPlanning() {
                 type="text"
                 value={lessonData.topic}
                 onChange={(e) => setLessonData({ ...lessonData, topic: e.target.value })}
-                placeholder="Lesson topic (optional - AI will suggest if left empty)"
+                placeholder="Lesson topic"
               />
             </Form.Group>
             
@@ -581,133 +477,6 @@ function LessonPlanning() {
             <Button variant="primary" type="submit">
               <FaSave className="me-2" />
               {editingLesson ? 'Update' : 'Create'} Lesson
-            </Button>
-          </Modal.Footer>
-        </Form>
-      </Modal>
-
-      {/* AI Generation Form Modal */}
-      <Modal show={showAIGenerationModal} onHide={handleCloseAIGenerationModal} size="lg">
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <FaMagic className="me-2" />
-            AI Lesson Generation
-          </Modal.Title>
-        </Modal.Header>
-        <Form onSubmit={(e) => { e.preventDefault(); handleGenerateLesson(); }}>
-          <Modal.Body>
-            <Alert variant="info" className="mb-3">
-              <strong>Provide details below to customize your lesson plan:</strong><br />
-              The AI will use this information along with the curriculum to generate a tailored lesson plan.
-            </Alert>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Focus Area / Topic *</Form.Label>
-              <Form.Control
-                type="text"
-                value={aiGenerationForm.focusArea}
-                onChange={(e) => setAiGenerationForm({ ...aiGenerationForm, focusArea: e.target.value })}
-                placeholder="e.g., Introduction to Algebra, Photosynthesis, World War II"
-                required
-              />
-              <Form.Text className="text-muted">
-                What specific topic or concept should this lesson focus on?
-              </Form.Text>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Student Level / Grade</Form.Label>
-              <Form.Control
-                type="text"
-                value={aiGenerationForm.studentLevel}
-                onChange={(e) => setAiGenerationForm({ ...aiGenerationForm, studentLevel: e.target.value })}
-                placeholder={classSubject?.class?.form?.form_name || "e.g., Form 1, Grade 9"}
-              />
-              <Form.Text className="text-muted">
-                The academic level of your students (auto-filled from class)
-              </Form.Text>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Teaching Style</Form.Label>
-              <Form.Select
-                value={aiGenerationForm.teachingStyle}
-                onChange={(e) => setAiGenerationForm({ ...aiGenerationForm, teachingStyle: e.target.value })}
-              >
-                <option value="">Select a teaching style (optional)</option>
-                <option value="interactive">Interactive/Discussion-based</option>
-                <option value="hands-on">Hands-on/Experiential</option>
-                <option value="lecture">Lecture-based</option>
-                <option value="collaborative">Collaborative/Group work</option>
-                <option value="multimodal">Multimodal (mixed approaches)</option>
-              </Form.Select>
-              <Form.Text className="text-muted">
-                Preferred teaching approach for this lesson
-              </Form.Text>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Key Concepts to Cover</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={aiGenerationForm.keyConcepts}
-                onChange={(e) => setAiGenerationForm({ ...aiGenerationForm, keyConcepts: e.target.value })}
-                placeholder="e.g., Variables and expressions, Problem-solving strategies, Real-world applications"
-              />
-              <Form.Text className="text-muted">
-                Specific concepts, skills, or knowledge you want students to learn
-              </Form.Text>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Learning Approach</Form.Label>
-              <Form.Select
-                value={aiGenerationForm.learningApproach}
-                onChange={(e) => setAiGenerationForm({ ...aiGenerationForm, learningApproach: e.target.value })}
-              >
-                <option value="">Select learning approach (optional)</option>
-                <option value="inquiry-based">Inquiry-based Learning</option>
-                <option value="problem-based">Problem-based Learning</option>
-                <option value="project-based">Project-based Learning</option>
-                <option value="flipped">Flipped Classroom</option>
-                <option value="gamified">Gamified Learning</option>
-                <option value="traditional">Traditional Direct Instruction</option>
-              </Form.Select>
-            </Form.Group>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Special Requirements or Notes</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
-                value={aiGenerationForm.specialRequirements}
-                onChange={(e) => setAiGenerationForm({ ...aiGenerationForm, specialRequirements: e.target.value })}
-                placeholder="e.g., Include visual aids, Accommodate diverse learners, Link to previous lesson on fractions, Include assessment for learning"
-              />
-              <Form.Text className="text-muted">
-                Any special considerations, accommodations, or specific requirements
-              </Form.Text>
-            </Form.Group>
-
-            {error && <Alert variant="danger">{error}</Alert>}
-          </Modal.Body>
-          <Modal.Footer>
-            <Button variant="secondary" onClick={handleCloseAIGenerationModal} disabled={isGenerating}>
-              Cancel
-            </Button>
-            <Button variant="primary" type="submit" disabled={isGenerating}>
-              {isGenerating ? (
-                <>
-                  <Spinner animation="border" size="sm" className="me-2" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <FaMagic className="me-2" />
-                  Generate Lesson Plan
-                </>
-              )}
             </Button>
           </Modal.Footer>
         </Form>
