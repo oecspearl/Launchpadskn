@@ -600,7 +600,7 @@ BEGIN
    -- Update the existing offering
    UPDATE subject_form_offerings
    SET curriculum_structure = v_json,
-       curriculum_version = 'Form 1 Mathematics — Enhanced Curriculum v2 (SKN, 2023)',
+       curriculum_version = 'Form 1 Math Enhanced v2 (SKN 2023)',
        curriculum_updated_at = NOW()
    WHERE offering_id = v_offering_id;
 
@@ -609,9 +609,9 @@ BEGIN
     RAISE EXCEPTION 'Failed to update offering_id %. The offering may not exist.', v_offering_id;
   END IF;
 
-  RAISE NOTICE 'Successfully updated Form 1 Mathematics curriculum for offering_id: %', v_offering_id;
-  RAISE NOTICE 'Curriculum version: Form 1 Mathematics — Enhanced Curriculum v2 (SKN, 2023)';
-  RAISE NOTICE 'Number of topics: %', jsonb_array_length(v_json->'topics');
+   RAISE NOTICE 'Successfully updated Form 1 Mathematics curriculum for offering_id: %', v_offering_id;
+   RAISE NOTICE 'Curriculum version: Form 1 Math Enhanced v2 (SKN 2023)';
+   RAISE NOTICE 'Number of topics: %', jsonb_array_length(v_json->'topics');
 
 END $$;
 
