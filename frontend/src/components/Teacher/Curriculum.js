@@ -29,6 +29,9 @@ function Curriculum() {
   const [selectedForm, setSelectedForm] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Selected curriculum for detailed view
+  const [selectedOffering, setSelectedOffering] = useState(null);
+  
   // Fetch curriculum content
   const fetchCurriculum = useCallback(async () => {
     try {
@@ -465,7 +468,301 @@ function Curriculum() {
           )}
         </>
       )}
+      
+      {/* Structured Curriculum Detail Modal */}
+      {selectedOffering && selectedOffering.curriculum_structure && (
+        <StructuredCurriculumView
+          offering={selectedOffering}
+          onClose={() => setSelectedOffering(null)}
+        />
+      )}
     </Container>
+  );
+}
+
+// Structured Curriculum Detail View Component
+function StructuredCurriculumView({ offering, onClose }) {
+  const curriculum = offering.curriculum_structure;
+  
+  // Helper to check if structured curriculum exists
+  const hasStructuredCurriculum = (offering) => {
+    return offering.curriculum_structure && 
+           offering.curriculum_structure.topics && 
+           offering.curriculum_structure.topics.length > 0;
+  };
+  
+  return (
+    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
+      <div className="modal-dialog modal-xl modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-content">
+          <div className="modal-header">
+            <div>
+              <h5 className="modal-title">
+                <FaBook className="me-2" />
+                {offering.subject?.subject_name} - {offering.form?.form_name}
+              </h5>
+              {offering.curriculum_version && (
+                <small className="text-muted">{offering.curriculum_version}</small>
+              )}
+            </div>
+            <button type="button" className="btn-close" onClick={onClose}></button>
+          </div>
+          <div className="modal-body">
+            {/* Front Matter */}
+            {curriculum.frontMatter && (
+              <div className="mb-4">
+                <h4>Front Matter</h4>
+                {curriculum.frontMatter.coverPage && (
+                  <Card className="mb-3">
+                    <Card.Body>
+                      <h5>{curriculum.frontMatter.coverPage.title}</h5>
+                      <p className="text-muted mb-0">
+                        {curriculum.frontMatter.coverPage.jurisdiction} • {curriculum.frontMatter.coverPage.series}
+                      </p>
+                    </Card.Body>
+                  </Card>
+                )}
+                {curriculum.frontMatter.introduction && (
+                  <div className="mb-3">
+                    <h6>Introduction</h6>
+                    <p>{curriculum.frontMatter.introduction}</p>
+                  </div>
+                )}
+                {curriculum.frontMatter.tableOfContents && curriculum.frontMatter.tableOfContents.length > 0 && (
+                  <div className="mb-3">
+                    <h6>Table of Contents</h6>
+                    <ul>
+                      {curriculum.frontMatter.tableOfContents.map((item, idx) => (
+                        <li key={idx}>{item}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Topics */}
+            {curriculum.topics && curriculum.topics.length > 0 && (
+              <div>
+                <h4 className="mb-3">Topics</h4>
+                <Accordion defaultActiveKey="0">
+                  {curriculum.topics.map((topic, topicIdx) => (
+                    <Accordion.Item eventKey={topicIdx.toString()} key={topicIdx}>
+                      <Accordion.Header>
+                        <div className="d-flex align-items-center w-100">
+                          <Badge bg="primary" className="me-2">
+                            Topic {topic.topicNumber}
+                          </Badge>
+                          <strong>{topic.title}</strong>
+                          {topic.instructionalUnits && (
+                            <Badge bg="secondary" className="ms-auto me-2">
+                              {topic.instructionalUnits.length} {topic.instructionalUnits.length === 1 ? 'Unit' : 'Units'}
+                            </Badge>
+                          )}
+                        </div>
+                      </Accordion.Header>
+                      <Accordion.Body>
+                        {/* Topic Overview */}
+                        {topic.overview && (
+                          <div className="mb-4">
+                            <h5>Overview</h5>
+                            {topic.overview.strandIdentification && (
+                              <p><strong>Strand:</strong> {topic.overview.strandIdentification}</p>
+                            )}
+                            {topic.overview.essentialLearningOutcomes && topic.overview.essentialLearningOutcomes.length > 0 && (
+                              <div className="mb-3">
+                                <strong>Essential Learning Outcomes:</strong>
+                                <ul>
+                                  {topic.overview.essentialLearningOutcomes.map((outcome, idx) => (
+                                    <li key={idx}>{outcome}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {topic.overview.gradeLevelGuidelines && topic.overview.gradeLevelGuidelines.length > 0 && (
+                              <div className="mb-3">
+                                <strong>Grade Level Guidelines:</strong>
+                                <ul>
+                                  {topic.overview.gradeLevelGuidelines.map((guideline, idx) => (
+                                    <li key={idx}>{guideline}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Instructional Units */}
+                        {topic.instructionalUnits && topic.instructionalUnits.length > 0 && (
+                          <div className="mb-4">
+                            <h5>Instructional Units</h5>
+                            {topic.instructionalUnits.map((unit, unitIdx) => (
+                              <Card key={unitIdx} className="mb-3">
+                                <Card.Header>
+                                  <div className="d-flex align-items-center">
+                                    <Badge bg="info" className="me-2">
+                                      {unit.scoNumber}
+                                    </Badge>
+                                    <strong>Unit {unit.unitNumber}</strong>
+                                  </div>
+                                </Card.Header>
+                                <Card.Body>
+                                  <Row>
+                                    <Col md={4}>
+                                      <h6>Specific Curriculum Outcomes (SCOs)</h6>
+                                      <p>{unit.specificCurriculumOutcomes || 'Not specified'}</p>
+                                    </Col>
+                                    <Col md={4}>
+                                      <h6>Inclusive Assessment Strategies</h6>
+                                      <p>{unit.inclusiveAssessmentStrategies || 'Not specified'}</p>
+                                    </Col>
+                                    <Col md={4}>
+                                      <h6>Inclusive Learning Strategies</h6>
+                                      <p>{unit.inclusiveLearningStrategies || 'Not specified'}</p>
+                                    </Col>
+                                  </Row>
+                                  
+                                  {/* Activities */}
+                                  {unit.activities && unit.activities.length > 0 && (
+                                    <div className="mt-3">
+                                      <h6>Activities</h6>
+                                      {unit.activities.map((activity, actIdx) => (
+                                        <div key={actIdx} className="mb-2 p-2 bg-light rounded">
+                                          <strong>{activity.title}</strong>
+                                          {activity.description && (
+                                            <p className="mb-0 text-muted small">{activity.description}</p>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </Card.Body>
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Useful Content Knowledge */}
+                        {topic.usefulContentKnowledge && (
+                          <div className="mb-4">
+                            <h5>Useful Content Knowledge for Teachers</h5>
+                            <p>{topic.usefulContentKnowledge}</p>
+                          </div>
+                        )}
+                        
+                        {/* Closing Framework */}
+                        {topic.closingFramework && (
+                          <div className="mb-4">
+                            <h5>Closing Framework</h5>
+                            {topic.closingFramework.essentialEducationCompetencies && topic.closingFramework.essentialEducationCompetencies.length > 0 && (
+                              <div className="mb-3">
+                                <strong>Essential Education Competencies:</strong>
+                                <ul>
+                                  {topic.closingFramework.essentialEducationCompetencies.map((comp, idx) => (
+                                    <li key={idx}>{comp}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                            {topic.closingFramework.localCultureIntegration && (
+                              <div className="mb-3">
+                                <strong>Local Culture Integration:</strong>
+                                <p>{topic.closingFramework.localCultureIntegration}</p>
+                              </div>
+                            )}
+                            {topic.closingFramework.technologyIntegration && (
+                              <div className="mb-3">
+                                <strong>Technology Integration:</strong>
+                                <p>{topic.closingFramework.technologyIntegration}</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Resources */}
+                        {topic.resources && (
+                          <div className="mb-3">
+                            <h5>Resources</h5>
+                            {(topic.resources.webLinks?.length > 0 || 
+                              topic.resources.videos?.length > 0 || 
+                              topic.resources.games?.length > 0 || 
+                              topic.resources.worksheets?.length > 0) ? (
+                              <>
+                                {topic.resources.webLinks?.length > 0 && (
+                                  <div className="mb-2">
+                                    <strong>Web Links:</strong>
+                                    <ul>
+                                      {topic.resources.webLinks.map((link, idx) => (
+                                        <li key={idx}><a href={link} target="_blank" rel="noopener noreferrer">{link}</a></li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {topic.resources.videos?.length > 0 && (
+                                  <div className="mb-2">
+                                    <strong>Videos:</strong>
+                                    <ul>
+                                      {topic.resources.videos.map((video, idx) => (
+                                        <li key={idx}><a href={video} target="_blank" rel="noopener noreferrer">{video}</a></li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {topic.resources.games?.length > 0 && (
+                                  <div className="mb-2">
+                                    <strong>Games:</strong>
+                                    <ul>
+                                      {topic.resources.games.map((game, idx) => (
+                                        <li key={idx}><a href={game} target="_blank" rel="noopener noreferrer">{game}</a></li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                                {topic.resources.worksheets?.length > 0 && (
+                                  <div className="mb-2">
+                                    <strong>Worksheets:</strong>
+                                    <ul>
+                                      {topic.resources.worksheets.map((ws, idx) => (
+                                        <li key={idx}><a href={ws} target="_blank" rel="noopener noreferrer">{ws}</a></li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </>
+                            ) : (
+                              <p className="text-muted">No resources added yet</p>
+                            )}
+                          </div>
+                        )}
+                      </Accordion.Body>
+                    </Accordion.Item>
+                  ))}
+                </Accordion>
+              </div>
+            )}
+          </div>
+          <div className="modal-footer">
+            <Button variant="secondary" onClick={onClose}>
+              Close
+            </Button>
+            {hasStructuredCurriculum(offering) && (
+              <Button 
+                variant="primary"
+                onClick={() => {
+                  // Navigate to admin structured editor if user is admin
+                  // For now, just show message
+                  alert('Full editing available in Admin → Subjects → Form Offerings → Structured Editor');
+                  onClose();
+                }}
+              >
+                <FaEdit className="me-2" />
+                Edit in Admin
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
