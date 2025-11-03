@@ -286,3 +286,4 @@ When a student logs in, they see their **Student Dashboard** with:
 - Verify Supabase connection
 - Ensure student profile exists in `users` table
 
+

@@ -53,7 +53,7 @@ function PrivateRoute({ children, allowedRoles }) {
             if (userRole === 'admin') {
               return <Navigate to="/admin/dashboard" replace />;
             } else if (userRole === 'instructor') {
-              return <Navigate to="/instructor/dashboard" replace />;
+              return <Navigate to="/teacher/dashboard" replace />;
             } else if (userRole === 'student') {
               return <Navigate to="/student/dashboard" replace />;
             }
@@ -82,7 +82,7 @@ function PrivateRoute({ children, allowedRoles }) {
         case 'admin':
           return <Navigate to="/admin/dashboard" replace />;
         case 'instructor':
-          return <Navigate to="/instructor/dashboard" replace />;
+          return <Navigate to="/teacher/dashboard" replace />;
         case 'student':
           return <Navigate to="/student/dashboard" replace />;
         default:

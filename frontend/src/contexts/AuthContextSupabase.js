@@ -50,12 +50,23 @@ export function AuthProvider({ children }) {
           
           // Immediately set a basic user from session to prevent dashboards from showing "no user"
           const email = session.user.email;
-          const isAdmin = email && email.toLowerCase().includes('admin');
+          const emailLower = email?.toLowerCase() || '';
+          const isAdmin = emailLower.includes('admin');
+          const isTeacher = emailLower.includes('teacher') || emailLower.includes('instructor');
+          
+          // Determine role: check email first, then metadata, then default
+          let tempRole = session.user.user_metadata?.role;
+          if (!tempRole) {
+            if (isAdmin) tempRole = 'ADMIN';
+            else if (isTeacher) tempRole = 'INSTRUCTOR';
+            else tempRole = 'STUDENT';
+          }
+          
           const tempUser = {
             userId: session.user.id,
             email: email,
             name: session.user.user_metadata?.name || email.split('@')[0],
-            role: isAdmin ? 'ADMIN' : (session.user.user_metadata?.role || 'STUDENT').toUpperCase(),
+            role: tempRole.toUpperCase(),
             token: session.access_token,
             refreshToken: session.refresh_token,
             loginTime: Date.now()
@@ -148,6 +159,7 @@ export function AuthProvider({ children }) {
       const finalRole = validRoles.includes(userRole) ? userRole : (session.user.email.includes('admin') ? 'ADMIN' : 'STUDENT');
       
       // Combine profile and auth data
+      // Map snake_case DB fields to camelCase for consistency
       const userData = {
         userId: profile.user_id || session.user.id,
         email: session.user.email,
@@ -156,7 +168,10 @@ export function AuthProvider({ children }) {
         token: session.access_token,
         refreshToken: session.refresh_token,
         loginTime: Date.now(),
-        ...profile // Include all profile fields
+        // Map database fields to camelCase
+        isFirstLogin: profile.is_first_login !== undefined ? profile.is_first_login : profile.isFirstLogin,
+        isActive: profile.is_active !== undefined ? profile.is_active : profile.isActive,
+        ...profile // Include all profile fields (may be snake_case or camelCase)
       };
       
       // Override role to ensure consistency
@@ -182,8 +197,17 @@ export function AuthProvider({ children }) {
       // Profile doesn't exist or timed out - create minimal user from auth session
       // This ensures redirect can still happen
       const email = session.user.email;
-      const isAdmin = email && email.toLowerCase().includes('admin');
-      const userRole = session.user.user_metadata?.role || (isAdmin ? 'ADMIN' : 'STUDENT');
+      const emailLower = email?.toLowerCase() || '';
+      const isAdmin = emailLower.includes('admin');
+      const isTeacher = emailLower.includes('teacher') || emailLower.includes('instructor');
+      
+      // Determine role: check email first, then metadata, then default
+      let userRole = session.user.user_metadata?.role;
+      if (!userRole) {
+        if (isAdmin) userRole = 'ADMIN';
+        else if (isTeacher) userRole = 'INSTRUCTOR';
+        else userRole = 'STUDENT';
+      }
       
       // Ensure role is valid
       const userRoleUpper = (userRole || 'STUDENT').toUpperCase().trim();
@@ -212,7 +236,8 @@ export function AuthProvider({ children }) {
         email: userData.email 
       });
       
-      // Try to create profile in database for future use
+      // Try to create profile in database for future use (only if it doesn't exist)
+      // 409 errors are expected if profile already exists, so we ignore those
       try {
         const { error: createError } = await supabase
           .from('users')
@@ -226,12 +251,22 @@ export function AuthProvider({ children }) {
           });
         
         if (createError) {
-          console.warn('[AuthContext] Could not create profile in database:', createError);
+          // 409 = Conflict (already exists) - this is fine, ignore it
+          if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.status === 409) {
+            console.log('[AuthContext] Profile already exists in database (this is normal)');
+          } else {
+            console.warn('[AuthContext] Could not create profile in database:', createError);
+          }
         } else {
           console.log('[AuthContext] Created user profile in database');
         }
       } catch (createError) {
-        console.warn('[AuthContext] Error creating profile:', createError);
+        // Ignore duplicate key errors
+        if (createError.code === '23505' || createError.message?.includes('duplicate')) {
+          console.log('[AuthContext] Profile already exists (caught exception, this is normal)');
+        } else {
+          console.warn('[AuthContext] Error creating profile:', createError);
+        }
       }
       
       // Ensure loading is set to false

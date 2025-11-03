@@ -17,7 +17,7 @@
 DO $$
 DECLARE
     teacher_email TEXT := 'teacher.test@launchpadskn.com';
-    teacher_uuid UUID := '{TEACHER_UUID_HERE}'; -- <<< REPLACE WITH ACTUAL UUID FROM SUPABASE AUTH
+    teacher_uuid UUID := '2cb1a24d-3841-4d24-ae3b-80fde763a442'; -- <<< REPLACE WITH ACTUAL UUID FROM SUPABASE AUTH
     teacher_user_id BIGINT;
 BEGIN
     -- Verify the UUID exists in auth.users (Supabase Auth)

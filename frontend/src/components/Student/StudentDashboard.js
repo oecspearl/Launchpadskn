@@ -38,6 +38,13 @@ function StudentDashboard() {
       setIsLoading(true);
       setError(null);
       
+      // Guard: Only fetch if user is actually a student
+      if (!user || (user.role && user.role.toUpperCase() !== 'STUDENT')) {
+        console.warn('[StudentDashboard] User is not a student, skipping data fetch. Role:', user?.role);
+        setIsLoading(false);
+        return;
+      }
+      
       const studentId = user.userId || user.id;
       
       // Get student's class assignment
