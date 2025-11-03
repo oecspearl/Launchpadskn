@@ -22,8 +22,22 @@ const LESSON_GENERATION_ENDPOINT = `${API_BASE_URL}/api/lessons/generate`;
  */
 const generateLesson = async ({ curriculumData, topic, lessonDate, duration = 45, teacherPreferences = null }) => {
   try {
-    // Get auth token from localStorage (Supabase JWT or backend token)
-    const token = localStorage.getItem('token') || localStorage.getItem('supabase.auth.token');
+    // Get auth token - try multiple sources
+    let token = localStorage.getItem('token');
+    
+    // If no token in localStorage, try to get from Supabase session
+    if (!token) {
+      try {
+        const { supabase } = await import('../config/supabase');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          token = session.access_token;
+          localStorage.setItem('token', token); // Cache it
+        }
+      } catch (e) {
+        console.warn('Could not get Supabase session:', e);
+      }
+    }
     
     const headers = {
       'Content-Type': 'application/json',
@@ -31,7 +45,11 @@ const generateLesson = async ({ curriculumData, topic, lessonDate, duration = 45
     
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    } else {
+      console.warn('No authentication token found. Request may fail if authentication is required.');
     }
+    
+    console.log('Sending lesson generation request to:', LESSON_GENERATION_ENDPOINT);
     
     const requestBody = {
       curriculumData: curriculumData,
@@ -47,9 +65,33 @@ const generateLesson = async ({ curriculumData, topic, lessonDate, duration = 45
       body: JSON.stringify(requestBody)
     });
     
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      // Response is not JSON, likely an HTML error page
+      let errorText = 'Unknown error';
+      try {
+        const text = await response.text();
+        errorText = text.substring(0, 500);
+        console.error('Non-JSON response received:', errorText);
+      } catch (e) {
+        console.error('Could not read error response:', e);
+      }
+      
+      let errorMessage = `Server returned non-JSON response (Status: ${response.status} ${response.statusText}). `;
+      if (response.status === 401 || response.status === 403) {
+        errorMessage += 'Authentication failed. Please ensure you are logged in and have the correct permissions (INSTRUCTOR, TEACHER, or ADMIN role).';
+      } else if (response.status === 404) {
+        errorMessage += `Endpoint not found. Please check if the backend service is running at ${LESSON_GENERATION_ENDPOINT}`;
+      } else {
+        errorMessage += 'Please check if the backend service is running and accessible.';
+      }
+      throw new Error(errorMessage);
+    }
+    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Backend API error: ${response.statusText}`);
+      throw new Error(errorData.message || errorData.error || `Backend API error: ${response.status} ${response.statusText}`);
     }
     
     const data = await response.json();

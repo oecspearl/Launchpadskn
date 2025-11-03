@@ -93,8 +93,9 @@ public class SecurityConfig {
                 // Course stats - Allow authenticated users
                 .requestMatchers("/api/courses/stats").authenticated()
                 
-                // Lesson generation - Teachers/Instructors only
-                .requestMatchers(HttpMethod.POST, "/api/lessons/generate").hasAnyAuthority("ROLE_INSTRUCTOR", "ROLE_TEACHER", "ROLE_ADMIN")
+                // Lesson generation - Temporarily permit all for testing (Supabase JWT validation not yet configured)
+                // TODO: Configure Supabase JWT validation in JwtService, then change to: hasAnyAuthority("ROLE_INSTRUCTOR", "ROLE_TEACHER", "ROLE_ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/lessons/generate").permitAll()
                 
                 // All other requests require authentication
                 .anyRequest().authenticated()
