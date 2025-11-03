@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Modal, Form, Button, Tabs, Tab, Accordion,
-  Card, Row, Col, InputGroup, Badge, Alert
+  Card, Row, Col, InputGroup, Badge, Alert, Table
 } from 'react-bootstrap';
 import {
   FaPlus, FaEdit, FaTrash, FaSave, FaBook, FaListOl,
