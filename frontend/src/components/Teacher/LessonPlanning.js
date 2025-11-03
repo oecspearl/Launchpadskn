@@ -5,10 +5,11 @@ import {
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
-  FaCalendarAlt, FaClock, FaMapMarkerAlt, FaBook, FaSave, FaPlus
+  FaCalendarAlt, FaClock, FaMapMarkerAlt, FaBook, FaSave, FaPlus, FaMagic
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
+import openaiService from '../../services/openaiService';
 import { supabase } from '../../config/supabase';
 
 function LessonPlanning() {
@@ -25,6 +26,8 @@ function LessonPlanning() {
   const [lessons, setLessons] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
+  const [curriculumData, setCurriculumData] = useState(null);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [lessonData, setLessonData] = useState({
     class_subject_id: classSubjectId || '',
     lesson_date: '',
@@ -68,6 +71,19 @@ function LessonPlanning() {
         .single();
       
       setClassSubject(csData);
+      
+      // Fetch curriculum data if subject offering exists
+      if (csData?.subject_offering?.offering_id) {
+        try {
+          const curriculum = await supabaseService.getCurriculumOfferingById(
+            csData.subject_offering.offering_id
+          );
+          setCurriculumData(curriculum);
+        } catch (err) {
+          console.warn('Could not fetch curriculum data:', err);
+          // Continue without curriculum - AI can still generate lessons
+        }
+      }
       
       // Get lessons
       const lessonList = await supabaseService.getLessonsByClassSubject(classSubjectId);
@@ -125,6 +141,61 @@ function LessonPlanning() {
     setLessonData({});
     setSuccess(null);
     setError(null);
+    setIsGenerating(false);
+  };
+
+  const handleGenerateLesson = async () => {
+    if (!curriculumData && !classSubject?.subject_offering) {
+      setError('Curriculum data not available. Please ensure the subject has curriculum assigned.');
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      setError(null);
+      setSuccess(null);
+
+      // Prepare curriculum data for OpenAI
+      const curriculumForAI = curriculumData || {
+        subject: classSubject?.subject_offering?.subject,
+        form: classSubject?.class?.form,
+        curriculum_framework: classSubject?.subject_offering?.curriculum_framework,
+        learning_outcomes: classSubject?.subject_offering?.learning_outcomes,
+        curriculum_structure: classSubject?.subject_offering?.curriculum_structure
+      };
+
+      // Calculate duration from times if available
+      let duration = 45; // default
+      if (lessonData.start_time && lessonData.end_time) {
+        const start = new Date(`2000-01-01T${lessonData.start_time}`);
+        const end = new Date(`2000-01-01T${lessonData.end_time}`);
+        duration = Math.round((end - start) / 60000); // Convert to minutes
+      }
+
+      // Generate lesson using OpenAI
+      const generatedLesson = await openaiService.generateLesson({
+        curriculumData: curriculumForAI,
+        topic: lessonData.topic || null,
+        lessonDate: lessonData.lesson_date,
+        duration: duration
+      });
+
+      // Populate form fields with generated content
+      setLessonData({
+        ...lessonData,
+        lesson_title: generatedLesson.lesson_title || lessonData.lesson_title,
+        topic: generatedLesson.topic || lessonData.topic,
+        learning_objectives: generatedLesson.learning_objectives || lessonData.learning_objectives,
+        lesson_plan: generatedLesson.lesson_plan || lessonData.lesson_plan
+      });
+
+      setSuccess('Lesson plan generated successfully! Please review and adjust as needed.');
+    } catch (err) {
+      console.error('Error generating lesson:', err);
+      setError(err.message || 'Failed to generate lesson plan. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
   };
   
   const handleSubmit = async (e) => {
@@ -352,13 +423,41 @@ function LessonPlanning() {
             </Row>
             
             <Form.Group className="mb-3">
-              <Form.Label>Lesson Title</Form.Label>
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <Form.Label className="mb-0">Lesson Title</Form.Label>
+                {!editingLesson && (
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    onClick={handleGenerateLesson}
+                    disabled={isGenerating}
+                    className="d-flex align-items-center"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <FaMagic className="me-2" />
+                        Generate with AI
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
               <Form.Control
                 type="text"
                 value={lessonData.lesson_title}
                 onChange={(e) => setLessonData({ ...lessonData, lesson_title: e.target.value })}
                 placeholder="e.g., Introduction to Algebra"
               />
+              {!editingLesson && curriculumData && (
+                <Form.Text className="text-muted">
+                  AI will generate a lesson plan based on the curriculum for {classSubject?.subject_offering?.subject?.subject_name} - {classSubject?.class?.form?.form_name}
+                </Form.Text>
+              )}
             </Form.Group>
             
             <Form.Group className="mb-3">
@@ -367,7 +466,7 @@ function LessonPlanning() {
                 type="text"
                 value={lessonData.topic}
                 onChange={(e) => setLessonData({ ...lessonData, topic: e.target.value })}
-                placeholder="Lesson topic"
+                placeholder="Lesson topic (optional - AI will suggest if left empty)"
               />
             </Form.Group>
             

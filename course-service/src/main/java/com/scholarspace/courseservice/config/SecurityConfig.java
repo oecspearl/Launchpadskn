@@ -93,6 +93,9 @@ public class SecurityConfig {
                 // Course stats - Allow authenticated users
                 .requestMatchers("/api/courses/stats").authenticated()
                 
+                // Lesson generation - Teachers/Instructors only
+                .requestMatchers(HttpMethod.POST, "/api/lessons/generate").hasAnyAuthority("ROLE_INSTRUCTOR", "ROLE_TEACHER", "ROLE_ADMIN")
+                
                 // All other requests require authentication
                 .anyRequest().authenticated()
             )

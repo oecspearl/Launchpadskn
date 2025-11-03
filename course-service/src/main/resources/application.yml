@@ -68,6 +68,10 @@ app:
     expiration: 86400000
   upload:
     dir: C:\\LaunchPadSKN\\uploads\\
+  openai:
+    api-key: ${OPENAI_API_KEY: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}
+    api-url: https://api.openai.com/v1/chat/completions
+    model: gpt-4o-mini
 
 # Swagger Configuration
 springdoc:
