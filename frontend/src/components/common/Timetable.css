@@ -114,6 +114,15 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
+.lesson-cell.clickable {
+  cursor: pointer;
+}
+
+.lesson-cell.clickable:hover .lesson-card {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
 .lesson-subject {
   font-weight: 600;
   font-size: 0.85rem;

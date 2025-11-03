@@ -8,7 +8,7 @@ import './Timetable.css';
  * Displays lessons in a weekly grid format
  * Shows time slots and lessons scheduled for each day
  */
-function Timetable({ lessons = [], startDate = null }) {
+function Timetable({ lessons = [], startDate = null, onLessonClick = null }) {
   // Default to current week if no startDate
   const weekStart = startDate 
     ? new Date(startDate) 
@@ -175,7 +175,9 @@ function Timetable({ lessons = [], startDate = null }) {
                         return (
                           <td 
                             key={dayIndex} 
-                            className={`lesson-cell filled ${dayInfo.isToday ? 'today' : ''}`}
+                            className={`lesson-cell filled ${dayInfo.isToday ? 'today' : ''} ${onLessonClick ? 'clickable' : ''}`}
+                            onClick={onLessonClick ? () => onLessonClick(lesson) : undefined}
+                            style={onLessonClick ? { cursor: 'pointer' } : {}}
                           >
                             <div className="lesson-card">
                               <div className="lesson-subject">{subjectName}</div>

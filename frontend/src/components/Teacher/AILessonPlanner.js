@@ -36,6 +36,12 @@ function AILessonPlanner({
   const handleGenerate = async (e) => {
     e.preventDefault();
     
+    console.log('[AILessonPlanner] Generate button clicked');
+    console.log('[AILessonPlanner] Form data:', formData);
+    console.log('[AILessonPlanner] Subject name:', subjectName);
+    console.log('[AILessonPlanner] Form name:', formName);
+    console.log('[AILessonPlanner] onPlanGenerated callback:', typeof onPlanGenerated);
+    
     if (!formData.topic || !formData.gradeLevel) {
       setError('Please fill in at least the topic and grade level.');
       return;
@@ -45,6 +51,15 @@ function AILessonPlanner({
     setError(null);
 
     try {
+      console.log('[AILessonPlanner] Calling generateLessonPlan with:', {
+        subject: subjectName || 'General',
+        topic: formData.topic,
+        gradeLevel: formData.gradeLevel,
+        duration: parseInt(formData.duration),
+        previousTopics: formData.previousTopics,
+        learningStyle: formData.learningStyle
+      });
+
       const lessonPlan = await generateLessonPlan({
         subject: subjectName || 'General',
         topic: formData.topic,
@@ -54,19 +69,26 @@ function AILessonPlanner({
         learningStyle: formData.learningStyle
       });
 
-      console.log('Received lesson plan from AI:', lessonPlan);
+      console.log('[AILessonPlanner] Received lesson plan from AI:', lessonPlan);
+      console.log('[AILessonPlanner] Lesson plan keys:', Object.keys(lessonPlan));
+      console.log('[AILessonPlanner] Lesson title:', lessonPlan.lesson_title);
+      console.log('[AILessonPlanner] Learning objectives:', lessonPlan.learning_objectives);
+      console.log('[AILessonPlanner] Lesson plan:', lessonPlan.lesson_plan);
+      console.log('[AILessonPlanner] Homework:', lessonPlan.homework_description);
 
       if (onPlanGenerated) {
-        console.log('Calling onPlanGenerated callback');
+        console.log('[AILessonPlanner] Calling onPlanGenerated callback');
         onPlanGenerated(lessonPlan);
+        console.log('[AILessonPlanner] onPlanGenerated callback completed');
       } else {
-        console.warn('onPlanGenerated callback is not defined');
+        console.warn('[AILessonPlanner] onPlanGenerated callback is not defined');
       }
       
       // Close the form after successful generation
       setShowForm(false);
     } catch (err) {
-      console.error('Error generating lesson plan:', err);
+      console.error('[AILessonPlanner] Error generating lesson plan:', err);
+      console.error('[AILessonPlanner] Error stack:', err.stack);
       setError(err.message || 'Failed to generate lesson plan. Please try again.');
     } finally {
       setIsGenerating(false);
