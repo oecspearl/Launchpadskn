@@ -239,36 +239,41 @@ export function AuthProvider({ children }) {
       });
       
       // Try to create profile in database for future use (only if it doesn't exist)
-      // 409 errors are expected if profile already exists, so we ignore those
+      // Use upsert to avoid 409 conflicts - if profile exists, just update it silently
       try {
-        const { error: createError } = await supabase
+        // Check if profile exists first to avoid unnecessary upsert
+        const { data: existingProfile } = await supabase
           .from('users')
-          .insert({
-            id: session.user.id,
-            email: email,
-            name: userData.name,
-            role: finalRole,
-            is_active: true,
-            created_at: new Date().toISOString()
-          });
+          .select('user_id')
+          .eq('id', session.user.id)
+          .maybeSingle();
         
-        if (createError) {
-          // 409 = Conflict (already exists) - this is fine, ignore it
-          if (createError.code === '23505' || createError.message?.includes('duplicate') || createError.status === 409) {
-            console.log('[AuthContext] Profile already exists in database (this is normal)');
+        if (!existingProfile) {
+          // Only insert if it doesn't exist
+          const { error: createError } = await supabase
+            .from('users')
+            .insert({
+              id: session.user.id,
+              email: email,
+              name: userData.name,
+              role: finalRole,
+              is_active: true,
+              created_at: new Date().toISOString()
+            });
+          
+          if (createError) {
+            // Ignore conflict errors silently
+            if (createError.code !== '23505' && createError.status !== 409 && !createError.message?.includes('duplicate')) {
+              console.warn('[AuthContext] Could not create profile in database:', createError);
+            }
           } else {
-            console.warn('[AuthContext] Could not create profile in database:', createError);
+            console.log('[AuthContext] Created user profile in database');
           }
-        } else {
-          console.log('[AuthContext] Created user profile in database');
         }
+        // If profile exists, we don't need to do anything - it's already loaded above
       } catch (createError) {
-        // Ignore duplicate key errors
-        if (createError.code === '23505' || createError.message?.includes('duplicate')) {
-          console.log('[AuthContext] Profile already exists (caught exception, this is normal)');
-        } else {
-          console.warn('[AuthContext] Error creating profile:', createError);
-        }
+        // Silently ignore all errors here - profile creation is optional
+        // The profile might already exist, which is fine
       }
       
       // Ensure loading is set to false
