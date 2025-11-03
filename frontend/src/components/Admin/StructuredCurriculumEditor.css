@@ -1,0 +1,29 @@
+/* ============================================
+   LaunchPad SKN - Structured Curriculum Editor Styles
+   ============================================ */
+
+.curriculum-editor-body {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.topic-editor {
+  padding: var(--space-md);
+}
+
+.topic-editor .card {
+  margin-bottom: var(--space-lg);
+}
+
+/* Responsive table for instructional units */
+@media (max-width: 768px) {
+  .topic-editor table {
+    font-size: var(--font-size-sm);
+  }
+  
+  .topic-editor th,
+  .topic-editor td {
+    padding: var(--space-xs);
+  }
+}
+

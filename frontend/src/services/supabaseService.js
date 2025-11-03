@@ -1169,15 +1169,28 @@ class SupabaseService {
    * Update curriculum framework or learning outcomes for a subject-form offering
    */
   async updateCurriculumOffering(offeringId, curriculumData) {
+    const updateData = {
+      curriculum_framework: curriculumData.curriculum_framework,
+      learning_outcomes: curriculumData.learning_outcomes,
+      weekly_periods: curriculumData.weekly_periods,
+      is_compulsory: curriculumData.is_compulsory,
+      updated_at: new Date().toISOString()
+    };
+
+    // Include structured curriculum data if provided
+    if (curriculumData.curriculum_structure !== undefined) {
+      updateData.curriculum_structure = curriculumData.curriculum_structure;
+    }
+    if (curriculumData.curriculum_version) {
+      updateData.curriculum_version = curriculumData.curriculum_version;
+    }
+    if (curriculumData.curriculum_updated_at) {
+      updateData.curriculum_updated_at = curriculumData.curriculum_updated_at;
+    }
+
     const { data, error } = await supabase
       .from('subject_form_offerings')
-      .update({
-        curriculum_framework: curriculumData.curriculum_framework,
-        learning_outcomes: curriculumData.learning_outcomes,
-        weekly_periods: curriculumData.weekly_periods,
-        is_compulsory: curriculumData.is_compulsory,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('offering_id', offeringId)
       .select()
       .single();

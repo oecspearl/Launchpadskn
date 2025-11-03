@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import StructuredCurriculumEditor from './StructuredCurriculumEditor';
 
 function SubjectManagement() {
   const { user } = useAuth();
@@ -38,6 +39,7 @@ function SubjectManagement() {
   
   // Modal state for form offerings
   const [showOfferingModal, setShowOfferingModal] = useState(false);
+  const [showStructuredEditor, setShowStructuredEditor] = useState(false);
   const [editingOffering, setEditingOffering] = useState(null);
   const [offeringData, setOfferingData] = useState({
     subject_id: '',
@@ -241,6 +243,39 @@ function SubjectManagement() {
       setError(err.message || 'Failed to save subject offering');
     }
   };
+
+  const handleSaveStructuredCurriculum = async (structuredData) => {
+    try {
+      setError(null);
+      setSuccess(null);
+      
+      if (!editingOffering) {
+        setError('No offering selected');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('subject_form_offerings')
+        .update({
+          curriculum_structure: structuredData.curriculum_structure,
+          curriculum_version: structuredData.curriculum_version,
+          curriculum_updated_at: structuredData.curriculum_updated_at,
+          updated_at: new Date().toISOString()
+        })
+        .eq('offering_id', editingOffering.offering_id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      
+      setSuccess('Structured curriculum saved successfully');
+      setShowStructuredEditor(false);
+      fetchData();
+    } catch (err) {
+      console.error('Error saving structured curriculum:', err);
+      setError(err.message || 'Failed to save structured curriculum');
+    }
+  };
   
   const handleDeleteSubject = async (subjectId) => {
     if (window.confirm('Are you sure you want to delete this subject? This will affect all classes using it.')) {
@@ -395,14 +430,25 @@ function SubjectManagement() {
                           )}
                         </td>
                         <td>
-                          <Button 
-                            variant="outline-primary" 
-                            size="sm"
-                            className="me-2"
-                            onClick={() => handleOpenOfferingModal(offering)}
-                          >
-                            <FaEdit /> Edit Curriculum
-                          </Button>
+                          <div className="d-flex gap-2">
+                            <Button 
+                              variant="outline-primary" 
+                              size="sm"
+                              onClick={() => handleOpenOfferingModal(offering)}
+                            >
+                              <FaEdit /> Quick Edit
+                            </Button>
+                            <Button 
+                              variant="primary" 
+                              size="sm"
+                              onClick={() => {
+                                setEditingOffering(offering);
+                                setShowStructuredEditor(true);
+                              }}
+                            >
+                              <FaBook /> Structured Editor
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
