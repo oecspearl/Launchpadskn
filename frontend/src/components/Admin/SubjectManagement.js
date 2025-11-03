@@ -678,6 +678,19 @@ function SubjectManagement() {
           </Modal.Footer>
         </Form>
       </Modal>
+
+      {/* Structured Curriculum Editor Modal */}
+      {editingOffering && (
+        <StructuredCurriculumEditor
+          show={showStructuredEditor}
+          onHide={() => {
+            setShowStructuredEditor(false);
+            setEditingOffering(null);
+          }}
+          offering={editingOffering}
+          onSave={handleSaveStructuredCurriculum}
+        />
+      )}
     </Container>
   );
 }
