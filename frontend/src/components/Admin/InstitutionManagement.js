@@ -65,8 +65,8 @@ function InstitutionManagement() {
         contact: institution.contact || '',
         phone: institution.phone || '',
         website: institution.website || '',
-        establishedYear: institution.establishedYear || '',
-        type: institution.type || 'UNIVERSITY'
+        establishedYear: institution.establishedYear || institution.established_year || '',
+        type: institution.institutionType || institution.institution_type || institution.type || 'UNIVERSITY'
       });
     } else {
       setEditingInstitution(null);
@@ -107,7 +107,8 @@ function InstitutionManagement() {
 
     try {
       if (editingInstitution) {
-        await supabaseService.updateInstitution(editingInstitution.institution_id || editingInstitution.institutionId, formData);
+        const institutionId = editingInstitution.institutionId || editingInstitution.institution_id;
+        await supabaseService.updateInstitution(institutionId, formData);
         setSuccess('Institution updated successfully');
       } else {
         await supabaseService.createInstitution(formData);
@@ -126,7 +127,8 @@ function InstitutionManagement() {
   const handleDelete = async (institution) => {
     if (window.confirm(`Are you sure you want to delete ${institution.name}? This action cannot be undone.`)) {
       try {
-        await supabaseService.deleteInstitution(institution.institution_id || institution.institutionId);
+        const institutionId = institution.institutionId || institution.institution_id;
+        await supabaseService.deleteInstitution(institutionId);
         setSuccess('Institution deleted successfully');
         await fetchInstitutions();
         setTimeout(() => setSuccess(''), 3000);

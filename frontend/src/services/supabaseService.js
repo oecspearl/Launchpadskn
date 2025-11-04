@@ -193,6 +193,58 @@ class SupabaseService {
   // INSTITUTIONS
   // ============================================
   
+  /**
+   * Helper function to convert snake_case to camelCase
+   */
+  toCamelCase(str) {
+    return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+  }
+  
+  /**
+   * Helper function to transform institution object from snake_case to camelCase
+   */
+  transformInstitution(institution) {
+    if (!institution) return null;
+    return {
+      ...institution,
+      establishedYear: institution.established_year || institution.establishedYear,
+      institutionId: institution.institution_id || institution.institutionId,
+      createdAt: institution.created_at || institution.createdAt,
+      institutionType: institution.institution_type || institution.institutionType
+    };
+  }
+  
+  /**
+   * Helper function to transform institution data for database (camelCase to snake_case)
+   */
+  transformInstitutionForDB(institutionData) {
+    const transformed = { ...institutionData };
+    
+    // Handle establishedYear -> established_year
+    if (transformed.establishedYear !== undefined) {
+      transformed.established_year = transformed.establishedYear;
+      delete transformed.establishedYear;
+    }
+    
+    // Handle institutionId -> institution_id (don't include in updates/inserts)
+    if (transformed.institutionId !== undefined) {
+      delete transformed.institutionId; // Don't send ID in data, it's used separately
+    }
+    
+    // Handle institutionType -> institution_type
+    if (transformed.institutionType !== undefined) {
+      transformed.institution_type = transformed.institutionType;
+      delete transformed.institutionType;
+    }
+    
+    // Also handle 'type' field (legacy support)
+    if (transformed.type !== undefined && !transformed.institution_type) {
+      transformed.institution_type = transformed.type;
+    }
+    
+    return transformed;
+  }
+  
   async getAllInstitutions() {
     const { data, error } = await supabase
       .from('institutions')
@@ -200,7 +252,8 @@ class SupabaseService {
       .order('name');
     
     if (error) throw error;
-    return data;
+    // Transform data to camelCase
+    return (data || []).map(inst => this.transformInstitution(inst));
   }
   
   async getInstitutionById(id) {
@@ -211,30 +264,34 @@ class SupabaseService {
       .single();
     
     if (error) throw error;
-    return data;
+    return this.transformInstitution(data);
   }
   
   async createInstitution(institutionData) {
+    // Transform camelCase to snake_case for database
+    const dbData = this.transformInstitutionForDB(institutionData);
     const { data, error } = await supabase
       .from('institutions')
-      .insert(institutionData)
+      .insert(dbData)
       .select()
       .single();
     
     if (error) throw error;
-    return data;
+    return this.transformInstitution(data);
   }
   
   async updateInstitution(id, updates) {
+    // Transform camelCase to snake_case for database
+    const dbUpdates = this.transformInstitutionForDB(updates);
     const { data, error } = await supabase
       .from('institutions')
-      .update(updates)
+      .update(dbUpdates)
       .eq('institution_id', id)
       .select()
       .single();
     
     if (error) throw error;
-    return data;
+    return this.transformInstitution(data);
   }
   
   async deleteInstitution(id) {
