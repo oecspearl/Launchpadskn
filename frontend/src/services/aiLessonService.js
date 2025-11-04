@@ -787,7 +787,7 @@ Remember: Use ONLY the provided information. Make the lesson plan practical, eng
         }
       ],
       temperature: 0.3, // Lower temperature for more consistent, factual responses
-      max_tokens: 6000 // Increased for more detailed lesson plans with step-by-step instructions
+      max_tokens: 4096 // Maximum supported by GPT-3.5-turbo model
     };
 
     const response = await fetch(OPENAI_API_URL, {
