@@ -29,6 +29,11 @@ function LessonPlanning() {
   const [classSubject, setClassSubject] = useState(null);
   const [lessons, setLessons] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  
+  // Debug: Log modal state changes
+  useEffect(() => {
+    console.log('[LessonPlanning] showModal state changed to:', showModal);
+  }, [showModal]);
   const [showEnhancedPlanner, setShowEnhancedPlanner] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'calendar'
@@ -89,6 +94,9 @@ function LessonPlanning() {
   };
   
   const handleOpenModal = (lesson = null) => {
+    console.log('[LessonPlanning] handleOpenModal called with lesson:', lesson);
+    console.log('[LessonPlanning] classSubjectId:', classSubjectId);
+    
     if (lesson) {
       setEditingLesson(lesson);
       setLessonData({
@@ -108,8 +116,8 @@ function LessonPlanning() {
     } else {
       setEditingLesson(null);
       const today = new Date().toISOString().split('T')[0];
-      setLessonData({
-        class_subject_id: classSubjectId,
+      const newLessonData = {
+        class_subject_id: classSubjectId || '',
         lesson_date: today,
         start_time: '08:00',
         end_time: '08:45',
@@ -121,8 +129,11 @@ function LessonPlanning() {
         homework_description: '',
         homework_due_date: '',
         status: 'SCHEDULED'
-      });
+      };
+      console.log('[LessonPlanning] Setting lesson data for new lesson:', newLessonData);
+      setLessonData(newLessonData);
     }
+    console.log('[LessonPlanning] Setting showModal to true');
     setShowModal(true);
   };
   
@@ -397,8 +408,8 @@ function LessonPlanning() {
             <div>
               <h2>Lesson Planning</h2>
               <p className="text-muted mb-0">
-                {classSubject.subject_offering?.subject?.subject_name} • 
-                {classSubject.class?.form?.form_name} - {classSubject.class?.class_name}
+                {classSubject?.subject_offering?.subject?.subject_name || 'Loading...'} • 
+                {classSubject?.class?.form?.form_name || ''} - {classSubject?.class?.class_name || ''}
               </p>
             </div>
             <div>
@@ -406,7 +417,15 @@ function LessonPlanning() {
                 <FaMagic className="me-2" />
                 AI Lesson Planner
               </Button>
-              <Button variant="primary" onClick={() => handleOpenModal()}>
+              <Button 
+                variant="primary" 
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('[LessonPlanning] Create Lesson button clicked');
+                  handleOpenModal();
+                }}
+              >
                 <FaPlus className="me-2" />
                 Create Lesson
               </Button>
@@ -459,7 +478,16 @@ function LessonPlanning() {
         <Card className="border-0 shadow-sm">
           <Card.Body className="text-center py-5">
             <p className="text-muted mb-0">No lessons planned yet</p>
-            <Button variant="primary" className="mt-3" onClick={() => handleOpenModal()}>
+            <Button 
+              variant="primary" 
+              className="mt-3" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('[LessonPlanning] Create First Lesson button clicked');
+                handleOpenModal();
+              }}
+            >
               Create First Lesson
             </Button>
           </Card.Body>
@@ -629,7 +657,13 @@ function LessonPlanning() {
       )}
       
       {/* Create/Edit Lesson Modal */}
-      <Modal show={showModal} onHide={handleCloseModal} size="lg">
+      <Modal 
+        show={showModal} 
+        onHide={handleCloseModal} 
+        size="lg"
+        backdrop="static"
+        keyboard={true}
+      >
         <Modal.Header closeButton>
           <Modal.Title>
             {editingLesson ? 'Edit Lesson' : 'Create New Lesson'}
