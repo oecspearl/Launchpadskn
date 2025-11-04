@@ -15,6 +15,7 @@ import StudentManagement from './StudentManagement';
 import ManageInstructors from './ManageInstructors';
 import ReportsTab from './ReportsTab';
 import EnhancedCourseManagement from './EnhancedCourseManagement';
+import ClassesTab from './ClassesTab';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
@@ -218,7 +219,7 @@ function AdminDashboard() {
             <Nav.Link eventKey="instructors">Instructors</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link eventKey="courses">Courses</Nav.Link>
+            <Nav.Link eventKey="classes">Classes</Nav.Link>
           </Nav.Item>
           <Nav.Item>
             <Nav.Link eventKey="reports">Reports</Nav.Link>
@@ -421,9 +422,9 @@ function AdminDashboard() {
           </div>
         )}
 
-        {activeTab === 'courses' && (
-          <div className="courses-tab">
-            <EnhancedCourseManagement />
+        {activeTab === 'classes' && (
+          <div className="classes-tab">
+            <ClassesTab />
           </div>
         )}
 
