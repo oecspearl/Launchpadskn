@@ -201,15 +201,15 @@ const formatStructuredLessonPlan = (planObj) => {
   }
   
   // Format Lesson Components
-  if (planObj.lesson_components || planObj.LESSON_COMPONENTS) {
-    const components = planObj.lesson_components || planObj.LESSON_COMPONENTS;
+  if (planObj.lesson_components || planObj.LESSON_COMPONENTS || planObj['3. LESSON COMPONENTS']) {
+    const components = planObj.lesson_components || planObj.LESSON_COMPONENTS || planObj['3. LESSON COMPONENTS'];
     formatted += '═══════════════════════════════════════════════════════\n';
     formatted += 'LESSON COMPONENTS\n';
     formatted += '═══════════════════════════════════════════════════════\n';
     if (typeof components === 'string') {
       formatted += components + '\n';
     } else {
-      // Handle structured components
+      // Handle structured components with enhanced details
       const componentOrder = [
         'Prompter/Hook',
         'prompter_hook',
@@ -230,8 +230,138 @@ const formatStructuredLessonPlan = (planObj) => {
           if (typeof component === 'string') {
             formatted += `  ${component}\n`;
           } else {
-            if (component.timing) formatted += `  Timing: ${component.timing}\n`;
-            if (component.description) formatted += `  ${component.description}\n`;
+            if (component.timing) formatted += `  ⏱️ Timing: ${component.timing}\n\n`;
+            if (component.description) formatted += `  📝 Description: ${component.description}\n\n`;
+            
+            // Enhanced teacher instructions
+            if (component.teacher_instructions) {
+              formatted += `  👨‍🏫 TEACHER INSTRUCTIONS:\n`;
+              formatted += `  ${component.teacher_instructions.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Teacher dialogue/script
+            if (component.teacher_dialogue) {
+              formatted += `  💬 TEACHER DIALOGUE/SCRIPT:\n`;
+              formatted += `  "${component.teacher_dialogue}"\n\n`;
+            }
+            
+            // Student-level explanation
+            if (component.student_explanation) {
+              formatted += `  📚 STUDENT-LEVEL EXPLANATION:\n`;
+              formatted += `  ${component.student_explanation.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Student actions
+            if (component.student_actions) {
+              formatted += `  ✋ STUDENT ACTIONS:\n`;
+              formatted += `  ${component.student_actions.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Expected responses
+            if (component.expected_responses) {
+              formatted += `  💭 EXPECTED STUDENT RESPONSES:\n`;
+              formatted += `  ${component.expected_responses.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Connection to prior knowledge
+            if (component.connection_to_prior_knowledge) {
+              formatted += `  🔗 CONNECTION TO PRIOR KNOWLEDGE:\n`;
+              formatted += `  ${component.connection_to_prior_knowledge.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Concept Development sub-activities
+            if (component.sub_activities && Array.isArray(component.sub_activities)) {
+              formatted += `  📖 SUB-ACTIVITIES:\n\n`;
+              component.sub_activities.forEach((subActivity, idx) => {
+                formatted += `    Activity ${idx + 1}: ${subActivity.name || `Activity ${idx + 1}`}\n`;
+                if (subActivity.timing) formatted += `    ⏱️ Timing: ${subActivity.timing}\n\n`;
+                
+                if (subActivity.teacher_instructions) {
+                  formatted += `    👨‍🏫 Teacher Instructions:\n`;
+                  formatted += `    ${subActivity.teacher_instructions.split('\n').join('\n    ')}\n\n`;
+                }
+                
+                if (subActivity.teacher_dialogue) {
+                  formatted += `    💬 Teacher Dialogue:\n`;
+                  formatted += `    "${subActivity.teacher_dialogue}"\n\n`;
+                }
+                
+                if (subActivity.student_explanation) {
+                  formatted += `    📚 Student-Level Explanation:\n`;
+                  formatted += `    ${subActivity.student_explanation.split('\n').join('\n    ')}\n\n`;
+                }
+                
+                if (subActivity.examples) {
+                  formatted += `    📝 Examples:\n`;
+                  formatted += `    ${subActivity.examples.split('\n').join('\n    ')}\n\n`;
+                }
+                
+                if (subActivity.student_actions) {
+                  formatted += `    ✋ Student Actions:\n`;
+                  formatted += `    ${subActivity.student_actions.split('\n').join('\n    ')}\n\n`;
+                }
+                
+                if (subActivity.practice_exercises) {
+                  formatted += `    ✏️ Practice Exercises:\n`;
+                  formatted += `    ${subActivity.practice_exercises.split('\n').join('\n    ')}\n\n`;
+                }
+                
+                if (subActivity.common_misconceptions) {
+                  formatted += `    ⚠️ Common Misconceptions:\n`;
+                  formatted += `    ${subActivity.common_misconceptions.split('\n').join('\n    ')}\n\n`;
+                }
+                
+                if (subActivity.formative_checkpoint) {
+                  formatted += `    ✅ Formative Checkpoint:\n`;
+                  formatted += `    ${subActivity.formative_checkpoint.split('\n').join('\n    ')}\n\n`;
+                }
+                
+                if (subActivity.learning_style_integration) {
+                  formatted += `    🎯 Learning Style Integration:\n`;
+                  formatted += `    ${subActivity.learning_style_integration.split('\n').join('\n    ')}\n\n`;
+                }
+                
+                formatted += `    ${'─'.repeat(50)}\n\n`;
+              });
+            }
+            
+            // Transitions
+            if (component.transitions) {
+              formatted += `  🔄 TRANSITIONS:\n`;
+              formatted += `  ${component.transitions.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Reflection questions
+            if (component.reflection_questions) {
+              formatted += `  🤔 REFLECTION QUESTIONS:\n`;
+              formatted += `  ${component.reflection_questions.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Sharing process
+            if (component.sharing_process) {
+              formatted += `  💬 SHARING PROCESS:\n`;
+              formatted += `  ${component.sharing_process.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Student language guide
+            if (component.student_language_guide) {
+              formatted += `  📝 STUDENT LANGUAGE GUIDE:\n`;
+              formatted += `  ${component.student_language_guide.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Addressing questions
+            if (component.addressing_questions) {
+              formatted += `  ❓ ADDRESSING QUESTIONS:\n`;
+              formatted += `  ${component.addressing_questions.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Connection to next lesson
+            if (component.connection_to_next_lesson) {
+              formatted += `  🔗 CONNECTION TO NEXT LESSON:\n`;
+              formatted += `  ${component.connection_to_next_lesson.split('\n').join('\n  ')}\n\n`;
+            }
+            
+            // Legacy support for activities array
             if (component.activities) {
               formatted += `  Activities:\n`;
               if (Array.isArray(component.activities)) {
@@ -254,8 +384,10 @@ const formatStructuredLessonPlan = (planObj) => {
           if (typeof component === 'string') {
             formatted += `  ${component}\n`;
           } else {
-            if (component.timing) formatted += `  Timing: ${component.timing}\n`;
-            if (component.description) formatted += `  ${component.description}\n`;
+            if (component.timing) formatted += `  ⏱️ Timing: ${component.timing}\n`;
+            if (component.description) formatted += `  📝 Description: ${component.description}\n`;
+            if (component.teacher_instructions) formatted += `  👨‍🏫 Instructions: ${component.teacher_instructions}\n`;
+            if (component.student_explanation) formatted += `  📚 Student Explanation: ${component.student_explanation}\n`;
           }
         });
       }
@@ -272,22 +404,35 @@ const formatStructuredLessonPlan = (planObj) => {
     if (typeof assessment === 'string') {
       formatted += assessment + '\n';
     } else if (typeof assessment === 'object') {
-      // Handle specific assessment keys
-      if (assessment['Formative Assessment'] || assessment.formative_assessment || assessment.formative_strategies) {
-        const formative = assessment['Formative Assessment'] || assessment.formative_assessment || assessment.formative_strategies;
-        formatted += `Formative Assessment: ${formative}\n`;
+      // Handle specific assessment keys with enhanced formatting
+      if (assessment.formative_strategies) {
+        formatted += `📊 FORMATIVE ASSESSMENT STRATEGIES:\n${assessment.formative_strategies}\n\n`;
+      } else if (assessment['Formative Assessment'] || assessment.formative_assessment) {
+        const formative = assessment['Formative Assessment'] || assessment.formative_assessment;
+        formatted += `📊 FORMATIVE ASSESSMENT:\n${formative}\n\n`;
       }
-      if (assessment['Assessment Activities'] || assessment.assessment_activities) {
-        formatted += `Assessment Activities: ${assessment['Assessment Activities'] || assessment.assessment_activities}\n`;
+      
+      if (assessment.assessment_activities) {
+        formatted += `📝 ASSESSMENT ACTIVITIES:\n${assessment.assessment_activities}\n\n`;
+      } else if (assessment['Assessment Activities']) {
+        formatted += `📝 ASSESSMENT ACTIVITIES:\n${assessment['Assessment Activities']}\n\n`;
       }
-      if (assessment['Assessment Tools'] || assessment.assessment_tools) {
-        formatted += `Assessment Tools: ${assessment['Assessment Tools'] || assessment.assessment_tools}\n`;
+      
+      if (assessment.assessment_tools) {
+        formatted += `🛠️ ASSESSMENT TOOLS:\n${assessment.assessment_tools}\n\n`;
+      } else if (assessment['Assessment Tools']) {
+        formatted += `🛠️ ASSESSMENT TOOLS:\n${assessment['Assessment Tools']}\n\n`;
       }
+      
+      if (assessment.checkpoint_questions) {
+        formatted += `✅ CHECKPOINT QUESTIONS:\n${assessment.checkpoint_questions}\n\n`;
+      }
+      
       // Handle any other keys
       Object.keys(assessment).forEach(key => {
         if (!['Formative Assessment', 'formative_assessment', 'formative_strategies', 
               'Assessment Activities', 'assessment_activities',
-              'Assessment Tools', 'assessment_tools'].includes(key)) {
+              'Assessment Tools', 'assessment_tools', 'checkpoint_questions'].includes(key)) {
           const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
           formatted += `${formattedKey}: ${assessment[key]}\n`;
         }
@@ -307,10 +452,22 @@ const formatStructuredLessonPlan = (planObj) => {
     } else if (typeof resources === 'object') {
       Object.keys(resources).forEach(key => {
         const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        formatted += `${formattedKey}: ${resources[key]}\n`;
+        if (typeof resources[key] === 'string') {
+          formatted += `📚 ${formattedKey}:\n${resources[key]}\n\n`;
+        } else {
+          formatted += `📚 ${formattedKey}: ${JSON.stringify(resources[key], null, 2)}\n\n`;
+        }
       });
     }
     formatted += '\n';
+  }
+  
+  // Format Student Content (if present)
+  if (planObj.student_content) {
+    formatted += '═══════════════════════════════════════════════════════\n';
+    formatted += 'STUDENT-FACING CONTENT\n';
+    formatted += '═══════════════════════════════════════════════════════\n';
+    formatted += `${planObj.student_content}\n\n`;
   }
   
   return formatted.trim() || JSON.stringify(planObj, null, 2);
@@ -440,26 +597,49 @@ Create a detailed lesson plan with the following sections:
    - Skills: What students will be able to do
    - Values: Attitudes and values to be developed
 
-3. LESSON COMPONENTS (with strict timing)
+3. LESSON COMPONENTS (with strict timing and DETAILED instructions)
+   For EACH component, provide:
+   - Exact timing (e.g., "Minutes 1-3: Hook Activity")
+   - Detailed step-by-step instructions that a teacher can follow verbatim
+   - Student-level explanations and content written at the appropriate reading level for ${form} students
+   - Teacher dialogue/script for explaining concepts clearly
+   - Specific student actions and expected responses
+   - Clear transition phrases between activities
+   
    a) Prompter/Hook (1-3 minutes)
       - Engaging opening activity to capture attention
+      - Detailed step-by-step instructions for the teacher
+      - Student-facing explanation of what they're doing and why
+      - Expected student responses or reactions
    
    b) Introduction (2-3 minutes)
-      - Connect to prior knowledge
-      - State lesson objectives
+      - Connect to prior knowledge with specific questions or prompts
+      - State lesson objectives in student-friendly language
+      - Teacher script for introducing the topic
+      - Student-level explanation of what they'll learn today
    
    c) Concept Development and Practice (${Math.floor(duration * 0.5)}-${Math.floor(duration * 0.6)} minutes)
-      - Main teaching content
-      - Step-by-step activities
-      - Student actions clearly specified
-      - Teacher actions during activities
+      This is the MAIN section - provide EXTENSIVE detail:
+      - Break down into 3-5 sub-activities with clear progression
+      - For EACH sub-activity, include:
+        * Step-by-step instructions (numbered 1, 2, 3, etc.)
+        * Teacher actions and dialogue (what to say, how to explain)
+        * Student actions (what students should do at each step)
+        * Student-level explanations of concepts (written in language appropriate for ${form} students)
+        * Examples and demonstrations with full explanations
+        * Common misconceptions to address
+        * Formative assessment checkpoints with specific questions to ask
+        * Timing for each sub-activity
       - Integration of learning styles and multiple intelligences
-      - Formative assessment checkpoints
+      - Clear transitions between activities
+      - Practice exercises with step-by-step solutions/explanations
+      - Content written at ${form} level - use age-appropriate vocabulary and explanations
    
    d) Time to Reflect and Share (3-5 minutes)
-      - Students reflect on learning
-      - Share key takeaways
-      - Address any questions
+      - Specific reflection questions at student level
+      - Step-by-step process for sharing
+      - Student-friendly language for expressing understanding
+      - How to address common questions or misconceptions
 
 4. ASSESSMENT
    - Formative assessment strategies during lesson
@@ -481,11 +661,114 @@ IMPORTANT: Respond with ONLY valid JSON in this exact structure:
 {
   "lesson_title": "Engaging lesson title",
   "learning_objectives": "Detailed learning objectives aligned with curriculum standards",
-  "lesson_plan": "Complete detailed lesson plan with all sections above, formatted clearly with proper structure",
-  "homework_description": "Clear homework assignment with instructions",
-  "materials_list": "List of all required materials",
-  "assessment_strategies": "Formative and summative assessment approaches"
+  "lesson_plan": {
+    "1. LESSON HEADER": {
+      "Subject": "${subject}",
+      "Form": "${form}",
+      "Class": "${className || 'N/A'}",
+      "Topic": "${topic}",
+      "Essential Learning Outcomes": "${essentialLearningOutcomes || 'As specified'}",
+      "Specific Learning Outcomes": "${learningOutcomes || 'As specified'}",
+      "Duration": "${duration} minutes"
+    },
+    "2. OBJECTIVES TABLE": {
+      "columns": [
+        {
+          "Knowledge": "What students will know (detailed)",
+          "Skills": "What students will be able to do (detailed)",
+          "Values": "Attitudes and values to be developed (detailed)"
+        }
+      ]
+    },
+    "3. LESSON COMPONENTS": {
+      "Prompter/Hook": {
+        "timing": "1-3 minutes",
+        "description": "Brief description",
+        "teacher_instructions": "Detailed step-by-step instructions for the teacher",
+        "teacher_dialogue": "What the teacher should say (script)",
+        "student_explanation": "Student-level explanation of what they're doing and why",
+        "student_actions": "What students should do, step by step",
+        "expected_responses": "What students might say or do"
+      },
+      "Introduction": {
+        "timing": "2-3 minutes",
+        "description": "Brief description",
+        "teacher_instructions": "Detailed step-by-step instructions",
+        "teacher_dialogue": "Teacher script for introducing topic",
+        "student_explanation": "Student-friendly explanation of what they'll learn",
+        "connection_to_prior_knowledge": "Specific questions or prompts to connect to previous learning"
+      },
+      "Concept Development and Practice": {
+        "timing": "${Math.floor(duration * 0.5)}-${Math.floor(duration * 0.6)} minutes",
+        "description": "Overview of this section",
+        "sub_activities": [
+          {
+            "name": "Activity name (e.g., 'Understanding Basic Concepts')",
+            "timing": "Specific minutes (e.g., 'Minutes 5-12')",
+            "teacher_instructions": "Detailed numbered step-by-step instructions (1, 2, 3, etc.)",
+            "teacher_dialogue": "What to say, how to explain concepts",
+            "student_explanation": "Clear explanation of concepts written at ${form} level - use age-appropriate vocabulary",
+            "examples": "Detailed examples with full explanations at student level",
+            "student_actions": "Step-by-step what students should do",
+            "practice_exercises": "Practice problems/activities with step-by-step solutions and explanations",
+            "common_misconceptions": "Common mistakes students might make and how to address them",
+            "formative_checkpoint": "Specific questions to ask students to check understanding",
+            "learning_style_integration": "How this activity addresses different learning styles"
+          }
+        ],
+        "transitions": "Clear phrases for moving between activities"
+      },
+      "Time to Reflect and Share": {
+        "timing": "3-5 minutes",
+        "description": "Brief description",
+        "reflection_questions": "Student-level questions for reflection",
+        "sharing_process": "Step-by-step how students will share",
+        "student_language_guide": "Examples of how students might express their understanding",
+        "addressing_questions": "How to handle common questions or misconceptions"
+      },
+      "Closure": {
+        "timing": "2-3 minutes",
+        "description": "Brief description",
+        "teacher_instructions": "Step-by-step closure process",
+        "teacher_dialogue": "What to say to wrap up",
+        "student_explanation": "Student-level summary of key takeaways",
+        "connection_to_next_lesson": "How this connects to future learning"
+      }
+    },
+    "4. ASSESSMENT": {
+      "formative_strategies": "Detailed formative assessment approaches during lesson",
+      "assessment_activities": "Specific assessment activities with instructions",
+      "assessment_tools": "Rubrics, checklists, or other tools with detailed criteria",
+      "checkpoint_questions": "Specific questions to ask at each checkpoint"
+    },
+    "5. RESOURCES": {
+      "Introduction": "Resources for introduction phase",
+      "Concept Development and Practice": "Resources for main teaching phase",
+      "Time to Reflect and Share": "Resources for reflection phase",
+      "digital_resources": "Any online resources or tools needed"
+    },
+    "6. HOMEWORK/EXTENSION": {
+      "Description": "Clear homework assignment with detailed instructions",
+      "student_explanation": "Student-friendly explanation of the homework",
+      "step_by_step_instructions": "Numbered steps for completing the homework",
+      "extension_activities": "Optional extension activities for advanced students"
+    }
+  },
+  "homework_description": "Clear homework assignment with detailed step-by-step instructions",
+  "materials_list": "Detailed list of all required materials with quantities",
+  "assessment_strategies": "Comprehensive formative and summative assessment approaches",
+  "student_content": "Key concepts and explanations written specifically at ${form} level - this should be student-facing content they can understand"
 }
+
+CRITICAL REQUIREMENTS:
+- All student-level explanations must be written at the appropriate reading/comprehension level for ${form} students
+- Use age-appropriate vocabulary and examples
+- Provide extensive step-by-step instructions that a teacher can follow verbatim
+- Include teacher dialogue/scripts for explaining concepts
+- Break down complex concepts into simple, understandable explanations for students
+- Include detailed examples with full explanations at student level
+- Address common misconceptions students at this level might have
+- Make all content practical and classroom-ready
 
 Remember: Use ONLY the provided information. Make the lesson plan practical, engaging, and aligned with Caribbean secondary education standards.`;
 
@@ -504,7 +787,7 @@ Remember: Use ONLY the provided information. Make the lesson plan practical, eng
         }
       ],
       temperature: 0.3, // Lower temperature for more consistent, factual responses
-      max_tokens: 4000
+      max_tokens: 6000 // Increased for more detailed lesson plans with step-by-step instructions
     };
 
     const response = await fetch(OPENAI_API_URL, {
