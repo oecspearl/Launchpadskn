@@ -15,6 +15,7 @@ import AILessonPlanner from './AILessonPlanner';
 import EnhancedLessonPlannerForm from './EnhancedLessonPlannerForm';
 import LessonPlanOutput from './LessonPlanOutput';
 import Timetable from '../common/Timetable';
+import LessonContentManager from './LessonContentManager';
 
 function LessonPlanning() {
   const { classSubjectId } = useParams();
@@ -51,6 +52,7 @@ function LessonPlanning() {
     homework_due_date: '',
     status: 'SCHEDULED'
   });
+  const [pendingContent, setPendingContent] = useState([]); // Content items added before lesson is created
   
   useEffect(() => {
     if (classSubjectId) {
@@ -140,7 +142,21 @@ function LessonPlanning() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingLesson(null);
-    setLessonData({});
+    setLessonData({
+      class_subject_id: classSubjectId || '',
+      lesson_date: '',
+      start_time: '',
+      end_time: '',
+      lesson_title: '',
+      topic: '',
+      learning_objectives: '',
+      lesson_plan: '',
+      location: '',
+      homework_description: '',
+      homework_due_date: '',
+      status: 'SCHEDULED'
+    });
+    setPendingContent([]); // Clear pending content
     setSuccess(null);
     setError(null);
   };
@@ -167,15 +183,34 @@ function LessonPlanning() {
         location: lessonData.location || null,
         homework_description: lessonData.homework_description || null,
         homework_due_date: lessonData.homework_due_date || null,
-        status: lessonData.status || 'SCHEDULED'
+        status: lessonData.status || 'SCHEDULED',
+        created_by: user?.userId || user?.id
       };
       
+      let savedLessonId;
       if (editingLesson) {
         await supabaseService.updateLesson(editingLesson.lesson_id, lessonPayload);
+        savedLessonId = editingLesson.lesson_id;
         setSuccess('Lesson updated successfully');
       } else {
-        await supabaseService.createLesson(lessonPayload);
+        const createdLesson = await supabaseService.createLesson(lessonPayload);
+        savedLessonId = createdLesson.lesson_id;
         setSuccess('Lesson created successfully');
+        
+        // Save any pending content items
+        if (pendingContent.length > 0 && savedLessonId) {
+          for (const contentItem of pendingContent) {
+            await supabase
+              .from('lesson_content')
+              .insert({
+                lesson_id: savedLessonId,
+                content_type: contentItem.content_type,
+                title: contentItem.title,
+                url: contentItem.url,
+                uploaded_by: user?.userId || user?.id
+              });
+          }
+        }
       }
       
       handleCloseModal();
@@ -860,6 +895,23 @@ function LessonPlanning() {
                 <option value="CANCELLED">Cancelled</option>
               </Form.Select>
             </Form.Group>
+            
+            {/* Lesson Content Manager */}
+            <LessonContentManager
+              lessonId={editingLesson?.lesson_id || null}
+              onContentAdded={(content) => {
+                if (!editingLesson?.lesson_id) {
+                  // If lesson doesn't exist yet, add to pending content
+                  setPendingContent([...pendingContent, content]);
+                }
+              }}
+              onContentRemoved={(contentId) => {
+                if (!editingLesson?.lesson_id) {
+                  // Remove from pending content
+                  setPendingContent(pendingContent.filter(item => item.content_id !== contentId));
+                }
+              }}
+            />
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleCloseModal}>

@@ -6,11 +6,12 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { 
   FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
-  FaBook, FaClipboardList, FaUser, FaCheckCircle
+  FaBook, FaClipboardList, FaUser, FaCheckCircle, FaFilePowerpoint
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import SlideshowEmbed from '../common/SlideshowEmbed';
 
 function LessonView() {
   const { lessonId } = useParams();
@@ -273,30 +274,62 @@ function LessonView() {
                 </h5>
               </Card.Header>
               <Card.Body>
-                <ListGroup variant="flush">
-                  {lesson.content.map((contentItem, index) => (
-                    <ListGroup.Item key={index} className="border-0 px-0 py-3 border-bottom">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <h6 className="mb-1">{contentItem.title || 'Material'}</h6>
-                          <small className="text-muted">
-                            Type: {contentItem.content_type}
-                          </small>
+                {lesson.content.map((contentItem, index) => {
+                  // Check if this is a slide show/presentation that should be embedded
+                  const isSlideshow = contentItem.content_type === 'SLIDESHOW' || 
+                                    contentItem.content_type === 'PRESENTATION' ||
+                                    (contentItem.content_type === 'LINK' && 
+                                     contentItem.url && 
+                                     (contentItem.url.includes('docs.google.com/presentation') ||
+                                      contentItem.url.includes('powerpoint') ||
+                                      contentItem.url.includes('slideshare') ||
+                                      contentItem.url.includes('canva.com') ||
+                                      contentItem.url.includes('prezi.com')));
+                  
+                  if (isSlideshow && contentItem.url) {
+                    return (
+                      <SlideshowEmbed
+                        key={index}
+                        url={contentItem.url}
+                        title={contentItem.title || 'Slide Show'}
+                      />
+                    );
+                  }
+                  
+                  // Regular content item
+                  return (
+                    <ListGroup key={index} variant="flush">
+                      <ListGroup.Item className="border-0 px-0 py-3 border-bottom">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div>
+                            <h6 className="mb-1">
+                              {contentItem.content_type === 'SLIDESHOW' || contentItem.content_type === 'PRESENTATION' ? (
+                                <FaFilePowerpoint className="me-2" />
+                              ) : (
+                                <FaBook className="me-2" />
+                              )}
+                              {contentItem.title || 'Material'}
+                            </h6>
+                            <small className="text-muted">
+                              Type: {contentItem.content_type}
+                            </small>
+                          </div>
+                          {contentItem.url && (
+                            <Button 
+                              variant="outline-primary" 
+                              size="sm"
+                              href={contentItem.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              Open
+                            </Button>
+                          )}
                         </div>
-                        {contentItem.url && (
-                          <Button 
-                            variant="outline-primary" 
-                            size="sm"
-                            href={contentItem.url}
-                            target="_blank"
-                          >
-                            Open
-                          </Button>
-                        )}
-                      </div>
-                    </ListGroup.Item>
-                  ))}
-                </ListGroup>
+                      </ListGroup.Item>
+                    </ListGroup>
+                  );
+                })}
               </Card.Body>
             </Card>
           )}

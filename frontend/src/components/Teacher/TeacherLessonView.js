@@ -6,10 +6,11 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
-  FaBook, FaClipboardList, FaUsers, FaUserCheck
+  FaBook, FaClipboardList, FaUsers, FaUserCheck, FaFilePowerpoint
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { supabase } from '../../config/supabase';
+import SlideshowEmbed from '../common/SlideshowEmbed';
 
 function TeacherLessonView() {
   const { lessonId } = useParams();
@@ -44,7 +45,8 @@ function TeacherLessonView() {
               *,
               form:forms(*)
             )
-          )
+          ),
+          content:lesson_content(*)
         `)
         .eq('lesson_id', lessonId)
         .single();
@@ -189,6 +191,74 @@ function TeacherLessonView() {
               </Badge>
             </Card.Body>
           </Card>
+          
+          {/* Lesson Content - Embedded Slide Shows */}
+          {lesson.content && lesson.content.length > 0 && (
+            <Card className="border-0 shadow-sm mb-4">
+              <Card.Header className="bg-white border-0 py-3">
+                <h5 className="mb-0">
+                  <FaBook className="me-2" />
+                  Lesson Materials
+                </h5>
+              </Card.Header>
+              <Card.Body>
+                {lesson.content.map((contentItem, index) => {
+                  // Check if this is a slide show/presentation that should be embedded
+                  const isSlideshow = contentItem.content_type === 'SLIDESHOW' || 
+                                    contentItem.content_type === 'PRESENTATION' ||
+                                    (contentItem.content_type === 'LINK' && 
+                                     contentItem.url && 
+                                     (contentItem.url.includes('docs.google.com/presentation') ||
+                                      contentItem.url.includes('powerpoint') ||
+                                      contentItem.url.includes('slideshare') ||
+                                      contentItem.url.includes('canva.com') ||
+                                      contentItem.url.includes('prezi.com')));
+                  
+                  if (isSlideshow && contentItem.url) {
+                    return (
+                      <SlideshowEmbed
+                        key={index}
+                        url={contentItem.url}
+                        title={contentItem.title || 'Slide Show'}
+                      />
+                    );
+                  }
+                  
+                  // Regular content item - show link
+                  return (
+                    <div key={index} className="mb-3 pb-3 border-bottom">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <h6 className="mb-1">
+                            {contentItem.content_type === 'SLIDESHOW' || contentItem.content_type === 'PRESENTATION' ? (
+                              <FaFilePowerpoint className="me-2" />
+                            ) : (
+                              <FaBook className="me-2" />
+                            )}
+                            {contentItem.title || 'Material'}
+                          </h6>
+                          <small className="text-muted">
+                            Type: {contentItem.content_type}
+                          </small>
+                        </div>
+                        {contentItem.url && (
+                          <Button 
+                            variant="outline-primary" 
+                            size="sm"
+                            href={contentItem.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            Open
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </Card.Body>
+            </Card>
+          )}
         </Col>
         
         <Col md={4}>
