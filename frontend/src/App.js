@@ -37,6 +37,8 @@ import GradeEntry from './components/Teacher/GradeEntry';
 import TeacherLessonView from './components/Teacher/TeacherLessonView';
 import Curriculum from './components/Teacher/Curriculum';
 import TeacherClassManagement from './components/Teacher/TeacherClassManagement';
+import LessonContentManager from './components/Teacher/LessonContentManager';
+import AssignmentSubmission from './components/Student/AssignmentSubmission';
 
 // Import context providers
 import { AuthProvider } from './contexts/AuthContextSupabase';
@@ -247,6 +249,15 @@ function App() {
               />
               
               <Route 
+                path="/teacher/lessons/:lessonId/content" 
+                element={
+                  <PrivateRoute allowedRoles={['instructor']}>
+                    <LessonContentManager />
+                  </PrivateRoute>
+                } 
+              />
+              
+              <Route 
                 path="/teacher/curriculum" 
                 element={
                   <PrivateRoute allowedRoles={['instructor', 'admin']}>
@@ -288,6 +299,15 @@ function App() {
                 element={
                   <PrivateRoute allowedRoles={['student']}>
                     <LessonView />
+                  </PrivateRoute>
+                } 
+              />
+              
+              <Route 
+                path="/student/assignments/:assessmentId/submit" 
+                element={
+                  <PrivateRoute allowedRoles={['student']}>
+                    <AssignmentSubmission />
                   </PrivateRoute>
                 } 
               />

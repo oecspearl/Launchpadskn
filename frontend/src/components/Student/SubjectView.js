@@ -373,6 +373,13 @@ function SubjectView() {
                                   )}
                                 </div>
                               </div>
+                              <Button 
+                                variant="primary" 
+                                size="sm"
+                                onClick={() => navigate(`/student/assignments/${assessment.assessment_id}/submit`)}
+                              >
+                                Submit
+                              </Button>
                             </div>
                           </ListGroup.Item>
                         );

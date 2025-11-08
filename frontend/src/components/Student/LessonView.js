@@ -6,12 +6,11 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { 
   FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
-  FaBook, FaClipboardList, FaUser, FaCheckCircle, FaFilePowerpoint
+  FaBook, FaClipboardList, FaUser, FaCheckCircle
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
-import SlideshowEmbed from '../common/SlideshowEmbed';
 
 function LessonView() {
   const { lessonId } = useParams();
@@ -111,6 +110,22 @@ function LessonView() {
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     return timeStr.substring(0, 5);
+  };
+  
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+  
+  const getYouTubeEmbedUrl = (url) => {
+    if (!url) return '';
+    // Extract video ID from various YouTube URL formats
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    const videoId = (match && match[2].length === 11) ? match[2] : null;
+    return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
   
   if (isLoading) {
@@ -270,66 +285,89 @@ function LessonView() {
               <Card.Header className="bg-white border-0 py-3">
                 <h5 className="mb-0">
                   <FaBook className="me-2" />
-                  Lesson Materials
+                  Lesson Materials ({lesson.content.length})
                 </h5>
               </Card.Header>
               <Card.Body>
-                {lesson.content.map((contentItem, index) => {
-                  // Check if this is a slide show/presentation that should be embedded
-                  const isSlideshow = contentItem.content_type === 'SLIDESHOW' || 
-                                    contentItem.content_type === 'PRESENTATION' ||
-                                    (contentItem.content_type === 'LINK' && 
-                                     contentItem.url && 
-                                     (contentItem.url.includes('docs.google.com/presentation') ||
-                                      contentItem.url.includes('powerpoint') ||
-                                      contentItem.url.includes('slideshare') ||
-                                      contentItem.url.includes('canva.com') ||
-                                      contentItem.url.includes('prezi.com')));
-                  
-                  if (isSlideshow && contentItem.url) {
+                <Row className="g-3">
+                  {lesson.content.map((contentItem, index) => {
+                    const isVideo = contentItem.content_type === 'VIDEO' || 
+                                   (contentItem.url && (contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be')));
+                    const isImage = contentItem.content_type === 'IMAGE' || 
+                                   (contentItem.mime_type && contentItem.mime_type.startsWith('image/'));
+                    
                     return (
-                      <SlideshowEmbed
-                        key={index}
-                        url={contentItem.url}
-                        title={contentItem.title || 'Slide Show'}
-                      />
-                    );
-                  }
-                  
-                  // Regular content item
-                  return (
-                    <ListGroup key={index} variant="flush">
-                      <ListGroup.Item className="border-0 px-0 py-3 border-bottom">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <div>
-                            <h6 className="mb-1">
-                              {contentItem.content_type === 'SLIDESHOW' || contentItem.content_type === 'PRESENTATION' ? (
-                                <FaFilePowerpoint className="me-2" />
-                              ) : (
-                                <FaBook className="me-2" />
+                      <Col md={6} key={index}>
+                        <Card className="h-100 border">
+                          <Card.Body>
+                            <div className="d-flex justify-content-between align-items-start mb-2">
+                              <div className="flex-grow-1">
+                                <h6 className="mb-1">{contentItem.title || 'Material'}</h6>
+                                <Badge bg="secondary" className="mb-2">
+                                  {contentItem.content_type}
+                                </Badge>
+                                {contentItem.file_name && (
+                                  <p className="text-muted small mb-1">
+                                    {contentItem.file_name}
+                                    {contentItem.file_size && ` (${formatFileSize(contentItem.file_size)})`}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Embedded Content */}
+                            {isVideo && contentItem.url && (
+                              <div className="mb-2">
+                                {contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be') ? (
+                                  <div className="ratio ratio-16x9">
+                                    <iframe
+                                      src={getYouTubeEmbedUrl(contentItem.url)}
+                                      title={contentItem.title}
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                      style={{ border: 0 }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <video controls className="w-100" style={{ maxHeight: '300px' }}>
+                                    <source src={contentItem.url} type={contentItem.mime_type || 'video/mp4'} />
+                                    Your browser does not support the video tag.
+                                  </video>
+                                )}
+                              </div>
+                            )}
+                            
+                            {isImage && contentItem.url && (
+                              <div className="mb-2">
+                                <img 
+                                  src={contentItem.url} 
+                                  alt={contentItem.title}
+                                  className="img-fluid rounded"
+                                  style={{ maxHeight: '200px', width: 'auto' }}
+                                />
+                              </div>
+                            )}
+                            
+                            {/* Action Buttons */}
+                            <div className="d-flex gap-2">
+                              {contentItem.url && (
+                                <Button 
+                                  variant="primary" 
+                                  size="sm"
+                                  href={contentItem.url}
+                                  target="_blank"
+                                  className="flex-grow-1"
+                                >
+                                  {isVideo ? 'Watch' : isImage ? 'View Image' : 'Open'}
+                                </Button>
                               )}
-                              {contentItem.title || 'Material'}
-                            </h6>
-                            <small className="text-muted">
-                              Type: {contentItem.content_type}
-                            </small>
-                          </div>
-                          {contentItem.url && (
-                            <Button 
-                              variant="outline-primary" 
-                              size="sm"
-                              href={contentItem.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Open
-                            </Button>
-                          )}
-                        </div>
-                      </ListGroup.Item>
-                    </ListGroup>
-                  );
-                })}
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                    );
+                  })}
+                </Row>
               </Card.Body>
             </Card>
           )}
