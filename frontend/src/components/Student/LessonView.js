@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import { FaDownload, FaExternalLinkAlt } from 'react-icons/fa';
 
 function LessonView() {
   const { lessonId } = useParams();
@@ -298,11 +299,11 @@ function LessonView() {
                     
                     return (
                       <Col md={6} key={index}>
-                        <Card className="h-100 border">
+                        <Card className="h-100 border" style={{ cursor: 'default' }}>
                           <Card.Body>
                             <div className="d-flex justify-content-between align-items-start mb-2">
                               <div className="flex-grow-1">
-                                <h6 className="mb-1">{contentItem.title || 'Material'}</h6>
+                                <h6 className="mb-1" style={{ cursor: 'text' }}>{contentItem.title || 'Material'}</h6>
                                 <Badge bg="secondary" className="mb-2">
                                   {contentItem.content_type}
                                 </Badge>
@@ -339,28 +340,75 @@ function LessonView() {
                             
                             {isImage && contentItem.url && (
                               <div className="mb-2">
-                                <img 
-                                  src={contentItem.url} 
-                                  alt={contentItem.title}
-                                  className="img-fluid rounded"
-                                  style={{ maxHeight: '200px', width: 'auto' }}
-                                />
+                                <a
+                                  href={contentItem.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ display: 'block', cursor: 'pointer' }}
+                                >
+                                  <img 
+                                    src={contentItem.url} 
+                                    alt={contentItem.title}
+                                    className="img-fluid rounded"
+                                    style={{ maxHeight: '200px', width: 'auto' }}
+                                  />
+                                </a>
                               </div>
                             )}
                             
                             {/* Action Buttons */}
                             <div className="d-flex gap-2">
-                              {contentItem.url && (
-                                <Button 
-                                  variant="primary" 
-                                  size="sm"
+                              {contentItem.url ? (
+                                <a
                                   href={contentItem.url}
                                   target="_blank"
-                                  className="flex-grow-1"
+                                  rel="noopener noreferrer"
+                                  className="btn btn-primary btn-sm flex-grow-1 text-decoration-none d-flex align-items-center justify-content-center"
+                                  style={{ minHeight: '38px' }}
                                 >
-                                  {isVideo ? 'Watch' : isImage ? 'View Image' : 'Open'}
+                                  {isVideo ? (
+                                    <>
+                                      <FaExternalLinkAlt className="me-2" />
+                                      Watch Video
+                                    </>
+                                  ) : isImage ? (
+                                    <>
+                                      <FaExternalLinkAlt className="me-2" />
+                                      View Image
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FaExternalLinkAlt className="me-2" />
+                                      Open
+                                    </>
+                                  )}
+                                </a>
+                              ) : contentItem.file_path ? (
+                                <Button
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={async () => {
+                                    try {
+                                      // Generate signed URL for private files
+                                      const { data, error } = await supabase.storage
+                                        .from('course-content')
+                                        .createSignedUrl(contentItem.file_path, 3600);
+                                      
+                                      if (error) throw error;
+                                      if (data?.signedUrl) {
+                                        window.open(data.signedUrl, '_blank');
+                                      }
+                                    } catch (err) {
+                                      console.error('Error generating signed URL:', err);
+                                      alert('Unable to open file. Please contact your teacher.');
+                                    }
+                                  }}
+                                  className="flex-grow-1 d-flex align-items-center justify-content-center"
+                                >
+                                  <FaDownload className="me-2" />
+                                  Download
                                 </Button>
-                              )}
+                              ) : null}
                             </div>
                           </Card.Body>
                         </Card>
