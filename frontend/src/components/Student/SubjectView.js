@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
+import { supabase } from '../../config/supabase';
 import './SubjectView.css';
 
 function SubjectView() {
@@ -39,7 +40,7 @@ function SubjectView() {
       setError(null);
       
       // Get class-subject details
-      const { data: classSubjectData, error: csError } = await supabaseService.supabase
+      const { data: classSubjectData, error: csError } = await supabase
         .from('class_subjects')
         .select(`
           *,
@@ -70,8 +71,10 @@ function SubjectView() {
         setAssessments(subjectAssessments || []);
         
         // Get student's grades for this subject
-        if (user && user.userId) {
-          const allGrades = await supabaseService.getStudentGrades(user.userId);
+        if (user && (user.user_id || user.userId)) {
+          // Use numeric user_id, not UUID
+          const studentId = user.user_id || user.userId;
+          const allGrades = await supabaseService.getStudentGrades(studentId);
           const subjectGrades = (allGrades || []).filter(grade => {
             return grade.assessment?.class_subject_id === parseInt(classSubjectId);
           });

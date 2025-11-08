@@ -45,7 +45,28 @@ function StudentDashboard() {
         return;
       }
       
-      const studentId = user.userId || user.id;
+      // Get the numeric user_id (not UUID)
+      // user.userId might be UUID, user.user_id is the numeric ID
+      const studentId = user.user_id || user.userId;
+      
+      // If studentId is still a UUID, we need to get the numeric user_id from the users table
+      let numericStudentId = studentId;
+      if (typeof studentId === 'string' && studentId.includes('-')) {
+        // It's a UUID, need to get the numeric user_id
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('user_id')
+          .eq('id', studentId)
+          .maybeSingle();
+        
+        if (userProfile) {
+          numericStudentId = userProfile.user_id;
+        } else {
+          console.warn('[StudentDashboard] Could not find user_id for UUID:', studentId);
+          setIsLoading(false);
+          return;
+        }
+      }
       
       // Get student's class assignment
       const { data: classAssignment, error: classError } = await supabase
@@ -58,7 +79,7 @@ function StudentDashboard() {
             form_tutor:users!classes_form_tutor_id_fkey(name, email)
           )
         `)
-        .eq('student_id', studentId)
+        .eq('student_id', numericStudentId)
         .eq('is_active', true)
         .maybeSingle();
       
@@ -84,7 +105,7 @@ function StudentDashboard() {
         weekEnd.setDate(weekStart.getDate() + 7);
         
         const lessons = await supabaseService.getLessonsByStudent(
-          studentId,
+          numericStudentId,
           weekStart.toISOString().split('T')[0],
           weekEnd.toISOString().split('T')[0]
         );
@@ -131,7 +152,7 @@ function StudentDashboard() {
         
         // Get grades
         try {
-          const studentGrades = await supabaseService.getStudentGrades(studentId);
+          const studentGrades = await supabaseService.getStudentGrades(numericStudentId);
           setGrades(studentGrades || []);
         } catch (gradeErr) {
           console.warn('Error fetching grades:', gradeErr);
