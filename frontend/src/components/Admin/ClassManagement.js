@@ -33,7 +33,13 @@ function ClassManagement() {
     capacity: 35,
     form_tutor_id: '',
     room_number: '',
-    description: ''
+    description: '',
+    thumbnail: '',
+    syllabus: '',
+    difficulty: 'intermediate',
+    subject_area: '',
+    published: false,
+    featured: false
   });
   
   useEffect(() => {
@@ -139,7 +145,13 @@ function ClassManagement() {
         capacity: classItem.capacity || 35,
         form_tutor_id: classItem.form_tutor_id || '',
         room_number: classItem.room_number || '',
-        description: classItem.description || ''
+        description: classItem.description || '',
+        thumbnail: classItem.thumbnail || '',
+        syllabus: classItem.syllabus || '',
+        difficulty: classItem.difficulty || 'intermediate',
+        subject_area: classItem.subject_area || '',
+        published: classItem.published || false,
+        featured: classItem.featured || false
       });
     } else {
       setEditingClass(null);
@@ -152,7 +164,13 @@ function ClassManagement() {
         capacity: 35,
         form_tutor_id: '',
         room_number: '',
-        description: ''
+        description: '',
+        thumbnail: '',
+        syllabus: '',
+        difficulty: 'intermediate',
+        subject_area: '',
+        published: false,
+        featured: false
       });
     }
     setShowModal(true);
@@ -322,6 +340,11 @@ function ClassManagement() {
                     <td>{classItem.capacity}</td>
                     <td>{classItem.room_number || '-'}</td>
                     <td>
+                      <Badge bg={classItem.published ? 'success' : 'secondary'}>
+                        {classItem.published ? 'Published' : 'Draft'}
+                      </Badge>
+                    </td>
+                    <td>
                       <Button 
                         variant="outline-primary" 
                         size="sm" 
@@ -482,6 +505,87 @@ function ClassManagement() {
                 placeholder="Optional description"
               />
             </Form.Group>
+            
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Thumbnail URL</Form.Label>
+                  <Form.Control
+                    type="url"
+                    value={classData.thumbnail}
+                    onChange={(e) => setClassData({ ...classData, thumbnail: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                  <Form.Text className="text-muted">
+                    Image URL for class banner/thumbnail
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Subject Area</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={classData.subject_area}
+                    onChange={(e) => setClassData({ ...classData, subject_area: e.target.value })}
+                    placeholder="e.g., Science, Arts, General"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            
+            <Form.Group className="mb-3">
+              <Form.Label>Difficulty</Form.Label>
+              <Form.Select
+                value={classData.difficulty}
+                onChange={(e) => setClassData({ ...classData, difficulty: e.target.value })}
+              >
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </Form.Select>
+            </Form.Group>
+            
+            <Form.Group className="mb-3">
+              <Form.Label>Syllabus</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={5}
+                value={classData.syllabus}
+                onChange={(e) => setClassData({ ...classData, syllabus: e.target.value })}
+                placeholder="Rich text syllabus content (HTML supported)"
+              />
+              <Form.Text className="text-muted">
+                Detailed syllabus for the class
+              </Form.Text>
+            </Form.Group>
+            
+            <Row>
+              <Col md={6}>
+                <Form.Check
+                  type="checkbox"
+                  label="Published"
+                  checked={classData.published}
+                  onChange={(e) => setClassData({ ...classData, published: e.target.checked })}
+                />
+                <Form.Text className="text-muted">
+                  Published classes are visible to all users and students can enroll
+                </Form.Text>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Check
+                  type="checkbox"
+                  label="Featured"
+                  checked={classData.featured}
+                  onChange={(e) => setClassData({ ...classData, featured: e.target.checked })}
+                />
+                <Form.Text className="text-muted">
+                  Featured classes appear prominently in listings
+                </Form.Text>
+              </Col>
+            </Row>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleCloseModal}>

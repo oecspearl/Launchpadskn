@@ -853,7 +853,130 @@ class SupabaseService {
   }
   
   /**
-   * Get class by ID with roster
+   * Get classes with role-based filtering (course-like access control)
+   * - Admins/Curriculum Designers: All classes
+   * - Instructors: Their classes + published classes
+   * - Students: Enrolled classes + published classes
+   * - Others: Only published classes
+   */
+  async getClasses(userRole = null, userId = null) {
+    let query = supabase
+      .from('classes')
+      .select(`
+        *,
+        form:forms(*),
+        form_tutor:users!classes_form_tutor_id_fkey(name, email),
+        instructors:class_instructors(
+          instructor:users(name, email, user_id)
+        )
+      `)
+      .eq('is_active', true);
+    
+    // Role-based filtering
+    if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'CURRICULUM_DESIGNER') {
+      // Admins see all classes (no filter)
+    } else if (userRole === 'INSTRUCTOR' || userRole === 'TEACHER') {
+      // Instructors see their classes + published classes
+      if (userId) {
+        // Get classes where user is instructor
+        const { data: instructorClasses } = await supabase
+          .from('class_instructors')
+          .select('class_id')
+          .eq('instructor_id', userId)
+          .eq('is_active', true);
+        
+        const classIds = instructorClasses?.map(c => c.class_id) || [];
+        
+        // Also get classes where user is form_tutor
+        const { data: tutorClasses } = await supabase
+          .from('classes')
+          .select('class_id')
+          .eq('form_tutor_id', userId)
+          .eq('is_active', true);
+        
+        const tutorClassIds = tutorClasses?.map(c => c.class_id) || [];
+        const allClassIds = [...new Set([...classIds, ...tutorClassIds])];
+        
+        if (allClassIds.length > 0) {
+          query = query.or(`class_id.in.(${allClassIds.join(',')}),published.eq.true`);
+        } else {
+          query = query.eq('published', true);
+        }
+      } else {
+        query = query.eq('published', true);
+      }
+    } else if (userRole === 'STUDENT') {
+      // Students see enrolled classes + published classes
+      if (userId) {
+        // Get enrolled classes
+        const { data: enrollments } = await supabase
+          .from('student_class_assignments')
+          .select('class_id')
+          .eq('student_id', userId)
+          .eq('is_active', true);
+        
+        const enrolledClassIds = enrollments?.map(e => e.class_id) || [];
+        
+        if (enrolledClassIds.length > 0) {
+          query = query.or(`class_id.in.(${enrolledClassIds.join(',')}),published.eq.true`);
+        } else {
+          query = query.eq('published', true);
+        }
+      } else {
+        query = query.eq('published', true);
+      }
+    } else {
+      // Guests/others: only published classes
+      query = query.eq('published', true);
+    }
+    
+    const { data, error } = await query.order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  }
+  
+  /**
+   * Get published classes (for public browsing)
+   */
+  async getPublishedClasses(filters = {}) {
+    let query = supabase
+      .from('classes')
+      .select(`
+        *,
+        form:forms(*),
+        form_tutor:users!classes_form_tutor_id_fkey(name, email),
+        instructors:class_instructors(
+          instructor:users(name, email)
+        )
+      `)
+      .eq('published', true)
+      .eq('is_active', true);
+    
+    if (filters.form_id) {
+      query = query.eq('form_id', filters.form_id);
+    }
+    
+    if (filters.difficulty) {
+      query = query.eq('difficulty', filters.difficulty);
+    }
+    
+    if (filters.featured) {
+      query = query.eq('featured', true);
+    }
+    
+    if (filters.search) {
+      query = query.or(`class_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+    }
+    
+    const { data, error } = await query.order('featured', { ascending: false }).order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    return data || [];
+  }
+  
+  /**
+   * Get class by ID with full details
    */
   async getClassById(classId) {
     const { data, error } = await supabase
@@ -862,8 +985,16 @@ class SupabaseService {
         *,
         form_tutor:users!classes_form_tutor_id_fkey(*),
         form:forms(*),
-        students:student_class_assignments!inner(
-          student:users(*)
+        instructors:class_instructors(
+          instructor:users(name, email, user_id, role),
+          role,
+          assigned_at
+        ),
+        students:student_class_assignments(
+          student:users(name, email, user_id),
+          enrollment_type,
+          enrolled_at,
+          progress_percentage
         )
       `)
       .eq('class_id', classId)
@@ -939,13 +1070,246 @@ class SupabaseService {
   }
   
   /**
-   * Remove student from class
+   * Enroll student in class (self-enrollment)
+   */
+  async enrollStudentInClass(studentId, classId, academicYear) {
+    // Check if class exists and is published
+    const { data: classData, error: classError } = await supabase
+      .from('classes')
+      .select('class_id, published, capacity, current_enrollment')
+      .eq('class_id', classId)
+      .single();
+    
+    if (classError) throw classError;
+    
+    if (!classData.published) {
+      throw new Error('Class is not available for enrollment');
+    }
+    
+    // Check capacity
+    if (classData.current_enrollment >= classData.capacity) {
+      throw new Error('Class is at full capacity');
+    }
+    
+    // Check if already enrolled
+    const { data: existing } = await supabase
+      .from('student_class_assignments')
+      .select('assignment_id, is_active')
+      .eq('student_id', studentId)
+      .eq('class_id', classId)
+      .maybeSingle();
+    
+    if (existing) {
+      if (existing.is_active) {
+        throw new Error('Already enrolled in this class');
+      } else {
+        // Re-enroll
+        const { data, error } = await supabase
+          .from('student_class_assignments')
+          .update({
+            is_active: true,
+            enrollment_type: 'enrolled',
+            enrolled_at: new Date().toISOString(),
+            academic_year: academicYear
+          })
+          .eq('assignment_id', existing.assignment_id)
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        // Update enrollment count
+        await this.updateClassEnrollmentCount(classId);
+        
+        return data;
+      }
+    }
+    
+    // Create new enrollment
+    const { data, error } = await supabase
+      .from('student_class_assignments')
+      .insert({
+        student_id: studentId,
+        class_id: classId,
+        academic_year: academicYear,
+        enrollment_type: 'enrolled',
+        enrolled_at: new Date().toISOString(),
+        is_active: true
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Update enrollment count
+    await this.updateClassEnrollmentCount(classId);
+    
+    return data;
+  }
+  
+  /**
+   * Drop enrollment (student leaves class)
+   */
+  async dropEnrollment(studentId, classId) {
+    const { data, error } = await supabase
+      .from('student_class_assignments')
+      .update({ 
+        is_active: false,
+        enrollment_type: 'dropped'
+      })
+      .eq('student_id', studentId)
+      .eq('class_id', classId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Update enrollment count
+    await this.updateClassEnrollmentCount(classId);
+    
+    return data;
+  }
+  
+  /**
+   * Check if student is enrolled in class
+   */
+  async checkEnrollment(studentId, classId) {
+    const { data, error } = await supabase
+      .from('student_class_assignments')
+      .select('assignment_id, is_active, enrollment_type')
+      .eq('student_id', studentId)
+      .eq('class_id', classId)
+      .maybeSingle();
+    
+    if (error) throw error;
+    return data && data.is_active ? data : null;
+  }
+  
+  /**
+   * Update class enrollment count
+   */
+  async updateClassEnrollmentCount(classId) {
+    const { count } = await supabase
+      .from('student_class_assignments')
+      .select('*', { count: 'exact', head: true })
+      .eq('class_id', classId)
+      .eq('is_active', true);
+    
+    await supabase
+      .from('classes')
+      .update({ current_enrollment: count || 0 })
+      .eq('class_id', classId);
+  }
+  
+  /**
+   * Remove student from class (admin action)
    */
   async removeStudentFromClass(studentId, classId) {
     const { data, error } = await supabase
       .from('student_class_assignments')
       .update({ is_active: false })
       .eq('student_id', studentId)
+      .eq('class_id', classId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    
+    // Update enrollment count
+    await this.updateClassEnrollmentCount(classId);
+    
+    return data;
+  }
+  
+  /**
+   * Add instructor to class
+   */
+  async addClassInstructor(classId, instructorId, role = 'instructor') {
+    const { data, error } = await supabase
+      .from('class_instructors')
+      .insert({
+        class_id: classId,
+        instructor_id: instructorId,
+        role: role,
+        is_active: true
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+  
+  /**
+   * Remove instructor from class
+   */
+  async removeClassInstructor(classId, instructorId) {
+    const { data, error } = await supabase
+      .from('class_instructors')
+      .update({ is_active: false })
+      .eq('class_id', classId)
+      .eq('instructor_id', instructorId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+  
+  /**
+   * Get class instructors
+   */
+  async getClassInstructors(classId) {
+    const { data, error } = await supabase
+      .from('class_instructors')
+      .select(`
+        *,
+        instructor:users(name, email, user_id, role)
+      `)
+      .eq('class_id', classId)
+      .eq('is_active', true);
+    
+    if (error) throw error;
+    return data || [];
+  }
+  
+  /**
+   * Publish class (make visible to all)
+   */
+  async publishClass(classId) {
+    const { data, error } = await supabase
+      .from('classes')
+      .update({ published: true, updated_at: new Date().toISOString() })
+      .eq('class_id', classId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+  
+  /**
+   * Unpublish class (hide from public)
+   */
+  async unpublishClass(classId) {
+    const { data, error } = await supabase
+      .from('classes')
+      .update({ published: false, updated_at: new Date().toISOString() })
+      .eq('class_id', classId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+  
+  /**
+   * Toggle featured status
+   */
+  async toggleClassFeatured(classId, featured) {
+    const { data, error } = await supabase
+      .from('classes')
+      .update({ featured: featured, updated_at: new Date().toISOString() })
       .eq('class_id', classId)
       .select()
       .single();
