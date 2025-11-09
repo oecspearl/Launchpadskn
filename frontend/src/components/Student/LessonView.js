@@ -6,7 +6,7 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { 
   FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
-  FaBook, FaClipboardList, FaUser, FaCheckCircle
+  FaBook, FaClipboardList, FaUser, FaCheckCircle, FaInfoCircle, FaClock as FaClockIcon
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -58,6 +58,13 @@ function LessonView() {
       if (lessonError) throw lessonError;
       
       if (lessonData) {
+        // Sort content by sequence_order and filter published content
+        if (lessonData.content) {
+          lessonData.content = lessonData.content
+            .filter(item => item.is_published !== false)
+            .sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
+        }
+        
         setLesson(lessonData);
         
         // Get student's attendance for this lesson (if student)
@@ -241,14 +248,6 @@ function LessonView() {
                 </div>
               )}
               
-              {/* Lesson Plan */}
-              {lesson.lesson_plan && (
-                <div className="mb-3">
-                  <h6>Lesson Plan</h6>
-                  <div className="white-space-pre-wrap">{lesson.lesson_plan}</div>
-                </div>
-              )}
-              
               {/* Homework */}
               {lesson.homework_description && (
                 <Card className="bg-warning bg-opacity-10 border-warning mb-3">
@@ -280,145 +279,272 @@ function LessonView() {
             </Card.Body>
           </Card>
           
-          {/* Lesson Content Files */}
-          {lesson.content && lesson.content.length > 0 && (
-            <Card className="border-0 shadow-sm">
-              <Card.Header className="bg-white border-0 py-3">
-                <h5 className="mb-0">
-                  <FaBook className="me-2" />
-                  Lesson Materials ({lesson.content.length})
-                </h5>
-              </Card.Header>
-              <Card.Body>
-                <Row className="g-3">
-                  {lesson.content.map((contentItem, index) => {
+          {/* Lesson Content - Organized by Sections */}
+          {lesson.content && lesson.content.length > 0 && (() => {
+            // Group content by section
+            const sections = {};
+            lesson.content.forEach(item => {
+              const section = item.content_section || 'Main Content';
+              if (!sections[section]) {
+                sections[section] = [];
+              }
+              sections[section].push(item);
+            });
+
+            return Object.entries(sections).map(([sectionName, sectionContent]) => (
+              <Card key={sectionName} className="border-0 shadow-sm mb-4">
+                <Card.Header className="bg-light border-0 py-3">
+                  <h5 className="mb-0">
+                    <FaBook className="me-2" />
+                    {sectionName} ({sectionContent.length})
+                  </h5>
+                </Card.Header>
+                <Card.Body>
+                  {sectionContent.map((contentItem, index) => {
                     const isVideo = contentItem.content_type === 'VIDEO' || 
                                    (contentItem.url && (contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be')));
                     const isImage = contentItem.content_type === 'IMAGE' || 
                                    (contentItem.mime_type && contentItem.mime_type.startsWith('image/'));
                     
                     return (
-                      <Col md={6} key={index}>
-                        <Card className="h-100 border" style={{ cursor: 'default' }}>
-                          <Card.Body>
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                              <div className="flex-grow-1">
-                                <h6 className="mb-1" style={{ cursor: 'text' }}>{contentItem.title || 'Material'}</h6>
-                                <Badge bg="secondary" className="mb-2">
+                      <Card key={contentItem.content_id || index} className="mb-3 border">
+                        <Card.Body>
+                          <div className="d-flex align-items-start mb-3">
+                            {/* Sequence Number */}
+                            <div className="me-3">
+                              <Badge bg="primary" style={{ fontSize: '1rem', padding: '0.5rem 0.75rem' }}>
+                                {contentItem.sequence_order || index + 1}
+                              </Badge>
+                            </div>
+
+                            {/* Content Details */}
+                            <div className="flex-grow-1">
+                              <div className="d-flex align-items-center mb-2 flex-wrap">
+                                <h6 className="mb-0 me-2">{contentItem.title || 'Material'}</h6>
+                                <Badge bg="secondary" className="me-2">
                                   {contentItem.content_type}
                                 </Badge>
+                                {contentItem.is_required === false && (
+                                  <Badge bg="info" className="me-2">Optional</Badge>
+                                )}
+                                {contentItem.is_required !== false && (
+                                  <Badge bg="success" className="me-2">
+                                    <FaCheckCircle className="me-1" />
+                                    Required
+                                  </Badge>
+                                )}
+                              </div>
+
+                              {/* Description */}
+                              {contentItem.description && (
+                                <p className="text-muted mb-2">{contentItem.description}</p>
+                              )}
+
+                              {/* Instructions */}
+                              {contentItem.instructions && (
+                                <div className="alert alert-info py-2 px-3 mb-2" style={{ fontSize: '0.9rem' }}>
+                                  <FaInfoCircle className="me-2" />
+                                  <strong>Instructions:</strong> {contentItem.instructions}
+                                </div>
+                              )}
+
+                              {/* Learning Outcomes */}
+                              {contentItem.learning_outcomes && (
+                                <div className="mb-3 p-3 bg-light rounded">
+                                  <h6 className="text-primary mb-2">
+                                    <FaCheckCircle className="me-2" />
+                                    Learning Outcomes
+                                  </h6>
+                                  <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                    {contentItem.learning_outcomes}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Learning Activities */}
+                              {contentItem.learning_activities && (
+                                <div className="mb-3 p-3 bg-success bg-opacity-10 rounded border border-success">
+                                  <h6 className="text-success mb-2">
+                                    <FaBook className="me-2" />
+                                    Learning Activities
+                                  </h6>
+                                  <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                    {contentItem.learning_activities}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Key Concepts */}
+                              {contentItem.key_concepts && (
+                                <div className="mb-3 p-3 bg-warning bg-opacity-10 rounded border border-warning">
+                                  <h6 className="text-warning mb-2">
+                                    <FaBook className="me-2" />
+                                    Key Concepts
+                                  </h6>
+                                  <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                    {contentItem.key_concepts}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Reflection Questions */}
+                              {contentItem.reflection_questions && (
+                                <div className="mb-3 p-3 bg-info bg-opacity-10 rounded border border-info">
+                                  <h6 className="text-info mb-2">
+                                    <FaInfoCircle className="me-2" />
+                                    Reflection Questions
+                                  </h6>
+                                  <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                    {contentItem.reflection_questions}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Discussion Prompts */}
+                              {contentItem.discussion_prompts && (
+                                <div className="mb-3 p-3 bg-primary bg-opacity-10 rounded border border-primary">
+                                  <h6 className="text-primary mb-2">
+                                    <FaUser className="me-2" />
+                                    Discussion Prompts
+                                  </h6>
+                                  <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                    {contentItem.discussion_prompts}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Summary */}
+                              {contentItem.summary && (
+                                <div className="mb-3 p-3 bg-secondary bg-opacity-10 rounded">
+                                  <h6 className="mb-2">
+                                    <FaBook className="me-2" />
+                                    Summary
+                                  </h6>
+                                  <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                    {contentItem.summary}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Metadata */}
+                              <div className="d-flex gap-3 mb-2 flex-wrap">
+                                {contentItem.estimated_minutes && (
+                                  <small className="text-muted">
+                                    <FaClockIcon className="me-1" />
+                                    {contentItem.estimated_minutes} min
+                                  </small>
+                                )}
                                 {contentItem.file_name && (
-                                  <p className="text-muted small mb-1">
+                                  <small className="text-muted">
                                     {contentItem.file_name}
                                     {contentItem.file_size && ` (${formatFileSize(contentItem.file_size)})`}
-                                  </p>
+                                  </small>
                                 )}
                               </div>
-                            </div>
-                            
-                            {/* Embedded Content */}
-                            {isVideo && contentItem.url && (
-                              <div className="mb-2">
-                                {contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be') ? (
-                                  <div className="ratio ratio-16x9">
-                                    <iframe
-                                      src={getYouTubeEmbedUrl(contentItem.url)}
-                                      title={contentItem.title}
-                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                      allowFullScreen
-                                      style={{ border: 0 }}
-                                    />
-                                  </div>
-                                ) : (
-                                  <video controls className="w-100" style={{ maxHeight: '300px' }}>
-                                    <source src={contentItem.url} type={contentItem.mime_type || 'video/mp4'} />
-                                    Your browser does not support the video tag.
-                                  </video>
-                                )}
-                              </div>
-                            )}
-                            
-                            {isImage && contentItem.url && (
-                              <div className="mb-2">
-                                <a
-                                  href={contentItem.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{ display: 'block', cursor: 'pointer' }}
-                                >
-                                  <img 
-                                    src={contentItem.url} 
-                                    alt={contentItem.title}
-                                    className="img-fluid rounded"
-                                    style={{ maxHeight: '200px', width: 'auto' }}
-                                  />
-                                </a>
-                              </div>
-                            )}
-                            
-                            {/* Action Buttons */}
-                            <div className="d-flex gap-2">
-                              {contentItem.url ? (
-                                <a
-                                  href={contentItem.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="btn btn-primary btn-sm flex-grow-1 text-decoration-none d-flex align-items-center justify-content-center"
-                                  style={{ minHeight: '38px' }}
-                                >
-                                  {isVideo ? (
-                                    <>
-                                      <FaExternalLinkAlt className="me-2" />
-                                      Watch Video
-                                    </>
-                                  ) : isImage ? (
-                                    <>
-                                      <FaExternalLinkAlt className="me-2" />
-                                      View Image
-                                    </>
+                              
+                              {/* Embedded Content */}
+                              {isVideo && contentItem.url && (
+                                <div className="mb-3">
+                                  {contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be') ? (
+                                    <div className="ratio ratio-16x9">
+                                      <iframe
+                                        src={getYouTubeEmbedUrl(contentItem.url)}
+                                        title={contentItem.title}
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                        allowFullScreen
+                                        style={{ border: 0 }}
+                                      />
+                                    </div>
                                   ) : (
-                                    <>
-                                      <FaExternalLinkAlt className="me-2" />
-                                      Open
-                                    </>
+                                    <video controls className="w-100" style={{ maxHeight: '400px' }}>
+                                      <source src={contentItem.url} type={contentItem.mime_type || 'video/mp4'} />
+                                      Your browser does not support the video tag.
+                                    </video>
                                   )}
-                                </a>
-                              ) : contentItem.file_path ? (
-                                <Button
-                                  variant="primary"
-                                  size="sm"
-                                  onClick={async () => {
-                                    try {
-                                      // Generate signed URL for private files
-                                      const { data, error } = await supabase.storage
-                                        .from('course-content')
-                                        .createSignedUrl(contentItem.file_path, 3600);
-                                      
-                                      if (error) throw error;
-                                      if (data?.signedUrl) {
-                                        window.open(data.signedUrl, '_blank');
+                                </div>
+                              )}
+                              
+                              {isImage && contentItem.url && (
+                                <div className="mb-3">
+                                  <a
+                                    href={contentItem.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ display: 'block', cursor: 'pointer' }}
+                                  >
+                                    <img 
+                                      src={contentItem.url} 
+                                      alt={contentItem.title}
+                                      className="img-fluid rounded"
+                                      style={{ maxHeight: '300px', width: 'auto' }}
+                                    />
+                                  </a>
+                                </div>
+                              )}
+                              
+                              {/* Action Buttons */}
+                              <div className="d-flex gap-2 flex-wrap">
+                                {contentItem.url ? (
+                                  <a
+                                    href={contentItem.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-primary btn-sm text-decoration-none d-flex align-items-center"
+                                  >
+                                    {isVideo ? (
+                                      <>
+                                        <FaExternalLinkAlt className="me-2" />
+                                        Watch Video
+                                      </>
+                                    ) : isImage ? (
+                                      <>
+                                        <FaExternalLinkAlt className="me-2" />
+                                        View Image
+                                      </>
+                                    ) : (
+                                      <>
+                                        <FaExternalLinkAlt className="me-2" />
+                                        Open
+                                      </>
+                                    )}
+                                  </a>
+                                ) : contentItem.file_path ? (
+                                  <Button
+                                    variant="primary"
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        // Generate signed URL for private files
+                                        const { data, error } = await supabase.storage
+                                          .from('course-content')
+                                          .createSignedUrl(contentItem.file_path, 3600);
+                                        
+                                        if (error) throw error;
+                                        if (data?.signedUrl) {
+                                          window.open(data.signedUrl, '_blank');
+                                        }
+                                      } catch (err) {
+                                        console.error('Error generating signed URL:', err);
+                                        alert('Unable to open file. Please contact your teacher.');
                                       }
-                                    } catch (err) {
-                                      console.error('Error generating signed URL:', err);
-                                      alert('Unable to open file. Please contact your teacher.');
-                                    }
-                                  }}
-                                  className="flex-grow-1 d-flex align-items-center justify-content-center"
-                                >
-                                  <FaDownload className="me-2" />
-                                  Download
-                                </Button>
-                              ) : null}
+                                    }}
+                                    className="d-flex align-items-center"
+                                  >
+                                    <FaDownload className="me-2" />
+                                    Download
+                                  </Button>
+                                ) : null}
+                              </div>
                             </div>
-                          </Card.Body>
-                        </Card>
-                      </Col>
+                          </div>
+                        </Card.Body>
+                      </Card>
                     );
                   })}
-                </Row>
-              </Card.Body>
-            </Card>
-          )}
+                </Card.Body>
+              </Card>
+            ));
+          })()}
         </Col>
         
         {/* Sidebar */}
