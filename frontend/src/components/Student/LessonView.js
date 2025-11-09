@@ -6,7 +6,8 @@ import {
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { 
   FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
-  FaBook, FaClipboardList, FaUser, FaCheckCircle, FaInfoCircle, FaClock as FaClockIcon
+  FaBook, FaClipboardList, FaUser, FaCheckCircle, FaInfoCircle, FaClock as FaClockIcon,
+  FaClipboardCheck
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -22,6 +23,7 @@ function LessonView() {
   const [error, setError] = useState(null);
   const [lesson, setLesson] = useState(null);
   const [attendance, setAttendance] = useState(null);
+  const [quizStatuses, setQuizStatuses] = useState({}); // Track which content items have quizzes
   
   useEffect(() => {
     if (lessonId) {
@@ -66,6 +68,31 @@ function LessonView() {
         }
         
         setLesson(lessonData);
+        
+        // Check for in-app quizzes for QUIZ content types
+        if (lessonData.content) {
+          const quizContentItems = lessonData.content.filter(item => item.content_type === 'QUIZ');
+          if (quizContentItems.length > 0) {
+            const quizStatusMap = {};
+            await Promise.all(quizContentItems.map(async (item) => {
+              try {
+                const { data: quiz } = await supabase
+                  .from('quizzes')
+                  .select('quiz_id, is_published')
+                  .eq('content_id', item.content_id)
+                  .eq('is_published', true)
+                  .single();
+                if (quiz) {
+                  quizStatusMap[item.content_id] = true;
+                }
+              } catch (err) {
+                // No quiz found or not published
+                quizStatusMap[item.content_id] = false;
+              }
+            }));
+            setQuizStatuses(quizStatusMap);
+          }
+        }
         
         // Get student's attendance for this lesson (if student)
         if (user && user.userId && user.role?.toLowerCase() === 'student') {
@@ -484,7 +511,27 @@ function LessonView() {
                               
                               {/* Action Buttons */}
                               <div className="d-flex gap-2 flex-wrap">
-                                {contentItem.url ? (
+                                {contentItem.content_type === 'QUIZ' && quizStatuses[contentItem.content_id] ? (
+                                  <Button
+                                    variant="success"
+                                    size="sm"
+                                    onClick={() => navigate(`/student/quizzes/${contentItem.content_id}`)}
+                                    className="d-flex align-items-center"
+                                  >
+                                    <FaClipboardCheck className="me-2" />
+                                    Take Quiz
+                                  </Button>
+                                ) : contentItem.content_type === 'QUIZ' && contentItem.url ? (
+                                  <a
+                                    href={contentItem.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-primary btn-sm text-decoration-none d-flex align-items-center"
+                                  >
+                                    <FaExternalLinkAlt className="me-2" />
+                                    Open Quiz
+                                  </a>
+                                ) : contentItem.url ? (
                                   <a
                                     href={contentItem.url}
                                     target="_blank"

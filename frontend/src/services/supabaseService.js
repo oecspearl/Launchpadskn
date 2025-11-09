@@ -1947,6 +1947,560 @@ class SupabaseService {
     if (error) throw error;
     return data;
   }
+
+  // ============================================
+  // QUIZ SYSTEM METHODS
+  // ============================================
+
+  /**
+   * Create a new quiz
+   */
+  async createQuiz(quizData) {
+    const { data, error } = await supabase
+      .from('quizzes')
+      .insert(quizData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Get quiz by content ID
+   */
+  async getQuizByContentId(contentId) {
+    // First get the quiz
+    const { data: quizData, error: quizError } = await supabase
+      .from('quizzes')
+      .select('*')
+      .eq('content_id', contentId)
+      .eq('is_published', true)
+      .single();
+    
+    if (quizError) {
+      if (quizError.code === 'PGRST116') return null; // No rows returned
+      throw quizError;
+    }
+    if (!quizData) return null;
+    
+    // Then get questions
+    const { data: questions, error: questionsError } = await supabase
+      .from('quiz_questions')
+      .select('*')
+      .eq('quiz_id', quizData.quiz_id)
+      .order('question_order', { ascending: true });
+    
+    if (questionsError) throw questionsError;
+    
+    // Get options and correct answers for each question separately
+    if (questions && questions.length > 0) {
+      const questionIds = questions.map(q => q.question_id).filter(id => id != null);
+      
+      let allOptions = [];
+      let allCorrectAnswers = [];
+      
+      // Only query if we have valid question IDs
+      if (questionIds.length > 0) {
+        // Get all options for these questions
+        const { data: optionsData, error: optionsError } = await supabase
+          .from('quiz_answer_options')
+          .select('*')
+          .in('question_id', questionIds)
+          .order('option_order', { ascending: true });
+        
+        if (optionsError) throw optionsError;
+        allOptions = optionsData || [];
+        
+        // Get all correct answers for these questions
+        const { data: answersData, error: answersError } = await supabase
+          .from('quiz_correct_answers')
+          .select('*')
+          .in('question_id', questionIds);
+        
+        if (answersError) throw answersError;
+        allCorrectAnswers = answersData || [];
+      }
+      
+      // Attach options and correct answers to each question
+      const questionsWithData = questions.map(question => ({
+        ...question,
+        options: allOptions.filter(opt => opt.question_id === question.question_id),
+        correct_answers: allCorrectAnswers.filter(ans => ans.question_id === question.question_id)
+      }));
+      
+      return {
+        ...quizData,
+        questions: questionsWithData
+      };
+    }
+    
+    return {
+      ...quizData,
+      questions: []
+    };
+  }
+
+  /**
+   * Get quiz by ID (for teachers)
+   */
+  async getQuizById(quizId) {
+    // First get the quiz
+    const { data: quizData, error: quizError } = await supabase
+      .from('quizzes')
+      .select('*')
+      .eq('quiz_id', quizId)
+      .single();
+    
+    if (quizError) throw quizError;
+    if (!quizData) return null;
+    
+    // Then get questions
+    const { data: questions, error: questionsError } = await supabase
+      .from('quiz_questions')
+      .select('*')
+      .eq('quiz_id', quizId)
+      .order('question_order', { ascending: true });
+    
+    if (questionsError) throw questionsError;
+    
+    // Get options and correct answers for each question separately
+    if (questions && questions.length > 0) {
+      const questionIds = questions.map(q => q.question_id).filter(id => id != null);
+      
+      let allOptions = [];
+      let allCorrectAnswers = [];
+      
+      // Only query if we have valid question IDs
+      if (questionIds.length > 0) {
+        // Get all options for these questions
+        const { data: optionsData, error: optionsError } = await supabase
+          .from('quiz_answer_options')
+          .select('*')
+          .in('question_id', questionIds)
+          .order('option_order', { ascending: true });
+        
+        if (optionsError) throw optionsError;
+        allOptions = optionsData || [];
+        
+        // Get all correct answers for these questions
+        const { data: answersData, error: answersError } = await supabase
+          .from('quiz_correct_answers')
+          .select('*')
+          .in('question_id', questionIds);
+        
+        if (answersError) throw answersError;
+        allCorrectAnswers = answersData || [];
+      }
+      
+      // Attach options and correct answers to each question
+      const questionsWithData = questions.map(question => ({
+        ...question,
+        options: allOptions.filter(opt => opt.question_id === question.question_id),
+        correct_answers: allCorrectAnswers.filter(ans => ans.question_id === question.question_id)
+      }));
+      
+      return {
+        ...quizData,
+        questions: questionsWithData
+      };
+    }
+    
+    return {
+      ...quizData,
+      questions: []
+    };
+  }
+
+  /**
+   * Update quiz
+   */
+  async updateQuiz(quizId, quizData) {
+    const { data, error } = await supabase
+      .from('quizzes')
+      .update(quizData)
+      .eq('quiz_id', quizId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Delete quiz
+   */
+  async deleteQuiz(quizId) {
+    const { error } = await supabase
+      .from('quizzes')
+      .delete()
+      .eq('quiz_id', quizId);
+    
+    if (error) throw error;
+  }
+
+  /**
+   * Create quiz question
+   */
+  async createQuizQuestion(questionData) {
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .insert(questionData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Update quiz question
+   */
+  async updateQuizQuestion(questionId, questionData) {
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .update(questionData)
+      .eq('question_id', questionId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Delete quiz question
+   */
+  async deleteQuizQuestion(questionId) {
+    const { error } = await supabase
+      .from('quiz_questions')
+      .delete()
+      .eq('question_id', questionId);
+    
+    if (error) throw error;
+  }
+
+  /**
+   * Create answer option
+   */
+  async createAnswerOption(optionData) {
+    const { data, error } = await supabase
+      .from('quiz_answer_options')
+      .insert(optionData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Update answer option
+   */
+  async updateAnswerOption(optionId, optionData) {
+    const { data, error } = await supabase
+      .from('quiz_answer_options')
+      .update(optionData)
+      .eq('option_id', optionId)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Delete answer option
+   */
+  async deleteAnswerOption(optionId) {
+    const { error } = await supabase
+      .from('quiz_answer_options')
+      .delete()
+      .eq('option_id', optionId);
+    
+    if (error) throw error;
+  }
+
+  /**
+   * Create correct answer
+   */
+  async createCorrectAnswer(answerData) {
+    const { data, error } = await supabase
+      .from('quiz_correct_answers')
+      .insert(answerData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Delete correct answers for a question
+   */
+  async deleteCorrectAnswersForQuestion(questionId) {
+    const { error } = await supabase
+      .from('quiz_correct_answers')
+      .delete()
+      .eq('question_id', questionId);
+    
+    if (error) throw error;
+  }
+
+  /**
+   * Create student quiz attempt
+   */
+  async createQuizAttempt(attemptData) {
+    const { data, error } = await supabase
+      .from('student_quiz_attempts')
+      .insert(attemptData)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Submit quiz attempt
+   */
+  async submitQuizAttempt(attemptId, responses) {
+    // First, submit all responses
+    if (responses && responses.length > 0) {
+      const { error: responsesError } = await supabase
+        .from('student_quiz_responses')
+        .insert(responses);
+      
+      if (responsesError) throw responsesError;
+    }
+
+    // Calculate score
+    const { data: attempt } = await supabase
+      .from('student_quiz_attempts')
+      .select(`
+        *,
+        quiz:quizzes(*),
+        responses:student_quiz_responses(
+          *,
+          question:quiz_questions(*)
+        )
+      `)
+      .eq('attempt_id', attemptId)
+      .single();
+
+    if (!attempt) throw new Error('Attempt not found');
+
+    // Auto-grade objective questions
+    let totalPoints = 0;
+    let earnedPoints = 0;
+    const responsesToUpdate = [];
+
+    console.log('[submitQuizAttempt] Grading responses:', attempt.responses?.length || 0);
+
+    for (const response of attempt.responses || []) {
+      const question = response.question;
+      if (!question) {
+        console.warn('[submitQuizAttempt] Response missing question:', response);
+        continue;
+      }
+      totalPoints += parseFloat(question.points || 0);
+
+      if (question.question_type === 'MULTIPLE_CHOICE' || question.question_type === 'TRUE_FALSE') {
+        // Check if selected option is correct
+        const { data: option } = await supabase
+          .from('quiz_answer_options')
+          .select('is_correct, points')
+          .eq('option_id', response.selected_option_id)
+          .single();
+
+        if (option && option.is_correct) {
+          const points = parseFloat(option.points || question.points || 0);
+          earnedPoints += points;
+          console.log(`[submitQuizAttempt] Question ${question.question_id} (${question.question_type}): CORRECT, +${points} points`);
+          responsesToUpdate.push({
+            response_id: response.response_id,
+            points_earned: points,
+            is_correct: true,
+            is_graded: true
+          });
+        } else {
+          console.log(`[submitQuizAttempt] Question ${question.question_id} (${question.question_type}): INCORRECT, selected_option_id=${response.selected_option_id}`);
+          responsesToUpdate.push({
+            response_id: response.response_id,
+            points_earned: 0,
+            is_correct: false,
+            is_graded: true
+          });
+        }
+      } else if (question.question_type === 'SHORT_ANSWER' || question.question_type === 'FILL_BLANK') {
+        // Check against correct answers
+        const { data: correctAnswers } = await supabase
+          .from('quiz_correct_answers')
+          .select('*')
+          .eq('question_id', question.question_id);
+
+        let isCorrect = false;
+        if (correctAnswers && correctAnswers.length > 0 && response.response_text) {
+          const studentAnswer = response.response_text.trim();
+          for (const correctAnswer of correctAnswers) {
+            let correctText = correctAnswer.correct_answer.trim();
+            if (!correctAnswer.case_sensitive) {
+              correctText = correctText.toLowerCase();
+              const studentText = studentAnswer.toLowerCase();
+              if (studentText === correctText || 
+                  (correctAnswer.accept_partial && studentText.includes(correctText))) {
+                isCorrect = true;
+                break;
+              }
+            } else {
+              if (studentAnswer === correctText || 
+                  (correctAnswer.accept_partial && studentAnswer.includes(correctText))) {
+                isCorrect = true;
+                break;
+              }
+            }
+          }
+        }
+
+        if (isCorrect) {
+          earnedPoints += parseFloat(question.points || 0);
+          responsesToUpdate.push({
+            response_id: response.response_id,
+            points_earned: question.points || 0,
+            is_correct: true,
+            is_graded: true
+          });
+        } else {
+          responsesToUpdate.push({
+            response_id: response.response_id,
+            points_earned: 0,
+            is_correct: false,
+            is_graded: true
+          });
+        }
+      } else if (question.question_type === 'ESSAY') {
+        // Essay questions need manual grading
+        responsesToUpdate.push({
+          response_id: response.response_id,
+          points_earned: 0,
+          is_correct: false,
+          is_graded: false
+        });
+      }
+    }
+
+    // Update all responses
+    for (const update of responsesToUpdate) {
+      const { error: updateError } = await supabase
+        .from('student_quiz_responses')
+        .update({
+          points_earned: update.points_earned,
+          is_correct: update.is_correct,
+          is_graded: update.is_graded
+        })
+        .eq('response_id', update.response_id);
+      
+      if (updateError) throw updateError;
+    }
+
+    // Calculate percentage
+    const percentage = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
+    const isPassed = attempt.quiz.passing_score ? percentage >= attempt.quiz.passing_score : null;
+    
+    console.log('[submitQuizAttempt] Grading complete:', {
+      totalPoints,
+      earnedPoints,
+      percentage: percentage.toFixed(1) + '%',
+      isPassed,
+      correctCount: responsesToUpdate.filter(r => r.is_correct).length,
+      totalCount: responsesToUpdate.length
+    });
+    const needsGrading = (attempt.responses || []).some(r => 
+      r.question.question_type === 'ESSAY' && !r.is_graded
+    );
+
+    // Update attempt
+    const { error: updateError } = await supabase
+      .from('student_quiz_attempts')
+      .update({
+        submitted_at: new Date().toISOString(),
+        total_points_earned: earnedPoints,
+        percentage_score: percentage,
+        is_passed: isPassed,
+        is_graded: !needsGrading
+      })
+      .eq('attempt_id', attemptId);
+
+    if (updateError) throw updateError;
+    
+    // Refetch the attempt with all responses, questions, and options for display
+    const { data: updatedAttempt, error: fetchError } = await supabase
+      .from('student_quiz_attempts')
+      .select(`
+        *,
+        quiz:quizzes(*),
+        responses:student_quiz_responses(
+          *,
+          question:quiz_questions(
+            *,
+            options:quiz_answer_options(*),
+            correct_answers:quiz_correct_answers(*)
+          )
+        )
+      `)
+      .eq('attempt_id', attemptId)
+      .single();
+
+    if (fetchError) throw fetchError;
+    return updatedAttempt;
+  }
+
+  /**
+   * Get student quiz attempts
+   */
+  async getStudentQuizAttempts(quizId, studentId = null) {
+    // Use explicit foreign key relationship to avoid ambiguity
+    let query = supabase
+      .from('student_quiz_attempts')
+      .select(`
+        *,
+        student:users!student_quiz_attempts_student_id_fkey(user_id, name, email),
+        responses:student_quiz_responses(
+          *,
+          question:quiz_questions(*),
+          option:quiz_answer_options(*)
+        )
+      `)
+      .eq('quiz_id', quizId)
+      .order('submitted_at', { ascending: false });
+
+    if (studentId) {
+      query = query.eq('student_id', studentId);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) throw error;
+    return data;
+  }
+
+  /**
+   * Get quiz results/analytics
+   */
+  async getQuizResults(quizId) {
+    const { data, error } = await supabase
+      .from('student_quiz_attempts')
+      .select(`
+        *,
+        student:users!student_quiz_attempts_student_id_fkey(user_id, name, email)
+      `)
+      .eq('quiz_id', quizId)
+      .not('submitted_at', 'is', null)
+      .order('submitted_at', { ascending: false });
+    
+    if (error) throw error;
+    return data;
+  }
   
   /**
    * Enter/update grades for multiple students

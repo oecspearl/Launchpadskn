@@ -8,11 +8,13 @@ import {
   FaUpload, FaFileAlt, FaLink, FaVideo, FaImage, 
   FaTrash, FaEdit, FaPlus, FaDownload, FaExternalLinkAlt, FaBook, FaEye,
   FaArrowUp, FaArrowDown, FaGripVertical, FaClock, FaCheckCircle, FaInfoCircle,
-  FaGraduationCap, FaLightbulb, FaQuestionCircle, FaComments
+  FaGraduationCap, FaLightbulb, FaQuestionCircle, FaComments, FaClipboardCheck,
+  FaClipboardList, FaTasks, FaFileSignature, FaPoll, FaProjectDiagram
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import QuizBuilder from './QuizBuilder';
 
 function LessonContentManager() {
   const { lessonId } = useParams();
@@ -29,6 +31,9 @@ function LessonContentManager() {
   const [editingContent, setEditingContent] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [signedUrls, setSignedUrls] = useState({}); // Cache for signed URLs
+  const [showQuizBuilder, setShowQuizBuilder] = useState(false);
+  const [currentQuizContentId, setCurrentQuizContentId] = useState(null);
+  const [currentQuizId, setCurrentQuizId] = useState(null);
   
   // Form state
   const [contentType, setContentType] = useState('FILE');
@@ -193,6 +198,46 @@ function LessonContentManager() {
     setError(null);
     setSuccess(null);
   };
+
+  const handleOpenQuizBuilder = async (contentItem = null) => {
+    if (contentItem) {
+      // Check if quiz exists for this content
+      try {
+        const { data: quiz } = await supabase
+          .from('quizzes')
+          .select('quiz_id')
+          .eq('content_id', contentItem.content_id)
+          .single();
+        
+        if (quiz) {
+          setCurrentQuizId(quiz.quiz_id);
+        } else {
+          setCurrentQuizId(null);
+        }
+        setCurrentQuizContentId(contentItem.content_id);
+      } catch (err) {
+        // No quiz exists yet
+        setCurrentQuizId(null);
+        setCurrentQuizContentId(contentItem.content_id);
+      }
+    } else {
+      // Creating new quiz - need to save content first
+      setCurrentQuizContentId(null);
+      setCurrentQuizId(null);
+    }
+    setShowQuizBuilder(true);
+  };
+
+  const handleCloseQuizBuilder = () => {
+    setShowQuizBuilder(false);
+    setCurrentQuizContentId(null);
+    setCurrentQuizId(null);
+    fetchContent(); // Refresh to show quiz status
+  };
+
+  const handleQuizSaved = () => {
+    fetchContent(); // Refresh content list
+  };
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -243,10 +288,12 @@ function LessonContentManager() {
       }
       
       // Prepare content data
-      // Determine the URL: for LINK, VIDEO, IMAGE use the form URL; for FILE use the uploaded file URL
+      // Determine the URL: for LINK, VIDEO, IMAGE, DOCUMENT, and all Assessment types use the form URL; for FILE use the uploaded file URL
+      // Note: QUIZ can have URL (external) or be created in-app (no URL required)
+      const assessmentTypes = ['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'];
       let finalUrl = null;
-      if (contentType === 'LINK' || contentType === 'VIDEO' || contentType === 'IMAGE' || contentType === 'DOCUMENT') {
-        finalUrl = url || null; // Use the URL from the form
+      if (contentType === 'LINK' || contentType === 'VIDEO' || contentType === 'IMAGE' || contentType === 'DOCUMENT' || assessmentTypes.includes(contentType)) {
+        finalUrl = url || null; // Use the URL from the form (optional for QUIZ)
       } else if (contentType === 'FILE') {
         finalUrl = fileUrl; // Use the uploaded file URL
       }
@@ -361,15 +408,28 @@ function LessonContentManager() {
           published_at: new Date().toISOString()
         };
         
-        const { error: insertError } = await supabase
+        const { data: result, error: insertError } = await supabase
           .from('lesson_content')
-          .insert(insertData);
+          .insert(insertData)
+          .select()
+          .single();
         
         if (insertError) {
           console.error('Insert error details:', insertError);
           throw insertError;
         }
         setSuccess('Content added successfully');
+        
+        // If it's a QUIZ content type and no URL was provided, offer to create quiz
+        if (contentType === 'QUIZ' && !url && result) {
+          setTimeout(() => {
+            if (window.confirm('Would you like to create an in-app quiz for this content?')) {
+              setCurrentQuizContentId(result.content_id);
+              setCurrentQuizId(null);
+              setShowQuizBuilder(true);
+            }
+          }, 500);
+        }
       }
       
       handleCloseModal();
@@ -496,6 +556,18 @@ function LessonContentManager() {
         return <FaImage className="me-2" />;
       case 'LINK':
         return <FaLink className="me-2" />;
+      case 'QUIZ':
+        return <FaClipboardCheck className="me-2 text-danger" />;
+      case 'ASSIGNMENT':
+        return <FaTasks className="me-2 text-warning" />;
+      case 'TEST':
+        return <FaClipboardList className="me-2 text-info" />;
+      case 'EXAM':
+        return <FaFileSignature className="me-2 text-danger" />;
+      case 'PROJECT':
+        return <FaProjectDiagram className="me-2 text-success" />;
+      case 'SURVEY':
+        return <FaPoll className="me-2 text-primary" />;
       case 'LEARNING_OUTCOMES':
         return <FaGraduationCap className="me-2 text-primary" />;
       case 'LEARNING_ACTIVITIES':
@@ -603,6 +675,29 @@ function LessonContentManager() {
   const handlePreview = async (item) => {
     try {
       console.log('Previewing item:', item);
+      
+      // For QUIZ content type, check if there's an in-app quiz
+      if (item.content_type === 'QUIZ' && !item.url) {
+        try {
+          const { data: quiz } = await supabase
+            .from('quizzes')
+            .select('quiz_id, title, is_published, total_points')
+            .eq('content_id', item.content_id)
+            .single();
+          
+          if (quiz) {
+            // In-app quiz exists - show quiz info instead of URL preview
+            setPreviewUrl(null);
+            setPreviewingContent({ ...item, hasInAppQuiz: true, quiz });
+            setShowPreviewModal(true);
+            return;
+          }
+        } catch (quizError) {
+          // No in-app quiz found, continue to check for URL
+          console.log('No in-app quiz found, checking for URL');
+        }
+      }
+      
       const url = await getContentUrl(item);
       console.log('Got URL:', url);
       
@@ -963,9 +1058,21 @@ function LessonContentManager() {
                                 )}
                               </Button>
                             )}
+                            {item.content_type === 'QUIZ' && (
+                              <Button 
+                                variant="outline-success"
+                                size="sm"
+                                className="me-2"
+                                onClick={() => handleOpenQuizBuilder(item)}
+                              >
+                                <FaClipboardCheck className="me-1" />
+                                Create/Edit Quiz
+                              </Button>
+                            )}
                             <Button 
                               variant="outline-secondary" 
                               size="sm"
+                              className="me-2"
                               onClick={() => handleOpenModal(item)}
                             >
                               <FaEdit className="me-1" />
@@ -1020,6 +1127,14 @@ function LessonContentManager() {
                   <option value="VIDEO">Video Link</option>
                   <option value="IMAGE">Image Link</option>
                   <option value="DOCUMENT">Document Link</option>
+                </optgroup>
+                <optgroup label="Assessments">
+                  <option value="QUIZ">Quiz</option>
+                  <option value="ASSIGNMENT">Assignment</option>
+                  <option value="TEST">Test</option>
+                  <option value="EXAM">Exam</option>
+                  <option value="PROJECT">Project</option>
+                  <option value="SURVEY">Survey/Poll</option>
                 </optgroup>
                 <optgroup label="Learning Content">
                   <option value="LEARNING_OUTCOMES">Learning Outcomes</option>
@@ -1080,14 +1195,58 @@ function LessonContentManager() {
               </Form.Group>
             ) : (
               <Form.Group className="mb-3">
-                <Form.Label>URL *</Form.Label>
+                <Form.Label>URL {contentType === 'QUIZ' ? '(Optional - or create quiz in-app)' : '*'}</Form.Label>
                 <Form.Control
                   type="url"
                   value={url || ''}
                   onChange={(e) => setUrl(e.target.value || '')}
-                  placeholder="https://..."
+                  placeholder={
+                    contentType === 'QUIZ' ? "External Quiz URL (e.g., Google Forms, Kahoot, Quizizz) - OR create quiz in-app after saving" :
+                    contentType === 'ASSIGNMENT' ? "Assignment URL (e.g., Google Classroom, assignment link)" :
+                    contentType === 'TEST' ? "Test URL (e.g., test platform link)" :
+                    contentType === 'EXAM' ? "Exam URL (e.g., exam platform link)" :
+                    contentType === 'PROJECT' ? "Project URL (e.g., project description or submission link)" :
+                    contentType === 'SURVEY' ? "Survey URL (e.g., Google Forms, SurveyMonkey)" :
+                    "https://..."
+                  }
                   required
                 />
+                {contentType === 'QUIZ' && (
+                  <>
+                    <Form.Text className="text-muted">
+                      You can either enter an external quiz URL (Google Forms, Kahoot, Quizizz) OR create an in-app quiz.
+                    </Form.Text>
+                    <Alert variant="info" className="mt-2 mb-0">
+                      <FaClipboardCheck className="me-2" />
+                      <strong>Create In-App Quiz:</strong> Click the "Save & Create Quiz" button below to save this content and immediately open the quiz builder.
+                    </Alert>
+                  </>
+                )}
+                {contentType === 'ASSIGNMENT' && (
+                  <Form.Text className="text-muted">
+                    Enter the URL to your assignment (Google Classroom, assignment platform, or submission link)
+                  </Form.Text>
+                )}
+                {contentType === 'TEST' && (
+                  <Form.Text className="text-muted">
+                    Enter the URL to your test (test platform, Google Forms, or assessment tool)
+                  </Form.Text>
+                )}
+                {contentType === 'EXAM' && (
+                  <Form.Text className="text-muted">
+                    Enter the URL to your exam (exam platform, Google Forms, or assessment tool)
+                  </Form.Text>
+                )}
+                {contentType === 'PROJECT' && (
+                  <Form.Text className="text-muted">
+                    Enter the URL to your project (project description, submission link, or project management tool)
+                  </Form.Text>
+                )}
+                {contentType === 'SURVEY' && (
+                  <Form.Text className="text-muted">
+                    Enter the URL to your survey or poll (Google Forms, SurveyMonkey, or other survey platform)
+                  </Form.Text>
+                )}
               </Form.Group>
             )}
 
@@ -1145,8 +1304,8 @@ function LessonContentManager() {
                     <Form.Group className="mb-3">
                       <Form.Label>Content Section</Form.Label>
                       <Form.Select
-                        value={contentSection}
-                        onChange={(e) => setContentSection(e.target.value)}
+                        value={contentSection || 'Main Content'}
+                        onChange={(e) => setContentSection(e.target.value || 'Main Content')}
                       >
                         <option value="Introduction">Introduction</option>
                         <option value="Main Content">Main Content</option>
@@ -1195,6 +1354,69 @@ function LessonContentManager() {
             <Button variant="secondary" onClick={handleCloseModal} disabled={uploading}>
               Cancel
             </Button>
+            {contentType === 'QUIZ' && !editingContent && (
+              <Button 
+                variant="outline-success" 
+                onClick={async (e) => {
+                  e.preventDefault();
+                  // Save content first, then open quiz builder
+                  try {
+                    setError(null);
+                    setSuccess(null);
+                    setUploading(true);
+                    
+                    if (!title.trim()) {
+                      setError('Title is required');
+                      setUploading(false);
+                      return;
+                    }
+
+                    const contentData = {
+                      lesson_id: parseInt(lessonId),
+                      content_type: contentType,
+                      title: title.trim(),
+                      url: url?.trim() || null,
+                      description: description?.trim() || null,
+                      instructions: instructions?.trim() || null,
+                      key_concepts: keyConcepts?.trim() || null,
+                      content_section: contentSection || 'Main Content',
+                      is_required: isRequired,
+                      estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
+                      sequence_order: content.length > 0 ? Math.max(...content.map(c => c.sequence_order || 0)) + 1 : 1,
+                      is_published: true,
+                      published_at: new Date().toISOString(),
+                      uploaded_by: user.user_id || user.userId
+                    };
+
+                    const { data: result, error: insertError } = await supabase
+                      .from('lesson_content')
+                      .insert(contentData)
+                      .select()
+                      .single();
+                    
+                    if (insertError) throw insertError;
+                    
+                    handleCloseModal();
+                    fetchContent();
+                    
+                    // Open quiz builder
+                    setCurrentQuizContentId(result.content_id);
+                    setCurrentQuizId(null);
+                    setShowQuizBuilder(true);
+                  } catch (err) {
+                    console.error('Error saving content:', err);
+                    setError(err.message || 'Failed to save content');
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+                disabled={uploading || !title.trim()}
+                className="me-2"
+              >
+                <FaClipboardCheck className="me-2" />
+                Save & Create Quiz
+              </Button>
+            )}
             <Button variant="primary" type="submit" disabled={uploading}>
               {uploading ? (
                 <>
@@ -1284,15 +1506,33 @@ function LessonContentManager() {
                       </div>
                     );
                   } else {
+                    const assessmentTypes = ['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'];
+                    const isAssessment = assessmentTypes.includes(previewingContent.content_type);
+                    const assessmentLabels = {
+                      'QUIZ': 'Quiz',
+                      'ASSIGNMENT': 'Assignment',
+                      'TEST': 'Test',
+                      'EXAM': 'Exam',
+                      'PROJECT': 'Project',
+                      'SURVEY': 'Survey'
+                    };
+                    const label = assessmentLabels[previewingContent.content_type] || 'Content';
                     return (
                       <div className="text-center py-5">
-                        <p className="mb-3">Preview not available for this content type.</p>
+                        {isAssessment ? (
+                          <>
+                            <h5 className="mb-3">{label}: {previewingContent.title}</h5>
+                            <p className="mb-3">Click the button below to open the {label.toLowerCase()} in a new tab.</p>
+                          </>
+                        ) : (
+                          <p className="mb-3">Preview not available for this content type.</p>
+                        )}
                         <Button
                           variant="primary"
                           onClick={() => window.open(previewUrl, '_blank')}
                         >
                           <FaExternalLinkAlt className="me-2" />
-                          Open in New Tab
+                          {isAssessment ? `Open ${label}` : 'Open in New Tab'}
                         </Button>
                       </div>
                     );
@@ -1305,28 +1545,102 @@ function LessonContentManager() {
               {!['LEARNING_OUTCOMES', 'LEARNING_ACTIVITIES', 'KEY_CONCEPTS', 
                   'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(previewingContent.content_type) && !previewUrl && (
                 <div className="text-center py-5">
-                  <Alert variant="warning" className="mb-4">
-                    <h5>No URL Available</h5>
-                    <p className="mb-0">
-                      {previewingContent.content_type === 'VIDEO' 
-                        ? 'This video content does not have a URL. Please edit the content to add a video URL (YouTube link or direct video URL).'
-                        : previewingContent.content_type === 'IMAGE'
-                        ? 'This image content does not have a URL. Please edit the content to add an image URL.'
-                        : previewingContent.file_path
-                        ? 'Unable to generate preview URL. The file may not be accessible or you may not have permission to view it.'
-                        : 'This content does not have a URL or file path. Please edit the content to add a URL or upload a file.'}
-                    </p>
-                  </Alert>
-                  <Button
-                    variant="primary"
-                    onClick={() => {
-                      handleClosePreviewModal();
-                      handleOpenModal(previewingContent);
-                    }}
-                  >
-                    <FaEdit className="me-2" />
-                    Edit Content to Add URL
-                  </Button>
+                  {previewingContent.content_type === 'QUIZ' && previewingContent.hasInAppQuiz ? (
+                    <>
+                      <Alert variant="success" className="mb-4">
+                        <h5>
+                          <FaClipboardCheck className="me-2" />
+                          In-App Quiz Available
+                        </h5>
+                        <p className="mb-2">
+                          <strong>{previewingContent.quiz.title}</strong>
+                        </p>
+                        {previewingContent.quiz.total_points && (
+                          <p className="mb-0">
+                            Total Points: {previewingContent.quiz.total_points}
+                          </p>
+                        )}
+                        <p className="mb-0 mt-2">
+                          {previewingContent.quiz.is_published 
+                            ? 'This quiz is published and available to students.'
+                            : 'This quiz is not yet published.'}
+                        </p>
+                      </Alert>
+                      <div className="d-flex gap-2 justify-content-center">
+                        <Button
+                          variant="success"
+                          onClick={() => {
+                            handleClosePreviewModal();
+                            handleOpenQuizBuilder(previewingContent);
+                          }}
+                        >
+                          <FaClipboardCheck className="me-2" />
+                          {previewingContent.quiz.is_published ? 'Edit Quiz' : 'Edit & Publish Quiz'}
+                        </Button>
+                        <Button
+                          variant="outline-secondary"
+                          onClick={() => {
+                            handleClosePreviewModal();
+                            handleOpenModal(previewingContent);
+                          }}
+                        >
+                          <FaEdit className="me-2" />
+                          Edit Content
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <Alert variant="warning" className="mb-4">
+                        <h5>No URL Available</h5>
+                        <p className="mb-0">
+                          {previewingContent.content_type === 'VIDEO' 
+                            ? 'This video content does not have a URL. Please edit the content to add a video URL (YouTube link or direct video URL).'
+                            : previewingContent.content_type === 'IMAGE'
+                            ? 'This image content does not have a URL. Please edit the content to add an image URL.'
+                            : previewingContent.content_type === 'QUIZ'
+                            ? 'This quiz does not have a URL or an in-app quiz. You can either add an external quiz URL (Google Forms, Kahoot, Quizizz, etc.) or create an in-app quiz.'
+                            : previewingContent.content_type === 'ASSIGNMENT'
+                            ? 'This assignment does not have a URL. Please edit the content to add an assignment URL (Google Classroom, assignment platform, etc.).'
+                            : previewingContent.content_type === 'TEST'
+                            ? 'This test does not have a URL. Please edit the content to add a test URL (test platform, Google Forms, etc.).'
+                            : previewingContent.content_type === 'EXAM'
+                            ? 'This exam does not have a URL. Please edit the content to add an exam URL (exam platform, Google Forms, etc.).'
+                            : previewingContent.content_type === 'PROJECT'
+                            ? 'This project does not have a URL. Please edit the content to add a project URL (project description, submission link, etc.).'
+                            : previewingContent.content_type === 'SURVEY'
+                            ? 'This survey does not have a URL. Please edit the content to add a survey URL (Google Forms, SurveyMonkey, etc.).'
+                            : previewingContent.file_path
+                            ? 'Unable to generate preview URL. The file may not be accessible or you may not have permission to view it.'
+                            : 'This content does not have a URL or file path. Please edit the content to add a URL or upload a file.'}
+                        </p>
+                      </Alert>
+                      <div className="d-flex gap-2 justify-content-center">
+                        {previewingContent.content_type === 'QUIZ' && (
+                          <Button
+                            variant="success"
+                            onClick={() => {
+                              handleClosePreviewModal();
+                              handleOpenQuizBuilder(previewingContent);
+                            }}
+                          >
+                            <FaClipboardCheck className="me-2" />
+                            Create In-App Quiz
+                          </Button>
+                        )}
+                        <Button
+                          variant="primary"
+                          onClick={() => {
+                            handleClosePreviewModal();
+                            handleOpenModal(previewingContent);
+                          }}
+                        >
+                          <FaEdit className="me-2" />
+                          {previewingContent.content_type === 'QUIZ' ? 'Edit Content or Add URL' : 'Edit Content to Add URL'}
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </>
@@ -1358,6 +1672,15 @@ function LessonContentManager() {
           )}
         </Modal.Footer>
       </Modal>
+
+      {/* Quiz Builder Modal */}
+      <QuizBuilder
+        show={showQuizBuilder}
+        onHide={handleCloseQuizBuilder}
+        contentId={currentQuizContentId}
+        quizId={currentQuizId}
+        onSave={handleQuizSaved}
+      />
     </Container>
   );
 }

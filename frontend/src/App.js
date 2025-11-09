@@ -31,6 +31,7 @@ import ClassSubjectAssignment from './components/Admin/ClassSubjectAssignment';
 import CourseRegistration from './components/Student/CourseRegistration';
 import SubjectView from './components/Student/SubjectView';
 import LessonView from './components/Student/LessonView';
+import StudentQuizView from './components/Student/StudentQuizView';
 import LessonPlanning from './components/Teacher/LessonPlanning';
 import AttendanceMarking from './components/Teacher/AttendanceMarking';
 import GradeEntry from './components/Teacher/GradeEntry';
@@ -299,6 +300,14 @@ function App() {
                 element={
                   <PrivateRoute allowedRoles={['student']}>
                     <LessonView />
+                  </PrivateRoute>
+                } 
+              />
+              <Route 
+                path="/student/quizzes/:contentId" 
+                element={
+                  <PrivateRoute allowedRoles={['student']}>
+                    <StudentQuizView />
                   </PrivateRoute>
                 } 
               />

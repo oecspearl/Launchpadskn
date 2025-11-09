@@ -482,3 +482,4 @@ A: Yes, classes can exist with 0 enrollment. Students are assigned separately.
 This guide covers the complete lifecycle of classes in the LMS system. Classes are the foundation for organizing students, subjects, and lessons in the Caribbean secondary school structure.
 
 
+
