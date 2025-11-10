@@ -873,76 +873,78 @@ function LessonContentManager() {
     if (!rubricText) return '';
     
     // Convert markdown-style tables to HTML tables
-    let formatted = rubricText;
-    
-    // Detect markdown tables (lines with | separators)
-    const lines = formatted.split('\n');
+    const lines = rubricText.split('\n');
     const processedLines = [];
     let inTable = false;
     let tableRows = [];
     let tableHeaders = [];
+    let headerSeparatorFound = false;
     
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i].trim();
       
       // Check if line is a table row (contains |)
       if (line.includes('|') && line.split('|').filter(c => c.trim()).length > 1) {
-        // Check if it's a header separator (contains dashes)
-        if (line.match(/^[\|\s\-:]+$/)) {
-          // This is a separator row, skip it but mark that we have headers
-          if (tableRows.length > 0) {
-            inTable = true;
+        // Check if it's a header separator (contains dashes and optional colons)
+        if (line.match(/^[\|\s\-:]+$/) && !headerSeparatorFound) {
+          // This is a separator row - mark that we have headers
+          headerSeparatorFound = true;
+          inTable = true;
+          continue;
+        }
+        
+        // Extract cells - split by | and filter out empty strings
+        const rawCells = line.split('|');
+        const cells = rawCells
+          .map(c => c.trim())
+          .filter((c, idx) => {
+            // Keep first and last if they're not empty, or all middle ones
+            if (idx === 0 || idx === rawCells.length - 1) {
+              return c.length > 0;
+            }
+            return true;
+          });
+        
+        // Ensure we have valid cells
+        if (cells.length < 2) {
+          // Not a valid table row, treat as regular text
+          if (inTable && tableRows.length > 0) {
+            // Close the table first
+            processedLines.push(buildTableHTML(tableHeaders, tableRows, headerSeparatorFound));
+            tableRows = [];
+            tableHeaders = [];
+            inTable = false;
+            headerSeparatorFound = false;
+          }
+          if (line) {
+            processedLines.push(`<p style="margin: 0.5rem 0;">${escapeHtml(line)}</p>`);
+          } else {
+            processedLines.push('<br />');
           }
           continue;
         }
         
-        // Extract cells
-        const cells = line.split('|').map(c => c.trim()).filter(c => c);
-        
-        if (!inTable && tableRows.length === 0) {
+        if (!inTable && !headerSeparatorFound) {
           // First row - treat as headers
           tableHeaders = cells;
           tableRows.push(cells);
-        } else {
+        } else if (headerSeparatorFound && tableRows.length === 0) {
+          // We had a separator, so previous row was headers, this is first data row
           tableRows.push(cells);
-          inTable = true;
+        } else {
+          // Data row
+          tableRows.push(cells);
         }
+        inTable = true;
       } else {
         // Not a table row
         if (inTable && tableRows.length > 0) {
           // Close the table
-          let tableHtml = '<table class="table table-bordered rubric-table" style="border-collapse: collapse; width: 100%; margin: 1rem 0;">';
-          
-          // Add headers if we have them
-          if (tableHeaders.length > 0) {
-            tableHtml += '<thead><tr>';
-            tableHeaders.forEach(header => {
-              tableHtml += `<th style="border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600; text-align: left;">${escapeHtml(header)}</th>`;
-            });
-            tableHtml += '</tr></thead>';
-          }
-          
-          // Add body rows
-          tableHtml += '<tbody>';
-          const rowsToRender = tableHeaders.length > 0 ? tableRows.slice(1) : tableRows;
-          rowsToRender.forEach(row => {
-            tableHtml += '<tr>';
-            row.forEach((cell, idx) => {
-              const isHeader = idx === 0 && tableHeaders.length > 0;
-              const tag = isHeader ? 'th' : 'td';
-              const style = isHeader 
-                ? 'border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600;'
-                : 'border: 1px solid #212529; padding: 0.75rem;';
-              tableHtml += `<${tag} style="${style}">${escapeHtml(cell)}</${tag}>`;
-            });
-            tableHtml += '</tr>';
-          });
-          tableHtml += '</tbody></table>';
-          
-          processedLines.push(tableHtml);
+          processedLines.push(buildTableHTML(tableHeaders, tableRows, headerSeparatorFound));
           tableRows = [];
           tableHeaders = [];
           inTable = false;
+          headerSeparatorFound = false;
         }
         
         // Add regular text
@@ -956,33 +958,49 @@ function LessonContentManager() {
     
     // Handle any remaining table
     if (inTable && tableRows.length > 0) {
-      let tableHtml = '<table class="table table-bordered rubric-table" style="border-collapse: collapse; width: 100%; margin: 1rem 0;">';
-      if (tableHeaders.length > 0) {
-        tableHtml += '<thead><tr>';
-        tableHeaders.forEach(header => {
-          tableHtml += `<th style="border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600; text-align: left;">${escapeHtml(header)}</th>`;
-        });
-        tableHtml += '</tr></thead>';
-      }
-      tableHtml += '<tbody>';
-      const rowsToRender = tableHeaders.length > 0 ? tableRows.slice(1) : tableRows;
-      rowsToRender.forEach(row => {
-        tableHtml += '<tr>';
-        row.forEach((cell, idx) => {
-          const isHeader = idx === 0 && tableHeaders.length > 0;
-          const tag = isHeader ? 'th' : 'td';
-          const style = isHeader 
-            ? 'border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600;'
-            : 'border: 1px solid #212529; padding: 0.75rem;';
-          tableHtml += `<${tag} style="${style}">${escapeHtml(cell)}</${tag}>`;
-        });
-        tableHtml += '</tr>';
-      });
-      tableHtml += '</tbody></table>';
-      processedLines.push(tableHtml);
+      processedLines.push(buildTableHTML(tableHeaders, tableRows, headerSeparatorFound));
     }
     
     return processedLines.join('\n');
+  };
+  
+  // Helper function to build table HTML with proper structure
+  const buildTableHTML = (headers, rows, hasHeaders) => {
+    // Determine number of columns from headers or first row
+    const numCols = headers.length > 0 ? headers.length : (rows.length > 0 ? rows[0].length : 0);
+    if (numCols === 0) return '';
+    
+    let tableHtml = '<table style="border-collapse: collapse; width: 100%; margin: 1rem 0; table-layout: fixed; border: 2px solid #212529;">';
+    
+    // Add headers if we have them
+    if (hasHeaders && headers.length > 0) {
+      tableHtml += '<thead><tr>';
+      headers.forEach((header, idx) => {
+        const colWidth = idx === 0 ? '20%' : `${80 / (headers.length - 1)}%`;
+        tableHtml += `<th style="border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600; text-align: left; width: ${colWidth}; word-wrap: break-word; overflow-wrap: break-word;">${escapeHtml(header)}</th>`;
+      });
+      tableHtml += '</tr></thead>';
+    }
+    
+    // Add body rows
+    tableHtml += '<tbody>';
+    const rowsToRender = hasHeaders && headers.length > 0 ? rows : rows;
+    rowsToRender.forEach(row => {
+      tableHtml += '<tr>';
+      // Ensure row has correct number of cells
+      const paddedRow = [...row];
+      while (paddedRow.length < numCols) {
+        paddedRow.push('');
+      }
+      paddedRow.slice(0, numCols).forEach((cell, idx) => {
+        const colWidth = idx === 0 ? '20%' : `${80 / (numCols - 1)}%`;
+        tableHtml += `<td style="border: 1px solid #212529; padding: 0.75rem; width: ${colWidth}; word-wrap: break-word; overflow-wrap: break-word; vertical-align: top;">${escapeHtml(cell)}</td>`;
+      });
+      tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+    
+    return tableHtml;
   };
   
   // Escape HTML to prevent XSS
@@ -2560,15 +2578,30 @@ function LessonContentManager() {
                             </div>
                           `;
                           
-                          // Add styles for tables
+                          // Add styles for tables - more specific and robust
                           const style = document.createElement('style');
                           style.textContent = `
+                            * {
+                              box-sizing: border-box !important;
+                            }
                             table {
                               border-collapse: collapse !important;
                               width: 100% !important;
                               margin: 1rem 0 !important;
                               page-break-inside: avoid !important;
                               border: 2px solid #212529 !important;
+                              table-layout: fixed !important;
+                              word-wrap: break-word !important;
+                            }
+                            thead {
+                              display: table-header-group !important;
+                            }
+                            tbody {
+                              display: table-row-group !important;
+                            }
+                            tr {
+                              display: table-row !important;
+                              page-break-inside: avoid !important;
                             }
                             th {
                               border: 2px solid #212529 !important;
@@ -2577,11 +2610,19 @@ function LessonContentManager() {
                               font-weight: 600 !important;
                               text-align: left !important;
                               font-size: 11pt !important;
+                              display: table-cell !important;
+                              vertical-align: top !important;
+                              word-wrap: break-word !important;
+                              overflow-wrap: break-word !important;
                             }
                             td {
                               border: 1px solid #212529 !important;
                               padding: 0.75rem !important;
                               font-size: 10pt !important;
+                              display: table-cell !important;
+                              vertical-align: top !important;
+                              word-wrap: break-word !important;
+                              overflow-wrap: break-word !important;
                             }
                             p {
                               margin: 0.5rem 0 !important;
@@ -2676,15 +2717,154 @@ function LessonContentManager() {
                         setGeneratingRubric(true);
                         setError(null);
                         
-                        // Convert rubric to PDF blob using html2pdf approach
-                        // For now, we'll create a text file and upload it
-                        // In a production environment, you'd want to use a proper PDF library
                         const rubricText = generatedRubric;
-                        const blob = new Blob([rubricText], { type: 'text/plain' });
+                        const assignmentTitle = title;
                         
-                        // Create a File object from the blob
-                        const fileName = `${title.trim().replace(/[^a-z0-9]/gi, '_')}_rubric_${Date.now()}.txt`;
-                        const file = new File([blob], fileName, { type: 'text/plain' });
+                        // Helper function to generate PDF blob
+                        const generatePDFBlob = () => {
+                          return new Promise((resolve, reject) => {
+                            try {
+                              const rubricHtml = formatRubricForDisplay(rubricText);
+                              
+                              // Create a temporary container for the PDF content
+                              const tempDiv = document.createElement('div');
+                              tempDiv.style.position = 'absolute';
+                              tempDiv.style.left = '-9999px';
+                              tempDiv.style.width = '210mm'; // A4 width
+                              tempDiv.style.padding = '20mm';
+                              tempDiv.style.fontFamily = 'Arial, sans-serif';
+                              tempDiv.style.fontSize = '12pt';
+                              tempDiv.style.color = '#212529';
+                              tempDiv.style.lineHeight = '1.6';
+                              tempDiv.style.backgroundColor = '#ffffff';
+                              
+                              tempDiv.innerHTML = `
+                                <div style="margin-bottom: 20px;">
+                                  <h1 style="color: #212529; border-bottom: 3px solid #212529; padding-bottom: 10px; margin-bottom: 20px; font-size: 24pt; margin-top: 0;">
+                                    Assignment Rubric: ${escapeHtml(assignmentTitle)}
+                                  </h1>
+                                </div>
+                                <div style="margin-top: 20px;">
+                                  ${rubricHtml}
+                                </div>
+                              `;
+                              
+                              // Add styles for tables - more specific and robust
+                              const style = document.createElement('style');
+                              style.textContent = `
+                                * {
+                                  box-sizing: border-box !important;
+                                }
+                                table {
+                                  border-collapse: collapse !important;
+                                  width: 100% !important;
+                                  margin: 1rem 0 !important;
+                                  page-break-inside: avoid !important;
+                                  border: 2px solid #212529 !important;
+                                  table-layout: fixed !important;
+                                  word-wrap: break-word !important;
+                                }
+                                thead {
+                                  display: table-header-group !important;
+                                }
+                                tbody {
+                                  display: table-row-group !important;
+                                }
+                                tr {
+                                  display: table-row !important;
+                                  page-break-inside: avoid !important;
+                                }
+                                th {
+                                  border: 2px solid #212529 !important;
+                                  padding: 0.75rem !important;
+                                  background-color: #f8f9fa !important;
+                                  font-weight: 600 !important;
+                                  text-align: left !important;
+                                  font-size: 11pt !important;
+                                  display: table-cell !important;
+                                  vertical-align: top !important;
+                                  word-wrap: break-word !important;
+                                  overflow-wrap: break-word !important;
+                                }
+                                td {
+                                  border: 1px solid #212529 !important;
+                                  padding: 0.75rem !important;
+                                  font-size: 10pt !important;
+                                  display: table-cell !important;
+                                  vertical-align: top !important;
+                                  word-wrap: break-word !important;
+                                  overflow-wrap: break-word !important;
+                                }
+                                p {
+                                  margin: 0.5rem 0 !important;
+                                  line-height: 1.6 !important;
+                                }
+                              `;
+                              tempDiv.appendChild(style);
+                              
+                              document.body.appendChild(tempDiv);
+                              
+                              // Configure html2pdf options
+                              const opt = {
+                                margin: [10, 10, 10, 10],
+                                image: { type: 'jpeg', quality: 0.98 },
+                                html2canvas: { 
+                                  scale: 2,
+                                  useCORS: true,
+                                  logging: false,
+                                  letterRendering: true,
+                                  backgroundColor: '#ffffff'
+                                },
+                                jsPDF: { 
+                                  unit: 'mm', 
+                                  format: 'a4', 
+                                  orientation: 'portrait' 
+                                },
+                                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                              };
+                              
+                              // Generate PDF blob
+                              window.html2pdf()
+                                .set(opt)
+                                .from(tempDiv)
+                                .outputPdf()
+                                .then((pdf) => {
+                                  // Get blob from jsPDF instance
+                                  const pdfBlob = pdf.output('blob');
+                                  document.body.removeChild(tempDiv);
+                                  resolve(pdfBlob);
+                                })
+                                .catch((err) => {
+                                  console.error('Error generating PDF:', err);
+                                  if (document.body.contains(tempDiv)) {
+                                    document.body.removeChild(tempDiv);
+                                  }
+                                  reject(err);
+                                });
+                            } catch (err) {
+                              console.error('Error in PDF generation:', err);
+                              reject(err);
+                            }
+                          });
+                        };
+                        
+                        // Load html2pdf.js dynamically if not already loaded
+                        if (!window.html2pdf) {
+                          const script = document.createElement('script');
+                          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                          await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = () => reject(new Error('Failed to load PDF library. Please check your internet connection.'));
+                            document.head.appendChild(script);
+                          });
+                        }
+                        
+                        // Generate PDF blob
+                        const pdfBlob = await generatePDFBlob();
+                        
+                        // Create a File object from the PDF blob
+                        const fileName = `${title.trim().replace(/[^a-z0-9]/gi, '_')}_rubric_${Date.now()}.pdf`;
+                        const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
                         
                         // Upload to Supabase Storage
                         const bucketName = 'course-content';
