@@ -17,6 +17,12 @@ import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import QuizBuilder from './QuizBuilder';
 import { generateAssignmentRubric } from '../../services/aiLessonService';
+import html2pdf from 'html2pdf.js';
+
+// Ensure html2pdf is available globally for compatibility
+if (typeof window !== 'undefined' && !window.html2pdf) {
+  window.html2pdf = html2pdf;
+}
 
 function LessonContentManager() {
   const { lessonId } = useParams();
@@ -2654,7 +2660,7 @@ function LessonContentManager() {
                           };
                           
                           // Generate and download PDF
-                          window.html2pdf()
+                          html2pdf()
                             .set(opt)
                             .from(tempDiv)
                             .save()
@@ -2676,20 +2682,8 @@ function LessonContentManager() {
                         }
                       };
                       
-                      // Load html2pdf.js dynamically if not already loaded
-                      if (!window.html2pdf) {
-                        const script = document.createElement('script');
-                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-                        script.onload = () => {
-                          generatePDF();
-                        };
-                        script.onerror = () => {
-                          setError('Failed to load PDF library. Please check your internet connection.');
-                        };
-                        document.head.appendChild(script);
-                      } else {
-                        generatePDF();
-                      }
+                      // Generate PDF using imported library
+                      generatePDF();
                     } catch (err) {
                       console.error('Error setting up PDF generation:', err);
                       setError('Failed to generate PDF. Please try again.');
@@ -2824,7 +2818,7 @@ function LessonContentManager() {
                               };
                               
                               // Generate PDF blob
-                              window.html2pdf()
+                              html2pdf()
                                 .set(opt)
                                 .from(tempDiv)
                                 .outputPdf()
@@ -2848,18 +2842,7 @@ function LessonContentManager() {
                           });
                         };
                         
-                        // Load html2pdf.js dynamically if not already loaded
-                        if (!window.html2pdf) {
-                          const script = document.createElement('script');
-                          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
-                          await new Promise((resolve, reject) => {
-                            script.onload = resolve;
-                            script.onerror = () => reject(new Error('Failed to load PDF library. Please check your internet connection.'));
-                            document.head.appendChild(script);
-                          });
-                        }
-                        
-                        // Generate PDF blob
+                        // Generate PDF blob using imported library
                         const pdfBlob = await generatePDFBlob();
                         
                         // Create a File object from the PDF blob

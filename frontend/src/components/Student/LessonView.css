@@ -1,10 +1,13 @@
 /* Lesson View Enhanced Styles for 12-17 Year Olds */
+/* Modern, vibrant, and engaging design for students */
 
 /* Override any Bootstrap or App container backgrounds */
 .App .lesson-view-container,
 body .lesson-view-container,
 html .lesson-view-container {
-  background: transparent !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 100%) !important;
+  background-size: 400% 400% !important;
+  animation: gradientShift 15s ease infinite !important;
   min-height: 100vh !important;
   width: 100vw !important;
   max-width: 100vw !important;
@@ -17,6 +20,12 @@ html .lesson-view-container {
   margin-left: calc(-50vw + 50%) !important;
   margin-right: calc(-50vw + 50%) !important;
   overflow-x: hidden;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* Remove any spacing from parent containers */
@@ -93,15 +102,16 @@ body .container-fluid .lesson-view-container {
 /* .lesson-view-container { background: linear-gradient(135deg, #10b981 0%, #14b8a6 100%) !important; } */
 
 .lesson-hero-header {
-  background: #1e7a14;
-  padding: 5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  padding: 4rem 5rem;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   color: white;
   position: relative;
   overflow: hidden;
   z-index: 1;
-  border-radius: 0 0 30px 30px;
+  border-radius: 0 0 40px 40px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 }
 
 .lesson-hero-header::before {
@@ -111,8 +121,30 @@ body .container-fluid .lesson-view-container {
   left: 0;
   right: 0;
   bottom: 0;
-  background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
-  opacity: 0.3;
+  background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="1"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+  opacity: 0.4;
+  animation: gridMove 20s linear infinite;
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(40px, 40px); }
+}
+
+.lesson-hero-header::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+  animation: pulse 8s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.8; }
 }
 
 .hero-content {
@@ -121,68 +153,146 @@ body .container-fluid .lesson-view-container {
 }
 
 .back-button {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.25) !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
   color: white !important;
-  backdrop-filter: blur(10px);
-  transition: all 0.3s ease;
+  backdrop-filter: blur(15px);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 }
 
 .back-button:hover {
-  background: rgba(255, 255, 255, 0.3) !important;
-  transform: translateX(-5px);
+  background: rgba(255, 255, 255, 0.35) !important;
+  transform: translateX(-8px) scale(1.05);
   color: white !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 .lesson-title {
-  font-size: 3rem;
-  font-weight: 700;
-  margin: 1rem 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+  font-size: 3.5rem;
+  font-weight: 800;
+  margin: 1.5rem 0;
+  text-shadow: 3px 3px 8px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 255, 255, 0.2);
   color: white !important;
+  letter-spacing: -0.5px;
+  animation: titleFadeIn 0.8s ease-out;
+}
+
+@keyframes titleFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .lesson-subtitle {
-  font-size: 1.2rem;
-  opacity: 1;
+  font-size: 1.3rem;
+  opacity: 0.95;
   margin-bottom: 0;
   color: white !important;
+  font-weight: 500;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .hero-badge .badge {
   color: white !important;
-  background-color: rgba(255, 255, 255, 0.2) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2)) !important;
+  border: 2px solid rgba(255, 255, 255, 0.4) !important;
+  padding: 0.5rem 1.25rem !important;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.hero-badge .badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .progress-section {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(10px);
-  padding: 1.5rem;
-  border-radius: 15px;
-  margin-top: 2rem;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  padding: 2rem;
+  border-radius: 20px;
+  margin-top: 2.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.progress-section:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
 .progress-label {
   color: white;
-  font-weight: 600;
-  font-size: 1.1rem;
+  font-weight: 700;
+  font-size: 1.2rem;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.progress-label svg {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
 }
 
 .progress-text {
   color: white;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 1.1rem;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .progress-bar-custom {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.25) !important;
+  border-radius: 15px;
   overflow: hidden;
+  height: 16px !important;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .progress-bar-custom .progress-bar {
-  background: linear-gradient(90deg, #4ade80 0%, #22c55e 100%) !important;
-  box-shadow: 0 2px 10px rgba(34, 197, 94, 0.3);
+  background: linear-gradient(90deg, #4ade80 0%, #22c55e 50%, #16a34a 100%) !important;
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-custom .progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 .lesson-content-container {
@@ -210,38 +320,77 @@ body .container-fluid .lesson-view-container {
 .content-section-card,
 .sidebar-card {
   border: none;
-  border-radius: 15px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
   background: white !important;
+  position: relative;
+}
+
+.lesson-info-card::before,
+.lesson-section-card::before,
+.content-section-card::before,
+.sidebar-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #4facfe);
+  background-size: 200% 100%;
+  animation: gradientMove 3s ease infinite;
+}
+
+@keyframes gradientMove {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .lesson-info-card:hover,
 .lesson-section-card:hover,
 .sidebar-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  transform: translateY(-8px) scale(1.01);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .info-item {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 10px;
-  transition: all 0.3s ease;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-radius: 15px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .info-item:hover {
-  background: #e9ecef;
-  transform: translateX(5px);
+  background: linear-gradient(135deg, #e9ecef 0%, #f8f9fa 100%);
+  transform: translateX(8px) scale(1.02);
+  border-color: #667eea;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
 }
 
 .info-icon {
-  font-size: 1.5rem;
-  min-width: 30px;
+  font-size: 1.75rem;
+  min-width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  padding: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.info-item:hover .info-icon {
+  transform: scale(1.1) rotate(5deg);
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
 }
 
 .info-label {
@@ -261,12 +410,18 @@ body .container-fluid .lesson-view-container {
 
 /* Section Styles */
 .section-title {
-  font-size: 1.5rem;
-  font-weight: 700;
+  font-size: 1.75rem;
+  font-weight: 800;
   margin-bottom: 1.5rem;
   color: #212529;
   display: flex;
   align-items: center;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
 }
 
 .topic-text {
@@ -285,43 +440,111 @@ body .container-fluid .lesson-view-container {
 .objective-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 10px;
-  border-left: 4px solid #22c55e;
-  transition: all 0.3s ease;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  border-radius: 15px;
+  border-left: 5px solid #22c55e;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.objective-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.objective-item:hover::before {
+  left: 100%;
 }
 
 .objective-item:hover {
-  background: #e9ecef;
-  transform: translateX(5px);
+  background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%);
+  transform: translateX(10px) scale(1.02);
+  box-shadow: 0 4px 15px rgba(34, 197, 94, 0.2);
+  border-left-width: 6px;
 }
 
 .objective-icon {
   color: #22c55e;
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   margin-top: 0.2rem;
   flex-shrink: 0;
+  background: rgba(34, 197, 94, 0.1);
+  padding: 0.5rem;
+  border-radius: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.objective-item:hover .objective-icon {
+  transform: scale(1.15) rotate(10deg);
+  background: rgba(34, 197, 94, 0.2);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
 /* Homework Card */
 .homework-card {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 2px solid #f59e0b !important;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fcd34d 100%);
+  border: 3px solid #f59e0b !important;
+  box-shadow: 0 8px 30px rgba(245, 158, 11, 0.3) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.homework-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  animation: homeworkGlow 4s ease-in-out infinite;
+}
+
+@keyframes homeworkGlow {
+  0%, 100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.homework-card:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 12px 40px rgba(245, 158, 11, 0.4) !important;
 }
 
 .homework-icon {
-  width: 50px;
-  height: 50px;
-  background: #f59e0b;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: white;
-  border-radius: 12px;
+  border-radius: 15px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   margin-right: 1rem;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+  transition: all 0.3s ease;
+  position: relative;
+  z-index: 1;
+}
+
+.homework-card:hover .homework-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
 }
 
 .homework-text {
@@ -332,15 +555,36 @@ body .container-fluid .lesson-view-container {
 
 /* Content Section */
 .section-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%) !important;
+  background-size: 200% 100% !important;
   color: white !important;
   border: none !important;
-  padding: 1.5rem !important;
-  transition: all 0.3s ease;
+  padding: 1.75rem !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.section-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.section-header:hover::before {
+  left: 100%;
 }
 
 .section-header:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%) !important;
+  background-position: 100% 50% !important;
+  transform: scale(1.02);
+  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
 }
 
 .section-header h5 {
@@ -349,10 +593,27 @@ body .container-fluid .lesson-view-container {
 }
 
 .content-item {
-  border-bottom: 1px solid #e9ecef;
-  padding: 1.5rem;
-  transition: all 0.3s ease;
+  border-bottom: 2px solid #e9ecef;
+  padding: 2rem;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   background: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.content-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.1), transparent);
+  transition: width 0.3s ease;
+}
+
+.content-item:hover::before {
+  width: 4px;
 }
 
 .content-item:last-child {
@@ -360,12 +621,40 @@ body .container-fluid .lesson-view-container {
 }
 
 .content-item:hover {
-  background: #f8f9fa;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  transform: translateX(5px);
+  box-shadow: -4px 0 15px rgba(102, 126, 234, 0.1);
 }
 
 .content-item.completed {
-  background: #f0fdf4;
-  border-left: 4px solid #22c55e;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  border-left: 5px solid #22c55e;
+  position: relative;
+}
+
+.content-item.completed::after {
+  content: '✓';
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  width: 30px;
+  height: 30px;
+  background: #22c55e;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  animation: checkmarkPop 0.5s ease;
+}
+
+@keyframes checkmarkPop {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
 }
 
 .content-item-header {
@@ -380,14 +669,39 @@ body .container-fluid .lesson-view-container {
 }
 
 .number-badge {
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.1rem;
-  font-weight: 700;
-  border-radius: 10px;
+  font-size: 1.2rem;
+  font-weight: 800;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.number-badge::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.number-badge:hover::before {
+  opacity: 1;
+}
+
+.number-badge:hover {
+  transform: scale(1.15) rotate(5deg);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 .content-title-section {
@@ -414,14 +728,39 @@ body .container-fluid .lesson-view-container {
 }
 
 .complete-btn {
-  border-radius: 20px;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  border-radius: 25px;
+  padding: 0.6rem 1.5rem;
+  font-weight: 700;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.9rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.complete-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.complete-btn:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .complete-btn:hover {
-  transform: scale(1.05);
+  transform: scale(1.08) translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
 }
 
 .content-item-body {
@@ -430,10 +769,35 @@ body .container-fluid .lesson-view-container {
 
 /* Info Boxes */
 .info-box {
-  padding: 1.25rem;
-  border-radius: 10px;
-  margin-bottom: 1rem;
-  border-left: 4px solid;
+  padding: 1.5rem;
+  border-radius: 15px;
+  margin-bottom: 1.25rem;
+  border-left: 5px solid;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.info-box::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.info-box:hover::before {
+  left: 100%;
+}
+
+.info-box:hover {
+  transform: translateX(5px) scale(1.02);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  border-left-width: 6px;
 }
 
 .learning-outcomes {
@@ -502,17 +866,39 @@ body .container-fluid .lesson-view-container {
 }
 
 .action-button {
-  border-radius: 25px;
-  padding: 0.75rem 2rem;
-  font-weight: 600;
+  border-radius: 30px;
+  padding: 0.875rem 2.25rem;
+  font-weight: 700;
   font-size: 1rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.action-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s ease, height 0.6s ease;
+}
+
+.action-button:hover::after {
+  width: 400px;
+  height: 400px;
 }
 
 .action-button:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 }
 
 /* Sidebar */
@@ -559,16 +945,54 @@ body .container-fluid .lesson-view-container {
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(30px) scale(0.95);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
 .content-item {
-  animation: fadeIn 0.5s ease-out;
+  animation: fadeIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) backwards;
+}
+
+.content-item:nth-child(odd) {
+  animation-delay: 0.1s;
+}
+
+.content-item:nth-child(even) {
+  animation-delay: 0.2s;
+}
+
+.lesson-info-card {
+  animation: slideInLeft 0.6s ease-out;
+}
+
+.sidebar-card {
+  animation: slideInRight 0.6s ease-out;
 }
 
 /* Scrollbar Styling */
