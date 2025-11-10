@@ -237,6 +237,12 @@ function LessonView() {
       case 'ASSIGNMENT': return 'assignment';
       case 'DOCUMENT':
       case 'FILE': return 'document';
+      case 'LEARNING_ACTIVITIES': return 'activity';
+      case 'LEARNING_OUTCOMES': return 'outcome';
+      case 'KEY_CONCEPTS': return 'concept';
+      case 'REFLECTION_QUESTIONS': return 'reflection';
+      case 'DISCUSSION_PROMPTS': return 'discussion';
+      case 'SUMMARY': return 'summary';
       default: return '';
     }
   };
@@ -249,6 +255,12 @@ function LessonView() {
       case 'ASSIGNMENT': return <FaTasks />;
       case 'DOCUMENT': return <FaFileAlt />;
       case 'FILE': return <FaFileAlt />;
+      case 'LEARNING_ACTIVITIES': return <FaRocket />;
+      case 'LEARNING_OUTCOMES': return <FaGraduationCap />;
+      case 'KEY_CONCEPTS': return <FaLightbulb />;
+      case 'REFLECTION_QUESTIONS': return <FaQuestionCircle />;
+      case 'DISCUSSION_PROMPTS': return <FaComments />;
+      case 'SUMMARY': return <FaBook />;
       default: return <FaBook />;
     }
   };
@@ -496,7 +508,36 @@ function LessonView() {
                           </div>
                         )}
                         
-                        {contentItem.learning_outcomes && (
+                        {/* Text-only content types (Learning Activities, Learning Outcomes, etc.) */}
+                        {['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
+                          'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) && (
+                          <div className="classwork-text-content" style={{ 
+                            marginBottom: '1rem', 
+                            padding: '1rem', 
+                            backgroundColor: '#f8f9fa', 
+                            borderRadius: '8px',
+                            border: '1px solid #e9ecef'
+                          }}>
+                            <div style={{ 
+                              whiteSpace: 'pre-wrap', 
+                              fontSize: '0.95rem', 
+                              lineHeight: '1.6',
+                              color: '#212529'
+                            }}>
+                              {contentItem.content_type === 'LEARNING_ACTIVITIES' && contentItem.learning_activities}
+                              {contentItem.content_type === 'LEARNING_OUTCOMES' && contentItem.learning_outcomes}
+                              {contentItem.content_type === 'KEY_CONCEPTS' && contentItem.key_concepts}
+                              {contentItem.content_type === 'REFLECTION_QUESTIONS' && contentItem.reflection_questions}
+                              {contentItem.content_type === 'DISCUSSION_PROMPTS' && contentItem.discussion_prompts}
+                              {contentItem.content_type === 'SUMMARY' && contentItem.summary}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Learning Outcomes (for non-text-only content types) */}
+                        {!['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
+                            'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) && 
+                         contentItem.learning_outcomes && (
                           <div>
                             <ul className="classwork-objectives">
                               {contentItem.learning_outcomes.split('\n').filter(obj => obj.trim()).map((obj, idx) => (
