@@ -6,7 +6,8 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FaUsers, FaBook, FaUserGraduate, FaChalkboardTeacher,
-  FaClipboardList, FaCalendarAlt, FaArrowLeft, FaSearch
+  FaClipboardList, FaCalendarAlt, FaArrowLeft, FaSearch,
+  FaChartLine
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -402,13 +403,23 @@ function TeacherClassManagement() {
                                 {cs.subject_offering?.subject?.subject_code || ''}
                               </small>
                             </div>
-                            <Button
-                              variant="outline-primary"
-                              size="sm"
-                              onClick={() => navigate(`/teacher/class-subjects/${cs.class_subject_id}/lessons`)}
-                            >
-                              Manage
-                            </Button>
+                            <div className="d-flex gap-2">
+                              <Button
+                                variant="outline-primary"
+                                size="sm"
+                                onClick={() => navigate(`/teacher/class-subjects/${cs.class_subject_id}/lessons`)}
+                              >
+                                Manage
+                              </Button>
+                              <Button
+                                variant="outline-success"
+                                size="sm"
+                                onClick={() => navigate(`/teacher/class-subjects/${cs.class_subject_id}/gradebook`)}
+                              >
+                                <FaChartLine className="me-1" />
+                                Gradebook
+                              </Button>
+                            </div>
                           </div>
                         </ListGroup.Item>
                       ))}
@@ -539,6 +550,13 @@ function TeacherClassManagement() {
                       >
                         <FaBook className="me-2" />
                         Manage Lessons
+                      </Button>
+                      <Button
+                        variant="success"
+                        onClick={() => navigate(`/teacher/class-subjects/${cs.class_subject_id}/gradebook`)}
+                      >
+                        <FaChartLine className="me-2" />
+                        View Gradebook
                       </Button>
                       <Button
                         variant="outline-secondary"
