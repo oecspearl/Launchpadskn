@@ -7,12 +7,11 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { 
   FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
   FaBook, FaClipboardList, FaUser, FaCheckCircle, FaInfoCircle, FaClock as FaClockIcon,
-  FaClipboardCheck
+  FaClipboardCheck, FaTasks, FaFilePdf, FaDownload, FaExternalLinkAlt
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
-import { FaDownload, FaExternalLinkAlt } from 'react-icons/fa';
 
 function LessonView() {
   const { lessonId } = useParams();
@@ -509,6 +508,83 @@ function LessonView() {
                                 </div>
                               )}
                               
+                              {/* Assignment PDFs */}
+                              {contentItem.content_type === 'ASSIGNMENT' && (
+                                <div className="mb-3 p-3 bg-warning bg-opacity-10 rounded border border-warning">
+                                  <h6 className="mb-3">
+                                    <FaTasks className="me-2" />
+                                    Assignment Materials
+                                  </h6>
+                                  <div className="d-flex flex-column gap-2">
+                                    {contentItem.assignment_details_file_name && (
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={async () => {
+                                          try {
+                                            const { data, error } = await supabase.storage
+                                              .from('course-content')
+                                              .createSignedUrl(contentItem.assignment_details_file_path, 3600);
+                                            
+                                            if (error) throw error;
+                                            if (data?.signedUrl) {
+                                              window.open(data.signedUrl, '_blank');
+                                            }
+                                          } catch (err) {
+                                            console.error('Error opening assignment details:', err);
+                                            alert('Unable to open assignment details. Please contact your teacher.');
+                                          }
+                                        }}
+                                        className="d-flex align-items-center justify-content-start"
+                                      >
+                                        <FaFilePdf className="me-2" />
+                                        Download Assignment Details
+                                        {contentItem.assignment_details_file_size && (
+                                          <small className="ms-2">
+                                            ({formatFileSize(contentItem.assignment_details_file_size)})
+                                          </small>
+                                        )}
+                                      </Button>
+                                    )}
+                                    {contentItem.assignment_rubric_file_name && (
+                                      <Button
+                                        variant="outline-success"
+                                        size="sm"
+                                        onClick={async () => {
+                                          try {
+                                            const { data, error } = await supabase.storage
+                                              .from('course-content')
+                                              .createSignedUrl(contentItem.assignment_rubric_file_path, 3600);
+                                            
+                                            if (error) throw error;
+                                            if (data?.signedUrl) {
+                                              window.open(data.signedUrl, '_blank');
+                                            }
+                                          } catch (err) {
+                                            console.error('Error opening assignment rubric:', err);
+                                            alert('Unable to open assignment rubric. Please contact your teacher.');
+                                          }
+                                        }}
+                                        className="d-flex align-items-center justify-content-start"
+                                      >
+                                        <FaFilePdf className="me-2" />
+                                        Download Grading Rubric
+                                        {contentItem.assignment_rubric_file_size && (
+                                          <small className="ms-2">
+                                            ({formatFileSize(contentItem.assignment_rubric_file_size)})
+                                          </small>
+                                        )}
+                                      </Button>
+                                    )}
+                                    {!contentItem.assignment_details_file_name && !contentItem.assignment_rubric_file_name && (
+                                      <p className="text-muted small mb-0">
+                                        No assignment materials uploaded yet.
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Action Buttons */}
                               <div className="d-flex gap-2 flex-wrap">
                                 {contentItem.content_type === 'QUIZ' && quizStatuses[contentItem.content_id] ? (
@@ -530,6 +606,16 @@ function LessonView() {
                                   >
                                     <FaExternalLinkAlt className="me-2" />
                                     Open Quiz
+                                  </a>
+                                ) : contentItem.content_type === 'ASSIGNMENT' && contentItem.url ? (
+                                  <a
+                                    href={contentItem.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn btn-primary btn-sm text-decoration-none d-flex align-items-center"
+                                  >
+                                    <FaExternalLinkAlt className="me-2" />
+                                    Open Assignment Link
                                   </a>
                                 ) : contentItem.url ? (
                                   <a

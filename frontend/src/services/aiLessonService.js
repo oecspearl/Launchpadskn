@@ -871,8 +871,109 @@ Remember: Use ONLY the provided information. Make the lesson plan practical, eng
   }
 };
 
+/**
+ * Generate an assignment rubric using AI
+ * @param {Object} params - Rubric generation parameters
+ * @param {string} params.assignmentTitle - Title of the assignment
+ * @param {string} params.assignmentDescription - Description of the assignment
+ * @param {string} params.subject - Subject name
+ * @param {string} params.gradeLevel - Grade level or form
+ * @param {number} params.totalPoints - Total points for the assignment (optional)
+ * @param {Array} params.criteria - Array of criteria to include in rubric (optional)
+ * @returns {Promise<string>} Generated rubric text
+ */
+export const generateAssignmentRubric = async ({
+  assignmentTitle,
+  assignmentDescription,
+  subject,
+  gradeLevel,
+  totalPoints = 100,
+  criteria = []
+}) => {
+  if (!API_KEY) {
+    throw new Error('OpenAI API key is not configured. Please set REACT_APP_OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!assignmentTitle || !subject || !gradeLevel) {
+    throw new Error('Missing required parameters: assignmentTitle, subject, and gradeLevel are required.');
+  }
+
+  const criteriaText = criteria.length > 0 
+    ? `\nSpecific criteria to include:\n${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}`
+    : '';
+
+  const prompt = `Generate a comprehensive grading rubric for an assignment with the following details:
+
+Assignment Title: ${assignmentTitle}
+Subject: ${subject}
+Grade Level: ${gradeLevel}
+Total Points: ${totalPoints}
+${assignmentDescription ? `Assignment Description: ${assignmentDescription}` : ''}${criteriaText}
+
+Create a detailed rubric that includes:
+1. Clear evaluation criteria (at least 4-5 criteria relevant to the assignment)
+2. Performance levels (e.g., Excellent, Good, Satisfactory, Needs Improvement, or use point-based levels)
+3. Descriptions for each performance level for each criterion
+4. Point allocation for each criterion (should total ${totalPoints} points)
+5. Clear, specific, and measurable standards
+
+Format the rubric as a well-structured document that can be used directly for grading. Use clear headings and organize it in a table or structured format.
+
+Respond with ONLY the rubric content, formatted clearly and professionally. Do not include any introductory text, explanations, or markdown code blocks.`;
+
+  try {
+    console.log('[AI Service] Generating assignment rubric...');
+    const requestBody = {
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert educational assessment specialist. Generate clear, detailed, and professional grading rubrics for assignments. Format your response as a well-structured rubric document that teachers can use directly for grading.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.5, // Moderate temperature for balanced creativity and consistency
+      max_tokens: 2000
+    };
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No response content received from AI');
+    }
+
+    // Clean up the content (remove markdown code blocks if present)
+    let rubric = content.trim();
+    rubric = rubric.replace(/```(?:markdown|text)?\s*/g, '').replace(/```\s*/g, '').trim();
+
+    return rubric;
+  } catch (error) {
+    console.error('[AI Service] Error generating rubric:', error);
+    throw error;
+  }
+};
+
 export default {
   generateLessonPlan,
-  generateEnhancedLessonPlan
+  generateEnhancedLessonPlan,
+  generateAssignmentRubric
 };
 

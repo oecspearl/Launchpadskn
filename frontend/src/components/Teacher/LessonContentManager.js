@@ -9,12 +9,14 @@ import {
   FaTrash, FaEdit, FaPlus, FaDownload, FaExternalLinkAlt, FaBook, FaEye,
   FaArrowUp, FaArrowDown, FaGripVertical, FaClock, FaCheckCircle, FaInfoCircle,
   FaGraduationCap, FaLightbulb, FaQuestionCircle, FaComments, FaClipboardCheck,
-  FaClipboardList, FaTasks, FaFileSignature, FaPoll, FaProjectDiagram
+  FaClipboardList, FaTasks, FaFileSignature, FaPoll, FaProjectDiagram,
+  FaFilePdf
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import QuizBuilder from './QuizBuilder';
+import { generateAssignmentRubric } from '../../services/aiLessonService';
 
 function LessonContentManager() {
   const { lessonId } = useParams();
@@ -52,12 +54,46 @@ function LessonContentManager() {
   const [isRequired, setIsRequired] = useState(true);
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
+  const [assignmentDetailsFile, setAssignmentDetailsFile] = useState(null);
+  const [assignmentRubricFile, setAssignmentRubricFile] = useState(null);
+  const [lessonData, setLessonData] = useState(null);
+  const [generatedRubric, setGeneratedRubric] = useState(null);
+  const [generatingRubric, setGeneratingRubric] = useState(false);
+  const [showRubricModal, setShowRubricModal] = useState(false);
   
   useEffect(() => {
     if (lessonId) {
       fetchContent();
+      fetchLessonData();
     }
   }, [lessonId]);
+
+  const fetchLessonData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select(`
+          *,
+          class_subject:class_subjects(
+            *,
+            subject_offering:subject_form_offerings(
+              subject:subjects(*)
+            ),
+            class:classes(
+              *,
+              form:forms(*)
+            )
+          )
+        `)
+        .eq('lesson_id', lessonId)
+        .single();
+      
+      if (error) throw error;
+      setLessonData(data);
+    } catch (err) {
+      console.error('Error fetching lesson data:', err);
+    }
+  };
 
   // Preload signed URLs for images stored in Supabase Storage
   useEffect(() => {
@@ -152,6 +188,8 @@ function LessonContentManager() {
       setIsRequired(item.is_required !== false);
       setEstimatedMinutes(item.estimated_minutes != null ? String(item.estimated_minutes) : '');
       setSelectedFile(null);
+      setAssignmentDetailsFile(null);
+      setAssignmentRubricFile(null);
     } else {
       setEditingContent(null);
       setContentType('FILE');
@@ -170,6 +208,8 @@ function LessonContentManager() {
       setIsRequired(true);
       setEstimatedMinutes('');
       setSelectedFile(null);
+      setAssignmentDetailsFile(null);
+      setAssignmentRubricFile(null);
     }
     setShowModal(true);
     setError(null);
@@ -307,6 +347,70 @@ function LessonContentManager() {
         finalUrl = editingContent.url || finalUrl;
       }
       
+      // Handle assignment details PDF upload
+      let assignmentDetailsFilePath = null;
+      let assignmentDetailsFileName = null;
+      let assignmentDetailsFileSize = null;
+      let assignmentDetailsMimeType = null;
+      
+      if (contentType === 'ASSIGNMENT' && assignmentDetailsFile) {
+        const bucketName = 'course-content';
+        const timestamp = Date.now();
+        const sanitizedFileName = assignmentDetailsFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        assignmentDetailsFilePath = `assignments/${lessonId}/details/${timestamp}-${sanitizedFileName}`;
+        
+        const { error: detailsUploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(assignmentDetailsFilePath, assignmentDetailsFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (detailsUploadError) throw detailsUploadError;
+        
+        assignmentDetailsFileName = assignmentDetailsFile.name;
+        assignmentDetailsFileSize = assignmentDetailsFile.size;
+        assignmentDetailsMimeType = assignmentDetailsFile.type;
+      } else if (contentType === 'ASSIGNMENT' && editingContent) {
+        // Keep existing assignment details file info if editing and no new file
+        assignmentDetailsFilePath = editingContent.assignment_details_file_path;
+        assignmentDetailsFileName = editingContent.assignment_details_file_name;
+        assignmentDetailsFileSize = editingContent.assignment_details_file_size;
+        assignmentDetailsMimeType = editingContent.assignment_details_mime_type;
+      }
+      
+      // Handle assignment rubric PDF upload
+      let assignmentRubricFilePath = null;
+      let assignmentRubricFileName = null;
+      let assignmentRubricFileSize = null;
+      let assignmentRubricMimeType = null;
+      
+      if (contentType === 'ASSIGNMENT' && assignmentRubricFile) {
+        const bucketName = 'course-content';
+        const timestamp = Date.now();
+        const sanitizedFileName = assignmentRubricFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+        assignmentRubricFilePath = `assignments/${lessonId}/rubric/${timestamp}-${sanitizedFileName}`;
+        
+        const { error: rubricUploadError } = await supabase.storage
+          .from(bucketName)
+          .upload(assignmentRubricFilePath, assignmentRubricFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
+        
+        if (rubricUploadError) throw rubricUploadError;
+        
+        assignmentRubricFileName = assignmentRubricFile.name;
+        assignmentRubricFileSize = assignmentRubricFile.size;
+        assignmentRubricMimeType = assignmentRubricFile.type;
+      } else if (contentType === 'ASSIGNMENT' && editingContent) {
+        // Keep existing assignment rubric file info if editing and no new file
+        assignmentRubricFilePath = editingContent.assignment_rubric_file_path;
+        assignmentRubricFileName = editingContent.assignment_rubric_file_name;
+        assignmentRubricFileSize = editingContent.assignment_rubric_file_size;
+        assignmentRubricMimeType = editingContent.assignment_rubric_mime_type;
+      }
+      
       // Get the next sequence order if creating new content
       let sequenceOrder = 0;
       if (!editingContent) {
@@ -348,7 +452,16 @@ function LessonContentManager() {
         estimated_minutes: isLearningContent ? null : (estimatedMinutes ? parseInt(estimatedMinutes) : null),
         sequence_order: sequenceOrder,
         is_published: true,
-        uploaded_by: user.user_id || user.userId
+        uploaded_by: user.user_id || user.userId,
+        // Assignment PDF fields
+        assignment_details_file_path: contentType === 'ASSIGNMENT' ? assignmentDetailsFilePath : null,
+        assignment_details_file_name: contentType === 'ASSIGNMENT' ? assignmentDetailsFileName : null,
+        assignment_details_file_size: contentType === 'ASSIGNMENT' ? assignmentDetailsFileSize : null,
+        assignment_details_mime_type: contentType === 'ASSIGNMENT' ? assignmentDetailsMimeType : null,
+        assignment_rubric_file_path: contentType === 'ASSIGNMENT' ? assignmentRubricFilePath : null,
+        assignment_rubric_file_name: contentType === 'ASSIGNMENT' ? assignmentRubricFileName : null,
+        assignment_rubric_file_size: contentType === 'ASSIGNMENT' ? assignmentRubricFileSize : null,
+        assignment_rubric_mime_type: contentType === 'ASSIGNMENT' ? assignmentRubricMimeType : null
       };
       
       if (editingContent) {
@@ -382,6 +495,18 @@ function LessonContentManager() {
           updateData.file_name = updateFields.file_name;
           updateData.file_size = updateFields.file_size;
           updateData.mime_type = updateFields.mime_type;
+        }
+        
+        // Include assignment PDF fields if content type is ASSIGNMENT
+        if (contentType === 'ASSIGNMENT') {
+          updateData.assignment_details_file_path = updateFields.assignment_details_file_path;
+          updateData.assignment_details_file_name = updateFields.assignment_details_file_name;
+          updateData.assignment_details_file_size = updateFields.assignment_details_file_size;
+          updateData.assignment_details_mime_type = updateFields.assignment_details_mime_type;
+          updateData.assignment_rubric_file_path = updateFields.assignment_rubric_file_path;
+          updateData.assignment_rubric_file_name = updateFields.assignment_rubric_file_name;
+          updateData.assignment_rubric_file_size = updateFields.assignment_rubric_file_size;
+          updateData.assignment_rubric_mime_type = updateFields.assignment_rubric_mime_type;
         }
         
         console.log('Updating content with data:', updateData);
@@ -1118,6 +1243,8 @@ function LessonContentManager() {
                   setSelectedFile(null);
                   setUrl('');
                   setContentText('');
+                  setAssignmentDetailsFile(null);
+                  setAssignmentRubricFile(null);
                 }}
                 required
               >
@@ -1195,21 +1322,25 @@ function LessonContentManager() {
               </Form.Group>
             ) : (
               <Form.Group className="mb-3">
-                <Form.Label>URL {contentType === 'QUIZ' ? '(Optional - or create quiz in-app)' : '*'}</Form.Label>
+                <Form.Label>URL {
+                  contentType === 'QUIZ' ? '(Optional - or create quiz in-app)' :
+                  contentType === 'ASSIGNMENT' ? '(Optional)' :
+                  '*'
+                }</Form.Label>
                 <Form.Control
                   type="url"
                   value={url || ''}
                   onChange={(e) => setUrl(e.target.value || '')}
                   placeholder={
                     contentType === 'QUIZ' ? "External Quiz URL (e.g., Google Forms, Kahoot, Quizizz) - OR create quiz in-app after saving" :
-                    contentType === 'ASSIGNMENT' ? "Assignment URL (e.g., Google Classroom, assignment link)" :
+                    contentType === 'ASSIGNMENT' ? "Assignment URL (e.g., Google Classroom, assignment link) - Optional" :
                     contentType === 'TEST' ? "Test URL (e.g., test platform link)" :
                     contentType === 'EXAM' ? "Exam URL (e.g., exam platform link)" :
                     contentType === 'PROJECT' ? "Project URL (e.g., project description or submission link)" :
                     contentType === 'SURVEY' ? "Survey URL (e.g., Google Forms, SurveyMonkey)" :
                     "https://..."
                   }
-                  required
+                  required={contentType !== 'QUIZ' && contentType !== 'ASSIGNMENT'}
                 />
                 {contentType === 'QUIZ' && (
                   <>
@@ -1224,7 +1355,7 @@ function LessonContentManager() {
                 )}
                 {contentType === 'ASSIGNMENT' && (
                   <Form.Text className="text-muted">
-                    Enter the URL to your assignment (Google Classroom, assignment platform, or submission link)
+                    Optionally enter a URL to your assignment (Google Classroom, assignment platform, or submission link). You can also upload assignment details and rubric PDFs below.
                   </Form.Text>
                 )}
                 {contentType === 'TEST' && (
@@ -1248,6 +1379,140 @@ function LessonContentManager() {
                   </Form.Text>
                 )}
               </Form.Group>
+            )}
+
+            {/* Assignment PDF upload fields */}
+            {contentType === 'ASSIGNMENT' && (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label>Assignment Details PDF (Optional)</Form.Label>
+                  <Form.Control
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => setAssignmentDetailsFile(e.target.files[0] || null)}
+                  />
+                  <Form.Text className="text-muted">
+                    Upload a PDF file containing the assignment details, instructions, and requirements.
+                  </Form.Text>
+                  {editingContent && editingContent.assignment_details_file_name && !assignmentDetailsFile && (
+                    <Alert variant="info" className="mt-2 mb-0">
+                      <FaFilePdf className="me-2" />
+                      Current file: <strong>{editingContent.assignment_details_file_name}</strong>
+                      {' '}
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-0"
+                        onClick={async () => {
+                          try {
+                            const bucketName = 'course-content';
+                            const { data, error } = await supabase.storage
+                              .from(bucketName)
+                              .createSignedUrl(editingContent.assignment_details_file_path, 3600);
+                            if (error) throw error;
+                            if (data) {
+                              window.open(data.signedUrl, '_blank');
+                            }
+                          } catch (err) {
+                            console.error('Error generating signed URL:', err);
+                            setError('Failed to open file. Please try again.');
+                          }
+                        }}
+                      >
+                        View
+                      </Button>
+                    </Alert>
+                  )}
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Assignment Rubric PDF (Optional)</Form.Label>
+                  <div className="d-flex gap-2 mb-2">
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={async () => {
+                        if (!title.trim()) {
+                          setError('Please enter an assignment title first');
+                          return;
+                        }
+                        setGeneratingRubric(true);
+                        setError(null);
+                        try {
+                          const subjectName = lessonData?.class_subject?.subject_offering?.subject?.subject_name || 'General';
+                          const formName = lessonData?.class_subject?.class?.form?.form_name || 'General';
+                          
+                          const rubric = await generateAssignmentRubric({
+                            assignmentTitle: title.trim(),
+                            assignmentDescription: description?.trim() || instructions?.trim() || '',
+                            subject: subjectName,
+                            gradeLevel: formName,
+                            totalPoints: 100
+                          });
+                          
+                          setGeneratedRubric(rubric);
+                          setShowRubricModal(true);
+                        } catch (err) {
+                          console.error('Error generating rubric:', err);
+                          setError(err.message || 'Failed to generate rubric. Please check your OpenAI API key configuration.');
+                        } finally {
+                          setGeneratingRubric(false);
+                        }
+                      }}
+                      disabled={generatingRubric || !title.trim()}
+                    >
+                      {generatingRubric ? (
+                        <>
+                          <Spinner size="sm" className="me-2" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <FaLightbulb className="me-2" />
+                          Generate Rubric with AI
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <Form.Control
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    onChange={(e) => setAssignmentRubricFile(e.target.files[0] || null)}
+                  />
+                  <Form.Text className="text-muted">
+                    Upload a PDF file containing the grading rubric for this assignment, or use AI to generate one.
+                  </Form.Text>
+                  {editingContent && editingContent.assignment_rubric_file_name && !assignmentRubricFile && (
+                    <Alert variant="info" className="mt-2 mb-0">
+                      <FaFilePdf className="me-2" />
+                      Current file: <strong>{editingContent.assignment_rubric_file_name}</strong>
+                      {' '}
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-0"
+                        onClick={async () => {
+                          try {
+                            const bucketName = 'course-content';
+                            const { data, error } = await supabase.storage
+                              .from(bucketName)
+                              .createSignedUrl(editingContent.assignment_rubric_file_path, 3600);
+                            if (error) throw error;
+                            if (data) {
+                              window.open(data.signedUrl, '_blank');
+                            }
+                          } catch (err) {
+                            console.error('Error generating signed URL:', err);
+                            setError('Failed to open file. Please try again.');
+                          }
+                        }}
+                      >
+                        View
+                      </Button>
+                    </Alert>
+                  )}
+                </Form.Group>
+              </>
             )}
 
             {/* Only show these fields for Media & Files content types */}
@@ -1601,7 +1866,9 @@ function LessonContentManager() {
                             : previewingContent.content_type === 'QUIZ'
                             ? 'This quiz does not have a URL or an in-app quiz. You can either add an external quiz URL (Google Forms, Kahoot, Quizizz, etc.) or create an in-app quiz.'
                             : previewingContent.content_type === 'ASSIGNMENT'
-                            ? 'This assignment does not have a URL. Please edit the content to add an assignment URL (Google Classroom, assignment platform, etc.).'
+                            ? (previewingContent.assignment_details_file_name || previewingContent.assignment_rubric_file_name)
+                              ? 'This assignment does not have a URL, but it has uploaded PDFs (details and/or rubric). You can optionally add an assignment URL (Google Classroom, assignment platform, etc.).'
+                              : 'This assignment does not have a URL. You can optionally add an assignment URL (Google Classroom, assignment platform, etc.) or upload assignment details and rubric PDFs.'
                             : previewingContent.content_type === 'TEST'
                             ? 'This test does not have a URL. Please edit the content to add a test URL (test platform, Google Forms, etc.).'
                             : previewingContent.content_type === 'EXAM'
@@ -1681,6 +1948,108 @@ function LessonContentManager() {
         quizId={currentQuizId}
         onSave={handleQuizSaved}
       />
+
+      {/* Rubric Generation Modal */}
+      <Modal show={showRubricModal} onHide={() => setShowRubricModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaLightbulb className="me-2" />
+            Generated Assignment Rubric
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {generatedRubric ? (
+            <>
+              <Alert variant="success" className="mb-3">
+                <strong>Rubric Generated Successfully!</strong>
+                <p className="mb-0 mt-2">Review the rubric below. You can copy it, download it as a text file, or use it to create a PDF.</p>
+              </Alert>
+              <Form.Group className="mb-3">
+                <Form.Label>Generated Rubric</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={15}
+                  value={generatedRubric}
+                  readOnly
+                  style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
+                />
+              </Form.Group>
+              <div className="d-flex gap-2">
+                <Button
+                  variant="outline-primary"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedRubric);
+                    setSuccess('Rubric copied to clipboard!');
+                    setTimeout(() => setSuccess(null), 3000);
+                  }}
+                >
+                  <FaDownload className="me-2" />
+                  Copy to Clipboard
+                </Button>
+                <Button
+                  variant="outline-success"
+                  onClick={() => {
+                    const blob = new Blob([generatedRubric], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${title.trim().replace(/[^a-z0-9]/gi, '_')}_rubric.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    setSuccess('Rubric downloaded!');
+                    setTimeout(() => setSuccess(null), 3000);
+                  }}
+                >
+                  <FaDownload className="me-2" />
+                  Download as Text
+                </Button>
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    // Convert text to PDF using browser print
+                    const printWindow = window.open('', '_blank');
+                    printWindow.document.write(`
+                      <html>
+                        <head>
+                          <title>Assignment Rubric - ${title}</title>
+                          <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; }
+                            h1 { color: #333; }
+                            pre { white-space: pre-wrap; font-family: Arial, sans-serif; }
+                          </style>
+                        </head>
+                        <body>
+                          <h1>Assignment Rubric: ${title}</h1>
+                          <pre>${generatedRubric}</pre>
+                        </body>
+                      </html>
+                    `);
+                    printWindow.document.close();
+                    printWindow.focus();
+                    setTimeout(() => {
+                      printWindow.print();
+                    }, 250);
+                  }}
+                >
+                  <FaFilePdf className="me-2" />
+                  Print/Save as PDF
+                </Button>
+              </div>
+            </>
+          ) : (
+            <Alert variant="warning">
+              No rubric generated. Please try again.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowRubricModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }
