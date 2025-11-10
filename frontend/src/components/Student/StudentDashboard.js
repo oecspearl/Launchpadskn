@@ -231,7 +231,7 @@ function StudentDashboard() {
   }
   
   return (
-    <Container fluid className="mt-4">
+    <Container className="mt-4">
       {/* Header */}
       <Row className="mb-4">
         <Col>
