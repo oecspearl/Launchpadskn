@@ -56,6 +56,7 @@ function LessonContentManager() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [assignmentDetailsFile, setAssignmentDetailsFile] = useState(null);
   const [assignmentRubricFile, setAssignmentRubricFile] = useState(null);
+  const [uploadedRubricFileInfo, setUploadedRubricFileInfo] = useState(null); // Store uploaded rubric file info
   const [lessonData, setLessonData] = useState(null);
   const [generatedRubric, setGeneratedRubric] = useState(null);
   const [generatingRubric, setGeneratingRubric] = useState(false);
@@ -190,6 +191,7 @@ function LessonContentManager() {
       setSelectedFile(null);
       setAssignmentDetailsFile(null);
       setAssignmentRubricFile(null);
+      setUploadedRubricFileInfo(null);
     } else {
       setEditingContent(null);
       setContentType('FILE');
@@ -210,6 +212,7 @@ function LessonContentManager() {
       setSelectedFile(null);
       setAssignmentDetailsFile(null);
       setAssignmentRubricFile(null);
+      setUploadedRubricFileInfo(null);
     }
     setShowModal(true);
     setError(null);
@@ -385,30 +388,39 @@ function LessonContentManager() {
       let assignmentRubricFileSize = null;
       let assignmentRubricMimeType = null;
       
-      if (contentType === 'ASSIGNMENT' && assignmentRubricFile) {
-        const bucketName = 'course-content';
-        const timestamp = Date.now();
-        const sanitizedFileName = assignmentRubricFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-        assignmentRubricFilePath = `assignments/${lessonId}/rubric/${timestamp}-${sanitizedFileName}`;
-        
-        const { error: rubricUploadError } = await supabase.storage
-          .from(bucketName)
-          .upload(assignmentRubricFilePath, assignmentRubricFile, {
-            cacheControl: '3600',
-            upsert: false
-          });
-        
-        if (rubricUploadError) throw rubricUploadError;
-        
-        assignmentRubricFileName = assignmentRubricFile.name;
-        assignmentRubricFileSize = assignmentRubricFile.size;
-        assignmentRubricMimeType = assignmentRubricFile.type;
-      } else if (contentType === 'ASSIGNMENT' && editingContent) {
-        // Keep existing assignment rubric file info if editing and no new file
-        assignmentRubricFilePath = editingContent.assignment_rubric_file_path;
-        assignmentRubricFileName = editingContent.assignment_rubric_file_name;
-        assignmentRubricFileSize = editingContent.assignment_rubric_file_size;
-        assignmentRubricMimeType = editingContent.assignment_rubric_mime_type;
+      if (contentType === 'ASSIGNMENT') {
+        // Check if we have a pre-uploaded rubric from the rubric generator
+        if (uploadedRubricFileInfo) {
+          assignmentRubricFilePath = uploadedRubricFileInfo.file_path;
+          assignmentRubricFileName = uploadedRubricFileInfo.file_name;
+          assignmentRubricFileSize = uploadedRubricFileInfo.file_size;
+          assignmentRubricMimeType = uploadedRubricFileInfo.mime_type;
+        } else if (assignmentRubricFile) {
+          // Upload new rubric file from file input
+          const bucketName = 'course-content';
+          const timestamp = Date.now();
+          const sanitizedFileName = assignmentRubricFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+          assignmentRubricFilePath = `assignments/${lessonId}/rubric/${timestamp}-${sanitizedFileName}`;
+          
+          const { error: rubricUploadError } = await supabase.storage
+            .from(bucketName)
+            .upload(assignmentRubricFilePath, assignmentRubricFile, {
+              cacheControl: '3600',
+              upsert: false
+            });
+          
+          if (rubricUploadError) throw rubricUploadError;
+          
+          assignmentRubricFileName = assignmentRubricFile.name;
+          assignmentRubricFileSize = assignmentRubricFile.size;
+          assignmentRubricMimeType = assignmentRubricFile.type;
+        } else if (editingContent) {
+          // Keep existing assignment rubric file info if editing and no new file
+          assignmentRubricFilePath = editingContent.assignment_rubric_file_path;
+          assignmentRubricFileName = editingContent.assignment_rubric_file_name;
+          assignmentRubricFileSize = editingContent.assignment_rubric_file_size;
+          assignmentRubricMimeType = editingContent.assignment_rubric_mime_type;
+        }
       }
       
       // Get the next sequence order if creating new content
@@ -856,6 +868,130 @@ function LessonContentManager() {
     setPreviewUrl(null);
   };
   
+  // Format rubric text to display tables with clear borders
+  const formatRubricForDisplay = (rubricText) => {
+    if (!rubricText) return '';
+    
+    // Convert markdown-style tables to HTML tables
+    let formatted = rubricText;
+    
+    // Detect markdown tables (lines with | separators)
+    const lines = formatted.split('\n');
+    const processedLines = [];
+    let inTable = false;
+    let tableRows = [];
+    let tableHeaders = [];
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Check if line is a table row (contains |)
+      if (line.includes('|') && line.split('|').filter(c => c.trim()).length > 1) {
+        // Check if it's a header separator (contains dashes)
+        if (line.match(/^[\|\s\-:]+$/)) {
+          // This is a separator row, skip it but mark that we have headers
+          if (tableRows.length > 0) {
+            inTable = true;
+          }
+          continue;
+        }
+        
+        // Extract cells
+        const cells = line.split('|').map(c => c.trim()).filter(c => c);
+        
+        if (!inTable && tableRows.length === 0) {
+          // First row - treat as headers
+          tableHeaders = cells;
+          tableRows.push(cells);
+        } else {
+          tableRows.push(cells);
+          inTable = true;
+        }
+      } else {
+        // Not a table row
+        if (inTable && tableRows.length > 0) {
+          // Close the table
+          let tableHtml = '<table class="table table-bordered rubric-table" style="border-collapse: collapse; width: 100%; margin: 1rem 0;">';
+          
+          // Add headers if we have them
+          if (tableHeaders.length > 0) {
+            tableHtml += '<thead><tr>';
+            tableHeaders.forEach(header => {
+              tableHtml += `<th style="border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600; text-align: left;">${escapeHtml(header)}</th>`;
+            });
+            tableHtml += '</tr></thead>';
+          }
+          
+          // Add body rows
+          tableHtml += '<tbody>';
+          const rowsToRender = tableHeaders.length > 0 ? tableRows.slice(1) : tableRows;
+          rowsToRender.forEach(row => {
+            tableHtml += '<tr>';
+            row.forEach((cell, idx) => {
+              const isHeader = idx === 0 && tableHeaders.length > 0;
+              const tag = isHeader ? 'th' : 'td';
+              const style = isHeader 
+                ? 'border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600;'
+                : 'border: 1px solid #212529; padding: 0.75rem;';
+              tableHtml += `<${tag} style="${style}">${escapeHtml(cell)}</${tag}>`;
+            });
+            tableHtml += '</tr>';
+          });
+          tableHtml += '</tbody></table>';
+          
+          processedLines.push(tableHtml);
+          tableRows = [];
+          tableHeaders = [];
+          inTable = false;
+        }
+        
+        // Add regular text
+        if (line) {
+          processedLines.push(`<p style="margin: 0.5rem 0;">${escapeHtml(line)}</p>`);
+        } else {
+          processedLines.push('<br />');
+        }
+      }
+    }
+    
+    // Handle any remaining table
+    if (inTable && tableRows.length > 0) {
+      let tableHtml = '<table class="table table-bordered rubric-table" style="border-collapse: collapse; width: 100%; margin: 1rem 0;">';
+      if (tableHeaders.length > 0) {
+        tableHtml += '<thead><tr>';
+        tableHeaders.forEach(header => {
+          tableHtml += `<th style="border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600; text-align: left;">${escapeHtml(header)}</th>`;
+        });
+        tableHtml += '</tr></thead>';
+      }
+      tableHtml += '<tbody>';
+      const rowsToRender = tableHeaders.length > 0 ? tableRows.slice(1) : tableRows;
+      rowsToRender.forEach(row => {
+        tableHtml += '<tr>';
+        row.forEach((cell, idx) => {
+          const isHeader = idx === 0 && tableHeaders.length > 0;
+          const tag = isHeader ? 'th' : 'td';
+          const style = isHeader 
+            ? 'border: 2px solid #212529; padding: 0.75rem; background-color: #f8f9fa; font-weight: 600;'
+            : 'border: 1px solid #212529; padding: 0.75rem;';
+          tableHtml += `<${tag} style="${style}">${escapeHtml(cell)}</${tag}>`;
+        });
+        tableHtml += '</tr>';
+      });
+      tableHtml += '</tbody></table>';
+      processedLines.push(tableHtml);
+    }
+    
+    return processedLines.join('\n');
+  };
+  
+  // Escape HTML to prevent XSS
+  const escapeHtml = (text) => {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  };
+  
   if (isLoading) {
     return (
       <Container className="mt-4">
@@ -885,18 +1021,47 @@ function LessonContentManager() {
       {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess(null)}>{success}</Alert>}
       
-      {content.length === 0 ? (
-        <Card className="border-0 shadow-sm">
-          <Card.Body className="text-center py-5">
-            <p className="text-muted mb-0">No content added yet</p>
-            <Button variant="primary" className="mt-3" onClick={() => handleOpenModal()}>
-              Add First Content
-            </Button>
-          </Card.Body>
-        </Card>
-      ) : (
-        <>
-          {Object.entries(groupContentBySection()).map(([sectionName, sectionContent]) => (
+      <Row className="g-4">
+        {/* Left Column - Lesson Plan */}
+        <Col lg={4}>
+          <Card className="border-0 shadow-sm sticky-top" style={{ top: '80px', zIndex: 10 }}>
+            <Card.Header className="bg-primary text-white">
+              <h5 className="mb-0">
+                <FaBook className="me-2" />
+                Lesson Plan
+              </h5>
+            </Card.Header>
+            <Card.Body style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
+              {lessonData?.lesson_plan ? (
+                <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.8' }}>
+                  {lessonData.lesson_plan}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <p className="text-muted mb-0">No lesson plan available</p>
+                  <small className="text-muted">
+                    Lesson plans can be added in the Lesson Planning section
+                  </small>
+                </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+        
+        {/* Right Column - Lesson Content */}
+        <Col lg={8}>
+          {content.length === 0 ? (
+            <Card className="border-0 shadow-sm">
+              <Card.Body className="text-center py-5">
+                <p className="text-muted mb-0">No content added yet</p>
+                <Button variant="primary" className="mt-3" onClick={() => handleOpenModal()}>
+                  Add First Content
+                </Button>
+              </Card.Body>
+            </Card>
+          ) : (
+            <>
+              {Object.entries(groupContentBySection()).map(([sectionName, sectionContent]) => (
             <Card key={sectionName} className="border-0 shadow-sm mb-4">
               <Card.Header className="bg-light border-0 py-3">
                 <h5 className="mb-0">
@@ -1227,8 +1392,10 @@ function LessonContentManager() {
               </Card.Body>
             </Card>
           ))}
-        </>
-      )}
+            </>
+          )}
+        </Col>
+      </Row>
       
       {/* Add/Edit Content Modal */}
       <Modal show={showModal} onHide={handleCloseModal} size="xl">
@@ -1250,6 +1417,7 @@ function LessonContentManager() {
                   setContentText('');
                   setAssignmentDetailsFile(null);
                   setAssignmentRubricFile(null);
+                  setUploadedRubricFileInfo(null);
                 }}
                 required
               >
@@ -1481,16 +1649,53 @@ function LessonContentManager() {
                   </div>
                   <Form.Control
                     type="file"
-                    accept=".pdf,application/pdf"
-                    onChange={(e) => setAssignmentRubricFile(e.target.files[0] || null)}
+                    accept=".pdf,application/pdf,.txt,text/plain"
+                    onChange={(e) => {
+                      setAssignmentRubricFile(e.target.files[0] || null);
+                      setUploadedRubricFileInfo(null); // Clear pre-uploaded rubric if user selects a new file
+                    }}
                   />
                   <Form.Text className="text-muted">
-                    Upload a PDF file containing the grading rubric for this assignment, or use AI to generate one.
+                    Upload a PDF or text file containing the grading rubric for this assignment, or use AI to generate one.
                   </Form.Text>
-                  {editingContent && editingContent.assignment_rubric_file_name && !assignmentRubricFile && (
+                  {uploadedRubricFileInfo && (
+                    <Alert variant="success" className="mt-2 mb-0">
+                      <FaFilePdf className="me-2" />
+                      Rubric uploaded: <strong>{uploadedRubricFileInfo.file_name}</strong>
+                      {' '}
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-0"
+                        onClick={async () => {
+                          try {
+                            const bucketName = 'course-content';
+                            const { data, error } = await supabase.storage
+                              .from(bucketName)
+                              .createSignedUrl(uploadedRubricFileInfo.file_path, 3600);
+                            if (error) throw error;
+                            if (data?.signedUrl) {
+                              window.open(data.signedUrl, '_blank');
+                            }
+                          } catch (err) {
+                            console.error('Error generating signed URL:', err);
+                            setError('Failed to open file. Please try again.');
+                          }
+                        }}
+                      >
+                        View
+                      </Button>
+                    </Alert>
+                  )}
+                  {editingContent && editingContent.assignment_rubric_file_name && !assignmentRubricFile && !uploadedRubricFileInfo && (
                     <Alert variant="info" className="mt-2 mb-0">
                       <FaFilePdf className="me-2" />
                       Current file: <strong>{editingContent.assignment_rubric_file_name}</strong>
+                      {editingContent.assignment_rubric_file_size && (
+                        <small className="text-muted ms-2">
+                          ({formatFileSize(editingContent.assignment_rubric_file_size)})
+                        </small>
+                      )}
                       {' '}
                       <Button
                         variant="link"
@@ -1503,7 +1708,7 @@ function LessonContentManager() {
                               .from(bucketName)
                               .createSignedUrl(editingContent.assignment_rubric_file_path, 3600);
                             if (error) throw error;
-                            if (data) {
+                            if (data?.signedUrl) {
                               window.open(data.signedUrl, '_blank');
                             }
                           } catch (err) {
@@ -2259,14 +2464,14 @@ function LessonContentManager() {
       />
 
       {/* Rubric Generation Modal */}
-      <Modal show={showRubricModal} onHide={() => setShowRubricModal(false)} size="lg">
+      <Modal show={showRubricModal} onHide={() => setShowRubricModal(false)} size="xl">
         <Modal.Header closeButton>
           <Modal.Title>
             <FaLightbulb className="me-2" />
             Generated Assignment Rubric
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+        <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
           {generatedRubric ? (
             <>
               <Alert variant="success" className="mb-3">
@@ -2275,15 +2480,21 @@ function LessonContentManager() {
               </Alert>
               <Form.Group className="mb-3">
                 <Form.Label>Generated Rubric</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={15}
-                  value={generatedRubric}
-                  readOnly
-                  style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
+                <div 
+                  className="rubric-display"
+                  style={{ 
+                    fontFamily: 'Arial, sans-serif', 
+                    fontSize: '0.95rem',
+                    lineHeight: '1.6',
+                    padding: '1.5rem',
+                    backgroundColor: '#f8f9fa',
+                    borderRadius: '8px',
+                    border: '1px solid #dee2e6'
+                  }}
+                  dangerouslySetInnerHTML={{ __html: formatRubricForDisplay(generatedRubric) }}
                 />
               </Form.Group>
-              <div className="d-flex gap-2">
+              <div className="d-flex gap-2 flex-wrap">
                 <Button
                   variant="outline-primary"
                   onClick={() => {
@@ -2316,35 +2527,263 @@ function LessonContentManager() {
                 </Button>
                 <Button
                   variant="primary"
-                  onClick={() => {
-                    // Convert text to PDF using browser print
-                    const printWindow = window.open('', '_blank');
-                    printWindow.document.write(`
-                      <html>
-                        <head>
-                          <title>Assignment Rubric - ${title}</title>
-                          <style>
-                            body { font-family: Arial, sans-serif; padding: 20px; }
-                            h1 { color: #333; }
-                            pre { white-space: pre-wrap; font-family: Arial, sans-serif; }
-                          </style>
-                        </head>
-                        <body>
-                          <h1>Assignment Rubric: ${title}</h1>
-                          <pre>${generatedRubric}</pre>
-                        </body>
-                      </html>
-                    `);
-                    printWindow.document.close();
-                    printWindow.focus();
-                    setTimeout(() => {
-                      printWindow.print();
-                    }, 250);
+                  onClick={async () => {
+                    try {
+                      const rubricText = generatedRubric;
+                      const assignmentTitle = title;
+                      
+                      // Function to generate PDF
+                      const generatePDF = () => {
+                        try {
+                          const rubricHtml = formatRubricForDisplay(rubricText);
+                          
+                          // Create a temporary container for the PDF content
+                          const tempDiv = document.createElement('div');
+                          tempDiv.style.position = 'absolute';
+                          tempDiv.style.left = '-9999px';
+                          tempDiv.style.width = '210mm'; // A4 width
+                          tempDiv.style.padding = '20mm';
+                          tempDiv.style.fontFamily = 'Arial, sans-serif';
+                          tempDiv.style.fontSize = '12pt';
+                          tempDiv.style.color = '#212529';
+                          tempDiv.style.lineHeight = '1.6';
+                          tempDiv.style.backgroundColor = '#ffffff';
+                          
+                          tempDiv.innerHTML = `
+                            <div style="margin-bottom: 20px;">
+                              <h1 style="color: #212529; border-bottom: 3px solid #212529; padding-bottom: 10px; margin-bottom: 20px; font-size: 24pt; margin-top: 0;">
+                                Assignment Rubric: ${escapeHtml(assignmentTitle)}
+                              </h1>
+                            </div>
+                            <div style="margin-top: 20px;">
+                              ${rubricHtml}
+                            </div>
+                          `;
+                          
+                          // Add styles for tables
+                          const style = document.createElement('style');
+                          style.textContent = `
+                            table {
+                              border-collapse: collapse !important;
+                              width: 100% !important;
+                              margin: 1rem 0 !important;
+                              page-break-inside: avoid !important;
+                              border: 2px solid #212529 !important;
+                            }
+                            th {
+                              border: 2px solid #212529 !important;
+                              padding: 0.75rem !important;
+                              background-color: #f8f9fa !important;
+                              font-weight: 600 !important;
+                              text-align: left !important;
+                              font-size: 11pt !important;
+                            }
+                            td {
+                              border: 1px solid #212529 !important;
+                              padding: 0.75rem !important;
+                              font-size: 10pt !important;
+                            }
+                            p {
+                              margin: 0.5rem 0 !important;
+                              line-height: 1.6 !important;
+                            }
+                          `;
+                          tempDiv.appendChild(style);
+                          
+                          document.body.appendChild(tempDiv);
+                          
+                          // Configure html2pdf options
+                          const opt = {
+                            margin: [10, 10, 10, 10],
+                            filename: `${assignmentTitle.trim().replace(/[^a-z0-9]/gi, '_')}_rubric.pdf`,
+                            image: { type: 'jpeg', quality: 0.98 },
+                            html2canvas: { 
+                              scale: 2,
+                              useCORS: true,
+                              logging: false,
+                              letterRendering: true,
+                              backgroundColor: '#ffffff'
+                            },
+                            jsPDF: { 
+                              unit: 'mm', 
+                              format: 'a4', 
+                              orientation: 'portrait' 
+                            },
+                            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+                          };
+                          
+                          // Generate and download PDF
+                          window.html2pdf()
+                            .set(opt)
+                            .from(tempDiv)
+                            .save()
+                            .then(() => {
+                              document.body.removeChild(tempDiv);
+                              setSuccess('PDF downloaded successfully!');
+                              setTimeout(() => setSuccess(null), 3000);
+                            })
+                            .catch((err) => {
+                              console.error('Error generating PDF:', err);
+                              if (document.body.contains(tempDiv)) {
+                                document.body.removeChild(tempDiv);
+                              }
+                              setError('Failed to generate PDF. Please try again.');
+                            });
+                        } catch (err) {
+                          console.error('Error in PDF generation:', err);
+                          setError('Failed to generate PDF. Please try again.');
+                        }
+                      };
+                      
+                      // Load html2pdf.js dynamically if not already loaded
+                      if (!window.html2pdf) {
+                        const script = document.createElement('script');
+                        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+                        script.onload = () => {
+                          generatePDF();
+                        };
+                        script.onerror = () => {
+                          setError('Failed to load PDF library. Please check your internet connection.');
+                        };
+                        document.head.appendChild(script);
+                      } else {
+                        generatePDF();
+                      }
+                    } catch (err) {
+                      console.error('Error setting up PDF generation:', err);
+                      setError('Failed to generate PDF. Please try again.');
+                    }
                   }}
                 >
                   <FaFilePdf className="me-2" />
-                  Print/Save as PDF
+                  Download as PDF
                 </Button>
+                {contentType === 'ASSIGNMENT' && (
+                  <Button
+                    variant="success"
+                    onClick={async () => {
+                      if (!title || !title.trim()) {
+                        setError('Please enter an assignment title first');
+                        return;
+                      }
+                      
+                      if (!generatedRubric) {
+                        setError('No rubric generated. Please generate a rubric first.');
+                        return;
+                      }
+                      
+                      try {
+                        setGeneratingRubric(true);
+                        setError(null);
+                        
+                        // Convert rubric to PDF blob using html2pdf approach
+                        // For now, we'll create a text file and upload it
+                        // In a production environment, you'd want to use a proper PDF library
+                        const rubricText = generatedRubric;
+                        const blob = new Blob([rubricText], { type: 'text/plain' });
+                        
+                        // Create a File object from the blob
+                        const fileName = `${title.trim().replace(/[^a-z0-9]/gi, '_')}_rubric_${Date.now()}.txt`;
+                        const file = new File([blob], fileName, { type: 'text/plain' });
+                        
+                        // Upload to Supabase Storage
+                        const bucketName = 'course-content';
+                        const timestamp = Date.now();
+                        const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                        const filePath = `assignments/${lessonId}/rubric/${timestamp}-${sanitizedFileName}`;
+                        
+                        const { error: uploadError } = await supabase.storage
+                          .from(bucketName)
+                          .upload(filePath, file, {
+                            cacheControl: '3600',
+                            upsert: false
+                          });
+                        
+                        if (uploadError) {
+                          console.error('Upload error:', uploadError);
+                          throw new Error(uploadError.message || 'Failed to upload rubric file');
+                        }
+                        
+                        // Update the assignment content with the rubric file
+                        if (editingContent) {
+                          // Update existing assignment immediately
+                          const { error: updateError } = await supabase
+                            .from('lesson_content')
+                            .update({
+                              assignment_rubric_file_path: filePath,
+                              assignment_rubric_file_name: file.name,
+                              assignment_rubric_file_size: file.size,
+                              assignment_rubric_mime_type: file.type
+                            })
+                            .eq('content_id', editingContent.content_id);
+                          
+                          if (updateError) {
+                            console.error('Update error:', updateError);
+                            throw new Error(updateError.message || 'Failed to update assignment with rubric');
+                          }
+                          
+                          setSuccess('Rubric uploaded successfully and attached to the assignment!');
+                          setGeneratingRubric(false); // Reset before closing modal
+                          
+                          // Refresh the content to get updated assignment data
+                          await fetchContent();
+                          
+                          // Fetch the updated assignment content directly from the database
+                          if (editingContent) {
+                            const { data: updatedContentData, error: fetchError } = await supabase
+                              .from('lesson_content')
+                              .select('*')
+                              .eq('content_id', editingContent.content_id)
+                              .single();
+                            
+                            if (!fetchError && updatedContentData) {
+                              setEditingContent(updatedContentData);
+                            }
+                          }
+                          
+                          setTimeout(() => {
+                            setShowRubricModal(false);
+                            setSuccess(null);
+                          }, 2000);
+                        } else {
+                          // If creating new assignment, store the uploaded file info
+                          // so it can be used when the form is submitted
+                          setUploadedRubricFileInfo({
+                            file_path: filePath,
+                            file_name: file.name,
+                            file_size: file.size,
+                            mime_type: file.type
+                          });
+                          
+                          setSuccess('Rubric uploaded successfully! It will be attached when you save the assignment.');
+                          setGeneratingRubric(false); // Reset before closing modal
+                          
+                          setTimeout(() => {
+                            setShowRubricModal(false);
+                            setSuccess(null);
+                          }, 2000);
+                        }
+                      } catch (err) {
+                        console.error('Error uploading rubric:', err);
+                        setError(err.message || 'Failed to upload rubric. Please try again.');
+                        setGeneratingRubric(false); // Always reset on error
+                      }
+                    }}
+                    disabled={generatingRubric || !title || !title.trim() || !generatedRubric}
+                  >
+                    {generatingRubric ? (
+                      <>
+                        <Spinner animation="border" size="sm" className="me-2" />
+                        Uploading...
+                      </>
+                    ) : (
+                      <>
+                        <FaFilePdf className="me-2" />
+                        Add to Assignment
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
             </>
           ) : (
