@@ -712,6 +712,77 @@ function LessonView() {
                       const rubricText = instructions.substring(rubricIndex + '--- RUBRIC ---'.length).trim();
                       const assignmentDesc = instructions.substring(0, rubricIndex).trim();
                       
+                      // Parse rubric text into structured data for table display
+                      const parseRubric = (text) => {
+                        const lines = text.split('\n').filter(line => line.trim());
+                        const criteria = [];
+                        
+                        // Try to parse different formats
+                        lines.forEach((line, index) => {
+                          line = line.trim();
+                          if (!line) return;
+                          
+                          // Pattern 1: "Criterion Name (X points): Description"
+                          const pattern1 = /^(.+?)\s*\((\d+)\s*points?\)\s*:?\s*(.+)$/i;
+                          const match1 = line.match(pattern1);
+                          if (match1) {
+                            criteria.push({
+                              criterion: match1[1].trim(),
+                              points: parseInt(match1[2]),
+                              description: match1[3].trim()
+                            });
+                            return;
+                          }
+                          
+                          // Pattern 2: "X. Criterion Name - X points - Description"
+                          const pattern2 = /^\d+\.\s*(.+?)\s*-\s*(\d+)\s*points?\s*-\s*(.+)$/i;
+                          const match2 = line.match(pattern2);
+                          if (match2) {
+                            criteria.push({
+                              criterion: match2[1].trim(),
+                              points: parseInt(match2[2]),
+                              description: match2[3].trim()
+                            });
+                            return;
+                          }
+                          
+                          // Pattern 3: "Criterion Name: X points" (description on next line)
+                          const pattern3 = /^(.+?):\s*(\d+)\s*points?$/i;
+                          const match3 = line.match(pattern3);
+                          if (match3 && index + 1 < lines.length) {
+                            criteria.push({
+                              criterion: match3[1].trim(),
+                              points: parseInt(match3[2]),
+                              description: lines[index + 1].trim()
+                            });
+                            return;
+                          }
+                          
+                          // Pattern 4: Just a criterion name (might be followed by description)
+                          if (line.match(/^[A-Z][^:]+$/)) {
+                            const nextLine = index + 1 < lines.length ? lines[index + 1].trim() : '';
+                            const pointsMatch = nextLine.match(/(\d+)\s*points?/i);
+                            if (pointsMatch) {
+                              criteria.push({
+                                criterion: line,
+                                points: parseInt(pointsMatch[1]),
+                                description: nextLine.replace(/\d+\s*points?/i, '').trim()
+                              });
+                              return;
+                            }
+                          }
+                        });
+                        
+                        // If no structured criteria found, return null to show as text
+                        if (criteria.length === 0) {
+                          return null;
+                        }
+                        
+                        return criteria;
+                      };
+                      
+                      const rubricCriteria = parseRubric(rubricText);
+                      
                       return (
                         <>
                           {assignmentDesc && (
@@ -728,16 +799,99 @@ function LessonView() {
                             borderRadius: '8px',
                             padding: '1rem'
                           }}>
-                            <strong style={{ color: '#856404' }}>📋 Grading Rubric:</strong>
-                            <div style={{ 
-                              whiteSpace: 'pre-wrap', 
-                              marginTop: '0.75rem',
-                              color: '#856404',
-                              fontSize: '0.95rem',
-                              lineHeight: '1.6'
-                            }}>
-                              {rubricText}
-                            </div>
+                            <strong style={{ color: '#856404', marginBottom: '1rem', display: 'block' }}>📋 Grading Rubric:</strong>
+                            
+                            {rubricCriteria && rubricCriteria.length > 0 ? (
+                              <div style={{ overflowX: 'auto' }}>
+                                <table style={{
+                                  width: '100%',
+                                  borderCollapse: 'collapse',
+                                  border: '2px solid #856404',
+                                  backgroundColor: '#fff',
+                                  fontSize: '0.95rem'
+                                }}>
+                                  <thead>
+                                    <tr style={{ backgroundColor: '#ffc107', color: '#856404' }}>
+                                      <th style={{
+                                        border: '1px solid #856404',
+                                        padding: '12px',
+                                        textAlign: 'left',
+                                        fontWeight: 'bold'
+                                      }}>Criterion</th>
+                                      <th style={{
+                                        border: '1px solid #856404',
+                                        padding: '12px',
+                                        textAlign: 'center',
+                                        fontWeight: 'bold',
+                                        width: '100px'
+                                      }}>Points</th>
+                                      <th style={{
+                                        border: '1px solid #856404',
+                                        padding: '12px',
+                                        textAlign: 'left',
+                                        fontWeight: 'bold'
+                                      }}>Description</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {rubricCriteria.map((crit, idx) => (
+                                      <tr key={idx} style={{
+                                        backgroundColor: idx % 2 === 0 ? '#fff' : '#fffef0'
+                                      }}>
+                                        <td style={{
+                                          border: '1px solid #856404',
+                                          padding: '12px',
+                                          color: '#856404',
+                                          fontWeight: '500'
+                                        }}>{crit.criterion}</td>
+                                        <td style={{
+                                          border: '1px solid #856404',
+                                          padding: '12px',
+                                          textAlign: 'center',
+                                          color: '#856404',
+                                          fontWeight: 'bold'
+                                        }}>{crit.points}</td>
+                                        <td style={{
+                                          border: '1px solid #856404',
+                                          padding: '12px',
+                                          color: '#856404'
+                                        }}>{crit.description}</td>
+                                      </tr>
+                                    ))}
+                                    <tr style={{ backgroundColor: '#ffc107', fontWeight: 'bold' }}>
+                                      <td style={{
+                                        border: '1px solid #856404',
+                                        padding: '12px',
+                                        textAlign: 'right',
+                                        color: '#856404'
+                                      }}>Total:</td>
+                                      <td style={{
+                                        border: '1px solid #856404',
+                                        padding: '12px',
+                                        textAlign: 'center',
+                                        color: '#856404'
+                                      }}>
+                                        {rubricCriteria.reduce((sum, crit) => sum + crit.points, 0)}
+                                      </td>
+                                      <td style={{
+                                        border: '1px solid #856404',
+                                        padding: '12px',
+                                        color: '#856404'
+                                      }}></td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            ) : (
+                              <div style={{ 
+                                whiteSpace: 'pre-wrap', 
+                                color: '#856404',
+                                fontSize: '0.95rem',
+                                lineHeight: '1.6'
+                              }}>
+                                {rubricText}
+                              </div>
+                            )}
                           </div>
                         </>
                       );
