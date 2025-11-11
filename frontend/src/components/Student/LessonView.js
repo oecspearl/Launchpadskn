@@ -715,9 +715,147 @@ function LessonView() {
                       // Parse rubric text into structured data for table display
                       const parseRubric = (text) => {
                         const lines = text.split('\n').filter(line => line.trim());
+                        
+                        // Check if this is a matrix-style rubric (performance levels as columns)
+                        // Look for header patterns like "Excellent (10)" or "Criteria | Excellent"
+                        const hasPerformanceLevels = /Excellent|Good|Satisfactory|Needs Improvement|Incomplete|Outstanding|Proficient|Developing|Beginning/i.test(text);
+                        const hasTableStructure = text.includes('|') || /Criteria\s*[|:]?\s*(Excellent|Good|Satisfactory)/i.test(text);
+                        
+                        if (hasPerformanceLevels && hasTableStructure) {
+                          // Parse matrix-style rubric
+                          return parseMatrixRubric(text, lines);
+                        } else {
+                          // Parse simple list-style rubric
+                          return parseListRubric(lines);
+                        }
+                      };
+                      
+                      // Parse matrix-style rubric with performance levels as columns
+                      const parseMatrixRubric = (text, lines) => {
+                        const result = {
+                          type: 'matrix',
+                          performanceLevels: [],
+                          criteria: []
+                        };
+                        
+                        // Find header row with performance levels
+                        let headerIndex = -1;
+                        for (let i = 0; i < lines.length; i++) {
+                          const line = lines[i].toLowerCase();
+                          if (line.includes('criteria') && (line.includes('excellent') || line.includes('good'))) {
+                            headerIndex = i;
+                            break;
+                          }
+                        }
+                        
+                        if (headerIndex === -1) {
+                          // Try to find header by looking for performance level keywords
+                          for (let i = 0; i < Math.min(5, lines.length); i++) {
+                            const line = lines[i].toLowerCase();
+                            if (line.includes('excellent') || line.includes('good') || line.includes('satisfactory')) {
+                              headerIndex = i;
+                              break;
+                            }
+                          }
+                        }
+                        
+                        if (headerIndex === -1) return null;
+                        
+                        // Parse header row to extract performance levels
+                        const headerLine = lines[headerIndex];
+                        // Split by | or detect patterns like "Excellent (10)"
+                        const headerParts = headerLine.split('|').map(p => p.trim()).filter(p => p);
+                        
+                        if (headerParts.length === 0) {
+                          // Try regex pattern for "Excellent (10)" format
+                          const levelPattern = /(Excellent|Good|Satisfactory|Needs Improvement|Incomplete|Outstanding|Proficient|Developing|Beginning)\s*\((\d+)\)/gi;
+                          let match;
+                          while ((match = levelPattern.exec(headerLine)) !== null) {
+                            result.performanceLevels.push({
+                              name: match[1].trim(),
+                              points: parseInt(match[2])
+                            });
+                          }
+                        } else {
+                          // Parse from pipe-separated format
+                          headerParts.forEach((part, idx) => {
+                            if (idx === 0 && part.toLowerCase().includes('criteria')) return;
+                            const levelMatch = part.match(/(.+?)\s*\((\d+)\)/);
+                            if (levelMatch) {
+                              result.performanceLevels.push({
+                                name: levelMatch[1].trim(),
+                                points: parseInt(levelMatch[2])
+                              });
+                            } else if (part.match(/Excellent|Good|Satisfactory|Needs Improvement|Incomplete/i)) {
+                              result.performanceLevels.push({
+                                name: part.trim(),
+                                points: null
+                              });
+                            }
+                          });
+                        }
+                        
+                        if (result.performanceLevels.length === 0) return null;
+                        
+                        // Parse criteria rows
+                        for (let i = headerIndex + 1; i < lines.length; i++) {
+                          const line = lines[i].trim();
+                          if (!line || line.toLowerCase().includes('total points')) continue;
+                          
+                          // Split by | or detect criterion name followed by descriptions
+                          const parts = line.split('|').map(p => p.trim()).filter(p => p);
+                          
+                          if (parts.length >= 2) {
+                            const criterionName = parts[0];
+                            const descriptions = parts.slice(1);
+                            
+                            if (criterionName && descriptions.length > 0) {
+                              result.criteria.push({
+                                name: criterionName,
+                                descriptions: descriptions.slice(0, result.performanceLevels.length)
+                              });
+                            }
+                          } else {
+                            // Try to parse format like "Criterion Name: Excellent (10): Description..."
+                            const criterionMatch = line.match(/^(.+?):\s*(.+)$/);
+                            if (criterionMatch) {
+                              const criterionName = criterionMatch[1].trim();
+                              const rest = criterionMatch[2];
+                              
+                              // Try to extract descriptions for each level
+                              const descriptions = [];
+                              result.performanceLevels.forEach((level, idx) => {
+                                const levelPattern = new RegExp(`${level.name}\\s*\\(\\d+\\):?\\s*([^:]+?)(?=\\s*(?:${result.performanceLevels[idx + 1]?.name || 'Total'}|$))`, 'i');
+                                const descMatch = rest.match(levelPattern);
+                                if (descMatch) {
+                                  descriptions.push(descMatch[1].trim());
+                                } else {
+                                  descriptions.push('');
+                                }
+                              });
+                              
+                              if (descriptions.some(d => d)) {
+                                result.criteria.push({
+                                  name: criterionName,
+                                  descriptions: descriptions
+                                });
+                              }
+                            }
+                          }
+                        }
+                        
+                        // If we found criteria, return the matrix format
+                        if (result.criteria.length > 0) {
+                          return result;
+                        }
+                        
+                        return null;
+                      };
+                      
+                      // Parse simple list-style rubric
+                      const parseListRubric = (lines) => {
                         const criteria = [];
                         
-                        // Try to parse different formats
                         lines.forEach((line, index) => {
                           line = line.trim();
                           if (!line) return;
@@ -757,20 +895,6 @@ function LessonView() {
                             });
                             return;
                           }
-                          
-                          // Pattern 4: Just a criterion name (might be followed by description)
-                          if (line.match(/^[A-Z][^:]+$/)) {
-                            const nextLine = index + 1 < lines.length ? lines[index + 1].trim() : '';
-                            const pointsMatch = nextLine.match(/(\d+)\s*points?/i);
-                            if (pointsMatch) {
-                              criteria.push({
-                                criterion: line,
-                                points: parseInt(pointsMatch[1]),
-                                description: nextLine.replace(/\d+\s*points?/i, '').trim()
-                              });
-                              return;
-                            }
-                          }
                         });
                         
                         // If no structured criteria found, return null to show as text
@@ -778,7 +902,7 @@ function LessonView() {
                           return null;
                         }
                         
-                        return criteria;
+                        return { type: 'list', criteria };
                       };
                       
                       const rubricCriteria = parseRubric(rubricText);
@@ -801,87 +925,164 @@ function LessonView() {
                           }}>
                             <strong style={{ color: '#856404', marginBottom: '1rem', display: 'block' }}>📋 Grading Rubric:</strong>
                             
-                            {rubricCriteria && rubricCriteria.length > 0 ? (
-                              <div style={{ overflowX: 'auto' }}>
-                                <table style={{
-                                  width: '100%',
-                                  borderCollapse: 'collapse',
-                                  border: '2px solid #856404',
-                                  backgroundColor: '#fff',
-                                  fontSize: '0.95rem'
-                                }}>
-                                  <thead>
-                                    <tr style={{ backgroundColor: '#ffc107', color: '#856404' }}>
-                                      <th style={{
-                                        border: '1px solid #856404',
-                                        padding: '12px',
-                                        textAlign: 'left',
-                                        fontWeight: 'bold'
-                                      }}>Criterion</th>
-                                      <th style={{
-                                        border: '1px solid #856404',
-                                        padding: '12px',
-                                        textAlign: 'center',
-                                        fontWeight: 'bold',
-                                        width: '100px'
-                                      }}>Points</th>
-                                      <th style={{
-                                        border: '1px solid #856404',
-                                        padding: '12px',
-                                        textAlign: 'left',
-                                        fontWeight: 'bold'
-                                      }}>Description</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {rubricCriteria.map((crit, idx) => (
-                                      <tr key={idx} style={{
-                                        backgroundColor: idx % 2 === 0 ? '#fff' : '#fffef0'
-                                      }}>
+                            {rubricCriteria ? (
+                              rubricCriteria.type === 'matrix' ? (
+                                // Matrix-style rubric with performance levels as columns
+                                <div style={{ overflowX: 'auto' }}>
+                                  <table style={{
+                                    width: '100%',
+                                    borderCollapse: 'collapse',
+                                    border: '2px solid #856404',
+                                    backgroundColor: '#fff',
+                                    fontSize: '0.9rem'
+                                  }}>
+                                    <thead>
+                                      <tr style={{ backgroundColor: '#ffc107', color: '#856404' }}>
+                                        <th style={{
+                                          border: '1px solid #856404',
+                                          padding: '12px',
+                                          textAlign: 'left',
+                                          fontWeight: 'bold',
+                                          width: '20%'
+                                        }}>Criteria</th>
+                                        {rubricCriteria.performanceLevels.map((level, idx) => (
+                                          <th key={idx} style={{
+                                            border: '1px solid #856404',
+                                            padding: '12px',
+                                            textAlign: 'center',
+                                            fontWeight: 'bold',
+                                            fontSize: '0.85rem'
+                                          }}>
+                                            {level.name}
+                                            {level.points !== null && ` (${level.points})`}
+                                          </th>
+                                        ))}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {rubricCriteria.criteria.map((crit, idx) => (
+                                        <tr key={idx} style={{
+                                          backgroundColor: idx % 2 === 0 ? '#fff' : '#fffef0'
+                                        }}>
+                                          <td style={{
+                                            border: '1px solid #856404',
+                                            padding: '12px',
+                                            color: '#856404',
+                                            fontWeight: '500',
+                                            verticalAlign: 'top'
+                                          }}>{crit.name}</td>
+                                          {crit.descriptions.map((desc, descIdx) => (
+                                            <td key={descIdx} style={{
+                                              border: '1px solid #856404',
+                                              padding: '12px',
+                                              color: '#856404',
+                                              fontSize: '0.85rem',
+                                              lineHeight: '1.5',
+                                              verticalAlign: 'top'
+                                            }}>{desc || '-'}</td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                  {rubricText.toLowerCase().includes('total points') && (
+                                    <div style={{
+                                      marginTop: '1rem',
+                                      padding: '8px',
+                                      backgroundColor: '#ffc107',
+                                      color: '#856404',
+                                      fontWeight: 'bold',
+                                      textAlign: 'center',
+                                      border: '1px solid #856404',
+                                      borderRadius: '4px'
+                                    }}>
+                                      {rubricText.match(/Total Points:\s*(\d+)/i)?.[0] || 'Total Points: 100'}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                // List-style rubric
+                                <div style={{ overflowX: 'auto' }}>
+                                  <table style={{
+                                    width: '100%',
+                                    borderCollapse: 'collapse',
+                                    border: '2px solid #856404',
+                                    backgroundColor: '#fff',
+                                    fontSize: '0.95rem'
+                                  }}>
+                                    <thead>
+                                      <tr style={{ backgroundColor: '#ffc107', color: '#856404' }}>
+                                        <th style={{
+                                          border: '1px solid #856404',
+                                          padding: '12px',
+                                          textAlign: 'left',
+                                          fontWeight: 'bold'
+                                        }}>Criterion</th>
+                                        <th style={{
+                                          border: '1px solid #856404',
+                                          padding: '12px',
+                                          textAlign: 'center',
+                                          fontWeight: 'bold',
+                                          width: '100px'
+                                        }}>Points</th>
+                                        <th style={{
+                                          border: '1px solid #856404',
+                                          padding: '12px',
+                                          textAlign: 'left',
+                                          fontWeight: 'bold'
+                                        }}>Description</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {rubricCriteria.criteria.map((crit, idx) => (
+                                        <tr key={idx} style={{
+                                          backgroundColor: idx % 2 === 0 ? '#fff' : '#fffef0'
+                                        }}>
+                                          <td style={{
+                                            border: '1px solid #856404',
+                                            padding: '12px',
+                                            color: '#856404',
+                                            fontWeight: '500'
+                                          }}>{crit.criterion}</td>
+                                          <td style={{
+                                            border: '1px solid #856404',
+                                            padding: '12px',
+                                            textAlign: 'center',
+                                            color: '#856404',
+                                            fontWeight: 'bold'
+                                          }}>{crit.points}</td>
+                                          <td style={{
+                                            border: '1px solid #856404',
+                                            padding: '12px',
+                                            color: '#856404'
+                                          }}>{crit.description}</td>
+                                        </tr>
+                                      ))}
+                                      <tr style={{ backgroundColor: '#ffc107', fontWeight: 'bold' }}>
                                         <td style={{
                                           border: '1px solid #856404',
                                           padding: '12px',
-                                          color: '#856404',
-                                          fontWeight: '500'
-                                        }}>{crit.criterion}</td>
+                                          textAlign: 'right',
+                                          color: '#856404'
+                                        }}>Total:</td>
                                         <td style={{
                                           border: '1px solid #856404',
                                           padding: '12px',
                                           textAlign: 'center',
-                                          color: '#856404',
-                                          fontWeight: 'bold'
-                                        }}>{crit.points}</td>
+                                          color: '#856404'
+                                        }}>
+                                          {rubricCriteria.criteria.reduce((sum, crit) => sum + crit.points, 0)}
+                                        </td>
                                         <td style={{
                                           border: '1px solid #856404',
                                           padding: '12px',
                                           color: '#856404'
-                                        }}>{crit.description}</td>
+                                        }}></td>
                                       </tr>
-                                    ))}
-                                    <tr style={{ backgroundColor: '#ffc107', fontWeight: 'bold' }}>
-                                      <td style={{
-                                        border: '1px solid #856404',
-                                        padding: '12px',
-                                        textAlign: 'right',
-                                        color: '#856404'
-                                      }}>Total:</td>
-                                      <td style={{
-                                        border: '1px solid #856404',
-                                        padding: '12px',
-                                        textAlign: 'center',
-                                        color: '#856404'
-                                      }}>
-                                        {rubricCriteria.reduce((sum, crit) => sum + crit.points, 0)}
-                                      </td>
-                                      <td style={{
-                                        border: '1px solid #856404',
-                                        padding: '12px',
-                                        color: '#856404'
-                                      }}></td>
-                                    </tr>
-                                  </tbody>
-                                </table>
-                              </div>
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )
                             ) : (
                               <div style={{ 
                                 whiteSpace: 'pre-wrap', 
