@@ -1679,11 +1679,29 @@ class SupabaseService {
    * Get lessons for a student (all their subjects)
    */
   async getLessonsByStudent(studentId, startDate, endDate) {
+    // Ensure studentId is numeric (not UUID)
+    let numericStudentId = studentId;
+    if (typeof studentId === 'string' && studentId.includes('-')) {
+      // It's a UUID, need to get the numeric user_id
+      const { data: userProfile } = await supabase
+        .from('users')
+        .select('user_id')
+        .eq('id', studentId)
+        .maybeSingle();
+      
+      if (userProfile && userProfile.user_id) {
+        numericStudentId = userProfile.user_id;
+      } else {
+        console.warn('[supabaseService] Could not find user_id for UUID:', studentId);
+        return [];
+      }
+    }
+    
     // Get student's class
     const { data: classAssignment } = await supabase
       .from('student_class_assignments')
       .select('class_id')
-      .eq('student_id', studentId)
+      .eq('student_id', numericStudentId)
       .eq('is_active', true)
       .single();
     

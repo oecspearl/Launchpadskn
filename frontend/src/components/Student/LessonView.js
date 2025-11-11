@@ -52,7 +52,28 @@ function LessonView() {
   
   const fetchAllLessons = async () => {
     try {
-      const studentId = user.user_id || user.userId;
+      // Use numeric user_id, not UUID
+      let studentId = user.user_id;
+      
+      // If user_id is not available or is a UUID, convert it
+      if (!studentId || (typeof studentId === 'string' && studentId.includes('-'))) {
+        const userIdToLookup = user.userId || user.id || studentId;
+        if (userIdToLookup && typeof userIdToLookup === 'string' && userIdToLookup.includes('-')) {
+          const { data: userProfile } = await supabase
+            .from('users')
+            .select('user_id')
+            .eq('id', userIdToLookup)
+            .maybeSingle();
+          
+          if (userProfile && userProfile.user_id) {
+            studentId = userProfile.user_id;
+          } else {
+            console.warn('[LessonView] Could not find user_id for UUID:', userIdToLookup);
+            return;
+          }
+        }
+      }
+      
       if (!studentId) return;
       
       // Get all lessons for the student (no date filter to get all)
@@ -141,12 +162,36 @@ function LessonView() {
         }
         
         // Get student's attendance for this lesson
-        if (user && user.userId && user.role?.toLowerCase() === 'student') {
+        if (user && user.role?.toLowerCase() === 'student') {
+          // Use numeric user_id, not UUID
+          let studentId = user.user_id;
+          
+          // If user_id is not available or is a UUID, convert it
+          if (!studentId || (typeof studentId === 'string' && studentId.includes('-'))) {
+            // It's a UUID, need to get the numeric user_id
+            const userIdToLookup = user.userId || user.id || studentId;
+            if (userIdToLookup && typeof userIdToLookup === 'string' && userIdToLookup.includes('-')) {
+              const { data: userProfile } = await supabase
+                .from('users')
+                .select('user_id')
+                .eq('id', userIdToLookup)
+                .maybeSingle();
+              
+              if (userProfile && userProfile.user_id) {
+                studentId = userProfile.user_id;
+              } else {
+                console.warn('[LessonView] Could not find user_id for UUID:', userIdToLookup);
+                setIsLoading(false);
+                return;
+              }
+            }
+          }
+          
           const { data: attendanceData } = await supabase
             .from('lesson_attendance')
             .select('*')
             .eq('lesson_id', lessonId)
-            .eq('student_id', user.userId)
+            .eq('student_id', studentId)
             .maybeSingle();
           
           setAttendance(attendanceData);
