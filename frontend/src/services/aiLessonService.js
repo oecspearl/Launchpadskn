@@ -3,6 +3,8 @@
  * Handles API calls to generate AI-powered lesson plans
  */
 
+import { findBestVideoForLesson, searchEducationalVideos } from './youtubeService';
+
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 
@@ -1148,6 +1150,46 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
 
   try {
     console.log('[AI Service] Generating complete lesson content...');
+    
+    // Search for relevant YouTube videos first
+    let videoInfo = null;
+    let videoOptions = [];
+    try {
+      console.log('[AI Service] Searching for YouTube videos...');
+      
+      // Search for multiple videos to give options
+      videoOptions = await searchEducationalVideos({
+        query: topic,
+        subject,
+        form,
+        maxResults: 3
+      });
+      
+      if (videoOptions && videoOptions.length > 0) {
+        // Use the first (most relevant) video
+        videoInfo = videoOptions[0];
+        console.log('[AI Service] Found', videoOptions.length, 'videos. Using:', videoInfo.title);
+        
+        // Update prompt to include the actual video URL
+        prompt = prompt.replace(
+          '"url": "https://www.youtube.com/watch?v=... or embed code"',
+          `"url": "${videoInfo.url}"`
+        );
+        
+        // Add video information to the prompt for better context
+        const videoList = videoOptions.map((v, idx) => 
+          `${idx + 1}. "${v.title}" by ${v.channelTitle} - ${v.url}`
+        ).join('\n');
+        
+        prompt += `\n\nIMPORTANT: Use this actual YouTube video URL in the VIDEO content item:\n${videoInfo.url}\nVideo Title: ${videoInfo.title}\nChannel: ${videoInfo.channelTitle}\nDescription: ${videoInfo.description?.substring(0, 200) || 'Educational video'}\n\nAdditional video options found:\n${videoList}`;
+      } else {
+        console.warn('[AI Service] No YouTube video found, will use placeholder');
+      }
+    } catch (videoError) {
+      console.warn('[AI Service] Error searching for videos, continuing without video:', videoError);
+      // Continue without video if search fails
+    }
+    
     const requestBody = {
       model: 'gpt-3.5-turbo',
       messages: [
@@ -1235,15 +1277,50 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
     }
 
     // Validate and ensure all required fields
-    contentItems = contentItems.map((item, index) => ({
-      content_type: item.content_type || 'SUMMARY',
-      title: item.title || `Content Item ${index + 1}`,
-      content_text: item.content_text || item.content || '',
-      content_section: item.content_section || 'Learning',
-      sequence_order: item.sequence_order || index + 1,
-      is_required: item.is_required !== false,
-      estimated_minutes: item.estimated_minutes || null
-    }));
+    contentItems = contentItems.map((item, index) => {
+      const mappedItem = {
+        content_type: item.content_type || 'SUMMARY',
+        title: item.title || `Content Item ${index + 1}`,
+        content_text: item.content_text || item.content || '',
+        content_section: item.content_section || 'Learning',
+        sequence_order: item.sequence_order || index + 1,
+        is_required: item.is_required !== false,
+        estimated_minutes: item.estimated_minutes || null
+      };
+      
+      // For VIDEO content, ensure we use the actual video URL if available
+      if (item.content_type === 'VIDEO' && videoInfo) {
+        mappedItem.url = videoInfo.url;
+        mappedItem.description = videoInfo.description || item.description || item.content_text || '';
+        mappedItem.title = videoInfo.title || item.title;
+      } else if (item.content_type === 'VIDEO' && item.url) {
+        mappedItem.url = item.url;
+        mappedItem.description = item.description || item.content_text || '';
+      }
+      
+      return mappedItem;
+    });
+
+    // If no VIDEO item was generated but we found a video, add it
+    const hasVideo = contentItems.some(item => item.content_type === 'VIDEO');
+    if (!hasVideo && videoInfo) {
+      contentItems.splice(2, 0, {
+        content_type: 'VIDEO',
+        title: videoInfo.title,
+        content_text: `Watch this video to understand ${topic}`,
+        url: videoInfo.url,
+        description: videoInfo.description || `Educational video about ${topic}`,
+        content_section: 'Learning',
+        sequence_order: 2,
+        is_required: true,
+        estimated_minutes: 10
+      });
+      // Reorder sequence numbers
+      contentItems = contentItems.map((item, index) => ({
+        ...item,
+        sequence_order: index + 1
+      }));
+    }
 
     return contentItems;
   } catch (error) {

@@ -17,6 +17,7 @@ import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import QuizBuilder from './QuizBuilder';
 import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
+import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
 
 // Ensure html2pdf is available globally for compatibility
@@ -472,8 +473,22 @@ function LessonContentManager() {
           // Handle different content types
           if (item.content_type === 'VIDEO') {
             // Video content
-            contentData.url = item.url || '';
-            contentData.description = item.description || item.content_text || '';
+            if (!item.url || !item.url.trim()) {
+              console.warn('Video content item missing URL, skipping:', item.title);
+              errorCount++;
+              continue;
+            }
+            contentData.url = item.url.trim();
+            contentData.description = item.description || item.content_text || `Educational video: ${item.title}`;
+            contentData.content_type = 'VIDEO';
+            
+            const { error: insertError } = await supabase
+              .from('lesson_content')
+              .insert([contentData]);
+            
+            if (insertError) throw insertError;
+            successCount++;
+            continue; // Skip to next item
           } else if (item.content_type === 'QUIZ') {
             // Quiz content - create content item first, then quiz with questions
             contentData.description = item.content_text || '';
