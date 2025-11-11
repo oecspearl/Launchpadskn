@@ -560,3 +560,165 @@ body .container-fluid .lesson-view-container {
   font-weight: 400;
   margin-left: 0.5rem;
 }
+
+/* Content Section Meta (Progress and Time) */
+.content-section-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
+}
+
+.section-progress {
+  font-size: 0.875rem;
+  color: #34a853;
+  font-weight: 500;
+}
+
+.section-time {
+  font-size: 0.875rem;
+  color: #5f6368;
+  display: flex;
+  align-items: center;
+}
+
+.section-time svg {
+  font-size: 0.75rem;
+}
+
+/* Estimated Time Badge in Header */
+.estimated-time-badge {
+  display: inline-block;
+}
+
+.estimated-time-badge .badge {
+  font-weight: 500;
+  font-size: 0.875rem;
+}
+
+/* Search and Filter Bar */
+.content-search-filter {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #e8eaed;
+  margin-bottom: 2rem;
+}
+
+.search-input-wrapper {
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #5f6368;
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.search-input {
+  padding-left: 2.75rem !important;
+  border: 1px solid #e8eaed;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.search-input:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+.filter-select-wrapper {
+  position: relative;
+}
+
+.filter-icon {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #5f6368;
+  font-size: 0.875rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.filter-select {
+  padding-left: 2.75rem !important;
+  border: 1px solid #e8eaed;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  border-color: #1a73e8;
+  box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.1);
+}
+
+.filter-results-info {
+  font-size: 0.875rem;
+  color: #5f6368;
+}
+
+.filter-results-info .btn-link {
+  color: #1a73e8;
+  text-decoration: none;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.filter-results-info .btn-link:hover {
+  text-decoration: underline;
+}
+
+/* Sequence Badge */
+.sequence-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  background-color: #5f6368 !important;
+}
+
+/* Content Time Badge */
+.content-time-badge {
+  font-size: 0.75rem;
+  color: #5f6368;
+  display: inline-flex;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+}
+
+.content-time-badge svg {
+  font-size: 0.7rem;
+}
+
+/* Prerequisite Alert */
+.prerequisite-alert {
+  font-size: 0.875rem;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prerequisite-alert svg {
+  font-size: 0.875rem;
+}
+
+.classwork-item.prerequisite-locked {
+  opacity: 0.7;
+  border-left: 4px solid #fbbc04 !important;
+}
+
+.classwork-item.prerequisite-locked:hover {
+  opacity: 0.85;
+}

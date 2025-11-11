@@ -9,7 +9,8 @@ import {
   FaBook, FaClipboardList, FaUser, FaCheckCircle, FaInfoCircle, FaClock as FaClockIcon,
   FaClipboardCheck, FaTasks, FaFilePdf, FaDownload, FaExternalLinkAlt,
   FaPlay, FaImage, FaFileAlt, FaLightbulb, FaQuestionCircle, FaComments,
-  FaGraduationCap, FaRocket, FaStar, FaChevronDown, FaChevronUp
+  FaGraduationCap, FaRocket, FaStar, FaChevronDown, FaChevronUp,
+  FaSearch, FaFilter, FaLock, FaArrowRight, FaHashtag
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -30,6 +31,9 @@ function LessonView() {
   const [expandedSections, setExpandedSections] = useState({});
   const [expandedItems, setExpandedItems] = useState({});
   const [allLessons, setAllLessons] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all'); // all, completed, incomplete
+  const [filterCategory, setFilterCategory] = useState('all'); // all, learning, practice, assessments, resources, homework
   
   useEffect(() => {
     if (lessonId) {
@@ -352,6 +356,102 @@ function LessonView() {
     return Math.round((completedContent.size / lesson.content.length) * 100);
   };
   
+  // Calculate progress per section
+  const calculateSectionProgress = (sectionContent) => {
+    if (!sectionContent || sectionContent.length === 0) return 0;
+    const completed = sectionContent.filter(item => completedContent.has(item.content_id)).length;
+    return Math.round((completed / sectionContent.length) * 100);
+  };
+  
+  // Calculate total estimated time for content
+  const calculateEstimatedTime = (content) => {
+    if (!content || content.length === 0) return 0;
+    return content.reduce((total, item) => {
+      return total + (item.estimated_minutes || 0);
+    }, 0);
+  };
+  
+  // Check if prerequisites are met
+  // First checks explicit prerequisites set by teacher, then falls back to sequence_order
+  const checkPrerequisites = (item, allContent) => {
+    // Check explicit prerequisites first (set by teacher)
+    if (item.prerequisite_content_ids && item.prerequisite_content_ids.length > 0) {
+      const prerequisiteItems = allContent.filter(c => 
+        item.prerequisite_content_ids.includes(c.content_id)
+      );
+      
+      const missing = prerequisiteItems.filter(prereq => !completedContent.has(prereq.content_id));
+      
+      return {
+        met: missing.length === 0,
+        missing: missing.map(p => p.title)
+      };
+    }
+    
+    // Fall back to sequence_order-based prerequisites (automatic)
+    if (!item.sequence_order || item.sequence_order <= 1) return { met: true, missing: [] };
+    
+    const prerequisites = allContent.filter(c => 
+      c.sequence_order < item.sequence_order && 
+      c.sequence_order > 0
+    );
+    
+    const missing = prerequisites.filter(prereq => !completedContent.has(prereq.content_id));
+    
+    return {
+      met: missing.length === 0,
+      missing: missing.map(p => p.title)
+    };
+  };
+  
+  // Filter and search content
+  const filterAndSearchContent = (content) => {
+    if (!content) return [];
+    
+    let filtered = [...content];
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(item => 
+        item.title?.toLowerCase().includes(query) ||
+        item.description?.toLowerCase().includes(query) ||
+        item.content_type?.toLowerCase().includes(query)
+      );
+    }
+    
+    // Filter by completion status
+    if (filterType === 'completed') {
+      filtered = filtered.filter(item => completedContent.has(item.content_id));
+    } else if (filterType === 'incomplete') {
+      filtered = filtered.filter(item => !completedContent.has(item.content_id));
+    }
+    
+    // Filter by category (will be applied after categorization)
+    
+    // Sort by sequence_order
+    filtered.sort((a, b) => {
+      const orderA = a.sequence_order || 999;
+      const orderB = b.sequence_order || 999;
+      return orderA - orderB;
+    });
+    
+    return filtered;
+  };
+  
+  // Filter categorized content by selected category
+  const getFilteredCategorizedContent = (categorized) => {
+    if (filterCategory === 'all') return categorized;
+    
+    const filtered = { ...categorized };
+    Object.keys(filtered).forEach(key => {
+      if (key !== filterCategory) {
+        filtered[key] = [];
+      }
+    });
+    return filtered;
+  };
+  
   if (isLoading) {
     return (
       <div className="lesson-view-container" style={{ background: 'transparent', minHeight: '100vh', padding: '3rem 0' }}>
@@ -407,20 +507,54 @@ function LessonView() {
     const postedDate = contentItem.created_at || lesson.lesson_date;
     const dateStr = postedDate ? new Date(postedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
     
+    // Check prerequisites
+    const prerequisites = checkPrerequisites(contentItem, lesson.content || []);
+    
+    // Get sequence order
+    const sequenceOrder = contentItem.sequence_order;
+    
     return (
       <div 
         key={contentItem.content_id || index} 
-        className={`classwork-item ${iconClass} ${isExpanded ? 'expanded' : ''} ${isCompleted ? 'selected' : ''}`}
+        className={`classwork-item ${iconClass} ${isExpanded ? 'expanded' : ''} ${isCompleted ? 'selected' : ''} ${!prerequisites.met ? 'prerequisite-locked' : ''}`}
         onClick={() => toggleItem(contentItem.content_id)}
       >
         <div className={`classwork-icon ${iconClass}`}>
           {getContentIcon(contentItem.content_type)}
         </div>
         <div className="classwork-content">
-          <h3 className="classwork-title">
-            {contentItem.title || 'Material'}
-          </h3>
-          <p className="classwork-date">Posted {dateStr}</p>
+          <div className="d-flex align-items-start justify-content-between">
+            <div className="flex-grow-1">
+              <div className="d-flex align-items-center gap-2 mb-1">
+                {sequenceOrder && sequenceOrder > 0 && (
+                  <Badge bg="secondary" className="sequence-badge">
+                    <FaHashtag className="me-1" style={{ fontSize: '0.7rem' }} />
+                    {sequenceOrder}
+                  </Badge>
+                )}
+                <h3 className="classwork-title mb-0">
+                  {contentItem.title || 'Material'}
+                </h3>
+              </div>
+              <div className="d-flex align-items-center gap-3 flex-wrap">
+                <p className="classwork-date mb-0">Posted {dateStr}</p>
+                {contentItem.estimated_minutes && contentItem.estimated_minutes > 0 && (
+                  <span className="content-time-badge">
+                    <FaClock className="me-1" style={{ fontSize: '0.75rem' }} />
+                    {contentItem.estimated_minutes} {contentItem.estimated_minutes === 1 ? 'min' : 'mins'}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Prerequisite Warning */}
+          {!prerequisites.met && prerequisites.missing.length > 0 && (
+            <Alert variant="warning" className="mt-2 mb-2 prerequisite-alert">
+              <FaLock className="me-2" />
+              <strong>Prerequisites required:</strong> Please complete the following items first: {prerequisites.missing.join(', ')}
+            </Alert>
+          )}
           
           {isExpanded && (
             <div className="classwork-expanded">
@@ -701,7 +835,18 @@ function LessonView() {
   const progress = calculateProgress();
   const contentCount = lesson.content?.length || 0;
   const completedCount = completedContent.size;
-  const categorizedContent = categorizeContent(lesson.content);
+  
+  // Filter and search content first
+  const filteredContent = filterAndSearchContent(lesson.content);
+  
+  // Then categorize the filtered content
+  let categorizedContent = categorizeContent(filteredContent);
+  
+  // Apply category filter if needed
+  categorizedContent = getFilteredCategorizedContent(categorizedContent);
+  
+  // Calculate total estimated time for the lesson
+  const totalEstimatedTime = calculateEstimatedTime(lesson.content);
   
   return (
     <div className="lesson-view-container" style={{ background: 'transparent', minHeight: '100vh', width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', marginTop: '-1.5rem', marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}>
@@ -733,6 +878,16 @@ function LessonView() {
             <p className="lesson-subtitle">
               {getFormName()} • {getClassName()} • {formatDate(lesson.lesson_date)}
             </p>
+            
+            {/* Estimated Time */}
+            {totalEstimatedTime > 0 && (
+              <div className="estimated-time-badge mt-2 mb-3">
+                <Badge bg="info" className="px-3 py-2">
+                  <FaClock className="me-2" />
+                  Estimated Time: {totalEstimatedTime} {totalEstimatedTime === 1 ? 'minute' : 'minutes'}
+                </Badge>
+              </div>
+            )}
             
             {/* Progress Bar */}
             {contentCount > 0 && (
@@ -812,13 +967,95 @@ function LessonView() {
           
           {/* Main Content Area */}
           <div className="lesson-main-content">
+            {/* Search and Filter Bar */}
+            <div className="content-search-filter mb-4">
+              <Row className="g-3">
+                <Col md={6}>
+                  <div className="search-input-wrapper">
+                    <FaSearch className="search-icon" />
+                    <input
+                      type="text"
+                      className="form-control search-input"
+                      placeholder="Search content by title, description, or type..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                </Col>
+                <Col md={3}>
+                  <div className="filter-select-wrapper">
+                    <FaFilter className="filter-icon" />
+                    <select
+                      className="form-select filter-select"
+                      value={filterType}
+                      onChange={(e) => setFilterType(e.target.value)}
+                    >
+                      <option value="all">All Content</option>
+                      <option value="completed">Completed</option>
+                      <option value="incomplete">Incomplete</option>
+                    </select>
+                  </div>
+                </Col>
+                <Col md={3}>
+                  <select
+                    className="form-select filter-select"
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                  >
+                    <option value="all">All Categories</option>
+                    <option value="learning">Learning</option>
+                    <option value="practice">Practice</option>
+                    <option value="assessments">Assessments</option>
+                    <option value="resources">Resources</option>
+                    <option value="homework">Homework</option>
+                  </select>
+                </Col>
+              </Row>
+              {(searchQuery || filterType !== 'all' || filterCategory !== 'all') && (
+                <div className="filter-results-info mt-2">
+                  <small className="text-muted">
+                    Showing {filteredContent.length} of {lesson.content?.length || 0} items
+                    {(searchQuery || filterType !== 'all') && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="p-0 ms-2"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setFilterType('all');
+                          setFilterCategory('all');
+                        }}
+                      >
+                        Clear filters
+                      </Button>
+                    )}
+                  </small>
+                </div>
+              )}
+            </div>
+            
             {/* Learning Content Section */}
             {categorizedContent.learning.length > 0 && (
               <div className="content-section">
                 <div className="content-section-header">
-                  <FaGraduationCap className="me-2" />
-                  <h4>Learning</h4>
-                  <span className="content-count">({categorizedContent.learning.length})</span>
+                  <div className="d-flex align-items-center flex-grow-1">
+                    <FaGraduationCap className="me-2" />
+                    <h4>Learning</h4>
+                    <span className="content-count">({categorizedContent.learning.length})</span>
+                  </div>
+                  <div className="content-section-meta">
+                    {calculateSectionProgress(categorizedContent.learning) > 0 && (
+                      <span className="section-progress me-3">
+                        {calculateSectionProgress(categorizedContent.learning)}% complete
+                      </span>
+                    )}
+                    {calculateEstimatedTime(categorizedContent.learning) > 0 && (
+                      <span className="section-time">
+                        <FaClock className="me-1" />
+                        {calculateEstimatedTime(categorizedContent.learning)} min
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {categorizedContent.learning.map((contentItem, index) => 
                   renderContentItem(contentItem, index)
@@ -830,9 +1067,24 @@ function LessonView() {
             {categorizedContent.practice.length > 0 && (
               <div className="content-section">
                 <div className="content-section-header">
-                  <FaClipboardList className="me-2" />
-                  <h4>Practice</h4>
-                  <span className="content-count">({categorizedContent.practice.length})</span>
+                  <div className="d-flex align-items-center flex-grow-1">
+                    <FaClipboardList className="me-2" />
+                    <h4>Practice</h4>
+                    <span className="content-count">({categorizedContent.practice.length})</span>
+                  </div>
+                  <div className="content-section-meta">
+                    {calculateSectionProgress(categorizedContent.practice) > 0 && (
+                      <span className="section-progress me-3">
+                        {calculateSectionProgress(categorizedContent.practice)}% complete
+                      </span>
+                    )}
+                    {calculateEstimatedTime(categorizedContent.practice) > 0 && (
+                      <span className="section-time">
+                        <FaClock className="me-1" />
+                        {calculateEstimatedTime(categorizedContent.practice)} min
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {categorizedContent.practice.map((contentItem, index) => 
                   renderContentItem(contentItem, index)
@@ -844,9 +1096,24 @@ function LessonView() {
             {categorizedContent.assessments.length > 0 && (
               <div className="content-section">
                 <div className="content-section-header">
-                  <FaClipboardCheck className="me-2" />
-                  <h4>Assessments</h4>
-                  <span className="content-count">({categorizedContent.assessments.length})</span>
+                  <div className="d-flex align-items-center flex-grow-1">
+                    <FaClipboardCheck className="me-2" />
+                    <h4>Assessments</h4>
+                    <span className="content-count">({categorizedContent.assessments.length})</span>
+                  </div>
+                  <div className="content-section-meta">
+                    {calculateSectionProgress(categorizedContent.assessments) > 0 && (
+                      <span className="section-progress me-3">
+                        {calculateSectionProgress(categorizedContent.assessments)}% complete
+                      </span>
+                    )}
+                    {calculateEstimatedTime(categorizedContent.assessments) > 0 && (
+                      <span className="section-time">
+                        <FaClock className="me-1" />
+                        {calculateEstimatedTime(categorizedContent.assessments)} min
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {categorizedContent.assessments.map((contentItem, index) => 
                   renderContentItem(contentItem, index)
@@ -858,9 +1125,24 @@ function LessonView() {
             {categorizedContent.resources.length > 0 && (
               <div className="content-section">
                 <div className="content-section-header">
-                  <FaFileAlt className="me-2" />
-                  <h4>Resources</h4>
-                  <span className="content-count">({categorizedContent.resources.length})</span>
+                  <div className="d-flex align-items-center flex-grow-1">
+                    <FaFileAlt className="me-2" />
+                    <h4>Resources</h4>
+                    <span className="content-count">({categorizedContent.resources.length})</span>
+                  </div>
+                  <div className="content-section-meta">
+                    {calculateSectionProgress(categorizedContent.resources) > 0 && (
+                      <span className="section-progress me-3">
+                        {calculateSectionProgress(categorizedContent.resources)}% complete
+                      </span>
+                    )}
+                    {calculateEstimatedTime(categorizedContent.resources) > 0 && (
+                      <span className="section-time">
+                        <FaClock className="me-1" />
+                        {calculateEstimatedTime(categorizedContent.resources)} min
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {categorizedContent.resources.map((contentItem, index) => 
                   renderContentItem(contentItem, index)
@@ -872,9 +1154,24 @@ function LessonView() {
             {categorizedContent.homework.length > 0 && (
               <div className="content-section">
                 <div className="content-section-header">
-                  <FaBook className="me-2" />
-                  <h4>Homework</h4>
-                  <span className="content-count">({categorizedContent.homework.length})</span>
+                  <div className="d-flex align-items-center flex-grow-1">
+                    <FaBook className="me-2" />
+                    <h4>Homework</h4>
+                    <span className="content-count">({categorizedContent.homework.length})</span>
+                  </div>
+                  <div className="content-section-meta">
+                    {calculateSectionProgress(categorizedContent.homework) > 0 && (
+                      <span className="section-progress me-3">
+                        {calculateSectionProgress(categorizedContent.homework)}% complete
+                      </span>
+                    )}
+                    {calculateEstimatedTime(categorizedContent.homework) > 0 && (
+                      <span className="section-time">
+                        <FaClock className="me-1" />
+                        {calculateEstimatedTime(categorizedContent.homework)} min
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {categorizedContent.homework.map((contentItem, index) => 
                   renderContentItem(contentItem, index)

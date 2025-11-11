@@ -67,6 +67,7 @@ function LessonContentManager() {
   const [generatedRubric, setGeneratedRubric] = useState(null);
   const [generatingRubric, setGeneratingRubric] = useState(false);
   const [showRubricModal, setShowRubricModal] = useState(false);
+  const [selectedPrerequisites, setSelectedPrerequisites] = useState([]); // Array of content_id values
   
   useEffect(() => {
     if (lessonId) {
@@ -198,6 +199,8 @@ function LessonContentManager() {
       setAssignmentDetailsFile(null);
       setAssignmentRubricFile(null);
       setUploadedRubricFileInfo(null);
+      // Load prerequisites when editing
+      setSelectedPrerequisites(item.prerequisite_content_ids || []);
     } else {
       setEditingContent(null);
       setContentType('FILE');
@@ -219,6 +222,7 @@ function LessonContentManager() {
       setAssignmentDetailsFile(null);
       setAssignmentRubricFile(null);
       setUploadedRubricFileInfo(null);
+      setSelectedPrerequisites([]);
     }
     setShowModal(true);
     setError(null);
@@ -247,6 +251,7 @@ function LessonContentManager() {
     setAssignmentDetailsFile(null);
     setAssignmentRubricFile(null);
     setUploadedRubricFileInfo(null);
+    setSelectedPrerequisites([]);
     setUploading(false); // Reset uploading state when closing modal
     setError(null);
     setSuccess(null);
@@ -527,7 +532,9 @@ function LessonContentManager() {
         assignment_rubric_file_path: contentType === 'ASSIGNMENT' ? assignmentRubricFilePath : null,
         assignment_rubric_file_name: contentType === 'ASSIGNMENT' ? assignmentRubricFileName : null,
         assignment_rubric_file_size: contentType === 'ASSIGNMENT' ? assignmentRubricFileSize : null,
-        assignment_rubric_mime_type: contentType === 'ASSIGNMENT' ? assignmentRubricMimeType : null
+        assignment_rubric_mime_type: contentType === 'ASSIGNMENT' ? assignmentRubricMimeType : null,
+        // Prerequisites - only for non-learning content types
+        prerequisite_content_ids: isLearningContent ? null : (selectedPrerequisites.length > 0 ? selectedPrerequisites : null)
       };
       
       if (editingContent) {
@@ -552,6 +559,7 @@ function LessonContentManager() {
           estimated_minutes: updateFields.estimated_minutes,
           sequence_order: updateFields.sequence_order,
           is_published: updateFields.is_published,
+          prerequisite_content_ids: updateFields.prerequisite_content_ids,
           updated_at: new Date().toISOString()
         };
         
@@ -1902,6 +1910,49 @@ function LessonContentManager() {
                   <Form.Text className="text-muted">
                     Uncheck if this content is optional for students
                   </Form.Text>
+                </Form.Group>
+
+                {/* Prerequisites Selection */}
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    Prerequisites <small className="text-muted">(Optional)</small>
+                  </Form.Label>
+                  <Form.Text className="d-block mb-2 text-muted">
+                    Select content items that students must complete before accessing this content. 
+                    If no prerequisites are selected, the system will use sequence order automatically.
+                  </Form.Text>
+                  <div style={{ 
+                    maxHeight: '200px', 
+                    overflowY: 'auto', 
+                    border: '1px solid #dee2e6', 
+                    borderRadius: '4px', 
+                    padding: '0.75rem' 
+                  }}>
+                    {content
+                      .filter(item => !editingContent || item.content_id !== editingContent.content_id)
+                      .map(item => (
+                        <Form.Check
+                          key={item.content_id}
+                          type="checkbox"
+                          id={`prereq-${item.content_id}`}
+                          label={`${item.title} (${item.content_type})`}
+                          checked={selectedPrerequisites.includes(item.content_id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPrerequisites([...selectedPrerequisites, item.content_id]);
+                            } else {
+                              setSelectedPrerequisites(selectedPrerequisites.filter(id => id !== item.content_id));
+                            }
+                          }}
+                          className="mb-2"
+                        />
+                      ))}
+                    {content.filter(item => !editingContent || item.content_id !== editingContent.content_id).length === 0 && (
+                      <p className="text-muted mb-0" style={{ fontSize: '0.875rem' }}>
+                        No other content items available. Add more content to set prerequisites.
+                      </p>
+                    )}
+                  </div>
                 </Form.Group>
               </>
             )}
