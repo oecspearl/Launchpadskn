@@ -971,9 +971,377 @@ Respond with ONLY the rubric content, formatted clearly and professionally. Do n
   }
 };
 
+/**
+ * Generate complete lesson content structure with multiple content items
+ * @param {Object} params - Lesson content generation parameters
+ * @param {string} params.lessonTitle - Title of the lesson
+ * @param {string} params.topic - Lesson topic
+ * @param {string} params.subject - Subject name
+ * @param {string} params.form - Form/grade level
+ * @param {string} params.learningObjectives - Learning objectives for the lesson
+ * @param {string} params.lessonPlan - Lesson plan text (optional)
+ * @param {number} params.duration - Lesson duration in minutes
+ * @returns {Promise<Array>} Array of content items to be created
+ */
+export const generateCompleteLessonContent = async ({
+  lessonTitle,
+  topic,
+  subject,
+  form,
+  learningObjectives,
+  lessonPlan = '',
+  duration = 45
+}) => {
+  if (!API_KEY) {
+    throw new Error('OpenAI API key is not configured. Please set REACT_APP_OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!lessonTitle || !topic || !subject || !form) {
+    throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
+  }
+
+  const prompt = `You are an expert educational content creator. Generate a complete set of lesson content items for a lesson with the following details:
+
+Subject: ${subject}
+Form: ${form}
+Topic: ${topic}
+Lesson Title: ${lessonTitle}
+Duration: ${duration} minutes
+${learningObjectives ? `Learning Objectives:\n${learningObjectives}\n` : ''}
+${lessonPlan ? `Lesson Plan:\n${lessonPlan.substring(0, 2000)}\n` : ''}
+
+Generate a comprehensive set of content items that should be included in this lesson. For each content item, provide:
+1. Content type (one of: LEARNING_OUTCOMES, LEARNING_ACTIVITIES, KEY_CONCEPTS, REFLECTION_QUESTIONS, DISCUSSION_PROMPTS, SUMMARY)
+2. Title
+3. The actual content text (appropriate for ${form} students)
+4. Content section (Introduction, Learning, Assessment, Resources, or Closure)
+5. Sequence order (1, 2, 3, etc.)
+6. Whether it's required (true/false)
+7. Estimated minutes to complete (if applicable)
+
+IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks. The response must be a single JSON array that can be parsed directly.
+
+Respond with this exact JSON structure:
+[
+  {
+    "content_type": "LEARNING_OUTCOMES",
+    "title": "Learning Outcomes",
+    "content_text": "Detailed learning outcomes written at ${form} level...",
+    "content_section": "Introduction",
+    "sequence_order": 1,
+    "is_required": true,
+    "estimated_minutes": null
+  },
+  {
+    "content_type": "KEY_CONCEPTS",
+    "title": "Key Concepts",
+    "content_text": "Main concepts students need to understand, written clearly at ${form} level...",
+    "content_section": "Learning",
+    "sequence_order": 2,
+    "is_required": true,
+    "estimated_minutes": 10
+  },
+  {
+    "content_type": "LEARNING_ACTIVITIES",
+    "title": "Learning Activities",
+    "content_text": "Step-by-step activities students should complete, written at ${form} level...",
+    "content_section": "Learning",
+    "sequence_order": 3,
+    "is_required": true,
+    "estimated_minutes": 20
+  },
+  {
+    "content_type": "REFLECTION_QUESTIONS",
+    "title": "Reflection Questions",
+    "content_text": "Thought-provoking questions for students to reflect on what they learned...",
+    "content_section": "Assessment",
+    "sequence_order": 4,
+    "is_required": false,
+    "estimated_minutes": 5
+  },
+  {
+    "content_type": "DISCUSSION_PROMPTS",
+    "title": "Discussion Prompts",
+    "content_text": "Questions and topics for class discussion...",
+    "content_section": "Assessment",
+    "sequence_order": 5,
+    "is_required": false,
+    "estimated_minutes": 10
+  },
+  {
+    "content_type": "SUMMARY",
+    "title": "Lesson Summary",
+    "content_text": "A clear summary of the lesson's main points, written at ${form} level...",
+    "content_section": "Closure",
+    "sequence_order": 6,
+    "is_required": true,
+    "estimated_minutes": 5
+  }
+]
+
+Generate 4-8 content items that provide a complete learning experience. Make sure:
+- All content is written at ${form} reading/comprehension level
+- Content is practical and classroom-ready
+- Sequence makes logical sense (Introduction → Learning → Assessment → Closure)
+- Mix of required and optional content
+- Content is specific to the topic "${topic}" and subject "${subject}"
+
+Remember: Respond with ONLY the JSON array, nothing else.`;
+
+  try {
+    console.log('[AI Service] Generating complete lesson content...');
+    const requestBody = {
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert educational content creator. You MUST respond with ONLY valid JSON array, no markdown, no code blocks, no additional text. The response must be parseable JSON only.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 3000
+    };
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No response content received from AI');
+    }
+
+    // Parse JSON array from response
+    let contentItems;
+    try {
+      const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*\])\s*```/);
+      if (jsonMatch) {
+        contentItems = JSON.parse(jsonMatch[1]);
+      } else {
+        const jsonArrayMatch = content.match(/\[[\s\S]*\]/);
+        if (jsonArrayMatch) {
+          contentItems = JSON.parse(jsonArrayMatch[0]);
+        } else {
+          contentItems = JSON.parse(content);
+        }
+      }
+      console.log('[AI Service] Successfully parsed content items:', contentItems.length);
+    } catch (parseError) {
+      console.warn('[AI Service] Failed to parse JSON, using fallback:', parseError);
+      // Fallback: create basic content structure
+      contentItems = [
+        {
+          content_type: 'LEARNING_OUTCOMES',
+          title: 'Learning Outcomes',
+          content_text: learningObjectives || 'Students will learn the key concepts of this topic.',
+          content_section: 'Introduction',
+          sequence_order: 1,
+          is_required: true,
+          estimated_minutes: null
+        },
+        {
+          content_type: 'KEY_CONCEPTS',
+          title: 'Key Concepts',
+          content_text: `Main concepts for ${topic} in ${subject}.`,
+          content_section: 'Learning',
+          sequence_order: 2,
+          is_required: true,
+          estimated_minutes: 10
+        },
+        {
+          content_type: 'SUMMARY',
+          title: 'Lesson Summary',
+          content_text: `Summary of ${topic}.`,
+          content_section: 'Closure',
+          sequence_order: 3,
+          is_required: true,
+          estimated_minutes: 5
+        }
+      ];
+    }
+
+    // Validate and ensure all required fields
+    contentItems = contentItems.map((item, index) => ({
+      content_type: item.content_type || 'SUMMARY',
+      title: item.title || `Content Item ${index + 1}`,
+      content_text: item.content_text || item.content || '',
+      content_section: item.content_section || 'Learning',
+      sequence_order: item.sequence_order || index + 1,
+      is_required: item.is_required !== false,
+      estimated_minutes: item.estimated_minutes || null
+    }));
+
+    return contentItems;
+  } catch (error) {
+    console.error('[AI Service] Error generating complete lesson content:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate student-facing content from a lesson plan
+ * @param {Object} params - Student content generation parameters
+ * @param {string} params.lessonTitle - Title of the lesson
+ * @param {string} params.topic - Lesson topic
+ * @param {string} params.subject - Subject name
+ * @param {string} params.form - Form/grade level
+ * @param {string} params.lessonPlan - Full lesson plan text
+ * @param {string} params.learningObjectives - Learning objectives
+ * @returns {Promise<Object>} Student-facing content object
+ */
+export const generateStudentFacingContent = async ({
+  lessonTitle,
+  topic,
+  subject,
+  form,
+  lessonPlan,
+  learningObjectives
+}) => {
+  if (!API_KEY) {
+    throw new Error('OpenAI API key is not configured. Please set REACT_APP_OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!lessonTitle || !topic || !subject || !form) {
+    throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
+  }
+
+  const prompt = `You are an expert educational content creator specializing in student-facing materials. Create clear, engaging, and age-appropriate content for ${form} students based on this lesson:
+
+Subject: ${subject}
+Form: ${form}
+Topic: ${topic}
+Lesson Title: ${lessonTitle}
+${learningObjectives ? `Learning Objectives:\n${learningObjectives}\n` : ''}
+${lessonPlan ? `Lesson Plan:\n${lessonPlan.substring(0, 3000)}\n` : ''}
+
+Generate student-facing content that includes:
+
+1. KEY_CONCEPTS: Main concepts explained in simple, clear language at ${form} level (3-5 key concepts)
+2. LEARNING_ACTIVITIES: Step-by-step activities students can follow (2-3 activities)
+3. REFLECTION_QUESTIONS: Thought-provoking questions for students to think about (3-5 questions)
+4. DISCUSSION_PROMPTS: Questions for class discussion (2-3 prompts)
+5. SUMMARY: A clear summary of what students learned (concise, at ${form} level)
+
+IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks.
+
+Respond with this exact JSON structure:
+{
+  "key_concepts": "Clear explanation of 3-5 main concepts, written at ${form} level. Use simple language and examples students can relate to.",
+  "learning_activities": "Step-by-step activities (2-3 activities) that students can complete. Make instructions clear and easy to follow.",
+  "reflection_questions": "3-5 thoughtful questions that help students reflect on what they learned. Questions should be open-ended and encourage critical thinking.",
+  "discussion_prompts": "2-3 discussion questions or prompts that encourage class participation and deeper thinking about the topic.",
+  "summary": "A concise summary (2-3 paragraphs) of the lesson's main points, written clearly at ${form} level. Help students understand what they learned and why it matters."
+}
+
+Make all content:
+- Written at ${form} reading/comprehension level
+- Clear and engaging
+- Practical and actionable
+- Specific to the topic "${topic}" in ${subject}
+- Free of jargon or overly complex language
+
+Remember: Respond with ONLY the JSON object, nothing else.`;
+
+  try {
+    console.log('[AI Service] Generating student-facing content...');
+    const requestBody = {
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert educational content creator for students. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    };
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No response content received from AI');
+    }
+
+    // Parse JSON from response
+    let studentContent;
+    try {
+      const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+      if (jsonMatch) {
+        studentContent = JSON.parse(jsonMatch[1]);
+      } else {
+        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          studentContent = JSON.parse(jsonObjectMatch[0]);
+        } else {
+          studentContent = JSON.parse(content);
+        }
+      }
+      console.log('[AI Service] Successfully parsed student content');
+    } catch (parseError) {
+      console.warn('[AI Service] Failed to parse JSON, using fallback:', parseError);
+      studentContent = {
+        key_concepts: `Key concepts for ${topic} in ${subject}.`,
+        learning_activities: `Activities related to ${topic}.`,
+        reflection_questions: `What did you learn about ${topic}?`,
+        discussion_prompts: `Let's discuss ${topic}.`,
+        summary: `Summary of ${topic}.`
+      };
+    }
+
+    // Ensure all fields exist
+    studentContent.key_concepts = studentContent.key_concepts || '';
+    studentContent.learning_activities = studentContent.learning_activities || '';
+    studentContent.reflection_questions = studentContent.reflection_questions || '';
+    studentContent.discussion_prompts = studentContent.discussion_prompts || '';
+    studentContent.summary = studentContent.summary || '';
+
+    return studentContent;
+  } catch (error) {
+    console.error('[AI Service] Error generating student-facing content:', error);
+    throw error;
+  }
+};
+
 export default {
   generateLessonPlan,
   generateEnhancedLessonPlan,
-  generateAssignmentRubric
+  generateAssignmentRubric,
+  generateCompleteLessonContent,
+  generateStudentFacingContent
 };
 

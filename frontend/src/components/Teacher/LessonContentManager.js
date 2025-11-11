@@ -10,13 +10,13 @@ import {
   FaArrowUp, FaArrowDown, FaGripVertical, FaClock, FaCheckCircle, FaInfoCircle,
   FaGraduationCap, FaLightbulb, FaQuestionCircle, FaComments, FaClipboardCheck,
   FaClipboardList, FaTasks, FaFileSignature, FaPoll, FaProjectDiagram,
-  FaFilePdf
+  FaFilePdf, FaMagic
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import QuizBuilder from './QuizBuilder';
-import { generateAssignmentRubric } from '../../services/aiLessonService';
+import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
 import html2pdf from 'html2pdf.js';
 
 // Ensure html2pdf is available globally for compatibility
@@ -68,6 +68,11 @@ function LessonContentManager() {
   const [generatingRubric, setGeneratingRubric] = useState(false);
   const [showRubricModal, setShowRubricModal] = useState(false);
   const [selectedPrerequisites, setSelectedPrerequisites] = useState([]); // Array of content_id values
+  // AI Content Generation state
+  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
+  const [generatedContentItems, setGeneratedContentItems] = useState([]);
+  const [showAIContentModal, setShowAIContentModal] = useState(false);
+  const [aiGenerationMode, setAiGenerationMode] = useState('complete'); // 'complete' or 'student'
   
   useEffect(() => {
     if (lessonId) {
@@ -295,6 +300,207 @@ function LessonContentManager() {
 
   const handleQuizSaved = () => {
     fetchContent(); // Refresh content list
+  };
+  
+  // AI Content Generation Functions
+  const handleGenerateAIContent = async (mode = 'complete') => {
+    if (!lessonData) {
+      setError('Lesson data not loaded. Please wait...');
+      return;
+    }
+
+    const subjectName = lessonData.class_subject?.subject_offering?.subject?.subject_name || 'General';
+    const formName = lessonData.class_subject?.class?.form?.form_name || '';
+    const topic = lessonData.topic || lessonData.lesson_title || '';
+    const lessonTitle = lessonData.lesson_title || 'Untitled Lesson';
+    const learningObjectives = lessonData.learning_objectives || '';
+    const lessonPlan = lessonData.lesson_plan || '';
+    const duration = lessonData.start_time && lessonData.end_time 
+      ? calculateDuration(lessonData.start_time, lessonData.end_time)
+      : 45;
+
+    if (!topic || !subjectName || !formName) {
+      setError('Missing lesson information. Please ensure the lesson has a topic, subject, and form assigned.');
+      return;
+    }
+
+    setIsGeneratingContent(true);
+    setError(null);
+    setAiGenerationMode(mode);
+
+    try {
+      if (mode === 'complete') {
+        // Generate complete lesson content structure
+        const contentItems = await generateCompleteLessonContent({
+          lessonTitle,
+          topic,
+          subject: subjectName,
+          form: formName,
+          learningObjectives,
+          lessonPlan,
+          duration
+        });
+        setGeneratedContentItems(contentItems);
+        setShowAIContentModal(true);
+      } else if (mode === 'student') {
+        // Generate student-facing content
+        const studentContent = await generateStudentFacingContent({
+          lessonTitle,
+          topic,
+          subject: subjectName,
+          form: formName,
+          lessonPlan,
+          learningObjectives
+        });
+        
+        // Convert student content to content items format
+        const contentItems = [];
+        if (studentContent.key_concepts) {
+          contentItems.push({
+            content_type: 'KEY_CONCEPTS',
+            title: 'Key Concepts',
+            content_text: studentContent.key_concepts,
+            content_section: 'Learning',
+            sequence_order: 1,
+            is_required: true,
+            estimated_minutes: 10
+          });
+        }
+        if (studentContent.learning_activities) {
+          contentItems.push({
+            content_type: 'LEARNING_ACTIVITIES',
+            title: 'Learning Activities',
+            content_text: studentContent.learning_activities,
+            content_section: 'Learning',
+            sequence_order: 2,
+            is_required: true,
+            estimated_minutes: 20
+          });
+        }
+        if (studentContent.reflection_questions) {
+          contentItems.push({
+            content_type: 'REFLECTION_QUESTIONS',
+            title: 'Reflection Questions',
+            content_text: studentContent.reflection_questions,
+            content_section: 'Assessment',
+            sequence_order: 3,
+            is_required: false,
+            estimated_minutes: 5
+          });
+        }
+        if (studentContent.discussion_prompts) {
+          contentItems.push({
+            content_type: 'DISCUSSION_PROMPTS',
+            title: 'Discussion Prompts',
+            content_text: studentContent.discussion_prompts,
+            content_section: 'Assessment',
+            sequence_order: 4,
+            is_required: false,
+            estimated_minutes: 10
+          });
+        }
+        if (studentContent.summary) {
+          contentItems.push({
+            content_type: 'SUMMARY',
+            title: 'Lesson Summary',
+            content_text: studentContent.summary,
+            content_section: 'Closure',
+            sequence_order: 5,
+            is_required: true,
+            estimated_minutes: 5
+          });
+        }
+        setGeneratedContentItems(contentItems);
+        setShowAIContentModal(true);
+      }
+    } catch (err) {
+      console.error('Error generating AI content:', err);
+      setError(err.message || 'Failed to generate content. Please check your API key and try again.');
+    } finally {
+      setIsGeneratingContent(false);
+    }
+  };
+
+  const calculateDuration = (startTime, endTime) => {
+    if (!startTime || !endTime) return 45;
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    return Math.round((end - start) / (1000 * 60));
+  };
+
+  const handleSaveAIContent = async () => {
+    if (!generatedContentItems || generatedContentItems.length === 0) {
+      setError('No content items to save');
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+    let successCount = 0;
+    let errorCount = 0;
+
+    try {
+      // Get current max sequence order
+      const maxSequence = content.length > 0 
+        ? Math.max(...content.map(c => c.sequence_order || 0))
+        : 0;
+
+      // Create all content items
+      for (const item of generatedContentItems) {
+        try {
+          const fieldMap = {
+            'LEARNING_OUTCOMES': 'learning_outcomes',
+            'LEARNING_ACTIVITIES': 'learning_activities',
+            'KEY_CONCEPTS': 'key_concepts',
+            'REFLECTION_QUESTIONS': 'reflection_questions',
+            'DISCUSSION_PROMPTS': 'discussion_prompts',
+            'SUMMARY': 'summary'
+          };
+
+          const contentData = {
+            lesson_id: parseInt(lessonId),
+            content_type: item.content_type,
+            title: item.title,
+            content_section: item.content_section || 'Learning',
+            sequence_order: (item.sequence_order || 0) + maxSequence,
+            is_required: item.is_required !== false,
+            estimated_minutes: item.estimated_minutes || null,
+            is_published: true,
+            uploaded_by: user.user_id || user.userId,
+            [fieldMap[item.content_type]]: item.content_text || ''
+          };
+
+          const { error: insertError } = await supabase
+            .from('lesson_content')
+            .insert([contentData]);
+
+          if (insertError) throw insertError;
+          successCount++;
+        } catch (itemError) {
+          console.error('Error saving content item:', itemError);
+          errorCount++;
+        }
+      }
+
+      if (successCount > 0) {
+        setSuccess(`Successfully created ${successCount} content item${successCount !== 1 ? 's' : ''}${errorCount > 0 ? `. ${errorCount} failed.` : ''}`);
+        setShowAIContentModal(false);
+        setGeneratedContentItems([]);
+        fetchContent(); // Refresh content list
+      } else {
+        setError(`Failed to create content items. ${errorCount} error${errorCount !== 1 ? 's' : ''} occurred.`);
+      }
+    } catch (err) {
+      console.error('Error saving AI content:', err);
+      setError(err.message || 'Failed to save generated content');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCloseAIContentModal = () => {
+    setShowAIContentModal(false);
+    setGeneratedContentItems([]);
   };
   
   const handleSubmit = async (e) => {
@@ -1097,10 +1303,29 @@ function LessonContentManager() {
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <h4>Lesson Content Management</h4>
-            <Button variant="primary" onClick={() => handleOpenModal()}>
-              <FaPlus className="me-2" />
-              Add Content
-            </Button>
+            <div className="d-flex gap-2">
+              <Button 
+                variant="success" 
+                onClick={() => handleGenerateAIContent('complete')}
+                disabled={isGeneratingContent || !lessonData}
+              >
+                {isGeneratingContent ? (
+                  <>
+                    <Spinner as="span" animation="border" size="sm" className="me-2" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FaMagic className="me-2" />
+                    AI Generate Content
+                  </>
+                )}
+              </Button>
+              <Button variant="primary" onClick={() => handleOpenModal()}>
+                <FaPlus className="me-2" />
+                Add Content
+              </Button>
+            </div>
           </div>
         </Col>
       </Row>
@@ -3069,6 +3294,92 @@ function LessonContentManager() {
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowRubricModal(false)}>
             Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* AI Generated Content Preview Modal */}
+      <Modal 
+        show={showAIContentModal} 
+        onHide={handleCloseAIContentModal}
+        size="lg"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaMagic className="me-2" />
+            AI Generated Content Preview
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {generatedContentItems.length > 0 ? (
+            <>
+              <Alert variant="info" className="mb-3">
+                <strong>{generatedContentItems.length} content item{generatedContentItems.length !== 1 ? 's' : ''}</strong> generated. 
+                Review the content below and click "Save All" to add them to your lesson.
+              </Alert>
+              <ListGroup variant="flush">
+                {generatedContentItems.map((item, index) => (
+                  <ListGroup.Item key={index} className="mb-3 border rounded p-3">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <h6 className="mb-1">
+                          <Badge bg="primary" className="me-2">{item.content_type}</Badge>
+                          {item.title}
+                        </h6>
+                        <small className="text-muted">
+                          Section: {item.content_section} | 
+                          Sequence: {item.sequence_order} | 
+                          {item.is_required ? 'Required' : 'Optional'}
+                          {item.estimated_minutes && ` | ~${item.estimated_minutes} min`}
+                        </small>
+                      </div>
+                    </div>
+                    <div className="mt-2" style={{ 
+                      maxHeight: '200px', 
+                      overflowY: 'auto',
+                      padding: '10px',
+                      backgroundColor: '#f8f9fa',
+                      borderRadius: '4px',
+                      fontSize: '0.9rem',
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {item.content_text}
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </>
+          ) : (
+            <Alert variant="warning">
+              No content items generated. Please try again.
+            </Alert>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={handleCloseAIContentModal}
+            disabled={uploading}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="success" 
+            onClick={handleSaveAIContent}
+            disabled={uploading || generatedContentItems.length === 0}
+          >
+            {uploading ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <FaCheckCircle className="me-2" />
+                Save All ({generatedContentItems.length})
+              </>
+            )}
           </Button>
         </Modal.Footer>
       </Modal>
