@@ -56,7 +56,7 @@ function LessonContentManager() {
   const [reflectionQuestions, setReflectionQuestions] = useState('');
   const [discussionPrompts, setDiscussionPrompts] = useState('');
   const [summary, setSummary] = useState('');
-  const [contentSection, setContentSection] = useState('Main Content');
+  const [contentSection, setContentSection] = useState('Learning');
   const [isRequired, setIsRequired] = useState(true);
   const [estimatedMinutes, setEstimatedMinutes] = useState('');
   const [selectedFile, setSelectedFile] = useState(null);
@@ -191,7 +191,7 @@ function LessonContentManager() {
       setReflectionQuestions(item.reflection_questions || '');
       setDiscussionPrompts(item.discussion_prompts || '');
       setSummary(item.summary || '');
-      setContentSection(item.content_section || 'Main Content');
+      setContentSection(item.content_section || 'Learning');
       setIsRequired(item.is_required !== false);
       setEstimatedMinutes(item.estimated_minutes != null ? String(item.estimated_minutes) : '');
       setSelectedFile(null);
@@ -212,7 +212,7 @@ function LessonContentManager() {
       setReflectionQuestions('');
       setDiscussionPrompts('');
       setSummary('');
-      setContentSection('Main Content');
+      setContentSection('Learning');
       setIsRequired(true);
       setEstimatedMinutes('');
       setSelectedFile(null);
@@ -298,6 +298,37 @@ function LessonContentManager() {
       setError(null);
       setSuccess(null);
       setUploading(true);
+      
+      // Validate required fields based on content type
+      if (contentType === 'LINK' && !url?.trim()) {
+        setError('URL is required for link content');
+        setUploading(false);
+        return;
+      }
+      
+      if (contentType === 'VIDEO' && !url?.trim()) {
+        setError('Video URL is required');
+        setUploading(false);
+        return;
+      }
+      
+      if (contentType === 'IMAGE' && !url?.trim()) {
+        setError('Image URL is required');
+        setUploading(false);
+        return;
+      }
+      
+      if (contentType === 'DOCUMENT' && !url?.trim()) {
+        setError('Document URL is required');
+        setUploading(false);
+        return;
+      }
+      
+      if (!title?.trim()) {
+        setError('Title is required');
+        setUploading(false);
+        return;
+      }
       
       let fileUrl = null;
       let filePath = null;
@@ -482,7 +513,7 @@ function LessonContentManager() {
         discussion_prompts: contentType === 'DISCUSSION_PROMPTS' ? contentTextValue : (isLearningContent ? null : (discussionPrompts?.trim() || null)),
         summary: contentType === 'SUMMARY' ? contentTextValue : (isLearningContent ? null : (summary?.trim() || null)),
         // For Learning Content types, use default values
-        content_section: isLearningContent ? 'Main Content' : (contentSection || 'Main Content'),
+        content_section: isLearningContent ? 'Learning' : (contentSection || 'Learning'),
         is_required: isLearningContent ? true : isRequired,
         estimated_minutes: isLearningContent ? null : (estimatedMinutes ? parseInt(estimatedMinutes) : null),
         sequence_order: sequenceOrder,
@@ -593,7 +624,14 @@ function LessonContentManager() {
       }
       
       handleCloseModal();
-      fetchContent();
+      
+      // Refresh content list (don't let errors here prevent state reset)
+      try {
+        await fetchContent();
+      } catch (fetchError) {
+        console.error('Error refreshing content list:', fetchError);
+        // Don't show error to user - content was saved successfully
+      }
     } catch (err) {
       console.error('Error saving content:', err);
       setError(err.message || 'Failed to save content');
@@ -699,7 +737,7 @@ function LessonContentManager() {
   const groupContentBySection = () => {
     const sections = {};
     content.forEach(item => {
-      const section = item.content_section || 'Main Content';
+      const section = item.content_section || 'Learning';
       if (!sections[section]) {
         sections[section] = [];
       }
@@ -1818,20 +1856,22 @@ function LessonContentManager() {
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Content Section</Form.Label>
+                      <Form.Label>Content Category</Form.Label>
                       <Form.Select
-                        value={contentSection || 'Main Content'}
-                        onChange={(e) => setContentSection(e.target.value || 'Main Content')}
+                        value={contentSection || 'Learning'}
+                        onChange={(e) => setContentSection(e.target.value || 'Learning')}
                       >
+                        <option value="Learning">Learning</option>
+                        <option value="Assessments">Assessments</option>
+                        <option value="Resources">Resources</option>
+                        <option value="Practice">Practice</option>
+                        <option value="Homework">Homework</option>
                         <option value="Introduction">Introduction</option>
                         <option value="Main Content">Main Content</option>
-                        <option value="Practice">Practice</option>
-                        <option value="Assessment">Assessment</option>
-                        <option value="Resources">Resources</option>
                         <option value="Additional Materials">Additional Materials</option>
                       </Form.Select>
                       <Form.Text className="text-muted">
-                        Organize content into logical sections
+                        Categorize content for better organization in student view
                       </Form.Text>
                     </Form.Group>
                   </Col>
@@ -1895,7 +1935,7 @@ function LessonContentManager() {
                       description: description?.trim() || null,
                       instructions: instructions?.trim() || null,
                       key_concepts: keyConcepts?.trim() || null,
-                      content_section: contentSection || 'Main Content',
+                      content_section: contentSection || 'Learning',
                       is_required: isRequired,
                       estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
                       sequence_order: content.length > 0 ? Math.max(...content.map(c => c.sequence_order || 0)) + 1 : 1,

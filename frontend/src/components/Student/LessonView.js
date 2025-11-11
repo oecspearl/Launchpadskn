@@ -277,38 +277,69 @@ function LessonView() {
     }
   };
   
-  // Categorize content into Learning, Assessments, and Resources
+  // Categorize content into Learning, Assessments, Resources, Practice, and Homework
   const categorizeContent = (content) => {
     if (!content || content.length === 0) {
-      return { learning: [], assessments: [], resources: [] };
+      return { learning: [], assessments: [], resources: [], practice: [], homework: [] };
     }
     
     const categories = {
       learning: [],
       assessments: [],
-      resources: []
+      resources: [],
+      practice: [],
+      homework: []
     };
     
     content.forEach(item => {
-      const contentType = item.content_type;
+      // First, check if content_section is explicitly set to one of our main categories
+      // This takes priority over content_type-based categorization
+      const contentSection = item.content_section?.trim()?.toLowerCase() || '';
       
-      // Assessments
-      if (['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'].includes(contentType)) {
+      // Debug logging (can be removed in production)
+      if (contentSection) {
+        console.log('Content item categorization:', {
+          title: item.title,
+          content_type: item.content_type,
+          content_section: item.content_section,
+          normalized: contentSection
+        });
+      }
+      
+      // Check for exact matches and variations (case-insensitive)
+      if (contentSection === 'homework') {
+        categories.homework.push(item);
+      } else if (contentSection === 'practice') {
+        categories.practice.push(item);
+      } else if (contentSection === 'assessments' || contentSection === 'assessment') {
         categories.assessments.push(item);
-      }
-      // Learning content
-      else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
-                'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY', 
-                'VIDEO', 'IMAGE', 'DOCUMENT'].includes(contentType)) {
-        categories.learning.push(item);
-      }
-      // Resources (files and links)
-      else if (['FILE', 'LINK'].includes(contentType)) {
+      } else if (contentSection === 'resources' || contentSection === 'resource') {
         categories.resources.push(item);
-      }
-      // Default: treat as learning content
-      else {
+      } else if (contentSection === 'learning') {
         categories.learning.push(item);
+      } else {
+        // Fall back to content_type-based categorization if content_section is not set or doesn't match
+        // This ensures backward compatibility with existing content
+        const contentType = item.content_type;
+        
+        // Assessments
+        if (['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'].includes(contentType)) {
+          categories.assessments.push(item);
+        }
+        // Learning content
+        else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
+                  'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY', 
+                  'VIDEO', 'IMAGE', 'DOCUMENT'].includes(contentType)) {
+          categories.learning.push(item);
+        }
+        // Resources (files and links)
+        else if (['FILE', 'LINK'].includes(contentType)) {
+          categories.resources.push(item);
+        }
+        // Default: treat as learning content
+        else {
+          categories.learning.push(item);
+        }
       }
     });
     
@@ -795,6 +826,20 @@ function LessonView() {
               </div>
             )}
             
+            {/* Practice Section */}
+            {categorizedContent.practice.length > 0 && (
+              <div className="content-section">
+                <div className="content-section-header">
+                  <FaClipboardList className="me-2" />
+                  <h4>Practice</h4>
+                  <span className="content-count">({categorizedContent.practice.length})</span>
+                </div>
+                {categorizedContent.practice.map((contentItem, index) => 
+                  renderContentItem(contentItem, index)
+                )}
+              </div>
+            )}
+            
             {/* Assessments Section */}
             {categorizedContent.assessments.length > 0 && (
               <div className="content-section">
@@ -818,6 +863,20 @@ function LessonView() {
                   <span className="content-count">({categorizedContent.resources.length})</span>
                 </div>
                 {categorizedContent.resources.map((contentItem, index) => 
+                  renderContentItem(contentItem, index)
+                )}
+              </div>
+            )}
+            
+            {/* Homework Section */}
+            {categorizedContent.homework.length > 0 && (
+              <div className="content-section">
+                <div className="content-section-header">
+                  <FaBook className="me-2" />
+                  <h4>Homework</h4>
+                  <span className="content-count">({categorizedContent.homework.length})</span>
+                </div>
+                {categorizedContent.homework.map((contentItem, index) => 
                   renderContentItem(contentItem, index)
                 )}
               </div>
