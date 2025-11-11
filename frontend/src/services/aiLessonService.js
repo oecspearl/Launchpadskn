@@ -1011,17 +1011,20 @@ ${learningObjectives ? `Learning Objectives:\n${learningObjectives}\n` : ''}
 ${lessonPlan ? `Lesson Plan:\n${lessonPlan.substring(0, 2000)}\n` : ''}
 
 Generate a comprehensive set of content items that should be included in this lesson. For each content item, provide:
-1. Content type (one of: LEARNING_OUTCOMES, LEARNING_ACTIVITIES, KEY_CONCEPTS, REFLECTION_QUESTIONS, DISCUSSION_PROMPTS, SUMMARY)
+1. Content type (one of: LEARNING_OUTCOMES, LEARNING_ACTIVITIES, KEY_CONCEPTS, REFLECTION_QUESTIONS, DISCUSSION_PROMPTS, SUMMARY, VIDEO, QUIZ, ASSIGNMENT)
 2. Title
-3. The actual content text (appropriate for ${form} students)
+3. The actual content text (appropriate for ${form} students) - for VIDEO, provide a suggested video URL or embed code; for QUIZ, provide quiz description and suggested questions; for ASSIGNMENT, provide assignment description
 4. Content section (Introduction, Learning, Assessment, Resources, or Closure)
 5. Sequence order (1, 2, 3, etc.)
 6. Whether it's required (true/false)
 7. Estimated minutes to complete (if applicable)
+8. For VIDEO: url field with a suggested YouTube or educational video URL
+9. For QUIZ: quiz_questions array with 3-5 questions (each with question_text, question_type, options array, correct_answer)
+10. For ASSIGNMENT: assignment_description, total_points, and rubric_criteria array
 
 IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks. The response must be a single JSON array that can be parsed directly.
 
-Respond with this exact JSON structure:
+Respond with this exact JSON structure (include 1-2 VIDEO, QUIZ, or ASSIGNMENT items):
 [
   {
     "content_type": "LEARNING_OUTCOMES",
@@ -1033,11 +1036,22 @@ Respond with this exact JSON structure:
     "estimated_minutes": null
   },
   {
+    "content_type": "VIDEO",
+    "title": "Introduction Video: ${topic}",
+    "content_text": "Watch this video to understand the basics of ${topic}",
+    "url": "https://www.youtube.com/watch?v=... or embed code",
+    "content_section": "Learning",
+    "sequence_order": 2,
+    "is_required": true,
+    "estimated_minutes": 10,
+    "description": "Educational video explaining key concepts"
+  },
+  {
     "content_type": "KEY_CONCEPTS",
     "title": "Key Concepts",
     "content_text": "Main concepts students need to understand, written clearly at ${form} level...",
     "content_section": "Learning",
-    "sequence_order": 2,
+    "sequence_order": 3,
     "is_required": true,
     "estimated_minutes": 10
   },
@@ -1046,45 +1060,89 @@ Respond with this exact JSON structure:
     "title": "Learning Activities",
     "content_text": "Step-by-step activities students should complete, written at ${form} level...",
     "content_section": "Learning",
-    "sequence_order": 3,
+    "sequence_order": 4,
     "is_required": true,
     "estimated_minutes": 20
   },
   {
-    "content_type": "REFLECTION_QUESTIONS",
-    "title": "Reflection Questions",
-    "content_text": "Thought-provoking questions for students to reflect on what they learned...",
-    "content_section": "Assessment",
-    "sequence_order": 4,
-    "is_required": false,
-    "estimated_minutes": 5
-  },
-  {
-    "content_type": "DISCUSSION_PROMPTS",
-    "title": "Discussion Prompts",
-    "content_text": "Questions and topics for class discussion...",
+    "content_type": "QUIZ",
+    "title": "Knowledge Check: ${topic}",
+    "content_text": "Test your understanding with this quiz",
     "content_section": "Assessment",
     "sequence_order": 5,
-    "is_required": false,
-    "estimated_minutes": 10
+    "is_required": true,
+    "estimated_minutes": 15,
+    "quiz_questions": [
+      {
+        "question_text": "Question about ${topic}?",
+        "question_type": "MULTIPLE_CHOICE",
+        "points": 2,
+        "options": [
+          {"text": "Option A", "is_correct": false},
+          {"text": "Option B", "is_correct": true},
+          {"text": "Option C", "is_correct": false},
+          {"text": "Option D", "is_correct": false}
+        ],
+        "explanation": "Explanation of the correct answer"
+      }
+    ]
+  },
+  {
+    "content_type": "ASSIGNMENT",
+    "title": "Assignment: ${topic}",
+    "content_text": "Complete this assignment to demonstrate your understanding",
+    "content_section": "Assessment",
+    "sequence_order": 6,
+    "is_required": true,
+    "estimated_minutes": 60,
+    "assignment_description": "Detailed assignment instructions for students...",
+    "total_points": 100,
+    "rubric_criteria": [
+      {
+        "criterion": "Understanding of Concepts",
+        "points": 30,
+        "description": "Demonstrates clear understanding of key concepts"
+      },
+      {
+        "criterion": "Application",
+        "points": 30,
+        "description": "Applies concepts correctly to solve problems"
+      },
+      {
+        "criterion": "Presentation",
+        "points": 20,
+        "description": "Clear, organized, and well-presented work"
+      },
+      {
+        "criterion": "Completeness",
+        "points": 20,
+        "description": "All required components are included"
+      }
+    ]
   },
   {
     "content_type": "SUMMARY",
     "title": "Lesson Summary",
     "content_text": "A clear summary of the lesson's main points, written at ${form} level...",
     "content_section": "Closure",
-    "sequence_order": 6,
+    "sequence_order": 7,
     "is_required": true,
     "estimated_minutes": 5
   }
 ]
 
-Generate 4-8 content items that provide a complete learning experience. Make sure:
+Generate 6-10 content items that provide a complete learning experience. IMPORTANT:
+- Include at least 1 VIDEO content item with a relevant educational video URL (YouTube, Khan Academy, etc.)
+- Include at least 1 QUIZ with 3-5 questions (mix of multiple choice, true/false, short answer)
+- Include at least 1 ASSIGNMENT with detailed instructions and rubric criteria
 - All content is written at ${form} reading/comprehension level
 - Content is practical and classroom-ready
 - Sequence makes logical sense (Introduction → Learning → Assessment → Closure)
 - Mix of required and optional content
 - Content is specific to the topic "${topic}" and subject "${subject}"
+- For VIDEO: Provide actual YouTube URLs or embed codes for relevant educational videos
+- For QUIZ: Create questions appropriate for ${form} level with clear correct answers
+- For ASSIGNMENT: Create meaningful assignments with detailed rubric criteria (4-5 criteria, totaling 100 points)
 
 Remember: Respond with ONLY the JSON array, nothing else.`;
 
@@ -1103,7 +1161,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         }
       ],
       temperature: 0.7,
-      max_tokens: 3000
+      max_tokens: 4000
     };
 
     const response = await fetch(OPENAI_API_URL, {

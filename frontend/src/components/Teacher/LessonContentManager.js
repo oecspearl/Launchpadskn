@@ -466,16 +466,170 @@ function LessonContentManager() {
             is_required: item.is_required !== false,
             estimated_minutes: item.estimated_minutes || null,
             is_published: true,
-            uploaded_by: user.user_id || user.userId,
-            [fieldMap[item.content_type]]: item.content_text || ''
+            uploaded_by: user.user_id || user.userId
           };
 
-          const { error: insertError } = await supabase
-            .from('lesson_content')
-            .insert([contentData]);
-
-          if (insertError) throw insertError;
-          successCount++;
+          // Handle different content types
+          if (item.content_type === 'VIDEO') {
+            // Video content
+            contentData.url = item.url || '';
+            contentData.description = item.description || item.content_text || '';
+          } else if (item.content_type === 'QUIZ') {
+            // Quiz content - create content item first, then quiz with questions
+            contentData.description = item.content_text || '';
+            
+            const { data: contentResult, error: contentError } = await supabase
+              .from('lesson_content')
+              .insert([contentData])
+              .select()
+              .single();
+            
+            if (contentError) throw contentError;
+            
+            // Create quiz
+            const totalPoints = item.quiz_questions?.reduce((sum, q) => sum + (q.points || 1), 0) || 0;
+            const quizData = {
+              content_id: contentResult.content_id,
+              title: item.title,
+              description: item.content_text || '',
+              instructions: 'Complete this quiz to test your understanding.',
+              total_points: totalPoints,
+              passing_score: 70,
+              allow_multiple_attempts: true,
+              max_attempts: 3,
+              show_results_immediately: true,
+              show_correct_answers: true,
+              is_published: true,
+              published_at: new Date().toISOString(),
+              created_by: user.user_id || user.userId
+            };
+            
+            const { data: quiz, error: quizError } = await supabase
+              .from('quizzes')
+              .insert([quizData])
+              .select()
+              .single();
+            
+            if (quizError) throw quizError;
+            
+            // Create questions
+            if (item.quiz_questions && item.quiz_questions.length > 0) {
+              for (let qIdx = 0; qIdx < item.quiz_questions.length; qIdx++) {
+                const q = item.quiz_questions[qIdx];
+                const questionData = {
+                  quiz_id: quiz.quiz_id,
+                  question_type: q.question_type || 'MULTIPLE_CHOICE',
+                  question_text: q.question_text,
+                  question_order: qIdx + 1,
+                  points: q.points || 1,
+                  explanation: q.explanation || null,
+                  is_required: true
+                };
+                
+                const { data: question, error: questionError } = await supabase
+                  .from('quiz_questions')
+                  .insert([questionData])
+                  .select()
+                  .single();
+                
+                if (questionError) throw questionError;
+                
+                // Create options for multiple choice/true-false
+                if (q.options && q.options.length > 0) {
+                  const optionsData = q.options.map((opt, optIdx) => ({
+                    question_id: question.question_id,
+                    option_text: opt.text || opt.option_text || opt,
+                    is_correct: opt.is_correct || false,
+                    option_order: optIdx + 1
+                  }));
+                  
+                  const { error: optionsError } = await supabase
+                    .from('quiz_answer_options')
+                    .insert(optionsData);
+                  
+                  if (optionsError) throw optionsError;
+                }
+                
+                // Create correct answers for short answer/fill blank
+                if (q.correct_answer && (q.question_type === 'SHORT_ANSWER' || q.question_type === 'FILL_BLANK')) {
+                  const answerData = {
+                    question_id: question.question_id,
+                    correct_answer: q.correct_answer,
+                    points: q.points || 1
+                  };
+                  
+                  const { error: answerError } = await supabase
+                    .from('quiz_correct_answers')
+                    .insert([answerData]);
+                  
+                  if (answerError) throw answerError;
+                }
+              }
+            }
+            
+            successCount++;
+          } else if (item.content_type === 'ASSIGNMENT') {
+            // Assignment content - create content item, then generate rubric
+            contentData.description = item.assignment_description || item.content_text || '';
+            contentData.instructions = item.assignment_description || '';
+            
+            const { data: contentResult, error: contentError } = await supabase
+              .from('lesson_content')
+              .insert([contentData])
+              .select()
+              .single();
+            
+            if (contentError) throw contentError;
+            
+            // Generate rubric using AI and store it
+            let rubricText = null;
+            try {
+              const subjectName = lessonData.class_subject?.subject_offering?.subject?.subject_name || 'General';
+              const formName = lessonData.class_subject?.class?.form?.form_name || '';
+              
+              rubricText = await generateAssignmentRubric({
+                assignmentTitle: item.title,
+                assignmentDescription: item.assignment_description || item.content_text,
+                subject: subjectName,
+                gradeLevel: formName,
+                totalPoints: item.total_points || 100,
+                criteria: item.rubric_criteria?.map(c => `${c.criterion}: ${c.description} (${c.points} points)`) || []
+              });
+              
+              // Store rubric text in instructions field (can be used to generate PDF later)
+              if (rubricText) {
+                contentData.instructions = (contentData.instructions || '') + '\n\n--- RUBRIC ---\n\n' + rubricText;
+                
+                // Update the content with rubric
+                const { error: updateError } = await supabase
+                  .from('lesson_content')
+                  .update({ instructions: contentData.instructions })
+                  .eq('content_id', contentResult.content_id);
+                
+                if (updateError) {
+                  console.warn('Failed to update assignment with rubric text:', updateError);
+                }
+              }
+            } catch (rubricError) {
+              console.warn('Failed to generate rubric, continuing without it:', rubricError);
+              // Continue even if rubric generation fails
+            }
+            
+            successCount++;
+          } else {
+            // Text-based content types
+            const fieldName = fieldMap[item.content_type];
+            if (fieldName) {
+              contentData[fieldName] = item.content_text || '';
+            }
+            
+            const { error: insertError } = await supabase
+              .from('lesson_content')
+              .insert([contentData]);
+            
+            if (insertError) throw insertError;
+            successCount++;
+          }
         } catch (itemError) {
           console.error('Error saving content item:', itemError);
           errorCount++;
@@ -3322,9 +3476,19 @@ function LessonContentManager() {
                 {generatedContentItems.map((item, index) => (
                   <ListGroup.Item key={index} className="mb-3 border rounded p-3">
                     <div className="d-flex justify-content-between align-items-start mb-2">
-                      <div>
+                      <div className="flex-grow-1">
                         <h6 className="mb-1">
-                          <Badge bg="primary" className="me-2">{item.content_type}</Badge>
+                          <Badge 
+                            bg={
+                              item.content_type === 'VIDEO' ? 'danger' :
+                              item.content_type === 'QUIZ' ? 'warning' :
+                              item.content_type === 'ASSIGNMENT' ? 'success' :
+                              'primary'
+                            } 
+                            className="me-2"
+                          >
+                            {item.content_type}
+                          </Badge>
                           {item.title}
                         </h6>
                         <small className="text-muted">
@@ -3335,17 +3499,104 @@ function LessonContentManager() {
                         </small>
                       </div>
                     </div>
-                    <div className="mt-2" style={{ 
-                      maxHeight: '200px', 
-                      overflowY: 'auto',
-                      padding: '10px',
-                      backgroundColor: '#f8f9fa',
-                      borderRadius: '4px',
-                      fontSize: '0.9rem',
-                      whiteSpace: 'pre-wrap'
-                    }}>
-                      {item.content_text}
-                    </div>
+                    
+                    {/* Video Content */}
+                    {item.content_type === 'VIDEO' && item.url && (
+                      <div className="mt-2">
+                        <Alert variant="info" className="mb-2">
+                          <strong>Video URL:</strong> <a href={item.url} target="_blank" rel="noopener noreferrer">{item.url}</a>
+                        </Alert>
+                        {item.description && (
+                          <div className="text-muted small">{item.description}</div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Quiz Content */}
+                    {item.content_type === 'QUIZ' && item.quiz_questions && (
+                      <div className="mt-2">
+                        <Alert variant="warning" className="mb-2">
+                          <strong>{item.quiz_questions.length} question{item.quiz_questions.length !== 1 ? 's' : ''}</strong> will be created
+                        </Alert>
+                        <div style={{ maxHeight: '150px', overflowY: 'auto' }}>
+                          {item.quiz_questions.slice(0, 3).map((q, qIdx) => (
+                            <div key={qIdx} className="mb-2 p-2 bg-light rounded">
+                              <small><strong>Q{qIdx + 1}:</strong> {q.question_text}</small>
+                              {q.options && (
+                                <div className="mt-1">
+                                  {q.options.slice(0, 2).map((opt, optIdx) => (
+                                    <small key={optIdx} className="d-block text-muted">
+                                      • {opt.text || opt.option_text || opt}
+                                    </small>
+                                  ))}
+                                  {q.options.length > 2 && (
+                                    <small className="text-muted">... and {q.options.length - 2} more</small>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {item.quiz_questions.length > 3 && (
+                            <small className="text-muted">... and {item.quiz_questions.length - 3} more questions</small>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Assignment Content */}
+                    {item.content_type === 'ASSIGNMENT' && (
+                      <div className="mt-2">
+                        <Alert variant="success" className="mb-2">
+                          <strong>Assignment:</strong> {item.total_points || 100} points
+                          {item.rubric_criteria && (
+                            <div className="mt-1">
+                              <small><strong>Rubric:</strong> {item.rubric_criteria.length} criteria</small>
+                            </div>
+                          )}
+                        </Alert>
+                        <div style={{ 
+                          maxHeight: '150px', 
+                          overflowY: 'auto',
+                          padding: '10px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '4px',
+                          fontSize: '0.9rem',
+                          whiteSpace: 'pre-wrap'
+                        }}>
+                          {item.assignment_description || item.content_text}
+                        </div>
+                        {item.rubric_criteria && item.rubric_criteria.length > 0 && (
+                          <div className="mt-2">
+                            <small><strong>Rubric Criteria:</strong></small>
+                            <ul className="small mb-0">
+                              {item.rubric_criteria.slice(0, 3).map((crit, critIdx) => (
+                                <li key={critIdx}>
+                                  {crit.criterion} ({crit.points} pts): {crit.description}
+                                </li>
+                              ))}
+                              {item.rubric_criteria.length > 3 && (
+                                <li className="text-muted">... and {item.rubric_criteria.length - 3} more criteria</li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Text Content */}
+                    {!['VIDEO', 'QUIZ', 'ASSIGNMENT'].includes(item.content_type) && item.content_text && (
+                      <div className="mt-2" style={{ 
+                        maxHeight: '200px', 
+                        overflowY: 'auto',
+                        padding: '10px',
+                        backgroundColor: '#f8f9fa',
+                        borderRadius: '4px',
+                        fontSize: '0.9rem',
+                        whiteSpace: 'pre-wrap'
+                      }}>
+                        {item.content_text}
+                      </div>
+                    )}
                   </ListGroup.Item>
                 ))}
               </ListGroup>
