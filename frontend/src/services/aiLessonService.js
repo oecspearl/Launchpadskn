@@ -1026,41 +1026,41 @@ Generate a comprehensive set of content items that should be included in this le
 
 IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks. The response must be a single JSON array that can be parsed directly.
 
-Respond with this exact JSON structure (include 1-2 VIDEO, QUIZ, or ASSIGNMENT items):
+Respond with this exact JSON structure (MUST include all required items in this order):
 [
   {
     "content_type": "LEARNING_OUTCOMES",
     "title": "Learning Outcomes",
-    "content_text": "Detailed learning outcomes written at ${form} level...",
+    "content_text": "By the end of this lesson, ${form} students will be able to:\n1. [Outcome 1 - written in simple language for ${form} students]\n2. [Outcome 2 - age-appropriate for ${form}]\n3. [Outcome 3 - clear and understandable for ${form} level]",
     "content_section": "Introduction",
     "sequence_order": 1,
     "is_required": true,
     "estimated_minutes": null
   },
   {
-    "content_type": "VIDEO",
-    "title": "Introduction Video: ${topic}",
-    "content_text": "Watch this video to understand the basics of ${topic}",
-    "url": "https://www.youtube.com/watch?v=... or embed code",
-    "content_section": "Learning",
-    "sequence_order": 2,
-    "is_required": true,
-    "estimated_minutes": 10,
-    "description": "Educational video explaining key concepts"
-  },
-  {
     "content_type": "KEY_CONCEPTS",
     "title": "Key Concepts",
-    "content_text": "Main concepts students need to understand, written clearly at ${form} level...",
+    "content_text": "Main concepts explained in simple language for ${form} students:\n\n1. [Concept 1 - explained clearly at ${form} level]\n2. [Concept 2 - using age-appropriate vocabulary]\n3. [Concept 3 - easy to understand for ${form} students]",
     "content_section": "Learning",
-    "sequence_order": 3,
+    "sequence_order": 2,
     "is_required": true,
     "estimated_minutes": 10
   },
   {
+    "content_type": "VIDEO",
+    "title": "Video: ${topic}",
+    "content_text": "Watch this video to understand ${topic} - designed for ${form} students",
+    "url": "https://www.youtube.com/watch?v=... (use actual URL provided below)",
+    "content_section": "Learning",
+    "sequence_order": 3,
+    "is_required": true,
+    "estimated_minutes": 10,
+    "description": "Educational video about ${topic} appropriate for ${form} level"
+  },
+  {
     "content_type": "LEARNING_ACTIVITIES",
     "title": "Learning Activities",
-    "content_text": "Step-by-step activities students should complete, written at ${form} level...",
+    "content_text": "Activities for ${form} students to practice ${topic}:\n\n1. [Activity 1 - age-appropriate, clear instructions for ${form} students]\n2. [Activity 2 - simple and engaging for ${form} level]\n3. [Activity 3 - practical and fun for ${form} students]",
     "content_section": "Learning",
     "sequence_order": 4,
     "is_required": true,
@@ -1125,7 +1125,7 @@ Respond with this exact JSON structure (include 1-2 VIDEO, QUIZ, or ASSIGNMENT i
   {
     "content_type": "SUMMARY",
     "title": "Lesson Summary",
-    "content_text": "A clear summary of the lesson's main points, written at ${form} level...",
+    "content_text": "Summary for ${form} students:\n\nToday we learned about ${topic}. Here's what ${form} students should remember:\n1. [Key point 1 - in simple language]\n2. [Key point 2 - easy to understand]\n3. [Key point 3 - age-appropriate]",
     "content_section": "Closure",
     "sequence_order": 7,
     "is_required": true,
@@ -1133,18 +1133,44 @@ Respond with this exact JSON structure (include 1-2 VIDEO, QUIZ, or ASSIGNMENT i
   }
 ]
 
-Generate 6-10 content items that provide a complete learning experience. IMPORTANT:
-- Include at least 1 VIDEO content item with a relevant educational video URL (YouTube, Khan Academy, etc.)
-- Include at least 1 QUIZ with 3-5 questions (mix of multiple choice, true/false, short answer)
-- Include at least 1 ASSIGNMENT with detailed instructions and rubric criteria
-- All content is written at ${form} reading/comprehension level
+NOTE: The VIDEO must be in the Learning section (content_section: "Learning") and should come before or within the LEARNING_ACTIVITIES section.
+
+Generate content items that provide a complete learning experience. YOU MUST INCLUDE ALL OF THE FOLLOWING:
+
+REQUIRED CONTENT ITEMS (must be included in this exact order):
+1. LEARNING_OUTCOMES - Learning outcomes written clearly at ${form} student level (3-5 outcomes)
+2. KEY_CONCEPTS - Key concepts explained in simple, age-appropriate language for ${form} students (3-5 main concepts)
+3. LEARNING_ACTIVITIES - Must include at least ONE VIDEO in this section, plus 2-3 other learning activities, all written at ${form} level
+4. ASSESSMENT - Assessment activities (can include QUIZ and/or ASSIGNMENT), written at ${form} level
+5. SUMMARY - Lesson summary written clearly at ${form} student level (concise, age-appropriate)
+
+ADDITIONAL CONTENT (optional but recommended):
+- REFLECTION_QUESTIONS - Questions for students to reflect (${form} level)
+- DISCUSSION_PROMPTS - Discussion topics (${form} level)
+
+CRITICAL REQUIREMENTS - STUDENT LEVEL LANGUAGE:
+- ALL content MUST be written at ${form} reading/comprehension level
+- Use age-appropriate vocabulary - imagine you're explaining to ${form} students directly
+- Avoid complex jargon, technical terms, or advanced vocabulary
+- Use simple, clear sentences that ${form} students can easily understand
+- Break down complex ideas into simple explanations
+- Use examples and analogies appropriate for ${form} level
+- Write as if speaking directly to ${form} students
+
+STRUCTURE REQUIREMENTS:
+- The VIDEO MUST be placed in the "Learning" content section (content_section: "Learning")
+- At least 1 VIDEO must be included and it should be part of the Learning Activities
+- The VIDEO should come after KEY_CONCEPTS and before or within LEARNING_ACTIVITIES
+- Include at least 1 QUIZ with 3-5 questions appropriate for ${form} level (use simple language in questions)
+- Include at least 1 ASSIGNMENT with detailed instructions written for ${form} students and rubric criteria (4-5 criteria, totaling 100 points)
 - Content is practical and classroom-ready
 - Sequence makes logical sense (Introduction → Learning → Assessment → Closure)
-- Mix of required and optional content
 - Content is specific to the topic "${topic}" and subject "${subject}"
-- For VIDEO: Provide actual YouTube URLs or embed codes for relevant educational videos
-- For QUIZ: Create questions appropriate for ${form} level with clear correct answers
-- For ASSIGNMENT: Create meaningful assignments with detailed rubric criteria (4-5 criteria, totaling 100 points)
+
+TECHNICAL REQUIREMENTS:
+- For VIDEO: Use the actual YouTube URL provided below (not a placeholder)
+- For QUIZ: Create questions appropriate for ${form} level with clear correct answers (questions should use simple language)
+- For ASSIGNMENT: Create meaningful assignments with detailed rubric criteria (4-5 criteria, totaling 100 points) - instructions must be clear for ${form} students
 
 Remember: Respond with ONLY the JSON array, nothing else.`;
 
@@ -1276,7 +1302,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
       ];
     }
 
-    // Validate and ensure all required fields
+    // Validate and ensure all required fields, and ensure student-level language
     contentItems = contentItems.map((item, index) => {
       const mappedItem = {
         content_type: item.content_type || 'SUMMARY',
@@ -1289,38 +1315,163 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
       };
       
       // For VIDEO content, ensure we use the actual video URL if available
-      if (item.content_type === 'VIDEO' && videoInfo) {
-        mappedItem.url = videoInfo.url;
-        mappedItem.description = videoInfo.description || item.description || item.content_text || '';
-        mappedItem.title = videoInfo.title || item.title;
-      } else if (item.content_type === 'VIDEO' && item.url) {
-        mappedItem.url = item.url;
-        mappedItem.description = item.description || item.content_text || '';
+      // AND ensure it's in the Learning section
+      if (item.content_type === 'VIDEO') {
+        if (videoInfo) {
+          mappedItem.url = videoInfo.url;
+          mappedItem.description = videoInfo.description || item.description || item.content_text || '';
+          mappedItem.title = videoInfo.title || item.title;
+        } else if (item.url) {
+          mappedItem.url = item.url;
+          mappedItem.description = item.description || item.content_text || '';
+        }
+        // Force video to be in Learning section
+        mappedItem.content_section = 'Learning';
+        // Ensure description mentions student level
+        if (mappedItem.description && !mappedItem.description.toLowerCase().includes(form.toLowerCase())) {
+          mappedItem.description = `${mappedItem.description} (for ${form} students)`;
+        }
+      }
+      
+      // Ensure all text content mentions student level if not already present
+      if (mappedItem.content_text && !mappedItem.content_text.toLowerCase().includes(form.toLowerCase()) && 
+          ['LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'LEARNING_ACTIVITIES', 'SUMMARY'].includes(mappedItem.content_type)) {
+        // Add a note that content is for this form level
+        mappedItem.content_text = `${mappedItem.content_text}\n\n(Content designed for ${form} students)`;
       }
       
       return mappedItem;
     });
 
-    // If no VIDEO item was generated but we found a video, add it
-    const hasVideo = contentItems.some(item => item.content_type === 'VIDEO');
-    if (!hasVideo && videoInfo) {
-      contentItems.splice(2, 0, {
-        content_type: 'VIDEO',
-        title: videoInfo.title,
-        content_text: `Watch this video to understand ${topic}`,
-        url: videoInfo.url,
-        description: videoInfo.description || `Educational video about ${topic}`,
+    // Ensure required content types are present
+    const requiredTypes = ['LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'LEARNING_ACTIVITIES', 'SUMMARY'];
+    const hasRequiredTypes = requiredTypes.map(type => 
+      contentItems.some(item => item.content_type === type)
+    );
+    
+    // Add missing required content types
+    if (!hasRequiredTypes[0]) {
+      // Add Learning Outcomes
+      contentItems.unshift({
+        content_type: 'LEARNING_OUTCOMES',
+        title: 'Learning Outcomes',
+        content_text: learningObjectives || `By the end of this lesson, ${form} students will be able to:\n1. Understand key concepts of ${topic}\n2. Apply knowledge to solve problems\n3. Demonstrate understanding through activities`,
+        content_section: 'Introduction',
+        sequence_order: 1,
+        is_required: true,
+        estimated_minutes: null
+      });
+    }
+    
+    if (!hasRequiredTypes[1]) {
+      // Add Key Concepts
+      const conceptsIndex = contentItems.findIndex(item => item.content_type === 'LEARNING_OUTCOMES') + 1;
+      contentItems.splice(conceptsIndex, 0, {
+        content_type: 'KEY_CONCEPTS',
+        title: 'Key Concepts',
+        content_text: `Main concepts for ${topic} in ${subject}, explained clearly for ${form} students:\n\n1. [First key concept]\n2. [Second key concept]\n3. [Third key concept]`,
         content_section: 'Learning',
-        sequence_order: 2,
+        sequence_order: conceptsIndex + 1,
         is_required: true,
         estimated_minutes: 10
       });
-      // Reorder sequence numbers
-      contentItems = contentItems.map((item, index) => ({
-        ...item,
-        sequence_order: index + 1
-      }));
     }
+    
+    // Ensure there's a video in Learning Activities section
+    const hasVideoInLearning = contentItems.some(item => 
+      item.content_type === 'VIDEO' && item.content_section === 'Learning'
+    );
+    const hasLearningActivities = contentItems.some(item => 
+      item.content_type === 'LEARNING_ACTIVITIES'
+    );
+    
+    if (!hasVideoInLearning && videoInfo) {
+      // Find the Learning Activities item or insert after Key Concepts
+      const learningIndex = contentItems.findIndex(item => 
+        item.content_type === 'LEARNING_ACTIVITIES' || item.content_type === 'KEY_CONCEPTS'
+      );
+      const insertIndex = learningIndex >= 0 ? learningIndex + 1 : 2;
+      
+      contentItems.splice(insertIndex, 0, {
+        content_type: 'VIDEO',
+        title: videoInfo.title,
+        content_text: `Watch this video to understand ${topic} at ${form} level`,
+        url: videoInfo.url,
+        description: videoInfo.description || `Educational video about ${topic} for ${form} students`,
+        content_section: 'Learning',
+        sequence_order: insertIndex + 1,
+        is_required: true,
+        estimated_minutes: 10
+      });
+    }
+    
+    if (!hasLearningActivities) {
+      // Add Learning Activities after video or key concepts
+      const afterIndex = contentItems.findIndex(item => 
+        item.content_type === 'VIDEO' && item.content_section === 'Learning'
+      ) + 1;
+      const insertIndex = afterIndex > 0 ? afterIndex : contentItems.findIndex(item => item.content_type === 'KEY_CONCEPTS') + 1;
+      
+      contentItems.splice(insertIndex, 0, {
+        content_type: 'LEARNING_ACTIVITIES',
+        title: 'Learning Activities',
+        content_text: `Activities for ${form} students to practice ${topic}:\n\n1. [Activity 1 - age-appropriate for ${form}]\n2. [Activity 2 - age-appropriate for ${form}]\n3. [Activity 3 - age-appropriate for ${form}]`,
+        content_section: 'Learning',
+        sequence_order: insertIndex + 1,
+        is_required: true,
+        estimated_minutes: 20
+      });
+    }
+    
+    // Ensure Assessment section exists (QUIZ or ASSIGNMENT)
+    const hasAssessment = contentItems.some(item => 
+      ['QUIZ', 'ASSIGNMENT'].includes(item.content_type) || item.content_section === 'Assessment'
+    );
+    
+    if (!hasAssessment) {
+      // Add a QUIZ as assessment
+      const assessmentIndex = contentItems.length;
+      contentItems.splice(assessmentIndex, 0, {
+        content_type: 'QUIZ',
+        title: `Knowledge Check: ${topic}`,
+        content_text: `Test your understanding of ${topic} with this quiz designed for ${form} students`,
+        content_section: 'Assessment',
+        sequence_order: assessmentIndex + 1,
+        is_required: true,
+        estimated_minutes: 15,
+        quiz_questions: [
+          {
+            question_text: `What is the main concept of ${topic}?`,
+            question_type: 'MULTIPLE_CHOICE',
+            points: 2,
+            options: [
+              { text: 'Option A', is_correct: false },
+              { text: 'Option B', is_correct: true },
+              { text: 'Option C', is_correct: false }
+            ]
+          }
+        ]
+      });
+    }
+    
+    if (!hasRequiredTypes[3]) {
+      // Add Summary at the end
+      contentItems.push({
+        content_type: 'SUMMARY',
+        title: 'Lesson Summary',
+        content_text: `Summary of ${topic} for ${form} students:\n\nToday we learned about ${topic}. The main points are:\n1. [Key point 1]\n2. [Key point 2]\n3. [Key point 3]`,
+        content_section: 'Closure',
+        sequence_order: contentItems.length + 1,
+        is_required: true,
+        estimated_minutes: 5
+      });
+    }
+    
+    // Reorder sequence numbers to be sequential
+    contentItems = contentItems.map((item, index) => ({
+      ...item,
+      sequence_order: index + 1
+    }));
 
     return contentItems;
   } catch (error) {
