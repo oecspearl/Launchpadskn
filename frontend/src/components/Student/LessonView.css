@@ -526,3 +526,37 @@ body .container-fluid .lesson-view-container {
   background: #1557b0;
   border-color: #1557b0;
 }
+
+/* Content Sections */
+.content-section {
+  margin-bottom: 2.5rem;
+}
+
+.content-section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #e8eaed;
+}
+
+.content-section-header h4 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #202124;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.content-section-header svg {
+  color: #5f6368;
+  font-size: 1.125rem;
+}
+
+.content-count {
+  font-size: 0.875rem;
+  color: #5f6368;
+  font-weight: 400;
+  margin-left: 0.5rem;
+}

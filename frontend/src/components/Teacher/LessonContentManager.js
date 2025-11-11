@@ -244,6 +244,10 @@ function LessonContentManager() {
     setIsRequired(true);
     setEstimatedMinutes('');
     setSelectedFile(null);
+    setAssignmentDetailsFile(null);
+    setAssignmentRubricFile(null);
+    setUploadedRubricFileInfo(null);
+    setUploading(false); // Reset uploading state when closing modal
     setError(null);
     setSuccess(null);
   };
@@ -316,20 +320,23 @@ function LessonContentManager() {
             upsert: false
           });
         
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          // Provide helpful error message for bucket not found
+          if (uploadError.message && uploadError.message.includes('Bucket not found')) {
+            throw new Error(`Storage bucket '${bucketName}' not found. Please create the bucket in Supabase Storage: Settings → Storage → Create Bucket. Bucket name: 'course-content'`);
+          }
+          throw uploadError;
+        }
         
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from(bucketName)
-          .getPublicUrl(filePath);
-        
-        fileUrl = urlData.publicUrl;
+        // For FILE type, don't store a URL - we'll use signed URLs on-demand
+        // Public URLs don't work for private buckets anyway
+        fileUrl = null; // Don't store URL for FILE type - use file_path with signed URLs instead
         fileName = selectedFile.name;
         fileSize = selectedFile.size;
         mimeType = selectedFile.type;
       } else if (contentType === 'FILE' && editingContent) {
         // Keep existing file info if editing and no new file
-        fileUrl = editingContent.url;
+        fileUrl = null; // Don't use stored URL for FILE type
         filePath = editingContent.file_path;
         fileName = editingContent.file_name;
         fileSize = editingContent.file_size;
@@ -337,14 +344,14 @@ function LessonContentManager() {
       }
       
       // Prepare content data
-      // Determine the URL: for LINK, VIDEO, IMAGE, DOCUMENT, and all Assessment types use the form URL; for FILE use the uploaded file URL
+      // Determine the URL: for LINK, VIDEO, IMAGE, DOCUMENT, and all Assessment types use the form URL; for FILE don't store URL
       // Note: QUIZ can have URL (external) or be created in-app (no URL required)
       const assessmentTypes = ['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'];
       let finalUrl = null;
       if (contentType === 'LINK' || contentType === 'VIDEO' || contentType === 'IMAGE' || contentType === 'DOCUMENT' || assessmentTypes.includes(contentType)) {
         finalUrl = url || null; // Use the URL from the form (optional for QUIZ)
       } else if (contentType === 'FILE') {
-        finalUrl = fileUrl; // Use the uploaded file URL
+        finalUrl = null; // Don't store URL for FILE type - always use file_path with signed URLs
       }
       
       // When updating, preserve existing file info if no new file is uploaded
@@ -353,7 +360,7 @@ function LessonContentManager() {
         fileName = editingContent.file_name || fileName;
         fileSize = editingContent.file_size || fileSize;
         mimeType = editingContent.mime_type || mimeType;
-        finalUrl = editingContent.url || finalUrl;
+        finalUrl = null; // Don't preserve URL for FILE type
       }
       
       // Handle assignment details PDF upload
@@ -375,7 +382,12 @@ function LessonContentManager() {
             upsert: false
           });
         
-        if (detailsUploadError) throw detailsUploadError;
+        if (detailsUploadError) {
+          if (detailsUploadError.message && detailsUploadError.message.includes('Bucket not found')) {
+            throw new Error(`Storage bucket '${bucketName}' not found. Please create the bucket in Supabase Storage: Settings → Storage → Create Bucket. Bucket name: 'course-content'`);
+          }
+          throw detailsUploadError;
+        }
         
         assignmentDetailsFileName = assignmentDetailsFile.name;
         assignmentDetailsFileSize = assignmentDetailsFile.size;
@@ -415,7 +427,12 @@ function LessonContentManager() {
               upsert: false
             });
           
-          if (rubricUploadError) throw rubricUploadError;
+          if (rubricUploadError) {
+            if (rubricUploadError.message && rubricUploadError.message.includes('Bucket not found')) {
+              throw new Error(`Storage bucket '${bucketName}' not found. Please create the bucket in Supabase Storage: Settings → Storage → Create Bucket. Bucket name: 'course-content'`);
+            }
+            throw rubricUploadError;
+          }
           
           assignmentRubricFileName = assignmentRubricFile.name;
           assignmentRubricFileSize = assignmentRubricFile.size;
@@ -2864,6 +2881,9 @@ function LessonContentManager() {
                         
                         if (uploadError) {
                           console.error('Upload error:', uploadError);
+                          if (uploadError.message && uploadError.message.includes('Bucket not found')) {
+                            throw new Error(`Storage bucket '${bucketName}' not found. Please create the bucket in Supabase Storage: Settings → Storage → Create Bucket. Bucket name: 'course-content'`);
+                          }
                           throw new Error(uploadError.message || 'Failed to upload rubric file');
                         }
                         

@@ -277,6 +277,44 @@ function LessonView() {
     }
   };
   
+  // Categorize content into Learning, Assessments, and Resources
+  const categorizeContent = (content) => {
+    if (!content || content.length === 0) {
+      return { learning: [], assessments: [], resources: [] };
+    }
+    
+    const categories = {
+      learning: [],
+      assessments: [],
+      resources: []
+    };
+    
+    content.forEach(item => {
+      const contentType = item.content_type;
+      
+      // Assessments
+      if (['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'].includes(contentType)) {
+        categories.assessments.push(item);
+      }
+      // Learning content
+      else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
+                'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY', 
+                'VIDEO', 'IMAGE', 'DOCUMENT'].includes(contentType)) {
+        categories.learning.push(item);
+      }
+      // Resources (files and links)
+      else if (['FILE', 'LINK'].includes(contentType)) {
+        categories.resources.push(item);
+      }
+      // Default: treat as learning content
+      else {
+        categories.learning.push(item);
+      }
+    });
+    
+    return categories;
+  };
+  
   // Calculate progress
   const calculateProgress = () => {
     if (!lesson?.content || lesson.content.length === 0) return 0;
@@ -324,9 +362,315 @@ function LessonView() {
     );
   }
   
+  // Render a single content item
+  const renderContentItem = (contentItem, index) => {
+    const isCompleted = completedContent.has(contentItem.content_id);
+    const isExpanded = expandedItems[contentItem.content_id] || false;
+    const isVideo = contentItem.content_type === 'VIDEO' || 
+                   (contentItem.url && (contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be')));
+    const isImage = contentItem.content_type === 'IMAGE' || 
+                   (contentItem.mime_type && contentItem.mime_type.startsWith('image/'));
+    const iconClass = getContentIconClass(contentItem.content_type);
+    
+    // Get posted date
+    const postedDate = contentItem.created_at || lesson.lesson_date;
+    const dateStr = postedDate ? new Date(postedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+    
+    return (
+      <div 
+        key={contentItem.content_id || index} 
+        className={`classwork-item ${iconClass} ${isExpanded ? 'expanded' : ''} ${isCompleted ? 'selected' : ''}`}
+        onClick={() => toggleItem(contentItem.content_id)}
+      >
+        <div className={`classwork-icon ${iconClass}`}>
+          {getContentIcon(contentItem.content_type)}
+        </div>
+        <div className="classwork-content">
+          <h3 className="classwork-title">
+            {contentItem.title || 'Material'}
+          </h3>
+          <p className="classwork-date">Posted {dateStr}</p>
+          
+          {isExpanded && (
+            <div className="classwork-expanded">
+              {/* Video Content */}
+              {isVideo && contentItem.url && (
+                <div className="classwork-video-container" onClick={(e) => e.stopPropagation()}>
+                  {contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be') ? (
+                    <div className="ratio ratio-16x9" style={{ marginBottom: '1rem' }}>
+                      <iframe
+                        src={getYouTubeEmbedUrl(contentItem.url)}
+                        title={contentItem.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        style={{ border: 0, borderRadius: '8px' }}
+                      />
+                    </div>
+                  ) : (
+                    <video 
+                      controls 
+                      className="w-100" 
+                      style={{ maxHeight: '400px', borderRadius: '8px', marginBottom: '1rem' }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <source src={contentItem.url} type={contentItem.mime_type || 'video/mp4'} />
+                      Your browser does not support the video tag.
+                    </video>
+                  )}
+                </div>
+              )}
+              
+              {/* Image Content */}
+              {isImage && contentItem.url && (
+                <div className="classwork-image-container" onClick={(e) => e.stopPropagation()}>
+                  <img 
+                    src={contentItem.url} 
+                    alt={contentItem.title}
+                    className="w-100"
+                    style={{ maxHeight: '400px', width: 'auto', borderRadius: '8px', marginBottom: '1rem', cursor: 'pointer' }}
+                    onClick={() => window.open(contentItem.url, '_blank')}
+                  />
+                </div>
+              )}
+              
+              {/* Text-only content types (Learning Activities, Learning Outcomes, etc.) */}
+              {['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
+                'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) && (
+                <div className="classwork-text-content" style={{ 
+                  marginBottom: '1rem', 
+                  padding: '1rem', 
+                  backgroundColor: '#f8f9fa', 
+                  borderRadius: '8px',
+                  border: '1px solid #e9ecef'
+                }}>
+                  <div style={{ 
+                    whiteSpace: 'pre-wrap', 
+                    fontSize: '0.95rem', 
+                    lineHeight: '1.6',
+                    color: '#212529'
+                  }}>
+                    {contentItem.content_type === 'LEARNING_ACTIVITIES' && contentItem.learning_activities}
+                    {contentItem.content_type === 'LEARNING_OUTCOMES' && contentItem.learning_outcomes}
+                    {contentItem.content_type === 'KEY_CONCEPTS' && contentItem.key_concepts}
+                    {contentItem.content_type === 'REFLECTION_QUESTIONS' && contentItem.reflection_questions}
+                    {contentItem.content_type === 'DISCUSSION_PROMPTS' && contentItem.discussion_prompts}
+                    {contentItem.content_type === 'SUMMARY' && contentItem.summary}
+                  </div>
+                </div>
+              )}
+              
+              {/* Learning Outcomes (for non-text-only content types) */}
+              {!['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
+                  'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) && 
+               contentItem.learning_outcomes && (
+                <div>
+                  <ul className="classwork-objectives">
+                    {contentItem.learning_outcomes.split('\n').filter(obj => obj.trim()).map((obj, idx) => (
+                      <li key={idx}>{obj.trim()}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+                        
+              {contentItem.description && (
+                <div className="classwork-info-box">
+                  {contentItem.description}
+                </div>
+              )}
+                      
+              {/* Attachments */}
+              {((contentItem.url && !isVideo && !isImage) || contentItem.file_path || contentItem.content_type === 'ASSIGNMENT') && (
+                <div className="classwork-attachments">
+                  {contentItem.content_type === 'ASSIGNMENT' && contentItem.assignment_details_file_name && (
+                    <div className="attachment-card" onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const bucketName = 'course-content';
+                        const filePath = contentItem.assignment_details_file_path;
+                        const cleanPath = filePath?.replace(/^course-content\//, '').replace(/^course-bucket\//, '') || filePath;
+                        
+                        console.log('Accessing assignment details:', { bucketName, originalPath: filePath, cleanPath });
+                        
+                        const { data, error } = await supabase.storage
+                          .from(bucketName)
+                          .createSignedUrl(cleanPath, 3600);
+                        
+                        if (error) {
+                          console.error('Storage error details:', { error, bucketName, filePath: cleanPath });
+                          throw error;
+                        }
+                        if (data?.signedUrl) {
+                          window.open(data.signedUrl, '_blank');
+                        } else {
+                          throw new Error('No signed URL returned');
+                        }
+                      } catch (err) {
+                        console.error('Error opening assignment details:', err);
+                        const errorMsg = err.message?.includes('Bucket not found')
+                          ? `Storage bucket 'course-content' not found. File path: ${contentItem.assignment_details_file_path}`
+                          : `Unable to open assignment details: ${err.message || 'Unknown error'}`;
+                        alert(errorMsg);
+                      }
+                    }}>
+                      <div className="attachment-thumbnail">
+                        <FaFilePdf style={{ fontSize: '1.5rem', color: '#ea4335' }} />
+                      </div>
+                      <div className="attachment-info">
+                        <div className="attachment-title">{contentItem.assignment_details_file_name}</div>
+                        <div className="attachment-type">PDF</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {contentItem.content_type === 'ASSIGNMENT' && contentItem.assignment_rubric_file_name && (
+                    <div className="attachment-card" onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const bucketName = 'course-content';
+                        const filePath = contentItem.assignment_rubric_file_path;
+                        const cleanPath = filePath?.replace(/^course-content\//, '').replace(/^course-bucket\//, '') || filePath;
+                        
+                        console.log('Accessing assignment rubric:', { bucketName, originalPath: filePath, cleanPath });
+                        
+                        const { data, error } = await supabase.storage
+                          .from(bucketName)
+                          .createSignedUrl(cleanPath, 3600);
+                        
+                        if (error) {
+                          console.error('Storage error details:', { error, bucketName, filePath: cleanPath });
+                          throw error;
+                        }
+                        if (data?.signedUrl) {
+                          window.open(data.signedUrl, '_blank');
+                        } else {
+                          throw new Error('No signed URL returned');
+                        }
+                      } catch (err) {
+                        console.error('Error opening assignment rubric:', err);
+                        const errorMsg = err.message?.includes('Bucket not found')
+                          ? `Storage bucket 'course-content' not found. File path: ${contentItem.assignment_rubric_file_path}`
+                          : `Unable to open assignment rubric: ${err.message || 'Unknown error'}`;
+                        alert(errorMsg);
+                      }
+                    }}>
+                      <div className="attachment-thumbnail">
+                        <FaFilePdf style={{ fontSize: '1.5rem', color: '#ea4335' }} />
+                      </div>
+                      <div className="attachment-info">
+                        <div className="attachment-title">{contentItem.assignment_rubric_file_name}</div>
+                        <div className="attachment-type">PDF</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {contentItem.file_path && (
+                    <div className="attachment-card" onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        const bucketName = 'course-content';
+                        const filePath = contentItem.file_path;
+                        
+                        // Remove bucket name from path if it's included
+                        const cleanPath = filePath.replace(/^course-content\//, '').replace(/^course-bucket\//, '');
+                        
+                        console.log('Accessing file:', { bucketName, originalPath: filePath, cleanPath });
+                        
+                        const { data, error } = await supabase.storage
+                          .from(bucketName)
+                          .createSignedUrl(cleanPath, 3600);
+                        
+                        if (error) {
+                          console.error('Storage error details:', {
+                            error,
+                            bucketName,
+                            filePath: cleanPath,
+                            originalPath: filePath
+                          });
+                          throw error;
+                        }
+                        if (data?.signedUrl) {
+                          window.open(data.signedUrl, '_blank');
+                        } else {
+                          throw new Error('No signed URL returned');
+                        }
+                      } catch (err) {
+                        console.error('Error generating signed URL:', err);
+                        const errorMsg = err.message?.includes('Bucket not found') 
+                          ? `Storage bucket 'course-content' not found or inaccessible. File path: ${contentItem.file_path}`
+                          : `Unable to open file: ${err.message || 'Unknown error'}`;
+                        alert(errorMsg);
+                      }
+                    }}>
+                      <div className="attachment-thumbnail">
+                        <FaFileAlt style={{ fontSize: '1.5rem', color: '#1a73e8' }} />
+                      </div>
+                      <div className="attachment-info">
+                        <div className="attachment-title">{contentItem.file_name || 'File'}</div>
+                        <div className="attachment-type">File</div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Only show URL as link if it's not a FILE type (FILE types should use file_path with signed URLs) */}
+                  {contentItem.url && !isVideo && !isImage && contentItem.content_type !== 'FILE' && (
+                    <div className="attachment-card" onClick={(e) => {
+                      e.stopPropagation();
+                      window.open(contentItem.url, '_blank');
+                    }}>
+                      <div className="attachment-thumbnail">
+                        <FaExternalLinkAlt style={{ fontSize: '1.5rem', color: '#5f6368' }} />
+                      </div>
+                      <div className="attachment-info">
+                        <div className="attachment-title">{contentItem.url.length > 50 ? contentItem.url.substring(0, 50) + '...' : contentItem.url}</div>
+                        <div className="attachment-type">Link</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* Action Buttons */}
+              <div className="classwork-actions" onClick={(e) => e.stopPropagation()}>
+                {contentItem.content_type === 'QUIZ' && quizStatuses[contentItem.content_id] && (
+                  <button 
+                    className="classwork-action-btn primary"
+                    onClick={() => navigate(`/student/quizzes/${contentItem.content_id}`)}
+                  >
+                    Take Quiz
+                  </button>
+                )}
+                {contentItem.content_type === 'ASSIGNMENT' && contentItem.url && (
+                  <button 
+                    className="classwork-action-btn primary"
+                    onClick={() => window.open(contentItem.url, '_blank')}
+                  >
+                    Open Assignment
+                  </button>
+                )}
+                <button 
+                  className={`classwork-action-btn ${isCompleted ? 'primary' : ''}`}
+                  onClick={() => toggleContentComplete(contentItem.content_id)}
+                >
+                  {isCompleted ? 'Marked Complete' : 'Mark as Complete'}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className="classwork-menu" onClick={(e) => {
+          e.stopPropagation();
+          toggleItem(contentItem.content_id);
+        }}>
+          <FaChevronDown style={{ fontSize: '0.875rem', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
+        </div>
+      </div>
+    );
+  };
+  
   const progress = calculateProgress();
   const contentCount = lesson.content?.length || 0;
   const completedCount = completedContent.size;
+  const categorizedContent = categorizeContent(lesson.content);
   
   return (
     <div className="lesson-view-container" style={{ background: 'transparent', minHeight: '100vh', width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', marginTop: '-1.5rem', marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}>
@@ -437,260 +781,55 @@ function LessonView() {
           
           {/* Main Content Area */}
           <div className="lesson-main-content">
-            {/* Lesson Content - Google Classroom Style */}
-            {lesson.content && lesson.content.length > 0 && lesson.content.map((contentItem, index) => {
-                          const isCompleted = completedContent.has(contentItem.content_id);
-              const isExpanded = expandedItems[contentItem.content_id] || false;
-                          const isVideo = contentItem.content_type === 'VIDEO' || 
-                                         (contentItem.url && (contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be')));
-                          const isImage = contentItem.content_type === 'IMAGE' || 
-                                         (contentItem.mime_type && contentItem.mime_type.startsWith('image/'));
-              const iconClass = getContentIconClass(contentItem.content_type);
-              
-              // Get posted date
-              const postedDate = contentItem.created_at || lesson.lesson_date;
-              const dateStr = postedDate ? new Date(postedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-                          
-                          return (
-                            <div 
-                              key={contentItem.content_id || index} 
-                  className={`classwork-item ${iconClass} ${isExpanded ? 'expanded' : ''} ${isCompleted ? 'selected' : ''}`}
-                  onClick={() => toggleItem(contentItem.content_id)}
-                >
-                  <div className={`classwork-icon ${iconClass}`}>
-                    {getContentIcon(contentItem.content_type)}
-                  </div>
-                  <div className="classwork-content">
-                    <h3 className="classwork-title">
-                      {contentItem.title || 'Material'}
-                    </h3>
-                    <p className="classwork-date">Posted {dateStr}</p>
-                    
-                    {isExpanded && (
-                      <div className="classwork-expanded">
-                        {/* Video Content */}
-                        {isVideo && contentItem.url && (
-                          <div className="classwork-video-container" onClick={(e) => e.stopPropagation()}>
-                            {contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be') ? (
-                              <div className="ratio ratio-16x9" style={{ marginBottom: '1rem' }}>
-                                <iframe
-                                  src={getYouTubeEmbedUrl(contentItem.url)}
-                                  title={contentItem.title}
-                                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                  allowFullScreen
-                                  style={{ border: 0, borderRadius: '8px' }}
-                                />
-                              </div>
-                            ) : (
-                              <video 
-                                controls 
-                                className="w-100" 
-                                style={{ maxHeight: '400px', borderRadius: '8px', marginBottom: '1rem' }}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <source src={contentItem.url} type={contentItem.mime_type || 'video/mp4'} />
-                                Your browser does not support the video tag.
-                              </video>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Image Content */}
-                        {isImage && contentItem.url && (
-                          <div className="classwork-image-container" onClick={(e) => e.stopPropagation()}>
-                            <img 
-                              src={contentItem.url} 
-                              alt={contentItem.title}
-                              className="w-100"
-                              style={{ maxHeight: '400px', width: 'auto', borderRadius: '8px', marginBottom: '1rem', cursor: 'pointer' }}
-                              onClick={() => window.open(contentItem.url, '_blank')}
-                            />
-                          </div>
-                        )}
-                        
-                        {/* Text-only content types (Learning Activities, Learning Outcomes, etc.) */}
-                        {['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
-                          'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) && (
-                          <div className="classwork-text-content" style={{ 
-                            marginBottom: '1rem', 
-                            padding: '1rem', 
-                            backgroundColor: '#f8f9fa', 
-                            borderRadius: '8px',
-                            border: '1px solid #e9ecef'
-                          }}>
-                            <div style={{ 
-                              whiteSpace: 'pre-wrap', 
-                              fontSize: '0.95rem', 
-                              lineHeight: '1.6',
-                              color: '#212529'
-                            }}>
-                              {contentItem.content_type === 'LEARNING_ACTIVITIES' && contentItem.learning_activities}
-                              {contentItem.content_type === 'LEARNING_OUTCOMES' && contentItem.learning_outcomes}
-                              {contentItem.content_type === 'KEY_CONCEPTS' && contentItem.key_concepts}
-                              {contentItem.content_type === 'REFLECTION_QUESTIONS' && contentItem.reflection_questions}
-                              {contentItem.content_type === 'DISCUSSION_PROMPTS' && contentItem.discussion_prompts}
-                              {contentItem.content_type === 'SUMMARY' && contentItem.summary}
-                            </div>
-                          </div>
-                        )}
-                        
-                        {/* Learning Outcomes (for non-text-only content types) */}
-                        {!['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
-                            'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) && 
-                         contentItem.learning_outcomes && (
-                          <div>
-                            <ul className="classwork-objectives">
-                              {contentItem.learning_outcomes.split('\n').filter(obj => obj.trim()).map((obj, idx) => (
-                                <li key={idx}>{obj.trim()}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                                  
-                        {contentItem.description && (
-                          <div className="classwork-info-box">
-                            {contentItem.description}
-                          </div>
-                        )}
-                                
-                        {/* Attachments */}
-                        {((contentItem.url && !isVideo && !isImage) || contentItem.file_path || contentItem.content_type === 'ASSIGNMENT') && (
-                          <div className="classwork-attachments">
-                            {contentItem.content_type === 'ASSIGNMENT' && contentItem.assignment_details_file_name && (
-                              <div className="attachment-card" onClick={async (e) => {
-                                e.stopPropagation();
-                                            try {
-                                              const { data, error } = await supabase.storage
-                                                .from('course-content')
-                                                .createSignedUrl(contentItem.assignment_details_file_path, 3600);
-                                              
-                                              if (error) throw error;
-                                              if (data?.signedUrl) {
-                                                window.open(data.signedUrl, '_blank');
-                                              }
-                                            } catch (err) {
-                                              console.error('Error opening assignment details:', err);
-                                              alert('Unable to open assignment details. Please contact your teacher.');
-                                            }
-                              }}>
-                                <div className="attachment-thumbnail">
-                                  <FaFilePdf style={{ fontSize: '1.5rem', color: '#ea4335' }} />
-                                </div>
-                                <div className="attachment-info">
-                                  <div className="attachment-title">{contentItem.assignment_details_file_name}</div>
-                                  <div className="attachment-type">PDF</div>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {contentItem.content_type === 'ASSIGNMENT' && contentItem.assignment_rubric_file_name && (
-                              <div className="attachment-card" onClick={async (e) => {
-                                e.stopPropagation();
-                                            try {
-                                              const { data, error } = await supabase.storage
-                                                .from('course-content')
-                                                .createSignedUrl(contentItem.assignment_rubric_file_path, 3600);
-                                              
-                                              if (error) throw error;
-                                              if (data?.signedUrl) {
-                                                window.open(data.signedUrl, '_blank');
-                                              }
-                                            } catch (err) {
-                                              console.error('Error opening assignment rubric:', err);
-                                              alert('Unable to open assignment rubric. Please contact your teacher.');
-                                            }
-                              }}>
-                                <div className="attachment-thumbnail">
-                                  <FaFilePdf style={{ fontSize: '1.5rem', color: '#ea4335' }} />
-                                </div>
-                                <div className="attachment-info">
-                                  <div className="attachment-title">{contentItem.assignment_rubric_file_name}</div>
-                                  <div className="attachment-type">PDF</div>
-                                    </div>
-                                  </div>
-                                )}
-
-                            {contentItem.file_path && (
-                              <div className="attachment-card" onClick={async (e) => {
-                                e.stopPropagation();
-                                        try {
-                                          const { data, error } = await supabase.storage
-                                            .from('course-content')
-                                            .createSignedUrl(contentItem.file_path, 3600);
-                                          
-                                          if (error) throw error;
-                                          if (data?.signedUrl) {
-                                            window.open(data.signedUrl, '_blank');
-                                          }
-                                        } catch (err) {
-                                          console.error('Error generating signed URL:', err);
-                                          alert('Unable to open file. Please contact your teacher.');
-                                        }
-                              }}>
-                                <div className="attachment-thumbnail">
-                                  <FaFileAlt style={{ fontSize: '1.5rem', color: '#1a73e8' }} />
-                                </div>
-                                <div className="attachment-info">
-                                  <div className="attachment-title">{contentItem.file_name || 'File'}</div>
-                                  <div className="attachment-type">File</div>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {contentItem.url && !isVideo && !isImage && (
-                              <div className="attachment-card" onClick={(e) => {
-                                e.stopPropagation();
-                                window.open(contentItem.url, '_blank');
-                              }}>
-                                <div className="attachment-thumbnail">
-                                  <FaExternalLinkAlt style={{ fontSize: '1.5rem', color: '#5f6368' }} />
-                                </div>
-                                <div className="attachment-info">
-                                  <div className="attachment-title">{contentItem.url.length > 50 ? contentItem.url.substring(0, 50) + '...' : contentItem.url}</div>
-                                  <div className="attachment-type">Link</div>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Action Buttons */}
-                        <div className="classwork-actions" onClick={(e) => e.stopPropagation()}>
-                          {contentItem.content_type === 'QUIZ' && quizStatuses[contentItem.content_id] && (
-                            <button 
-                              className="classwork-action-btn primary"
-                                      onClick={() => navigate(`/student/quizzes/${contentItem.content_id}`)}
-                                    >
-                                      Take Quiz
-                            </button>
-                          )}
-                          {contentItem.content_type === 'ASSIGNMENT' && contentItem.url && (
-                            <button 
-                              className="classwork-action-btn primary"
-                              onClick={() => window.open(contentItem.url, '_blank')}
-                            >
-                              Open Assignment
-                            </button>
-                          )}
-                          <button 
-                            className={`classwork-action-btn ${isCompleted ? 'primary' : ''}`}
-                            onClick={() => toggleContentComplete(contentItem.content_id)}
-                          >
-                            {isCompleted ? 'Marked Complete' : 'Mark as Complete'}
-                          </button>
-                              </div>
-                            </div>
-                    )}
-                  </div>
-                  <div className="classwork-menu" onClick={(e) => {
-                    e.stopPropagation();
-                    toggleItem(contentItem.content_id);
-                  }}>
-                    <FaChevronDown style={{ fontSize: '0.875rem', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease' }} />
-                  </div>
+            {/* Learning Content Section */}
+            {categorizedContent.learning.length > 0 && (
+              <div className="content-section">
+                <div className="content-section-header">
+                  <FaGraduationCap className="me-2" />
+                  <h4>Learning</h4>
+                  <span className="content-count">({categorizedContent.learning.length})</span>
                 </div>
-              );
-            })}
+                {categorizedContent.learning.map((contentItem, index) => 
+                  renderContentItem(contentItem, index)
+                )}
+              </div>
+            )}
+            
+            {/* Assessments Section */}
+            {categorizedContent.assessments.length > 0 && (
+              <div className="content-section">
+                <div className="content-section-header">
+                  <FaClipboardCheck className="me-2" />
+                  <h4>Assessments</h4>
+                  <span className="content-count">({categorizedContent.assessments.length})</span>
+                </div>
+                {categorizedContent.assessments.map((contentItem, index) => 
+                  renderContentItem(contentItem, index)
+                )}
+              </div>
+            )}
+            
+            {/* Resources Section */}
+            {categorizedContent.resources.length > 0 && (
+              <div className="content-section">
+                <div className="content-section-header">
+                  <FaFileAlt className="me-2" />
+                  <h4>Resources</h4>
+                  <span className="content-count">({categorizedContent.resources.length})</span>
+                </div>
+                {categorizedContent.resources.map((contentItem, index) => 
+                  renderContentItem(contentItem, index)
+                )}
+              </div>
+            )}
+            
+            {/* Empty State */}
+            {lesson.content && lesson.content.length === 0 && (
+              <div className="text-center py-5">
+                <p className="text-muted">No content available for this lesson yet.</p>
+              </div>
+            )}
+            
             
           </div>
         </div>
