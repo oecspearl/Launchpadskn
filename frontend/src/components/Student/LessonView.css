@@ -65,7 +65,7 @@ body .container-fluid .lesson-view-container {
 /* Minimal Header */
 .lesson-hero-header {
   background: white;
-  padding: 1rem 0;
+  padding: 2.5rem 0 1rem 0;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
   color: #202124;
