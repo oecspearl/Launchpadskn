@@ -203,7 +203,7 @@ function AdminDashboard() {
         </div>
       </div>
 
-      <Container fluid className="px-4">
+      <Container className="px-4">
         {/* Navigation tabs - Mobile Friendly */}
         <Nav variant="tabs" className="nav-tabs mb-4" activeKey={activeTab} onSelect={setActiveTab}>
           <Nav.Item>

@@ -205,7 +205,7 @@ function CourseAssignment() {
   }
 
   return (
-    <Container fluid className="p-4">
+    <Container className="p-4 pt-5">
       <Row>
         <Col md={4}>
           <Card className="shadow-sm mb-4">

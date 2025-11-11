@@ -241,9 +241,9 @@ function AssignmentSubmission() {
   const isDueSoon = daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 3;
   
   return (
-    <Container fluid className="mt-4">
+    <Container className="mt-4">
       {/* Header */}
-      <Row className="mb-4">
+      <Row className="mb-4 pt-5">
         <Col>
           <Button 
             variant="link" 

@@ -137,7 +137,7 @@ function Register() {
   };
 
   return (
-    <Container fluid className="py-5 register-container bg-light min-vh-100 d-flex align-items-center">
+    <Container className="py-5 register-container bg-light min-vh-100 d-flex align-items-center">
       <Row className="justify-content-center w-100">
         <Col md={10} lg={8} xl={6}>
           <Card className="shadow border-0 rounded-lg overflow-hidden">

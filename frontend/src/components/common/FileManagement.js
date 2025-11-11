@@ -15,7 +15,7 @@ const FileManagement = ({ courseId, allowedFileTypes = ['COURSE_MATERIAL', 'ASSI
   };
 
   return (
-    <Container fluid className="py-4">
+    <Container className="py-4 pt-5">
       <Card className="shadow-sm mb-4">
         <Card.Body>
           <Card.Title className="mb-3">

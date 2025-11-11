@@ -1092,8 +1092,8 @@ function LessonContentManager() {
   }
   
   return (
-    <Container fluid className="mt-4">
-      <Row className="mb-4">
+    <Container className="mt-4">
+      <Row className="mb-4 pt-5">
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <h4>Lesson Content Management</h4>

@@ -186,9 +186,9 @@ function TeacherClassManagement() {
   }
   
   return (
-    <Container fluid className="mt-4">
+    <Container className="mt-4">
       {/* Header */}
-      <Row className="mb-4">
+      <Row className="mb-4 pt-5">
         <Col>
           <Button 
             variant="outline-secondary" 

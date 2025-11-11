@@ -122,7 +122,7 @@ function InstructorDashboard() {
   return (
     <div className="instructor-dashboard">
       {/* Top navbar with notifications */}
-      <div className="dashboard-header bg-white py-3 px-4 shadow-sm mb-4">
+      <div className="dashboard-header bg-white py-3 px-4 shadow-sm mb-4 pt-5">
         <Row className="align-items-center">
           <Col>
             <h1 className="mb-0">Instructor Dashboard</h1>
@@ -168,7 +168,7 @@ function InstructorDashboard() {
         </Row>
       </div>
 
-      <Container fluid className="px-4">
+      <Container className="px-4">
         {/* Main dashboard navigation */}
         <Nav variant="tabs" className="mb-4 dashboard-tabs">
           <Nav.Item>

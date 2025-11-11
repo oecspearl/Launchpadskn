@@ -158,9 +158,9 @@ function Curriculum() {
   };
   
   return (
-    <Container fluid className="curriculum-page py-4">
+    <Container className="curriculum-page py-4">
       {/* Header */}
-      <Row className="mb-4">
+      <Row className="mb-4 pt-5">
         <Col>
           <div className="d-flex align-items-center justify-content-between flex-wrap">
             <div>

@@ -72,7 +72,7 @@ function ResetPassword() {
   };
 
   return (
-    <Container fluid className="py-5 reset-password-container bg-light min-vh-100 d-flex align-items-center">
+    <Container className="py-5 reset-password-container bg-light min-vh-100 d-flex align-items-center">
       <Row className="justify-content-center w-100">
         <Col md={8} lg={6} xl={5}>
           <Card className="shadow border-0 rounded-lg overflow-hidden">

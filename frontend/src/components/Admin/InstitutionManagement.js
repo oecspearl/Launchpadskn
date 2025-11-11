@@ -216,13 +216,13 @@ function InstitutionManagement() {
   }
 
   return (
-    <Container fluid className="py-4">
+    <Container className="py-4">
       <Breadcrumb items={breadcrumbItems} />
       
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
 
-      <Row className="mb-4">
+      <Row className="mb-4 pt-5">
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <div>

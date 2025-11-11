@@ -193,7 +193,7 @@ function EnhancedCourseManagement() {
   }
 
   return (
-    <Container fluid className="py-4">
+    <Container className="py-4 pt-5">
       <Breadcrumb items={breadcrumbItems} />
       
       <Alert variant="warning" className="mb-4">

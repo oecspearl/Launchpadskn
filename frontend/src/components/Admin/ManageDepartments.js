@@ -184,7 +184,7 @@ function ManageDepartments() {
   }
 
   return (
-    <Container fluid className="p-4">
+    <Container className="p-4 pt-5">
       {/* Success message */}
       {successMessage && (
         <Alert variant="success" dismissible onClose={() => setSuccessMessage('')}>

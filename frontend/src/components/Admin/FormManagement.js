@@ -174,8 +174,8 @@ function FormManagement() {
   }
   
   return (
-    <Container fluid className="mt-4">
-      <Row className="mb-4">
+    <Container className="mt-4">
+      <Row className="mb-4 pt-5">
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <h2>Form Management</h2>

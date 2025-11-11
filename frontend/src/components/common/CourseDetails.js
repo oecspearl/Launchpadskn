@@ -119,7 +119,7 @@ function CourseDetails() {
   }
 
   return (
-    <Container fluid className="p-4">
+    <Container className="p-4 pt-5">
       <Alert variant="info" className="mb-4">
         <Alert.Heading>Legacy Component</Alert.Heading>
         <p className="mb-0">

@@ -77,7 +77,7 @@ function EnrollmentApproval() {
   }
 
   return (
-    <Container fluid className="p-4">
+    <Container className="p-4 pt-5">
       <Alert variant="warning" className="mb-4">
         <Alert.Heading>Legacy Feature - Deprecated</Alert.Heading>
         <p className="mb-2">

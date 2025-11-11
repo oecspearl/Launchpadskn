@@ -340,8 +340,8 @@ function Gradebook() {
   }
   
   return (
-    <Container fluid>
-      <Row className="mb-4">
+    <Container>
+      <Row className="mb-4 pt-5">
         <Col>
           <div className="d-flex justify-content-between align-items-center">
             <div>

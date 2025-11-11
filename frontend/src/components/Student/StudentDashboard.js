@@ -233,7 +233,7 @@ function StudentDashboard() {
   return (
     <Container className="mt-4">
       {/* Header */}
-      <Row className="mb-4">
+      <Row className="mb-4 pt-5">
         <Col>
           <h2>Welcome back, {user?.name || 'Student'}!</h2>
           {myClass && (
