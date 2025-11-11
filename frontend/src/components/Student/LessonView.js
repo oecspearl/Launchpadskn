@@ -326,10 +326,10 @@ function LessonView() {
     }
   };
   
-  // Categorize content into Learning, Assessments, Resources, Practice, and Homework
+  // Categorize content into Learning, Assessments, Resources, Practice, Homework, and Closure
   const categorizeContent = (content) => {
     if (!content || content.length === 0) {
-      return { learning: [], assessments: [], resources: [], practice: [], homework: [] };
+      return { learning: [], assessments: [], resources: [], practice: [], homework: [], closure: [] };
     }
     
     const categories = {
@@ -337,7 +337,8 @@ function LessonView() {
       assessments: [],
       resources: [],
       practice: [],
-      homework: []
+      homework: [],
+      closure: []
     };
     
     content.forEach(item => {
@@ -366,6 +367,8 @@ function LessonView() {
         categories.resources.push(item);
       } else if (contentSection === 'learning') {
         categories.learning.push(item);
+      } else if (contentSection === 'closure') {
+        categories.closure.push(item);
       } else {
         // Fall back to content_type-based categorization if content_section is not set or doesn't match
         // This ensures backward compatibility with existing content
@@ -375,9 +378,13 @@ function LessonView() {
         if (['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'].includes(contentType)) {
           categories.assessments.push(item);
         }
+        // Closure content (Summary, Reflection, etc.)
+        else if (['SUMMARY', 'REFLECTION_QUESTIONS'].includes(contentType)) {
+          categories.closure.push(item);
+        }
         // Learning content
         else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
-                  'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY', 
+                  'DISCUSSION_PROMPTS', 
                   'VIDEO', 'IMAGE', 'DOCUMENT'].includes(contentType)) {
           categories.learning.push(item);
         }
@@ -486,6 +493,10 @@ function LessonView() {
   
   // Filter categorized content by selected category
   const getFilteredCategorizedContent = (categorized) => {
+    // Ensure closure category exists
+    if (!categorized.closure) {
+      categorized.closure = [];
+    }
     if (filterCategory === 'all') return categorized;
     
     const filtered = { ...categorized };
@@ -685,6 +696,63 @@ function LessonView() {
               {contentItem.description && (
                 <div className="classwork-info-box">
                   {contentItem.description}
+                </div>
+              )}
+              
+              {/* Assignment Rubric (from instructions field) */}
+              {contentItem.content_type === 'ASSIGNMENT' && contentItem.instructions && (
+                <div className="mt-3">
+                  {(() => {
+                    // Check if instructions contain rubric (separated by "--- RUBRIC ---")
+                    const instructions = contentItem.instructions;
+                    const rubricIndex = instructions.indexOf('--- RUBRIC ---');
+                    
+                    if (rubricIndex !== -1) {
+                      // Extract rubric text
+                      const rubricText = instructions.substring(rubricIndex + '--- RUBRIC ---'.length).trim();
+                      const assignmentDesc = instructions.substring(0, rubricIndex).trim();
+                      
+                      return (
+                        <>
+                          {assignmentDesc && (
+                            <div className="classwork-info-box mb-3">
+                              <strong>Assignment Instructions:</strong>
+                              <div style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>
+                                {assignmentDesc}
+                              </div>
+                            </div>
+                          )}
+                          <div className="classwork-info-box" style={{ 
+                            backgroundColor: '#fff3cd', 
+                            border: '1px solid #ffc107',
+                            borderRadius: '8px',
+                            padding: '1rem'
+                          }}>
+                            <strong style={{ color: '#856404' }}>📋 Grading Rubric:</strong>
+                            <div style={{ 
+                              whiteSpace: 'pre-wrap', 
+                              marginTop: '0.75rem',
+                              color: '#856404',
+                              fontSize: '0.95rem',
+                              lineHeight: '1.6'
+                            }}>
+                              {rubricText}
+                            </div>
+                          </div>
+                        </>
+                      );
+                    } else {
+                      // No rubric separator, show all instructions
+                      return (
+                        <div className="classwork-info-box">
+                          <strong>Assignment Instructions:</strong>
+                          <div style={{ whiteSpace: 'pre-wrap', marginTop: '0.5rem' }}>
+                            {instructions}
+                          </div>
+                        </div>
+                      );
+                    }
+                  })()}
                 </div>
               )}
                       
@@ -1219,6 +1287,35 @@ function LessonView() {
                   </div>
                 </div>
                 {categorizedContent.homework.map((contentItem, index) => 
+                  renderContentItem(contentItem, index)
+                )}
+              </div>
+            )}
+            
+            {/* Closure Section */}
+            {categorizedContent.closure.length > 0 && (
+              <div className="content-section">
+                <div className="content-section-header">
+                  <div className="d-flex align-items-center flex-grow-1">
+                    <FaBook className="me-2" />
+                    <h4>Closure</h4>
+                    <span className="content-count">({categorizedContent.closure.length})</span>
+                  </div>
+                  <div className="content-section-meta">
+                    {calculateSectionProgress(categorizedContent.closure) > 0 && (
+                      <span className="section-progress me-3">
+                        {calculateSectionProgress(categorizedContent.closure)}% complete
+                      </span>
+                    )}
+                    {calculateEstimatedTime(categorizedContent.closure) > 0 && (
+                      <span className="section-time">
+                        <FaClock className="me-1" />
+                        {calculateEstimatedTime(categorizedContent.closure)} min
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {categorizedContent.closure.map((contentItem, index) => 
                   renderContentItem(contentItem, index)
                 )}
               </div>
