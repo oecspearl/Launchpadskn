@@ -449,6 +449,15 @@ function LessonContentManager() {
       // Create all content items
       for (const item of generatedContentItems) {
         try {
+          console.log('[AI Content] Processing item:', {
+            type: item.content_type,
+            title: item.title,
+            hasQuizQuestions: !!item.quiz_questions,
+            quizQuestionCount: item.quiz_questions?.length || 0,
+            hasAssignmentDesc: !!item.assignment_description,
+            assignmentDesc: item.assignment_description?.substring(0, 50) || 'none'
+          });
+          
           const fieldMap = {
             'LEARNING_OUTCOMES': 'learning_outcomes',
             'LEARNING_ACTIVITIES': 'learning_activities',
@@ -528,13 +537,22 @@ function LessonContentManager() {
             if (quizError) throw quizError;
             
             // Create questions
-            if (item.quiz_questions && item.quiz_questions.length > 0) {
+            console.log('[AI Content] Quiz questions received:', item.quiz_questions);
+            
+            if (item.quiz_questions && Array.isArray(item.quiz_questions) && item.quiz_questions.length > 0) {
               for (let qIdx = 0; qIdx < item.quiz_questions.length; qIdx++) {
                 const q = item.quiz_questions[qIdx];
+                
+                // Validate question has required fields
+                if (!q.question_text || !q.question_text.trim()) {
+                  console.warn(`Skipping question ${qIdx + 1}: missing question_text`);
+                  continue;
+                }
+                
                 const questionData = {
                   quiz_id: quiz.quiz_id,
                   question_type: q.question_type || 'MULTIPLE_CHOICE',
-                  question_text: q.question_text,
+                  question_text: q.question_text.trim(),
                   question_order: qIdx + 1,
                   points: q.points || 1,
                   explanation: q.explanation || null,
@@ -547,22 +565,36 @@ function LessonContentManager() {
                   .select()
                   .single();
                 
-                if (questionError) throw questionError;
+                if (questionError) {
+                  console.error('Error creating question:', questionError);
+                  throw questionError;
+                }
                 
                 // Create options for multiple choice/true-false
-                if (q.options && q.options.length > 0) {
-                  const optionsData = q.options.map((opt, optIdx) => ({
-                    question_id: question.question_id,
-                    option_text: opt.text || opt.option_text || opt,
-                    is_correct: opt.is_correct || false,
-                    option_order: optIdx + 1
-                  }));
+                if (q.options && Array.isArray(q.options) && q.options.length > 0) {
+                  const optionsData = q.options.map((opt, optIdx) => {
+                    // Handle different option formats
+                    const optionText = typeof opt === 'string' ? opt : (opt.text || opt.option_text || '');
+                    const isCorrect = typeof opt === 'object' ? (opt.is_correct || false) : false;
+                    
+                    return {
+                      question_id: question.question_id,
+                      option_text: optionText,
+                      is_correct: isCorrect,
+                      option_order: optIdx + 1
+                    };
+                  }).filter(opt => opt.option_text && opt.option_text.trim());
                   
-                  const { error: optionsError } = await supabase
-                    .from('quiz_answer_options')
-                    .insert(optionsData);
-                  
-                  if (optionsError) throw optionsError;
+                  if (optionsData.length > 0) {
+                    const { error: optionsError } = await supabase
+                      .from('quiz_answer_options')
+                      .insert(optionsData);
+                    
+                    if (optionsError) {
+                      console.error('Error creating options:', optionsError);
+                      throw optionsError;
+                    }
+                  }
                 }
                 
                 // Create correct answers for short answer/fill blank
@@ -577,16 +609,81 @@ function LessonContentManager() {
                     .from('quiz_correct_answers')
                     .insert([answerData]);
                   
-                  if (answerError) throw answerError;
+                  if (answerError) {
+                    console.error('Error creating correct answer:', answerError);
+                    throw answerError;
+                  }
                 }
+              }
+            } else {
+              // If no questions provided, create a default question
+              console.warn('[AI Content] No quiz questions provided, creating default question');
+              const lessonTopic = lessonData?.topic || lessonData?.lesson_title || 'this topic';
+              const defaultQuestion = {
+                quiz_id: quiz.quiz_id,
+                question_type: 'MULTIPLE_CHOICE',
+                question_text: `What is the main concept of ${lessonTopic}?`,
+                question_order: 1,
+                points: 1,
+                explanation: 'This is a default question. Please edit the quiz to add proper questions.',
+                is_required: true
+              };
+              
+              const { data: question, error: questionError } = await supabase
+                .from('quiz_questions')
+                .insert([defaultQuestion])
+                .select()
+                .single();
+              
+              if (questionError) {
+                console.error('Error creating default question:', questionError);
+                throw questionError;
+              }
+              
+              // Add default options
+              const defaultOptions = [
+                { question_id: question.question_id, option_text: 'Option A', is_correct: false, option_order: 1 },
+                { question_id: question.question_id, option_text: 'Option B', is_correct: true, option_order: 2 },
+                { question_id: question.question_id, option_text: 'Option C', is_correct: false, option_order: 3 }
+              ];
+              
+              const { error: optionsError } = await supabase
+                .from('quiz_answer_options')
+                .insert(defaultOptions);
+              
+              if (optionsError) {
+                console.error('Error creating default options:', optionsError);
               }
             }
             
             successCount++;
           } else if (item.content_type === 'ASSIGNMENT') {
             // Assignment content - create content item, then generate rubric
-            contentData.description = item.assignment_description || item.content_text || '';
-            contentData.instructions = item.assignment_description || '';
+            // Use assignment_description if available, otherwise use content_text
+            const lessonTopic = lessonData?.topic || lessonData?.lesson_title || 'this topic';
+            const assignmentDesc = item.assignment_description || item.content_text || `Complete this assignment to demonstrate your understanding of ${lessonTopic}`;
+            
+            // Ensure we have a meaningful description (not generic placeholder text)
+            const isGenericText = !assignmentDesc || 
+              assignmentDesc.trim() === '' || 
+              assignmentDesc.toLowerCase().includes('complete this assignment to demonstrate your understanding') ||
+              assignmentDesc.length < 50; // Too short to be meaningful
+            
+            if (isGenericText) {
+              // Generate a better default description
+              const subjectName = lessonData.class_subject?.subject_offering?.subject?.subject_name || 'the subject';
+              const formName = lessonData.class_subject?.class?.form?.form_name || '';
+              const betterDesc = `Assignment: ${lessonTopic}\n\nInstructions:\nComplete this assignment to demonstrate your understanding of ${lessonTopic} in ${subjectName}${formName ? ` (${formName} level)` : ''}.\n\nRequirements:\n1. Review the lesson materials\n2. Complete all required tasks\n3. Submit your work by the due date\n\nNote: This is a default assignment description. Please edit to add specific instructions.`;
+              contentData.description = betterDesc;
+              contentData.instructions = betterDesc;
+              console.warn('[AI Content] Assignment has generic description, using enhanced default');
+            } else {
+              contentData.description = assignmentDesc;
+              contentData.instructions = assignmentDesc;
+            }
+            contentData.content_type = 'ASSIGNMENT';
+            
+            console.log('[AI Content] Creating assignment with description:', contentData.description.substring(0, 100));
             
             const { data: contentResult, error: contentError } = await supabase
               .from('lesson_content')
@@ -594,7 +691,10 @@ function LessonContentManager() {
               .select()
               .single();
             
-            if (contentError) throw contentError;
+            if (contentError) {
+              console.error('Error creating assignment content:', contentError);
+              throw contentError;
+            }
             
             // Generate rubric using AI and store it
             let rubricText = null;

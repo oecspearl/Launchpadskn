@@ -1076,49 +1076,65 @@ Respond with this exact JSON structure (MUST include all required items in this 
     "estimated_minutes": 15,
     "quiz_questions": [
       {
-        "question_text": "Question about ${topic}?",
+        "question_text": "Question about ${topic} written in simple language for ${form} students?",
         "question_type": "MULTIPLE_CHOICE",
         "points": 2,
         "options": [
-          {"text": "Option A", "is_correct": false},
-          {"text": "Option B", "is_correct": true},
-          {"text": "Option C", "is_correct": false},
-          {"text": "Option D", "is_correct": false}
+          {"text": "Option A - simple answer for ${form} level", "is_correct": false},
+          {"text": "Option B - correct answer", "is_correct": true},
+          {"text": "Option C - simple answer for ${form} level", "is_correct": false},
+          {"text": "Option D - simple answer for ${form} level", "is_correct": false}
         ],
-        "explanation": "Explanation of the correct answer"
+        "explanation": "Explanation written clearly for ${form} students"
+      },
+      {
+        "question_text": "Another question about ${topic} for ${form} students?",
+        "question_type": "TRUE_FALSE",
+        "points": 1,
+        "options": [
+          {"text": "True", "is_correct": true},
+          {"text": "False", "is_correct": false}
+        ],
+        "explanation": "Simple explanation for ${form} level"
+      },
+      {
+        "question_text": "A third question about ${topic} appropriate for ${form}?",
+        "question_type": "SHORT_ANSWER",
+        "points": 3,
+        "correct_answer": "Expected answer for ${form} students"
       }
     ]
   },
   {
     "content_type": "ASSIGNMENT",
     "title": "Assignment: ${topic}",
-    "content_text": "Complete this assignment to demonstrate your understanding",
+    "content_text": "Complete this assignment to demonstrate your understanding of ${topic}",
     "content_section": "Assessment",
     "sequence_order": 6,
     "is_required": true,
     "estimated_minutes": 60,
-    "assignment_description": "Detailed assignment instructions for students...",
+    "assignment_description": "Detailed assignment instructions written clearly for ${form} students:\n\n1. [Step 1 - clear instructions at ${form} level]\n2. [Step 2 - simple and easy to follow]\n3. [Step 3 - age-appropriate for ${form}]\n\nWhat to submit:\n- [Requirement 1]\n- [Requirement 2]\n- [Requirement 3]\n\nDue date: [Specify due date]\n\nThis assignment is designed for ${form} students and uses language appropriate for your level.",
     "total_points": 100,
     "rubric_criteria": [
       {
         "criterion": "Understanding of Concepts",
         "points": 30,
-        "description": "Demonstrates clear understanding of key concepts"
+        "description": "Demonstrates clear understanding of key concepts (${form} level)"
       },
       {
         "criterion": "Application",
         "points": 30,
-        "description": "Applies concepts correctly to solve problems"
+        "description": "Applies concepts correctly to solve problems (appropriate for ${form})"
       },
       {
         "criterion": "Presentation",
         "points": 20,
-        "description": "Clear, organized, and well-presented work"
+        "description": "Clear, organized, and well-presented work (${form} standards)"
       },
       {
         "criterion": "Completeness",
         "points": 20,
-        "description": "All required components are included"
+        "description": "All required components are included (${form} level requirements)"
       }
     ]
   },
@@ -1169,8 +1185,8 @@ STRUCTURE REQUIREMENTS:
 
 TECHNICAL REQUIREMENTS:
 - For VIDEO: Use the actual YouTube URL provided below (not a placeholder)
-- For QUIZ: Create questions appropriate for ${form} level with clear correct answers (questions should use simple language)
-- For ASSIGNMENT: Create meaningful assignments with detailed rubric criteria (4-5 criteria, totaling 100 points) - instructions must be clear for ${form} students
+- For QUIZ: Create questions appropriate for ${form} level with clear correct answers (questions should use simple language). You MUST include the quiz_questions array with at least 3-5 questions, each with question_text, question_type, points, and either options (for MULTIPLE_CHOICE/TRUE_FALSE) or correct_answer (for SHORT_ANSWER/FILL_BLANK)
+- For ASSIGNMENT: Create meaningful assignments with DETAILED instructions written for ${form} students. The assignment_description field MUST contain comprehensive, step-by-step instructions (at least 200 characters). Do NOT use generic text like "Complete this assignment to demonstrate your understanding" - provide actual detailed instructions including: what students need to do, how to do it, what to submit, and any specific requirements. Also include rubric criteria (4-5 criteria, totaling 100 points)
 
 Remember: Respond with ONLY the JSON array, nothing else.`;
 
@@ -1268,8 +1284,29 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         }
       }
       console.log('[AI Service] Successfully parsed content items:', contentItems.length);
+      // Log quiz and assignment items for debugging
+      contentItems.forEach((item, idx) => {
+        if (item.content_type === 'QUIZ') {
+          console.log(`[AI Service] Quiz item ${idx + 1}:`, {
+            title: item.title,
+            hasQuestions: !!item.quiz_questions,
+            questionCount: item.quiz_questions?.length || 0,
+            questions: item.quiz_questions
+          });
+        }
+        if (item.content_type === 'ASSIGNMENT') {
+          console.log(`[AI Service] Assignment item ${idx + 1}:`, {
+            title: item.title,
+            hasDescription: !!item.assignment_description,
+            description: item.assignment_description?.substring(0, 100) || item.content_text?.substring(0, 100),
+            hasRubric: !!item.rubric_criteria,
+            rubricCount: item.rubric_criteria?.length || 0
+          });
+        }
+      });
     } catch (parseError) {
       console.warn('[AI Service] Failed to parse JSON, using fallback:', parseError);
+      console.log('[AI Service] Raw content:', content.substring(0, 500));
       // Fallback: create basic content structure
       contentItems = [
         {
@@ -1330,6 +1367,24 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         // Ensure description mentions student level
         if (mappedItem.description && !mappedItem.description.toLowerCase().includes(form.toLowerCase())) {
           mappedItem.description = `${mappedItem.description} (for ${form} students)`;
+        }
+      }
+      
+      // For QUIZ content, ensure quiz_questions array is preserved
+      if (item.content_type === 'QUIZ') {
+        mappedItem.quiz_questions = item.quiz_questions || [];
+        if (mappedItem.quiz_questions.length === 0) {
+          console.warn('[AI Service] Quiz has no questions:', item.title);
+        }
+      }
+      
+      // For ASSIGNMENT content, ensure assignment_description is preserved
+      if (item.content_type === 'ASSIGNMENT') {
+        mappedItem.assignment_description = item.assignment_description || item.content_text || '';
+        mappedItem.total_points = item.total_points || 100;
+        mappedItem.rubric_criteria = item.rubric_criteria || [];
+        if (!mappedItem.assignment_description || mappedItem.assignment_description.trim() === '') {
+          console.warn('[AI Service] Assignment has no description:', item.title);
         }
       }
       
