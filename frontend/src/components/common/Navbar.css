@@ -1,0 +1,86 @@
+.navbar-glass {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.navbar-glass.scrolled {
+    background: rgba(255, 255, 255, 0.95) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+}
+
+/* Make navbar brand text black */
+.navbar-glass .navbar-brand,
+.navbar-glass .navbar-brand:hover,
+.navbar-glass .navbar-brand:focus {
+    color: #000000 !important;
+}
+
+/* Override all Bootstrap navbar link styles */
+.navbar-glass .nav-link,
+.navbar-glass .navbar-nav .nav-link,
+.nav-link-custom {
+    color: #000000 !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: transparent !important;
+}
+
+/* Remove all focus, active, and hover background colors */
+.navbar-glass .nav-link:focus,
+.navbar-glass .nav-link:active,
+.navbar-glass .navbar-nav .nav-link:focus,
+.navbar-glass .navbar-nav .nav-link:active,
+.nav-link-custom:focus,
+.nav-link-custom:active {
+    color: #000000 !important;
+    background-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+.nav-link-custom:hover,
+.nav-link-custom.active {
+    color: var(--primary-color) !important;
+    background-color: var(--primary-light-bg) !important;
+}
+
+.nav-btn-primary {
+    background-color: var(--primary-color);
+    color: white !important;
+    padding: 0.5rem 1.25rem !important;
+    border-radius: var(--radius-full);
+    font-weight: 500;
+    box-shadow: 0 4px 6px rgba(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.2);
+}
+
+.nav-btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 8px rgba(var(--primary-hue), var(--primary-sat), var(--primary-light), 0.3);
+}
+
+.profile-dropdown .dropdown-toggle::after {
+    display: none;
+}
+
+.profile-avatar {
+    width: 32px;
+    height: 32px;
+    background-color: var(--primary-light-bg);
+    color: var(--primary-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}

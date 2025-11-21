@@ -8,7 +8,7 @@
 
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // Helper function to get auth header
 const authHeader = () => {
@@ -39,8 +39,8 @@ const getUserById = async (userId) => {
 
 const updateUserStatus = async (userId, active) => {
   const response = await axios.put(
-    `${API_URL}/admin/users/${userId}/status`, 
-    { active }, 
+    `${API_URL}/admin/users/${userId}/status`,
+    { active },
     { headers: authHeader() }
   );
   return response.data;
@@ -59,8 +59,8 @@ const getCourseById = async (courseId) => {
 
 const createCourse = async (courseData) => {
   const response = await axios.post(
-    `${API_URL}/courses`, 
-    courseData, 
+    `${API_URL}/courses`,
+    courseData,
     { headers: authHeader() }
   );
   return response.data;
@@ -68,8 +68,8 @@ const createCourse = async (courseData) => {
 
 const updateCourse = async (courseId, courseData) => {
   const response = await axios.put(
-    `${API_URL}/courses/${courseId}`, 
-    courseData, 
+    `${API_URL}/courses/${courseId}`,
+    courseData,
     { headers: authHeader() }
   );
   return response.data;
@@ -77,7 +77,7 @@ const updateCourse = async (courseId, courseData) => {
 
 const deleteCourse = async (courseId) => {
   const response = await axios.delete(
-    `${API_URL}/courses/${courseId}`, 
+    `${API_URL}/courses/${courseId}`,
     { headers: authHeader() }
   );
   return response.data;
@@ -85,8 +85,8 @@ const deleteCourse = async (courseId) => {
 
 const activateCourse = async (courseId) => {
   const response = await axios.put(
-    `${API_URL}/courses/${courseId}/activate`, 
-    {}, 
+    `${API_URL}/courses/${courseId}/activate`,
+    {},
     { headers: authHeader() }
   );
   return response.data;
@@ -94,8 +94,8 @@ const activateCourse = async (courseId) => {
 
 const deactivateCourse = async (courseId) => {
   const response = await axios.put(
-    `${API_URL}/courses/${courseId}/deactivate`, 
-    {}, 
+    `${API_URL}/courses/${courseId}/deactivate`,
+    {},
     { headers: authHeader() }
   );
   return response.data;
@@ -120,7 +120,7 @@ const createInstructor = async (instructorData) => {
     },
     { headers: authHeader() }
   );
-  
+
   // Then create instructor record
   const response = await axios.post(
     `${API_URL}/instructors`,
@@ -138,8 +138,8 @@ const createInstructor = async (instructorData) => {
 
 const updateInstructor = async (instructorId, instructorData) => {
   const response = await axios.put(
-    `${API_URL}/instructors/${instructorId}`, 
-    instructorData, 
+    `${API_URL}/instructors/${instructorId}`,
+    instructorData,
     { headers: authHeader() }
   );
   return response.data;
@@ -147,7 +147,7 @@ const updateInstructor = async (instructorId, instructorData) => {
 
 const getCourseInstructors = async (courseId) => {
   const response = await axios.get(
-    `${API_URL}/instructors/courses/${courseId}`, 
+    `${API_URL}/instructors/courses/${courseId}`,
     { headers: authHeader() }
   );
   return response.data;
@@ -155,8 +155,8 @@ const getCourseInstructors = async (courseId) => {
 
 const assignInstructorToCourse = async (courseId, instructorId) => {
   const response = await axios.post(
-    `${API_URL}/instructors/${instructorId}/courses/${courseId}`, 
-    { role: 'PRIMARY' }, 
+    `${API_URL}/instructors/${instructorId}/courses/${courseId}`,
+    { role: 'PRIMARY' },
     { headers: authHeader() }
   );
   return response.data;
@@ -164,7 +164,7 @@ const assignInstructorToCourse = async (courseId, instructorId) => {
 
 const removeInstructorFromCourse = async (courseId, instructorId) => {
   const response = await axios.delete(
-    `${API_URL}/instructors/${instructorId}/courses/${courseId}`, 
+    `${API_URL}/instructors/${instructorId}/courses/${courseId}`,
     { headers: authHeader() }
   );
   return response.data;
@@ -172,8 +172,8 @@ const removeInstructorFromCourse = async (courseId, instructorId) => {
 
 const activateInstructor = async (instructorId) => {
   const response = await axios.put(
-    `${API_URL}/instructors/${instructorId}/activate`, 
-    {}, 
+    `${API_URL}/instructors/${instructorId}/activate`,
+    {},
     { headers: authHeader() }
   );
   return response.data;
@@ -181,8 +181,8 @@ const activateInstructor = async (instructorId) => {
 
 const deactivateInstructor = async (instructorId) => {
   const response = await axios.put(
-    `${API_URL}/instructors/${instructorId}/deactivate`, 
-    {}, 
+    `${API_URL}/instructors/${instructorId}/deactivate`,
+    {},
     { headers: authHeader() }
   );
   return response.data;
@@ -191,7 +191,7 @@ const deactivateInstructor = async (instructorId) => {
 // Enrollment Management
 const getPendingEnrollments = async () => {
   const response = await axios.get(
-    `${API_URL}/enrollments/pending`, 
+    `${API_URL}/enrollments/pending`,
     { headers: authHeader() }
   );
   return response.data;
@@ -199,8 +199,8 @@ const getPendingEnrollments = async () => {
 
 const approveEnrollment = async (enrollmentId) => {
   const response = await axios.put(
-    `${API_URL}/enrollments/${enrollmentId}/approve`, 
-    {}, 
+    `${API_URL}/enrollments/${enrollmentId}/approve`,
+    {},
     { headers: authHeader() }
   );
   return response.data;
@@ -208,8 +208,8 @@ const approveEnrollment = async (enrollmentId) => {
 
 const rejectEnrollment = async (enrollmentId) => {
   const response = await axios.put(
-    `${API_URL}/enrollments/${enrollmentId}/reject`, 
-    {}, 
+    `${API_URL}/enrollments/${enrollmentId}/reject`,
+    {},
     { headers: authHeader() }
   );
   return response.data;
@@ -217,7 +217,7 @@ const rejectEnrollment = async (enrollmentId) => {
 
 const getEnrollmentsByCourse = async (courseId) => {
   const response = await axios.get(
-    `${API_URL}/enrollments/course/${courseId}`, 
+    `${API_URL}/enrollments/course/${courseId}`,
     { headers: authHeader() }
   );
   return response.data;
@@ -225,7 +225,7 @@ const getEnrollmentsByCourse = async (courseId) => {
 
 const getEnrollmentsByStudent = async (studentId) => {
   const response = await axios.get(
-    `${API_URL}/enrollments/student/${studentId}`, 
+    `${API_URL}/enrollments/student/${studentId}`,
     { headers: authHeader() }
   );
   return response.data;
@@ -234,12 +234,12 @@ const getEnrollmentsByStudent = async (studentId) => {
 export const adminService = {
   // Dashboard
   getDashboardStats,
-  
+
   // User Management
   getAllUsers,
   getUserById,
   updateUserStatus,
-  
+
   // Course Management
   getAllCourses,
   getCourseById,
@@ -248,7 +248,7 @@ export const adminService = {
   deleteCourse,
   activateCourse,
   deactivateCourse,
-  
+
   // Instructor Management
   getAllInstructors,
   createInstructor,
@@ -258,7 +258,7 @@ export const adminService = {
   removeInstructorFromCourse,
   activateInstructor,
   deactivateInstructor,
-  
+
   // Enrollment Management
   getPendingEnrollments,
   approveEnrollment,

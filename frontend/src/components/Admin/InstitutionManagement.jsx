@@ -106,15 +106,21 @@ function InstitutionManagement() {
     setSuccess('');
 
     try {
+      // Sanitize form data - convert empty strings to null for numeric fields
+      const sanitizedData = {
+        ...formData,
+        establishedYear: formData.establishedYear === '' ? null : formData.establishedYear
+      };
+
       if (editingInstitution) {
         const institutionId = editingInstitution.institutionId || editingInstitution.institution_id;
-        await supabaseService.updateInstitution(institutionId, formData);
+        await supabaseService.updateInstitution(institutionId, sanitizedData);
         setSuccess('Institution updated successfully');
       } else {
-        await supabaseService.createInstitution(formData);
+        await supabaseService.createInstitution(sanitizedData);
         setSuccess('Institution created successfully');
       }
-      
+
       await fetchInstitutions();
       setTimeout(() => {
         handleCloseModal();
@@ -218,7 +224,7 @@ function InstitutionManagement() {
   return (
     <Container className="py-4">
       <Breadcrumb items={breadcrumbItems} />
-      
+
       {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
 
@@ -276,7 +282,7 @@ function InstitutionManagement() {
                             className="p-0 me-2"
                             onClick={() => toggleInstitution(institution.institutionId)}
                           >
-                            {expandedInstitutions.has(institution.institutionId) ? 
+                            {expandedInstitutions.has(institution.institutionId) ?
                               <FaChevronDown /> : <FaChevronRight />
                             }
                           </Button>
@@ -294,8 +300,8 @@ function InstitutionManagement() {
                         </div>
                       </td>
                       <td>
-                        <Badge bg={getTypeColor(institution.type)}>
-                          {institution.type || 'UNIVERSITY'}
+                        <Badge bg={getTypeColor(institution.institutionType || institution.institution_type)}>
+                          {institution.institutionType || institution.institution_type || 'UNIVERSITY'}
                         </Badge>
                       </td>
                       <td>
@@ -419,7 +425,7 @@ function InstitutionManagement() {
           <Modal.Body>
             {error && <Alert variant="danger">{error}</Alert>}
             {success && <Alert variant="success">{success}</Alert>}
-            
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -443,7 +449,8 @@ function InstitutionManagement() {
                   >
                     <option value="UNIVERSITY">University</option>
                     <option value="COLLEGE">College</option>
-                    <option value="SCHOOL">School</option>
+                    <option value="SECONDARY SCHOOL">Secondary School</option>
+                    <option value="PRIMARY SCHOOL">Primary School</option>
                     <option value="INSTITUTE">Institute</option>
                   </Form.Select>
                 </Form.Group>

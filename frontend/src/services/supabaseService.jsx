@@ -2,14 +2,14 @@
  * Supabase Service Layer
  * Replaces all backend API calls with Supabase queries
  */
-import { supabase } from '../config/supabase';
+import { supabase, supabaseAdmin } from '../config/supabase';
 
 class SupabaseService {
-  
+
   // ============================================
   // AUTHENTICATION
   // ============================================
-  
+
   /**
    * Sign in with email and password
    */
@@ -18,11 +18,11 @@ class SupabaseService {
       email,
       password
     });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Sign up new user
    */
@@ -34,11 +34,11 @@ class SupabaseService {
         data: metadata // Custom user metadata (name, role, etc.)
       }
     });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Sign out current user
    */
@@ -46,7 +46,7 @@ class SupabaseService {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
   }
-  
+
   /**
    * Get current session
    */
@@ -55,7 +55,7 @@ class SupabaseService {
     if (error) throw error;
     return session;
   }
-  
+
   /**
    * Get current user
    */
@@ -64,7 +64,7 @@ class SupabaseService {
     if (error) throw error;
     return user;
   }
-  
+
   /**
    * Reset password
    */
@@ -74,7 +74,7 @@ class SupabaseService {
     });
     if (error) throw error;
   }
-  
+
   /**
    * Update password
    */
@@ -84,11 +84,11 @@ class SupabaseService {
     });
     if (error) throw error;
   }
-  
+
   // ============================================
   // DATABASE OPERATIONS
   // ============================================
-  
+
   /**
    * Get user profile from users table
    * Tries both user_id and id (UUID) columns
@@ -100,7 +100,7 @@ class SupabaseService {
       .select('*')
       .eq('id', userId)
       .maybeSingle();
-    
+
     // If not found, try by user_id (in case UUID is stored differently)
     if (error || !data) {
       const { data: data2, error: error2 } = await supabase
@@ -108,17 +108,17 @@ class SupabaseService {
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
-      
+
       if (error2 && error2.code !== 'PGRST116') throw error2;
       if (data2) return data2;
     }
-    
+
     if (error && error.code !== 'PGRST116') throw error;
     if (!data) throw new Error('User profile not found');
-    
+
     return data;
   }
-  
+
   /**
    * Update user profile
    * Tries both user_id and id (UUID) columns
@@ -131,7 +131,7 @@ class SupabaseService {
       .eq('id', userId)
       .select()
       .maybeSingle();
-    
+
     // If not found, try by user_id
     if (error || !data) {
       const { data: data2, error: error2 } = await supabase
@@ -140,10 +140,10 @@ class SupabaseService {
         .eq('user_id', userId)
         .select()
         .maybeSingle();
-      
+
       if (error2 && error2.code !== 'PGRST116') throw error2;
       if (data2) return data2;
-      
+
       // If still not found, try to insert
       const { data: data3, error: error3 } = await supabase
         .from('users')
@@ -153,28 +153,15 @@ class SupabaseService {
         })
         .select()
         .single();
-      
+
       if (error3) throw error3;
       return data3;
     }
-    
+
     if (error && error.code !== 'PGRST116') throw error;
     return data;
   }
-  
-  /**
-   * Get all users (Admin only - requires RLS policy)
-   */
-  async getAllUsers() {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  }
-  
+
   /**
    * Get users by role
    */
@@ -184,22 +171,22 @@ class SupabaseService {
       .select('*')
       .eq('role', role)
       .order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   // ============================================
   // INSTITUTIONS
   // ============================================
-  
+
   /**
    * Helper function to convert snake_case to camelCase
    */
   toCamelCase(str) {
     return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
   }
-  
+
   /**
    * Helper function to transform institution object from snake_case to camelCase
    */
@@ -213,60 +200,103 @@ class SupabaseService {
       institutionType: institution.institution_type || institution.institutionType
     };
   }
-  
+
   /**
    * Helper function to transform institution data for database (camelCase to snake_case)
    */
   transformInstitutionForDB(institutionData) {
     const transformed = { ...institutionData };
-    
+
     // Handle establishedYear -> established_year
     if (transformed.establishedYear !== undefined) {
       transformed.established_year = transformed.establishedYear;
       delete transformed.establishedYear;
     }
-    
+
     // Handle institutionId -> institution_id (don't include in updates/inserts)
     if (transformed.institutionId !== undefined) {
       delete transformed.institutionId; // Don't send ID in data, it's used separately
     }
-    
-    // Handle institutionType -> institution_type
+
+    // Handle institutionType (camelCase) -> institution_type (DB column)
     if (transformed.institutionType !== undefined) {
-      transformed.institution_type = transformed.institutionType;
+      const val = transformed.institutionType.trim().toUpperCase();
+      const allowed = ['UNIVERSITY', 'COLLEGE', 'SECONDARY SCHOOL', 'PRIMARY SCHOOL', 'INSTITUTE'];
+      let normalized = 'UNIVERSITY';
+      if (allowed.includes(val)) {
+        normalized = val;
+      } else if (val.includes('SECONDARY')) {
+        normalized = 'SECONDARY SCHOOL';
+      } else if (val.includes('PRIMARY')) {
+        normalized = 'PRIMARY SCHOOL';
+      } else if (val.includes('UNIV')) {
+        normalized = 'UNIVERSITY';
+      } else if (val.includes('COLL')) {
+        normalized = 'COLLEGE';
+      } else if (val.includes('INSTIT')) {
+        normalized = 'INSTITUTE';
+      }
+      transformed.institution_type = normalized;
       delete transformed.institutionType;
     }
-    
-    // Also handle 'type' field (legacy support)
-    if (transformed.type !== undefined && !transformed.institution_type) {
-      transformed.institution_type = transformed.type;
+
+    // Legacy 'type' field handling – map to institution_type if present
+    if (transformed.type !== undefined) {
+      const val = transformed.type.trim().toUpperCase();
+      const allowed = ['UNIVERSITY', 'COLLEGE', 'SECONDARY SCHOOL', 'PRIMARY SCHOOL', 'INSTITUTE'];
+      let normalized = 'UNIVERSITY';
+      if (allowed.includes(val)) {
+        normalized = val;
+      } else if (val.includes('SECONDARY')) {
+        normalized = 'SECONDARY SCHOOL';
+      } else if (val.includes('PRIMARY')) {
+        normalized = 'PRIMARY SCHOOL';
+      } else if (val.includes('UNIV')) {
+        normalized = 'UNIVERSITY';
+      } else if (val.includes('COLL')) {
+        normalized = 'COLLEGE';
+      } else if (val.includes('INSTIT')) {
+        normalized = 'INSTITUTE';
+      }
+      transformed.institution_type = normalized;
+      delete transformed.type;
     }
-    
+
+    // Ensure a valid institution_type is always present
+    if (!transformed.institution_type) {
+      transformed.institution_type = 'UNIVERSITY';
+    }
+
+    // Remove any stray fields that should not be sent
+    delete transformed.institutionId;
+    delete transformed.institutionType;
+    // (institution_type is the correct column, keep it)
+
     return transformed;
   }
-  
+
   async getAllInstitutions() {
     const { data, error } = await supabase
       .from('institutions')
       .select('*')
       .order('name');
-    
+
     if (error) throw error;
     // Transform data to camelCase
     return (data || []).map(inst => this.transformInstitution(inst));
   }
-  
+
   async getInstitutionById(id) {
     const { data, error } = await supabase
       .from('institutions')
       .select('*')
       .eq('institution_id', id)
       .single();
-    
+
     if (error) throw error;
     return this.transformInstitution(data);
   }
-  
+
   async createInstitution(institutionData) {
     // Transform camelCase to snake_case for database
     const dbData = this.transformInstitutionForDB(institutionData);
@@ -275,11 +305,11 @@ class SupabaseService {
       .insert(dbData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return this.transformInstitution(data);
   }
-  
+
   async updateInstitution(id, updates) {
     // Transform camelCase to snake_case for database
     const dbUpdates = this.transformInstitutionForDB(updates);
@@ -289,60 +319,183 @@ class SupabaseService {
       .eq('institution_id', id)
       .select()
       .single();
-    
+
     if (error) throw error;
     return this.transformInstitution(data);
   }
-  
+
   async deleteInstitution(id) {
     const { error } = await supabase
       .from('institutions')
       .delete()
       .eq('institution_id', id);
-    
+
     if (error) throw error;
   }
-  
-  // ============================================
-  // DEPARTMENTS
-  // ============================================
-  
-  async getAllDepartments() {
+
+  // ---------- Admin User Management ----------
+  // Fetch all active users (institution join removed due to FK relationship not configured)
+  async getAllUsers() {
     const { data, error } = await supabase
-      .from('departments')
+      .from('users')
       .select('*')
+      .eq('is_active', true)
       .order('name');
     
     if (error) throw error;
     return data;
   }
-  
+
+  // Create a new user (admin creates with email, password, role, institution_id)
+  async createUser({ email, password, role = 'STUDENT', institution_id }) {
+    // Create auth user (requires service_role key)
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
+    if (authError) throw authError;
+    // Insert profile into custom users table
+    const profile = {
+      user_id: authData.user.id,
+      email,
+      role: role.toUpperCase(),
+      institution_id,
+      is_active: true,
+    };
+    const { error: profileError } = await supabase.from('users').insert(profile);
+    if (profileError) throw profileError;
+    return authData.user;
+  }
+
+  // Reset a user's password (admin action)
+  // Note: Direct password reset requires service role key (server-side only)
+  // This function sends a password reset email instead, which is the secure client-side approach
+  async resetUserPassword(userEmail) {
+    if (!userEmail || typeof userEmail !== 'string' || !userEmail.includes('@')) {
+      throw new Error('Invalid email address. Expected a valid email string.');
+    }
+    
+    // Send password reset email - this is the secure way to reset passwords client-side
+    const { error } = await supabase.auth.resetPasswordForEmail(userEmail, {
+      redirectTo: `${window.location.origin}/reset-password`
+    });
+    
+    if (error) throw error;
+    return { 
+      message: 'Password reset email sent successfully. The user will receive an email with instructions to reset their password.',
+      email: userEmail
+    };
+  }
+
+  // Direct password reset (requires service role key)
+  // Note: This will only work if the Supabase admin client is configured with service role key
+  // For security, service role key should be used server-side only (Edge Functions, backend API)
+  // If you get a 403 error, you need to either:
+  // 1. Use the email reset method instead
+  // 2. Create a Supabase Edge Function with service role key
+  // 3. Use a backend API endpoint with service role key
+  async resetUserPasswordDirect(userId, newPassword) {
+    // Validate password
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long.');
+    }
+    
+    // Validate that userId is a UUID
+    if (!userId || typeof userId !== 'string') {
+      throw new Error('Invalid user ID. Expected a UUID string.');
+    }
+    
+    // Basic UUID format validation (8-4-4-4-12 hex digits)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      throw new Error(`Invalid UUID format: ${userId}. Please use the user's UUID (id field), not user_id.`);
+    }
+    
+    // Check if admin client is available
+    if (!supabaseAdmin) {
+      throw new Error('Service role key not configured. Direct password change requires VITE_SUPABASE_SERVICE_ROLE_KEY environment variable. Please use email reset method instead.');
+    }
+    
+    // Use admin client with service role key
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+      password: newPassword,
+    });
+    
+    if (error) {
+      // Provide helpful error message for 403 errors
+      if (error.status === 403 || error.message?.includes('not allowed') || error.message?.includes('403')) {
+        throw new Error('Direct password change failed. The service role key may be invalid or expired. Please use email reset method instead.');
+      }
+      throw error;
+    }
+    
+    return { 
+      message: 'Password changed successfully!',
+      user: data.user 
+    };
+  }
+
+  // Assign a user to an institution (school)
+  async assignUserToInstitution(userId, institutionId) {
+    const { error } = await supabase
+      .from('users')
+      .update({ institution_id: institutionId })
+      .eq('user_id', userId);
+    if (error) throw error;
+    return true;
+  }
+
+  // Soft‑delete a user (mark inactive)
+  async deleteUser(userId) {
+    const { error } = await supabase
+      .from('users')
+      .update({ is_active: false })
+      .eq('user_id', userId);
+    if (error) throw error;
+    return true;
+  }
+
+  // ============================================
+  // DEPARTMENTS
+  // ============================================
+
+  async getAllDepartments() {
+    const { data, error } = await supabase
+      .from('departments')
+      .select('*')
+      .order('name');
+
+    if (error) throw error;
+    return data;
+  }
+
   async getDepartmentsByInstitution(institutionId) {
     const { data, error } = await supabase
       .from('departments')
       .select('*')
       .eq('institution_id', institutionId)
       .order('name');
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   async createDepartment(departmentData) {
     const { data, error } = await supabase
       .from('departments')
       .insert(departmentData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   // ============================================
   // FORMS (Caribbean School Structure)
   // ============================================
-  
+
   async getAllForms(schoolId) {
     const { data, error } = await supabase
       .from('forms')
@@ -350,53 +503,26 @@ class SupabaseService {
       .eq('school_id', schoolId)
       .eq('is_active', true)
       .order('form_number');
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   async createForm(formData) {
     const { data, error } = await supabase
       .from('forms')
       .insert(formData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
-  // ============================================
-  // CLASSES
-  // ============================================
-  
-  async getClassesByForm(formId) {
-    const { data, error } = await supabase
-      .from('classes')
-      .select('*')
-      .eq('form_id', formId)
-      .eq('is_active', true)
-      .order('class_name');
-    
-    if (error) throw error;
-    return data;
-  }
-  
-  async createClass(classData) {
-    const { data, error } = await supabase
-      .from('classes')
-      .insert(classData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  }
-  
+
   // ============================================
   // SUBJECTS
   // ============================================
-  
+
   async getAllSubjects(schoolId) {
     const { data, error } = await supabase
       .from('subjects')
@@ -404,52 +530,15 @@ class SupabaseService {
       .eq('school_id', schoolId)
       .eq('is_active', true)
       .order('subject_name');
-    
+
     if (error) throw error;
     return data;
   }
-  
-  async createSubject(subjectData) {
-    const { data, error } = await supabase
-      .from('subjects')
-      .insert(subjectData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  }
-  
-  // ============================================
-  // LESSONS
-  // ============================================
-  
-  async getLessonsByClassSubject(classSubjectId) {
-    const { data, error } = await supabase
-      .from('lessons')
-      .select('*')
-      .eq('class_subject_id', classSubjectId)
-      .order('lesson_date', { ascending: false });
-    
-    if (error) throw error;
-    return data;
-  }
-  
-  async createLesson(lessonData) {
-    const { data, error } = await supabase
-      .from('lessons')
-      .insert(lessonData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  }
-  
+
   // ============================================
   // STORAGE OPERATIONS
   // ============================================
-  
+
   /**
    * List files in a Supabase Storage bucket/folder
    */
@@ -462,16 +551,16 @@ class SupabaseService {
           offset: 0,
           sortBy: { column: 'created_at', order: 'desc' }
         });
-      
+
       if (error) throw error;
-      
+
       // Get public URLs for each file
       const filesWithUrls = await Promise.all(
         (data || []).map(async (file) => {
           const { data: urlData } = supabase.storage
             .from(bucket)
             .getPublicUrl(`${folderPath}/${file.name}`);
-          
+
           return {
             name: file.name,
             size: file.metadata?.size || 0,
@@ -482,14 +571,14 @@ class SupabaseService {
           };
         })
       );
-      
+
       return filesWithUrls;
     } catch (error) {
       console.error('[supabaseService] Error listing files:', error);
       return [];
     }
   }
-  
+
   /**
    * Upload file to Supabase Storage
    */
@@ -500,11 +589,11 @@ class SupabaseService {
         cacheControl: '3600',
         upsert: false
       });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get public URL for file
    */
@@ -512,10 +601,10 @@ class SupabaseService {
     const { data } = supabase.storage
       .from(bucket)
       .getPublicUrl(filePath);
-    
+
     return data.publicUrl;
   }
-  
+
   /**
    * Delete file from storage
    */
@@ -523,18 +612,18 @@ class SupabaseService {
     const { error } = await supabase.storage
       .from(bucket)
       .remove([filePath]);
-    
+
     if (error) throw error;
   }
-  
+
   // ============================================
   // ANALYTICS / STATISTICS
   // ============================================
-  
+
   async getDashboardStats() {
     try {
       console.log('[supabaseService] getDashboardStats called');
-      
+
       // Get counts from different tables using Supabase
       // Use Promise.allSettled to handle errors gracefully
       const [
@@ -554,7 +643,7 @@ class SupabaseService {
         supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'INSTRUCTOR'),
         supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'ADMIN')
       ]);
-      
+
       const totalUsers = usersResult.status === 'fulfilled' ? (usersResult.value.count || 0) : 0;
       const totalSubjects = subjectsResult.status === 'fulfilled' ? (subjectsResult.value.count || 0) : 0;
       const totalClasses = classesResult.status === 'fulfilled' ? (classesResult.value.count || 0) : 0;
@@ -562,9 +651,9 @@ class SupabaseService {
       const totalStudents = studentsResult.status === 'fulfilled' ? (studentsResult.value.count || 0) : 0;
       const totalInstructors = instructorsResult.status === 'fulfilled' ? (instructorsResult.value.count || 0) : 0;
       const totalAdmins = adminsResult.status === 'fulfilled' ? (adminsResult.value.count || 0) : 0;
-      
+
       console.log('[supabaseService] Stats:', { totalUsers, totalSubjects, totalClasses, totalForms, totalStudents, totalInstructors, totalAdmins });
-      
+
       // Return stats object
       return {
         totalUsers,
@@ -599,17 +688,17 @@ class SupabaseService {
   async getRecentActivity(limit = 10) {
     try {
       console.log('[supabaseService] getRecentActivity called');
-      
+
       // Get recent users (last 7 days) - use a shorter time window for better performance
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      
+
       // Use Promise.allSettled with individual timeouts to prevent hanging
       const activityTimeout = 2000; // 2 seconds max per query
-      
-      const createTimeoutPromise = (timeoutMs) => 
+
+      const createTimeoutPromise = (timeoutMs) =>
         new Promise((resolve) => setTimeout(() => resolve({ status: 'fulfilled', value: { data: [] } }), timeoutMs));
-      
+
       const [
         recentUsersResult,
         recentSubjectsResult,
@@ -653,15 +742,15 @@ class SupabaseService {
           createTimeoutPromise(activityTimeout)
         ])
       ]);
-      
+
       const activities = [];
-      
+
       // Process recent users
       if (recentUsersResult.status === 'fulfilled' && recentUsersResult.value.data) {
         recentUsersResult.value.data.forEach(user => {
-          const roleText = user.role === 'ADMIN' ? 'admin' : 
-                          user.role === 'INSTRUCTOR' ? 'instructor' : 
-                          'student';
+          const roleText = user.role === 'ADMIN' ? 'admin' :
+            user.role === 'INSTRUCTOR' ? 'instructor' :
+              'student';
           activities.push({
             id: `user-${user.user_id}`,
             type: 'user',
@@ -673,7 +762,7 @@ class SupabaseService {
           });
         });
       }
-      
+
       // Process recent subjects
       if (recentSubjectsResult.status === 'fulfilled' && recentSubjectsResult.value.data) {
         recentSubjectsResult.value.data.forEach(subject => {
@@ -688,7 +777,7 @@ class SupabaseService {
           });
         });
       }
-      
+
       // Process recent classes
       if (recentClassesResult.status === 'fulfilled' && recentClassesResult.value.data) {
         recentClassesResult.value.data.forEach(cls => {
@@ -703,7 +792,7 @@ class SupabaseService {
           });
         });
       }
-      
+
       // Process recent forms
       if (recentFormsResult.status === 'fulfilled' && recentFormsResult.value.data) {
         recentFormsResult.value.data.forEach(form => {
@@ -718,42 +807,42 @@ class SupabaseService {
           });
         });
       }
-      
+
       // Sort by timestamp and limit
       activities.sort((a, b) => b.timestamp - a.timestamp);
       return activities.slice(0, limit);
-      
+
     } catch (error) {
       console.error('[supabaseService] Error in getRecentActivity:', error);
       return [];
     }
   }
-  
+
   /**
    * Format timestamp to relative time (e.g., "2 hours ago")
    */
   formatRelativeTime(timestamp) {
     if (!timestamp) return 'N/A';
-    
+
     const now = new Date();
     const time = new Date(timestamp);
     const diffMs = now - time;
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
     if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
     if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
-    
+
     return time.toLocaleDateString();
   }
 
   // ============================================
   // HIERARCHICAL STRUCTURE - FORMS
   // ============================================
-  
+
   /**
    * Get all forms for a school (or all forms if schoolId is null)
    */
@@ -763,18 +852,18 @@ class SupabaseService {
       .select('*, coordinator:users!forms_coordinator_id_fkey(name, email)')
       .eq('is_active', true)
       .order('form_number', { ascending: true });
-    
+
     // Only filter by school_id if it's provided
     if (schoolId !== null && schoolId !== undefined) {
       query = query.eq('school_id', schoolId);
     }
-    
+
     const { data, error } = await query;
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get form by ID
    */
@@ -784,25 +873,12 @@ class SupabaseService {
       .select('*, coordinator:users!forms_coordinator_id_fkey(*)')
       .eq('form_id', formId)
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
-  /**
-   * Create a new form
-   */
-  async createForm(formData) {
-    const { data, error } = await supabase
-      .from('forms')
-      .insert(formData)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
-  }
-  
+
+
   /**
    * Update form
    */
@@ -813,11 +889,11 @@ class SupabaseService {
       .eq('form_id', formId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Delete form (soft delete by setting is_active to false)
    */
@@ -828,7 +904,7 @@ class SupabaseService {
       .eq('form_id', formId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -836,7 +912,7 @@ class SupabaseService {
   // ============================================
   // HIERARCHICAL STRUCTURE - CLASSES
   // ============================================
-  
+
   /**
    * Get all classes for a form
    */
@@ -847,11 +923,11 @@ class SupabaseService {
       .eq('form_id', formId)
       .eq('is_active', true)
       .order('class_name', { ascending: true });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get classes with role-based filtering (course-like access control)
    * - Admins/Curriculum Designers: All classes
@@ -871,7 +947,7 @@ class SupabaseService {
         )
       `)
       .eq('is_active', true);
-    
+
     // Role-based filtering
     if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || userRole === 'CURRICULUM_DESIGNER') {
       // Admins see all classes (no filter)
@@ -884,19 +960,19 @@ class SupabaseService {
           .select('class_id')
           .eq('instructor_id', userId)
           .eq('is_active', true);
-        
+
         const classIds = instructorClasses?.map(c => c.class_id) || [];
-        
+
         // Also get classes where user is form_tutor
         const { data: tutorClasses } = await supabase
           .from('classes')
           .select('class_id')
           .eq('form_tutor_id', userId)
           .eq('is_active', true);
-        
+
         const tutorClassIds = tutorClasses?.map(c => c.class_id) || [];
         const allClassIds = [...new Set([...classIds, ...tutorClassIds])];
-        
+
         if (allClassIds.length > 0) {
           query = query.or(`class_id.in.(${allClassIds.join(',')}),published.eq.true`);
         } else {
@@ -914,9 +990,9 @@ class SupabaseService {
           .select('class_id')
           .eq('student_id', userId)
           .eq('is_active', true);
-        
+
         const enrolledClassIds = enrollments?.map(e => e.class_id) || [];
-        
+
         if (enrolledClassIds.length > 0) {
           query = query.or(`class_id.in.(${enrolledClassIds.join(',')}),published.eq.true`);
         } else {
@@ -929,13 +1005,13 @@ class SupabaseService {
       // Guests/others: only published classes
       query = query.eq('published', true);
     }
-    
+
     const { data, error } = await query.order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data || [];
   }
-  
+
   /**
    * Get published classes (for public browsing)
    */
@@ -952,29 +1028,29 @@ class SupabaseService {
       `)
       .eq('published', true)
       .eq('is_active', true);
-    
+
     if (filters.form_id) {
       query = query.eq('form_id', filters.form_id);
     }
-    
+
     if (filters.difficulty) {
       query = query.eq('difficulty', filters.difficulty);
     }
-    
+
     if (filters.featured) {
       query = query.eq('featured', true);
     }
-    
+
     if (filters.search) {
       query = query.or(`class_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
     }
-    
+
     const { data, error } = await query.order('featured', { ascending: false }).order('created_at', { ascending: false });
-    
+
     if (error) throw error;
     return data || [];
   }
-  
+
   /**
    * Get class by ID with full details
    */
@@ -999,11 +1075,11 @@ class SupabaseService {
       `)
       .eq('class_id', classId)
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Create a new class
    */
@@ -1013,11 +1089,11 @@ class SupabaseService {
       .insert(classData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Update class
    */
@@ -1028,11 +1104,11 @@ class SupabaseService {
       .eq('class_id', classId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get class roster (students in class)
    */
@@ -1045,11 +1121,11 @@ class SupabaseService {
       `)
       .eq('class_id', classId)
       .eq('is_active', true);
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Assign student to class
    */
@@ -1064,11 +1140,11 @@ class SupabaseService {
       })
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Enroll student in class (self-enrollment)
    */
@@ -1079,18 +1155,18 @@ class SupabaseService {
       .select('class_id, published, capacity, current_enrollment')
       .eq('class_id', classId)
       .single();
-    
+
     if (classError) throw classError;
-    
+
     if (!classData.published) {
       throw new Error('Class is not available for enrollment');
     }
-    
+
     // Check capacity
     if (classData.current_enrollment >= classData.capacity) {
       throw new Error('Class is at full capacity');
     }
-    
+
     // Check if already enrolled
     const { data: existing } = await supabase
       .from('student_class_assignments')
@@ -1098,7 +1174,7 @@ class SupabaseService {
       .eq('student_id', studentId)
       .eq('class_id', classId)
       .maybeSingle();
-    
+
     if (existing) {
       if (existing.is_active) {
         throw new Error('Already enrolled in this class');
@@ -1115,16 +1191,16 @@ class SupabaseService {
           .eq('assignment_id', existing.assignment_id)
           .select()
           .single();
-        
+
         if (error) throw error;
-        
+
         // Update enrollment count
         await this.updateClassEnrollmentCount(classId);
-        
+
         return data;
       }
     }
-    
+
     // Create new enrollment
     const { data, error } = await supabase
       .from('student_class_assignments')
@@ -1138,22 +1214,22 @@ class SupabaseService {
       })
       .select()
       .single();
-    
+
     if (error) throw error;
-    
+
     // Update enrollment count
     await this.updateClassEnrollmentCount(classId);
-    
+
     return data;
   }
-  
+
   /**
    * Drop enrollment (student leaves class)
    */
   async dropEnrollment(studentId, classId) {
     const { data, error } = await supabase
       .from('student_class_assignments')
-      .update({ 
+      .update({
         is_active: false,
         enrollment_type: 'dropped'
       })
@@ -1161,15 +1237,15 @@ class SupabaseService {
       .eq('class_id', classId)
       .select()
       .single();
-    
+
     if (error) throw error;
-    
+
     // Update enrollment count
     await this.updateClassEnrollmentCount(classId);
-    
+
     return data;
   }
-  
+
   /**
    * Check if student is enrolled in class
    */
@@ -1180,11 +1256,11 @@ class SupabaseService {
       .eq('student_id', studentId)
       .eq('class_id', classId)
       .maybeSingle();
-    
+
     if (error) throw error;
     return data && data.is_active ? data : null;
   }
-  
+
   /**
    * Update class enrollment count
    */
@@ -1194,13 +1270,13 @@ class SupabaseService {
       .select('*', { count: 'exact', head: true })
       .eq('class_id', classId)
       .eq('is_active', true);
-    
+
     await supabase
       .from('classes')
       .update({ current_enrollment: count || 0 })
       .eq('class_id', classId);
   }
-  
+
   /**
    * Remove student from class (admin action)
    */
@@ -1212,15 +1288,15 @@ class SupabaseService {
       .eq('class_id', classId)
       .select()
       .single();
-    
+
     if (error) throw error;
-    
+
     // Update enrollment count
     await this.updateClassEnrollmentCount(classId);
-    
+
     return data;
   }
-  
+
   /**
    * Add instructor to class
    */
@@ -1235,11 +1311,11 @@ class SupabaseService {
       })
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Remove instructor from class
    */
@@ -1251,11 +1327,11 @@ class SupabaseService {
       .eq('instructor_id', instructorId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get class instructors
    */
@@ -1268,11 +1344,11 @@ class SupabaseService {
       `)
       .eq('class_id', classId)
       .eq('is_active', true);
-    
+
     if (error) throw error;
     return data || [];
   }
-  
+
   /**
    * Publish class (make visible to all)
    */
@@ -1283,11 +1359,11 @@ class SupabaseService {
       .eq('class_id', classId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Unpublish class (hide from public)
    */
@@ -1298,11 +1374,11 @@ class SupabaseService {
       .eq('class_id', classId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Toggle featured status
    */
@@ -1313,7 +1389,7 @@ class SupabaseService {
       .eq('class_id', classId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -1321,7 +1397,7 @@ class SupabaseService {
   // ============================================
   // HIERARCHICAL STRUCTURE - SUBJECTS
   // ============================================
-  
+
   /**
    * Get all subjects for a school (or all subjects if schoolId is null)
    */
@@ -1331,18 +1407,18 @@ class SupabaseService {
       .select('*, department:departments(*)')
       .eq('is_active', true)
       .order('subject_name', { ascending: true });
-    
+
     // Only filter by school_id if it's provided
     if (schoolId !== null && schoolId !== undefined) {
       query = query.eq('school_id', schoolId);
     }
-    
+
     const { data, error } = await query;
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get subject by ID
    */
@@ -1352,11 +1428,11 @@ class SupabaseService {
       .select('*, department:departments(*)')
       .eq('subject_id', subjectId)
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Create a new subject
    */
@@ -1366,11 +1442,11 @@ class SupabaseService {
       .insert(subjectData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get subjects offered in a form
    */
@@ -1382,11 +1458,11 @@ class SupabaseService {
         subject:subjects(*)
       `)
       .eq('form_id', formId);
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Create subject offering for a form
    */
@@ -1400,11 +1476,11 @@ class SupabaseService {
       })
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get subjects assigned to a class
    */
@@ -1420,11 +1496,11 @@ class SupabaseService {
         teacher:users!class_subjects_teacher_id_fkey(*)
       `)
       .eq('class_id', classId);
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Assign subject to class
    */
@@ -1433,27 +1509,27 @@ class SupabaseService {
     const classIdNum = parseInt(classId);
     const subjectOfferingIdNum = parseInt(subjectOfferingId);
     const teacherIdNum = teacherId ? parseInt(teacherId) : null;
-    
+
     if (isNaN(classIdNum) || isNaN(subjectOfferingIdNum)) {
       throw new Error('Invalid class or subject offering ID');
     }
-    
+
     const insertData = {
       class_id: classIdNum,
       subject_offering_id: subjectOfferingIdNum
     };
-    
+
     // Only include teacher_id if it's provided
     if (teacherIdNum) {
       insertData.teacher_id = teacherIdNum;
     }
-    
+
     const { data, error } = await supabase
       .from('class_subjects')
       .insert(insertData)
       .select()
       .single();
-    
+
     if (error) {
       // Handle unique constraint violation (subject already assigned)
       if (error.code === '23505') {
@@ -1467,22 +1543,22 @@ class SupabaseService {
     }
     return data;
   }
-  
+
   /**
    * Get classes for a teacher (across all subjects)
    * @param {number|string} teacherId - The numeric user_id (BIGINT), not UUID
    */
   async getClassesByTeacher(teacherId) {
     // Ensure teacherId is a number (BIGINT)
-    const teacherIdNum = typeof teacherId === 'string' && !teacherId.includes('-') 
-      ? parseInt(teacherId) 
+    const teacherIdNum = typeof teacherId === 'string' && !teacherId.includes('-')
+      ? parseInt(teacherId)
       : teacherId;
-    
+
     // If it's still not a number or is a UUID, we need the numeric user_id
     if (isNaN(teacherIdNum) || typeof teacherIdNum !== 'number') {
       throw new Error('Invalid teacher ID: must be numeric user_id, not UUID');
     }
-    
+
     const { data, error } = await supabase
       .from('class_subjects')
       .select(`
@@ -1496,7 +1572,7 @@ class SupabaseService {
         )
       `)
       .eq('teacher_id', teacherIdNum);
-    
+
     if (error) throw error;
     return data;
   }
@@ -1504,7 +1580,7 @@ class SupabaseService {
   // ============================================
   // CURRICULUM MANAGEMENT
   // ============================================
-  
+
   /**
    * Get all curriculum content (subject-form offerings with curriculum details)
    */
@@ -1517,7 +1593,7 @@ class SupabaseService {
         .select('form_id')
         .eq('school_id', schoolId)
         .eq('is_active', true);
-      
+
       if (forms && forms.length > 0) {
         formIds = forms.map(f => f.form_id);
       } else {
@@ -1525,7 +1601,7 @@ class SupabaseService {
         return [];
       }
     }
-    
+
     let query = supabase
       .from('subject_form_offerings')
       .select(`
@@ -1537,26 +1613,26 @@ class SupabaseService {
         )
       `)
       .eq('is_active', true);
-    
+
     if (formIds) {
       query = query.in('form_id', formIds);
     } else if (formId) {
       query = query.eq('form_id', formId);
     }
-    
+
     if (subjectId) {
       query = query.eq('subject_id', subjectId);
     }
-    
+
     // Order by form_id (forms are already ordered by form_number in the database)
     query = query.order('form_id', { ascending: true });
-    
+
     const { data, error } = await query;
-    
+
     if (error) throw error;
     return data || [];
   }
-  
+
   /**
    * Get curriculum content for a specific subject across all forms
    */
@@ -1574,11 +1650,11 @@ class SupabaseService {
       .eq('subject_id', subjectId)
       .eq('is_active', true)
       .order('form_number', { ascending: true });
-    
+
     if (error) throw error;
     return data || [];
   }
-  
+
   /**
    * Get curriculum content for a specific form (all subjects in that form)
    */
@@ -1596,11 +1672,11 @@ class SupabaseService {
       .eq('form_id', formId)
       .eq('is_active', true)
       .order('subject_name', { ascending: true });
-    
+
     if (error) throw error;
     return data || [];
   }
-  
+
   /**
    * Get subject-form offering by ID (full curriculum details)
    */
@@ -1617,11 +1693,11 @@ class SupabaseService {
       `)
       .eq('offering_id', offeringId)
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Update curriculum framework or learning outcomes for a subject-form offering
    */
@@ -1651,7 +1727,7 @@ class SupabaseService {
       .eq('offering_id', offeringId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -1659,7 +1735,7 @@ class SupabaseService {
   // ============================================
   // HIERARCHICAL STRUCTURE - LESSONS
   // ============================================
-  
+
   /**
    * Get lessons for a class-subject
    */
@@ -1670,11 +1746,11 @@ class SupabaseService {
       .eq('class_subject_id', classSubjectId)
       .order('lesson_date', { ascending: true })
       .order('start_time', { ascending: true });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get lessons for a student (all their subjects)
    */
@@ -1688,7 +1764,7 @@ class SupabaseService {
         .select('user_id')
         .eq('id', studentId)
         .maybeSingle();
-      
+
       if (userProfile && userProfile.user_id) {
         numericStudentId = userProfile.user_id;
       } else {
@@ -1696,7 +1772,7 @@ class SupabaseService {
         return [];
       }
     }
-    
+
     // Get student's class
     const { data: classAssignment } = await supabase
       .from('student_class_assignments')
@@ -1704,19 +1780,19 @@ class SupabaseService {
       .eq('student_id', numericStudentId)
       .eq('is_active', true)
       .single();
-    
+
     if (!classAssignment) return [];
-    
+
     // Get all subjects for that class
     const { data: classSubjects } = await supabase
       .from('class_subjects')
       .select('class_subject_id')
       .eq('class_id', classAssignment.class_id);
-    
+
     if (!classSubjects || classSubjects.length === 0) return [];
-    
+
     const classSubjectIds = classSubjects.map(cs => cs.class_subject_id);
-    
+
     // Get lessons
     let query = supabase
       .from('lessons')
@@ -1730,45 +1806,45 @@ class SupabaseService {
         )
       `)
       .in('class_subject_id', classSubjectIds);
-    
+
     if (startDate) {
       query = query.gte('lesson_date', startDate);
     }
     if (endDate) {
       query = query.lte('lesson_date', endDate);
     }
-    
+
     const { data, error } = await query
       .order('lesson_date', { ascending: true })
       .order('start_time', { ascending: true });
-    
+
     if (error) throw error;
     return data || [];
   }
-  
+
   /**
    * Get lessons for a teacher
    */
   async getLessonsByTeacher(teacherId, startDate, endDate) {
     // Ensure teacherId is a number (BIGINT)
-    const teacherIdNum = typeof teacherId === 'string' && !teacherId.includes('-') 
-      ? parseInt(teacherId) 
+    const teacherIdNum = typeof teacherId === 'string' && !teacherId.includes('-')
+      ? parseInt(teacherId)
       : teacherId;
-    
+
     if (isNaN(teacherIdNum) || typeof teacherIdNum !== 'number') {
       throw new Error('Invalid teacher ID: must be numeric user_id, not UUID');
     }
-    
+
     // Get all class-subjects for teacher
     const { data: classSubjects } = await supabase
       .from('class_subjects')
       .select('class_subject_id')
       .eq('teacher_id', teacherIdNum);
-    
+
     if (!classSubjects || classSubjects.length === 0) return [];
-    
+
     const classSubjectIds = classSubjects.map(cs => cs.class_subject_id);
-    
+
     let query = supabase
       .from('lessons')
       .select(`
@@ -1781,22 +1857,22 @@ class SupabaseService {
         )
       `)
       .in('class_subject_id', classSubjectIds);
-    
+
     if (startDate) {
       query = query.gte('lesson_date', startDate);
     }
     if (endDate) {
       query = query.lte('lesson_date', endDate);
     }
-    
+
     const { data, error } = await query
       .order('lesson_date', { ascending: true })
       .order('start_time', { ascending: true });
-    
+
     if (error) throw error;
     return data || [];
   }
-  
+
   /**
    * Create a lesson
    */
@@ -1806,11 +1882,11 @@ class SupabaseService {
       .insert(lessonData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Update lesson
    */
@@ -1821,11 +1897,11 @@ class SupabaseService {
       .eq('lesson_id', lessonId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Delete lesson
    */
@@ -1834,14 +1910,14 @@ class SupabaseService {
       .from('lessons')
       .delete()
       .eq('lesson_id', lessonId);
-    
+
     if (error) throw error;
   }
 
   // ============================================
   // ATTENDANCE
   // ============================================
-  
+
   /**
    * Get attendance for a lesson
    */
@@ -1853,11 +1929,11 @@ class SupabaseService {
         student:users(*)
       `)
       .eq('lesson_id', lessonId);
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Mark attendance for multiple students
    */
@@ -1867,7 +1943,7 @@ class SupabaseService {
       .from('lesson_attendance')
       .delete()
       .eq('lesson_id', lessonId);
-    
+
     // Insert new attendance records
     const records = attendanceRecords.map(record => ({
       lesson_id: lessonId,
@@ -1875,16 +1951,16 @@ class SupabaseService {
       status: record.status,
       notes: record.notes || null
     }));
-    
+
     const { data, error } = await supabase
       .from('lesson_attendance')
       .insert(records)
       .select();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get student attendance history
    */
@@ -1903,17 +1979,17 @@ class SupabaseService {
         )
       `)
       .eq('student_id', studentId);
-    
+
     if (startDate) {
       query = query.gte('lesson.lesson_date', startDate);
     }
     if (endDate) {
       query = query.lte('lesson.lesson_date', endDate);
     }
-    
+
     const { data, error } = await query
       .order('lesson.lesson_date', { ascending: false });
-    
+
     if (error) throw error;
     return data || [];
   }
@@ -1921,7 +1997,7 @@ class SupabaseService {
   // ============================================
   // ASSESSMENTS & GRADES
   // ============================================
-  
+
   /**
    * Get assessments for a class-subject
    */
@@ -1931,11 +2007,11 @@ class SupabaseService {
       .select('*')
       .eq('class_subject_id', classSubjectId)
       .order('due_date', { ascending: true });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Create assessment
    */
@@ -1945,11 +2021,11 @@ class SupabaseService {
       .insert(assessmentData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get grades for an assessment
    */
@@ -1961,7 +2037,7 @@ class SupabaseService {
         student:users(*)
       `)
       .eq('assessment_id', assessmentId);
-    
+
     if (error) throw error;
     return data;
   }
@@ -1979,7 +2055,7 @@ class SupabaseService {
       .insert(quizData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -1995,29 +2071,29 @@ class SupabaseService {
       .eq('content_id', contentId)
       .eq('is_published', true)
       .single();
-    
+
     if (quizError) {
       if (quizError.code === 'PGRST116') return null; // No rows returned
       throw quizError;
     }
     if (!quizData) return null;
-    
+
     // Then get questions
     const { data: questions, error: questionsError } = await supabase
       .from('quiz_questions')
       .select('*')
       .eq('quiz_id', quizData.quiz_id)
       .order('question_order', { ascending: true });
-    
+
     if (questionsError) throw questionsError;
-    
+
     // Get options and correct answers for each question separately
     if (questions && questions.length > 0) {
       const questionIds = questions.map(q => q.question_id).filter(id => id != null);
-      
+
       let allOptions = [];
       let allCorrectAnswers = [];
-      
+
       // Only query if we have valid question IDs
       if (questionIds.length > 0) {
         // Get all options for these questions
@@ -2026,33 +2102,33 @@ class SupabaseService {
           .select('*')
           .in('question_id', questionIds)
           .order('option_order', { ascending: true });
-        
+
         if (optionsError) throw optionsError;
         allOptions = optionsData || [];
-        
+
         // Get all correct answers for these questions
         const { data: answersData, error: answersError } = await supabase
           .from('quiz_correct_answers')
           .select('*')
           .in('question_id', questionIds);
-        
+
         if (answersError) throw answersError;
         allCorrectAnswers = answersData || [];
       }
-      
+
       // Attach options and correct answers to each question
       const questionsWithData = questions.map(question => ({
         ...question,
         options: allOptions.filter(opt => opt.question_id === question.question_id),
         correct_answers: allCorrectAnswers.filter(ans => ans.question_id === question.question_id)
       }));
-      
+
       return {
         ...quizData,
         questions: questionsWithData
       };
     }
-    
+
     return {
       ...quizData,
       questions: []
@@ -2069,26 +2145,26 @@ class SupabaseService {
       .select('*')
       .eq('quiz_id', quizId)
       .single();
-    
+
     if (quizError) throw quizError;
     if (!quizData) return null;
-    
+
     // Then get questions
     const { data: questions, error: questionsError } = await supabase
       .from('quiz_questions')
       .select('*')
       .eq('quiz_id', quizId)
       .order('question_order', { ascending: true });
-    
+
     if (questionsError) throw questionsError;
-    
+
     // Get options and correct answers for each question separately
     if (questions && questions.length > 0) {
       const questionIds = questions.map(q => q.question_id).filter(id => id != null);
-      
+
       let allOptions = [];
       let allCorrectAnswers = [];
-      
+
       // Only query if we have valid question IDs
       if (questionIds.length > 0) {
         // Get all options for these questions
@@ -2097,33 +2173,33 @@ class SupabaseService {
           .select('*')
           .in('question_id', questionIds)
           .order('option_order', { ascending: true });
-        
+
         if (optionsError) throw optionsError;
         allOptions = optionsData || [];
-        
+
         // Get all correct answers for these questions
         const { data: answersData, error: answersError } = await supabase
           .from('quiz_correct_answers')
           .select('*')
           .in('question_id', questionIds);
-        
+
         if (answersError) throw answersError;
         allCorrectAnswers = answersData || [];
       }
-      
+
       // Attach options and correct answers to each question
       const questionsWithData = questions.map(question => ({
         ...question,
         options: allOptions.filter(opt => opt.question_id === question.question_id),
         correct_answers: allCorrectAnswers.filter(ans => ans.question_id === question.question_id)
       }));
-      
+
       return {
         ...quizData,
         questions: questionsWithData
       };
     }
-    
+
     return {
       ...quizData,
       questions: []
@@ -2140,7 +2216,7 @@ class SupabaseService {
       .eq('quiz_id', quizId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -2153,7 +2229,7 @@ class SupabaseService {
       .from('quizzes')
       .delete()
       .eq('quiz_id', quizId);
-    
+
     if (error) throw error;
   }
 
@@ -2166,7 +2242,7 @@ class SupabaseService {
       .insert(questionData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -2181,7 +2257,7 @@ class SupabaseService {
       .eq('question_id', questionId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -2194,7 +2270,7 @@ class SupabaseService {
       .from('quiz_questions')
       .delete()
       .eq('question_id', questionId);
-    
+
     if (error) throw error;
   }
 
@@ -2207,7 +2283,7 @@ class SupabaseService {
       .insert(optionData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -2222,7 +2298,7 @@ class SupabaseService {
       .eq('option_id', optionId)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -2235,7 +2311,7 @@ class SupabaseService {
       .from('quiz_answer_options')
       .delete()
       .eq('option_id', optionId);
-    
+
     if (error) throw error;
   }
 
@@ -2248,7 +2324,7 @@ class SupabaseService {
       .insert(answerData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -2261,7 +2337,7 @@ class SupabaseService {
       .from('quiz_correct_answers')
       .delete()
       .eq('question_id', questionId);
-    
+
     if (error) throw error;
   }
 
@@ -2274,7 +2350,7 @@ class SupabaseService {
       .insert(attemptData)
       .select()
       .single();
-    
+
     if (error) throw error;
     return data;
   }
@@ -2288,7 +2364,7 @@ class SupabaseService {
       const { error: responsesError } = await supabase
         .from('student_quiz_responses')
         .insert(responses);
-      
+
       if (responsesError) throw responsesError;
     }
 
@@ -2365,14 +2441,14 @@ class SupabaseService {
             if (!correctAnswer.case_sensitive) {
               correctText = correctText.toLowerCase();
               const studentText = studentAnswer.toLowerCase();
-              if (studentText === correctText || 
-                  (correctAnswer.accept_partial && studentText.includes(correctText))) {
+              if (studentText === correctText ||
+                (correctAnswer.accept_partial && studentText.includes(correctText))) {
                 isCorrect = true;
                 break;
               }
             } else {
-              if (studentAnswer === correctText || 
-                  (correctAnswer.accept_partial && studentAnswer.includes(correctText))) {
+              if (studentAnswer === correctText ||
+                (correctAnswer.accept_partial && studentAnswer.includes(correctText))) {
                 isCorrect = true;
                 break;
               }
@@ -2417,14 +2493,14 @@ class SupabaseService {
           is_graded: update.is_graded
         })
         .eq('response_id', update.response_id);
-      
+
       if (updateError) throw updateError;
     }
 
     // Calculate percentage
     const percentage = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
     const isPassed = attempt.quiz.passing_score ? percentage >= attempt.quiz.passing_score : null;
-    
+
     console.log('[submitQuizAttempt] Grading complete:', {
       totalPoints,
       earnedPoints,
@@ -2433,7 +2509,7 @@ class SupabaseService {
       correctCount: responsesToUpdate.filter(r => r.is_correct).length,
       totalCount: responsesToUpdate.length
     });
-    const needsGrading = (attempt.responses || []).some(r => 
+    const needsGrading = (attempt.responses || []).some(r =>
       r.question.question_type === 'ESSAY' && !r.is_graded
     );
 
@@ -2450,7 +2526,7 @@ class SupabaseService {
       .eq('attempt_id', attemptId);
 
     if (updateError) throw updateError;
-    
+
     // Refetch the attempt with all responses, questions, and options for display
     const { data: updatedAttempt, error: fetchError } = await supabase
       .from('student_quiz_attempts')
@@ -2497,7 +2573,7 @@ class SupabaseService {
     }
 
     const { data, error } = await query;
-    
+
     if (error) throw error;
     return data;
   }
@@ -2515,11 +2591,11 @@ class SupabaseService {
       .eq('quiz_id', quizId)
       .not('submitted_at', 'is', null)
       .order('submitted_at', { ascending: false });
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Enter/update grades for multiple students
    */
@@ -2532,7 +2608,7 @@ class SupabaseService {
       grade_letter: grade.grade_letter,
       comments: grade.comments || null
     }));
-    
+
     // Use upsert to handle both insert and update
     const { data, error } = await supabase
       .from('student_grades')
@@ -2540,11 +2616,11 @@ class SupabaseService {
         onConflict: 'assessment_id,student_id'
       })
       .select();
-    
+
     if (error) throw error;
     return data;
   }
-  
+
   /**
    * Get student grades across all subjects
    */
@@ -2556,19 +2632,19 @@ class SupabaseService {
       .eq('student_id', studentId)
       .eq('is_active', true)
       .single();
-    
+
     if (!classAssignment) return [];
-    
+
     // Get all class-subjects
     const { data: classSubjects } = await supabase
       .from('class_subjects')
       .select('class_subject_id')
       .eq('class_id', classAssignment.class_id);
-    
+
     if (!classSubjects || classSubjects.length === 0) return [];
-    
+
     const classSubjectIds = classSubjects.map(cs => cs.class_subject_id);
-    
+
     // Get assessments and grades
     const { data, error } = await supabase
       .from('student_grades')
@@ -2585,7 +2661,7 @@ class SupabaseService {
       `)
       .eq('student_id', studentId)
       .in('assessment.class_subject_id', classSubjectIds);
-    
+
     if (error) throw error;
     return data || [];
   }

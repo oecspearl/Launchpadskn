@@ -6,7 +6,7 @@
 import { findBestVideoForLesson, searchEducationalVideos } from './youtubeService';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-const API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
+const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 // Debug: Log API key status (without exposing the key)
 console.log('[AI Service] API Key configured:', API_KEY ? 'Yes (length: ' + API_KEY.length + ')' : 'No');
@@ -157,7 +157,7 @@ Make the lesson plan engaging, age-appropriate for ${gradeLevel}, and aligned wi
  */
 const formatStructuredLessonPlan = (planObj) => {
   let formatted = '';
-  
+
   // Format Lesson Header
   if (planObj.lesson_header || planObj.LESSON_HEADER) {
     const header = planObj.lesson_header || planObj.LESSON_HEADER;
@@ -177,7 +177,7 @@ const formatStructuredLessonPlan = (planObj) => {
     }
     formatted += '\n';
   }
-  
+
   // Format Objectives Table
   if (planObj.objectives_table || planObj.OBJECTIVES_TABLE) {
     const objectives = planObj.objectives_table || planObj.OBJECTIVES_TABLE;
@@ -201,7 +201,7 @@ const formatStructuredLessonPlan = (planObj) => {
     }
     formatted += '\n';
   }
-  
+
   // Format Lesson Components
   if (planObj.lesson_components || planObj.LESSON_COMPONENTS || planObj['3. LESSON COMPONENTS']) {
     const components = planObj.lesson_components || planObj.LESSON_COMPONENTS || planObj['3. LESSON COMPONENTS'];
@@ -224,7 +224,7 @@ const formatStructuredLessonPlan = (planObj) => {
         'Closure',
         'closure'
       ];
-      
+
       componentOrder.forEach(key => {
         const component = components[key];
         if (component) {
@@ -234,135 +234,135 @@ const formatStructuredLessonPlan = (planObj) => {
           } else {
             if (component.timing) formatted += `  ⏱️ Timing: ${component.timing}\n\n`;
             if (component.description) formatted += `  📝 Description: ${component.description}\n\n`;
-            
+
             // Enhanced teacher instructions
             if (component.teacher_instructions) {
               formatted += `  👨‍🏫 TEACHER INSTRUCTIONS:\n`;
               formatted += `  ${component.teacher_instructions.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Teacher dialogue/script
             if (component.teacher_dialogue) {
               formatted += `  💬 TEACHER DIALOGUE/SCRIPT:\n`;
               formatted += `  "${component.teacher_dialogue}"\n\n`;
             }
-            
+
             // Student-level explanation
             if (component.student_explanation) {
               formatted += `  📚 STUDENT-LEVEL EXPLANATION:\n`;
               formatted += `  ${component.student_explanation.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Student actions
             if (component.student_actions) {
               formatted += `  ✋ STUDENT ACTIONS:\n`;
               formatted += `  ${component.student_actions.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Expected responses
             if (component.expected_responses) {
               formatted += `  💭 EXPECTED STUDENT RESPONSES:\n`;
               formatted += `  ${component.expected_responses.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Connection to prior knowledge
             if (component.connection_to_prior_knowledge) {
               formatted += `  🔗 CONNECTION TO PRIOR KNOWLEDGE:\n`;
               formatted += `  ${component.connection_to_prior_knowledge.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Concept Development sub-activities
             if (component.sub_activities && Array.isArray(component.sub_activities)) {
               formatted += `  📖 SUB-ACTIVITIES:\n\n`;
               component.sub_activities.forEach((subActivity, idx) => {
                 formatted += `    Activity ${idx + 1}: ${subActivity.name || `Activity ${idx + 1}`}\n`;
                 if (subActivity.timing) formatted += `    ⏱️ Timing: ${subActivity.timing}\n\n`;
-                
+
                 if (subActivity.teacher_instructions) {
                   formatted += `    👨‍🏫 Teacher Instructions:\n`;
                   formatted += `    ${subActivity.teacher_instructions.split('\n').join('\n    ')}\n\n`;
                 }
-                
+
                 if (subActivity.teacher_dialogue) {
                   formatted += `    💬 Teacher Dialogue:\n`;
                   formatted += `    "${subActivity.teacher_dialogue}"\n\n`;
                 }
-                
+
                 if (subActivity.student_explanation) {
                   formatted += `    📚 Student-Level Explanation:\n`;
                   formatted += `    ${subActivity.student_explanation.split('\n').join('\n    ')}\n\n`;
                 }
-                
+
                 if (subActivity.examples) {
                   formatted += `    📝 Examples:\n`;
                   formatted += `    ${subActivity.examples.split('\n').join('\n    ')}\n\n`;
                 }
-                
+
                 if (subActivity.student_actions) {
                   formatted += `    ✋ Student Actions:\n`;
                   formatted += `    ${subActivity.student_actions.split('\n').join('\n    ')}\n\n`;
                 }
-                
+
                 if (subActivity.practice_exercises) {
                   formatted += `    ✏️ Practice Exercises:\n`;
                   formatted += `    ${subActivity.practice_exercises.split('\n').join('\n    ')}\n\n`;
                 }
-                
+
                 if (subActivity.common_misconceptions) {
                   formatted += `    ⚠️ Common Misconceptions:\n`;
                   formatted += `    ${subActivity.common_misconceptions.split('\n').join('\n    ')}\n\n`;
                 }
-                
+
                 if (subActivity.formative_checkpoint) {
                   formatted += `    ✅ Formative Checkpoint:\n`;
                   formatted += `    ${subActivity.formative_checkpoint.split('\n').join('\n    ')}\n\n`;
                 }
-                
+
                 if (subActivity.learning_style_integration) {
                   formatted += `    🎯 Learning Style Integration:\n`;
                   formatted += `    ${subActivity.learning_style_integration.split('\n').join('\n    ')}\n\n`;
                 }
-                
+
                 formatted += `    ${'─'.repeat(50)}\n\n`;
               });
             }
-            
+
             // Transitions
             if (component.transitions) {
               formatted += `  🔄 TRANSITIONS:\n`;
               formatted += `  ${component.transitions.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Reflection questions
             if (component.reflection_questions) {
               formatted += `  🤔 REFLECTION QUESTIONS:\n`;
               formatted += `  ${component.reflection_questions.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Sharing process
             if (component.sharing_process) {
               formatted += `  💬 SHARING PROCESS:\n`;
               formatted += `  ${component.sharing_process.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Student language guide
             if (component.student_language_guide) {
               formatted += `  📝 STUDENT LANGUAGE GUIDE:\n`;
               formatted += `  ${component.student_language_guide.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Addressing questions
             if (component.addressing_questions) {
               formatted += `  ❓ ADDRESSING QUESTIONS:\n`;
               formatted += `  ${component.addressing_questions.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Connection to next lesson
             if (component.connection_to_next_lesson) {
               formatted += `  🔗 CONNECTION TO NEXT LESSON:\n`;
               formatted += `  ${component.connection_to_next_lesson.split('\n').join('\n  ')}\n\n`;
             }
-            
+
             // Legacy support for activities array
             if (component.activities) {
               formatted += `  Activities:\n`;
@@ -377,7 +377,7 @@ const formatStructuredLessonPlan = (planObj) => {
           }
         }
       });
-      
+
       // If no standard keys found, iterate through all keys
       if (!componentOrder.some(key => components[key])) {
         Object.keys(components).forEach(key => {
@@ -396,7 +396,7 @@ const formatStructuredLessonPlan = (planObj) => {
     }
     formatted += '\n';
   }
-  
+
   // Format Assessment
   if (planObj.assessment || planObj.ASSESSMENT || planObj['4. ASSESSMENT']) {
     const assessment = planObj.assessment || planObj.ASSESSMENT || planObj['4. ASSESSMENT'];
@@ -413,28 +413,28 @@ const formatStructuredLessonPlan = (planObj) => {
         const formative = assessment['Formative Assessment'] || assessment.formative_assessment;
         formatted += `📊 FORMATIVE ASSESSMENT:\n${formative}\n\n`;
       }
-      
+
       if (assessment.assessment_activities) {
         formatted += `📝 ASSESSMENT ACTIVITIES:\n${assessment.assessment_activities}\n\n`;
       } else if (assessment['Assessment Activities']) {
         formatted += `📝 ASSESSMENT ACTIVITIES:\n${assessment['Assessment Activities']}\n\n`;
       }
-      
+
       if (assessment.assessment_tools) {
         formatted += `🛠️ ASSESSMENT TOOLS:\n${assessment.assessment_tools}\n\n`;
       } else if (assessment['Assessment Tools']) {
         formatted += `🛠️ ASSESSMENT TOOLS:\n${assessment['Assessment Tools']}\n\n`;
       }
-      
+
       if (assessment.checkpoint_questions) {
         formatted += `✅ CHECKPOINT QUESTIONS:\n${assessment.checkpoint_questions}\n\n`;
       }
-      
+
       // Handle any other keys
       Object.keys(assessment).forEach(key => {
-        if (!['Formative Assessment', 'formative_assessment', 'formative_strategies', 
-              'Assessment Activities', 'assessment_activities',
-              'Assessment Tools', 'assessment_tools', 'checkpoint_questions'].includes(key)) {
+        if (!['Formative Assessment', 'formative_assessment', 'formative_strategies',
+          'Assessment Activities', 'assessment_activities',
+          'Assessment Tools', 'assessment_tools', 'checkpoint_questions'].includes(key)) {
           const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
           formatted += `${formattedKey}: ${assessment[key]}\n`;
         }
@@ -442,7 +442,7 @@ const formatStructuredLessonPlan = (planObj) => {
     }
     formatted += '\n';
   }
-  
+
   // Format Resources
   if (planObj.resources || planObj.RESOURCES || planObj['5. RESOURCES']) {
     const resources = planObj.resources || planObj.RESOURCES || planObj['5. RESOURCES'];
@@ -463,7 +463,7 @@ const formatStructuredLessonPlan = (planObj) => {
     }
     formatted += '\n';
   }
-  
+
   // Format Student Content (if present)
   if (planObj.student_content) {
     formatted += '═══════════════════════════════════════════════════════\n';
@@ -471,7 +471,7 @@ const formatStructuredLessonPlan = (planObj) => {
     formatted += '═══════════════════════════════════════════════════════\n';
     formatted += `${planObj.student_content}\n\n`;
   }
-  
+
   return formatted.trim() || JSON.stringify(planObj, null, 2);
 };
 
@@ -843,14 +843,14 @@ Remember: Use ONLY the provided information. Make the lesson plan practical, eng
     // Ensure all fields exist and convert lesson_plan to string if it's an object
     lessonPlan.lesson_title = lessonPlan.lesson_title || `${topic} - ${subject}`;
     lessonPlan.learning_objectives = lessonPlan.learning_objectives || '';
-    
+
     // Convert lesson_plan to string if it's an object, formatting it nicely
     if (lessonPlan.lesson_plan && typeof lessonPlan.lesson_plan === 'object') {
       lessonPlan.lesson_plan = formatStructuredLessonPlan(lessonPlan.lesson_plan);
     } else {
       lessonPlan.lesson_plan = lessonPlan.lesson_plan || lessonPlan.content || '';
     }
-    
+
     lessonPlan.homework_description = lessonPlan.homework_description || '';
     lessonPlan.materials_list = lessonPlan.materials_list || materials || '';
     lessonPlan.assessment_strategies = lessonPlan.assessment_strategies || '';
@@ -900,7 +900,7 @@ export const generateAssignmentRubric = async ({
     throw new Error('Missing required parameters: assignmentTitle, subject, and gradeLevel are required.');
   }
 
-  const criteriaText = criteria.length > 0 
+  const criteriaText = criteria.length > 0
     ? `\nSpecific criteria to include:\n${criteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}`
     : '';
 
@@ -1002,7 +1002,7 @@ export const generateCompleteLessonContent = async ({
     throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
   }
 
-  const prompt = `You are an expert educational content creator. Generate a complete set of lesson content items for a lesson with the following details:
+  let prompt = `You are an expert educational content creator. Generate a complete set of lesson content items for a lesson with the following details:
 
 Subject: ${subject}
 Form: ${form}
@@ -1192,13 +1192,13 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
 
   try {
     console.log('[AI Service] Generating complete lesson content...');
-    
+
     // Search for relevant YouTube videos first
     let videoInfo = null;
     let videoOptions = [];
     try {
       console.log('[AI Service] Searching for YouTube videos...');
-      
+
       // Search for multiple videos to give options
       videoOptions = await searchEducationalVideos({
         query: topic,
@@ -1206,23 +1206,23 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         form,
         maxResults: 3
       });
-      
+
       if (videoOptions && videoOptions.length > 0) {
         // Use the first (most relevant) video
         videoInfo = videoOptions[0];
         console.log('[AI Service] Found', videoOptions.length, 'videos. Using:', videoInfo.title);
-        
+
         // Update prompt to include the actual video URL
         prompt = prompt.replace(
           '"url": "https://www.youtube.com/watch?v=... or embed code"',
           `"url": "${videoInfo.url}"`
         );
-        
+
         // Add video information to the prompt for better context
-        const videoList = videoOptions.map((v, idx) => 
+        const videoList = videoOptions.map((v, idx) =>
           `${idx + 1}. "${v.title}" by ${v.channelTitle} - ${v.url}`
         ).join('\n');
-        
+
         prompt += `\n\nIMPORTANT: Use this actual YouTube video URL in the VIDEO content item:\n${videoInfo.url}\nVideo Title: ${videoInfo.title}\nChannel: ${videoInfo.channelTitle}\nDescription: ${videoInfo.description?.substring(0, 200) || 'Educational video'}\n\nAdditional video options found:\n${videoList}`;
       } else {
         console.warn('[AI Service] No YouTube video found, will use placeholder');
@@ -1231,7 +1231,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
       console.warn('[AI Service] Error searching for videos, continuing without video:', videoError);
       // Continue without video if search fails
     }
-    
+
     const requestBody = {
       model: 'gpt-3.5-turbo',
       messages: [
@@ -1350,7 +1350,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         is_required: item.is_required !== false,
         estimated_minutes: item.estimated_minutes || null
       };
-      
+
       // For VIDEO content, ensure we use the actual video URL if available
       // AND ensure it's in the Learning section
       if (item.content_type === 'VIDEO') {
@@ -1369,7 +1369,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
           mappedItem.description = `${mappedItem.description} (for ${form} students)`;
         }
       }
-      
+
       // For QUIZ content, ensure quiz_questions array is preserved
       if (item.content_type === 'QUIZ') {
         mappedItem.quiz_questions = item.quiz_questions || [];
@@ -1377,7 +1377,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
           console.warn('[AI Service] Quiz has no questions:', item.title);
         }
       }
-      
+
       // For ASSIGNMENT content, ensure assignment_description is preserved
       if (item.content_type === 'ASSIGNMENT') {
         mappedItem.assignment_description = item.assignment_description || item.content_text || '';
@@ -1387,23 +1387,23 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
           console.warn('[AI Service] Assignment has no description:', item.title);
         }
       }
-      
+
       // Ensure all text content mentions student level if not already present
-      if (mappedItem.content_text && !mappedItem.content_text.toLowerCase().includes(form.toLowerCase()) && 
-          ['LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'LEARNING_ACTIVITIES', 'SUMMARY'].includes(mappedItem.content_type)) {
+      if (mappedItem.content_text && !mappedItem.content_text.toLowerCase().includes(form.toLowerCase()) &&
+        ['LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'LEARNING_ACTIVITIES', 'SUMMARY'].includes(mappedItem.content_type)) {
         // Add a note that content is for this form level
         mappedItem.content_text = `${mappedItem.content_text}\n\n(Content designed for ${form} students)`;
       }
-      
+
       return mappedItem;
     });
 
     // Ensure required content types are present
     const requiredTypes = ['LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'LEARNING_ACTIVITIES', 'SUMMARY'];
-    const hasRequiredTypes = requiredTypes.map(type => 
+    const hasRequiredTypes = requiredTypes.map(type =>
       contentItems.some(item => item.content_type === type)
     );
-    
+
     // Add missing required content types
     if (!hasRequiredTypes[0]) {
       // Add Learning Outcomes
@@ -1417,7 +1417,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         estimated_minutes: null
       });
     }
-    
+
     if (!hasRequiredTypes[1]) {
       // Add Key Concepts
       const conceptsIndex = contentItems.findIndex(item => item.content_type === 'LEARNING_OUTCOMES') + 1;
@@ -1431,22 +1431,22 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         estimated_minutes: 10
       });
     }
-    
+
     // Ensure there's a video in Learning Activities section
-    const hasVideoInLearning = contentItems.some(item => 
+    const hasVideoInLearning = contentItems.some(item =>
       item.content_type === 'VIDEO' && item.content_section === 'Learning'
     );
-    const hasLearningActivities = contentItems.some(item => 
+    const hasLearningActivities = contentItems.some(item =>
       item.content_type === 'LEARNING_ACTIVITIES'
     );
-    
+
     if (!hasVideoInLearning && videoInfo) {
       // Find the Learning Activities item or insert after Key Concepts
-      const learningIndex = contentItems.findIndex(item => 
+      const learningIndex = contentItems.findIndex(item =>
         item.content_type === 'LEARNING_ACTIVITIES' || item.content_type === 'KEY_CONCEPTS'
       );
       const insertIndex = learningIndex >= 0 ? learningIndex + 1 : 2;
-      
+
       contentItems.splice(insertIndex, 0, {
         content_type: 'VIDEO',
         title: videoInfo.title,
@@ -1459,14 +1459,14 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         estimated_minutes: 10
       });
     }
-    
+
     if (!hasLearningActivities) {
       // Add Learning Activities after video or key concepts
-      const afterIndex = contentItems.findIndex(item => 
+      const afterIndex = contentItems.findIndex(item =>
         item.content_type === 'VIDEO' && item.content_section === 'Learning'
       ) + 1;
       const insertIndex = afterIndex > 0 ? afterIndex : contentItems.findIndex(item => item.content_type === 'KEY_CONCEPTS') + 1;
-      
+
       contentItems.splice(insertIndex, 0, {
         content_type: 'LEARNING_ACTIVITIES',
         title: 'Learning Activities',
@@ -1477,12 +1477,12 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         estimated_minutes: 20
       });
     }
-    
+
     // Ensure Assessment section exists (QUIZ or ASSIGNMENT)
-    const hasAssessment = contentItems.some(item => 
+    const hasAssessment = contentItems.some(item =>
       ['QUIZ', 'ASSIGNMENT'].includes(item.content_type) || item.content_section === 'Assessment'
     );
-    
+
     if (!hasAssessment) {
       // Add a QUIZ as assessment
       const assessmentIndex = contentItems.length;
@@ -1508,7 +1508,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         ]
       });
     }
-    
+
     if (!hasRequiredTypes[3]) {
       // Add Summary at the end
       contentItems.push({
@@ -1521,7 +1521,7 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         estimated_minutes: 5
       });
     }
-    
+
     // Reorder sequence numbers to be sequential
     contentItems = contentItems.map((item, index) => ({
       ...item,

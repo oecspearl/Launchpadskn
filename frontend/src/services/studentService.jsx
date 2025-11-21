@@ -8,7 +8,7 @@
 
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // Helper function to get auth header
 const authHeader = () => {
@@ -43,10 +43,10 @@ const enrollInCourse = async (courseId) => {
   if (!studentId) {
     throw new Error('User not authenticated');
   }
-  
+
   const response = await axios.post(
-    `${API_URL}/enrollments`, 
-    { studentId, courseId }, 
+    `${API_URL}/enrollments`,
+    { studentId, courseId },
     { headers: authHeader() }
   );
   return response.data;
@@ -57,9 +57,9 @@ const getMyEnrollments = async () => {
   if (!studentId) {
     throw new Error('User not authenticated');
   }
-  
+
   const response = await axios.get(
-    `${API_URL}/enrollments/student/${studentId}`, 
+    `${API_URL}/enrollments/student/${studentId}`,
     { headers: authHeader() }
   );
   return response.data;
@@ -70,9 +70,9 @@ const getMyActiveEnrollments = async () => {
   if (!studentId) {
     throw new Error('User not authenticated');
   }
-  
+
   const response = await axios.get(
-    `${API_URL}/enrollments/student/${studentId}/active`, 
+    `${API_URL}/enrollments/student/${studentId}/active`,
     { headers: authHeader() }
   );
   return response.data;
@@ -80,8 +80,8 @@ const getMyActiveEnrollments = async () => {
 
 const dropEnrollment = async (enrollmentId) => {
   const response = await axios.put(
-    `${API_URL}/enrollments/${enrollmentId}/drop`, 
-    {}, 
+    `${API_URL}/enrollments/${enrollmentId}/drop`,
+    {},
     { headers: authHeader() }
   );
   return response.data;
@@ -91,7 +91,7 @@ export const studentService = {
   // Course Management
   getAvailableCourses,
   getCourseById,
-  
+
   // Enrollment Management
   enrollInCourse,
   getMyEnrollments,

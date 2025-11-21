@@ -8,7 +8,7 @@
 
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8080/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
 
 // Helper function to get auth header
 const authHeader = () => {
@@ -32,19 +32,19 @@ const getInstructorCourses = async () => {
   if (!userId) {
     throw new Error('User not authenticated');
   }
-  
+
   try {
     const instructorResponse = await axios.get(
-      `${API_URL}/instructors/user/${userId}`, 
+      `${API_URL}/instructors/user/${userId}`,
       { headers: authHeader() }
     );
-    
+
     const instructor = instructorResponse.data;
     const coursesResponse = await axios.get(
-      `${API_URL}/instructors/${instructor.instructorId}/courses/detailed`, 
+      `${API_URL}/instructors/${instructor.instructorId}/courses/detailed`,
       { headers: authHeader() }
     );
-    
+
     return { data: coursesResponse.data };
   } catch (error) {
     console.error('Error fetching instructor courses:', error);
@@ -60,7 +60,7 @@ const getCourseById = async (courseId) => {
 // Course Content Management
 const getCourseContents = async (courseId) => {
   const response = await axios.get(
-    `${API_URL}/contents/course/${courseId}`, 
+    `${API_URL}/contents/course/${courseId}`,
     { headers: authHeader() }
   );
   return response.data;
@@ -71,16 +71,16 @@ const createCourseContent = async (contentData, file) => {
   if (file) {
     formData.append('file', file);
   }
-  
+
   // Add other contentData fields to formData
   for (const key in contentData) {
     formData.append(key, contentData[key]);
   }
-  
+
   const response = await axios.post(
-    `${API_URL}/contents/upload`, 
-    formData, 
-    { 
+    `${API_URL}/contents/upload`,
+    formData,
+    {
       headers: {
         ...authHeader(),
         'Content-Type': 'multipart/form-data',
@@ -94,7 +94,7 @@ const createCourseContent = async (contentData, file) => {
 const getPendingAssignments = async () => {
   try {
     const response = await axios.get(
-      `${API_URL}/submissions/ungraded`, 
+      `${API_URL}/submissions/ungraded`,
       { headers: authHeader() }
     );
     return { data: response.data };
@@ -110,10 +110,10 @@ const getInstructorProfile = async () => {
   if (!userId) {
     throw new Error('User not authenticated');
   }
-  
+
   try {
     const instructorResponse = await axios.get(
-      `${API_URL}/instructors/user/${userId}`, 
+      `${API_URL}/instructors/user/${userId}`,
       { headers: authHeader() }
     );
     return { data: instructorResponse.data };
@@ -129,16 +129,16 @@ const getInstructorNotifications = async () => {
   if (!userId) {
     throw new Error('User not authenticated');
   }
-  
+
   try {
     const instructorResponse = await axios.get(
-      `${API_URL}/instructors/user/${userId}`, 
+      `${API_URL}/instructors/user/${userId}`,
       { headers: authHeader() }
     );
-    
+
     const instructor = instructorResponse.data;
     const notificationsResponse = await axios.get(
-      `${API_URL}/notifications/instructor/${instructor.instructorId}`, 
+      `${API_URL}/notifications/instructor/${instructor.instructorId}`,
       { headers: authHeader() }
     );
     return { data: notificationsResponse.data };
@@ -150,7 +150,7 @@ const getInstructorNotifications = async () => {
 
 const getSubmissionsByAssignment = async (assignmentId) => {
   const response = await axios.get(
-    `${API_URL}/submissions/assignment/${assignmentId}`, 
+    `${API_URL}/submissions/assignment/${assignmentId}`,
     { headers: authHeader() }
   );
   return response.data;
@@ -159,8 +159,8 @@ const getSubmissionsByAssignment = async (assignmentId) => {
 const gradeSubmission = async (submissionId, gradeData) => {
   const userId = getCurrentUserId();
   const response = await axios.post(
-    `${API_URL}/submissions/${submissionId}/grade`, 
-    { ...gradeData, gradedById: userId }, 
+    `${API_URL}/submissions/${submissionId}/grade`,
+    { ...gradeData, gradedById: userId },
     { headers: authHeader() }
   );
   return response.data;
@@ -170,19 +170,19 @@ export const instructorService = {
   // Course Management
   getInstructorCourses,
   getCourseById,
-  
+
   // Content Management
   getCourseContents,
   createCourseContent,
-  
+
   // Assignment Management
   getPendingAssignments,
   getSubmissionsByAssignment,
   gradeSubmission,
-  
+
   // Profile Management
   getInstructorProfile,
-  
+
   // Notifications
   getInstructorNotifications
 };

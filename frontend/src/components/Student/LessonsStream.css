@@ -1,0 +1,187 @@
+.lessons-stream-container {
+  width: 100%;
+}
+
+.lessons-stream-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.month-section {
+  position: relative;
+}
+
+.month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.month-title {
+  margin: 0;
+  font-weight: 600;
+  color: #495057;
+  font-size: 1.25rem;
+}
+
+.lessons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.lesson-stream-card {
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  transition: all 0.3s ease;
+  background: white;
+  text-align: left;
+}
+
+.lesson-stream-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  border-color: #0d6efd;
+}
+
+.lesson-today {
+  border-left: 4px solid #0d6efd;
+  background: linear-gradient(to right, rgba(13, 110, 253, 0.05), white);
+}
+
+.lesson-upcoming {
+  border-left: 4px solid #198754;
+}
+
+.lesson-past {
+  border-left: 4px solid #6c757d;
+  opacity: 0.9;
+}
+
+.lesson-card-body {
+  text-align: left;
+  padding: 1.25rem;
+}
+
+.lesson-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  width: 100%;
+}
+
+.lesson-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  width: 100%;
+}
+
+.lesson-title {
+  margin: 0;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #212529;
+  text-align: left;
+}
+
+.lesson-status-badge {
+  flex-shrink: 0;
+}
+
+.lesson-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6c757d;
+  margin-bottom: 0.75rem;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  text-align: left;
+}
+
+.meta-item svg {
+  color: #6c757d;
+}
+
+.lesson-topic {
+  margin-bottom: 0.5rem;
+  text-align: left;
+  width: 100%;
+}
+
+.lesson-description {
+  text-muted: true;
+  font-size: 0.875rem;
+  margin-bottom: 0.75rem;
+  text-align: left;
+  width: 100%;
+  color: #6c757d;
+}
+
+.lesson-homework {
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  text-align: left;
+  width: 100%;
+}
+
+.lesson-action {
+  margin-top: 0.5rem;
+  text-align: left;
+  width: 100%;
+}
+
+.lesson-action-btn {
+  text-align: left;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .month-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .lesson-stream-card .d-flex {
+    flex-direction: column;
+  }
+
+  .lesson-actions {
+    width: 100%;
+    margin-top: 1rem;
+  }
+
+  .lesson-actions button {
+    width: 100%;
+  }
+
+  .lesson-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+/* Empty state styling */
+.lessons-stream-container .card-body {
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+

@@ -3,7 +3,7 @@
  * Handles YouTube video searches using the YouTube Data API v3
  */
 
-const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || 'AIzaSyD6apl0ugvvTRl4_7g02mRuwVuA-vRnmyU';
+const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || 'AIzaSyD6apl0ugvvTRl4_7g02mRuwVuA-vRnmyU';
 const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3/search';
 
 /**
@@ -31,12 +31,12 @@ export const searchEducationalVideos = async ({
 
   // Build search query - prioritize educational content
   let searchQuery = query.trim();
-  
+
   // Add subject context if available
   if (subject && !searchQuery.toLowerCase().includes(subject.toLowerCase())) {
     searchQuery = `${subject} ${searchQuery}`;
   }
-  
+
   // Add form/grade level context if available
   if (form) {
     // Only add if not already in query
@@ -44,7 +44,7 @@ export const searchEducationalVideos = async ({
       searchQuery = `${searchQuery} ${form}`;
     }
   }
-  
+
   // Add educational keywords to improve results (but keep query concise)
   // YouTube API works better with focused queries
   if (searchQuery.length < 50) {
@@ -53,7 +53,7 @@ export const searchEducationalVideos = async ({
 
   try {
     console.log('[YouTube Service] Searching for videos:', searchQuery);
-    
+
     const params = new URLSearchParams({
       part: 'snippet',
       q: searchQuery,

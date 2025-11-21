@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import LessonsStream from './LessonsStream';
 import './SubjectView.css';
 
 function SubjectView() {
@@ -121,25 +122,6 @@ function SubjectView() {
     return timeStr.substring(0, 5);
   };
   
-  // Group lessons by status
-  const upcomingLessons = lessons.filter(l => {
-    const lessonDate = new Date(l.lesson_date + 'T' + l.start_time);
-    return lessonDate >= new Date();
-  }).sort((a, b) => {
-    const dateA = new Date(a.lesson_date + 'T' + a.start_time);
-    const dateB = new Date(b.lesson_date + 'T' + b.start_time);
-    return dateA - dateB;
-  });
-  
-  const pastLessons = lessons.filter(l => {
-    const lessonDate = new Date(l.lesson_date + 'T' + l.start_time);
-    return lessonDate < new Date();
-  }).sort((a, b) => {
-    const dateA = new Date(a.lesson_date + 'T' + a.start_time);
-    const dateB = new Date(b.lesson_date + 'T' + b.start_time);
-    return dateB - dateA; // Most recent first
-  });
-  
   // Group assessments by status
   const upcomingAssessments = assessments.filter(a => {
     return a.due_date && new Date(a.due_date) >= new Date();
@@ -214,124 +196,7 @@ function SubjectView() {
         className="mb-4"
       >
         <Tab eventKey="lessons" title={`Lessons (${lessons.length})`}>
-          <Row className="g-4">
-            {/* Upcoming Lessons */}
-            {upcomingLessons.length > 0 && (
-              <Col>
-                <Card className="border-0 shadow-sm">
-                  <Card.Header className="bg-white border-0 py-3">
-                    <h5 className="mb-0">
-                      <FaCalendarAlt className="me-2" />
-                      Upcoming Lessons
-                    </h5>
-                  </Card.Header>
-                  <Card.Body>
-                    <ListGroup variant="flush">
-                      {upcomingLessons.map((lesson, index) => (
-                        <ListGroup.Item key={index} className="border-0 px-0 py-3 border-bottom">
-                          <div className="d-flex justify-content-between align-items-start">
-                            <div className="flex-grow-1">
-                              <h6 className="mb-1">{lesson.lesson_title || 'Lesson'}</h6>
-                              <div className="text-muted small mb-2">
-                                <FaCalendarAlt className="me-1" />
-                                {formatDate(lesson.lesson_date)}
-                              </div>
-                              <div className="text-muted small">
-                                <FaClock className="me-1" />
-                                {formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}
-                                {lesson.location && (
-                                  <>
-                                    <span className="ms-3">
-                                      <FaMapMarkerAlt className="me-1" />
-                                      {lesson.location}
-                                    </span>
-                                  </>
-                                )}
-                              </div>
-                              {lesson.topic && (
-                                <p className="mb-0 mt-2 small">
-                                  <strong>Topic:</strong> {lesson.topic}
-                                </p>
-                              )}
-                              {lesson.homework_description && (
-                                <div className="mt-2">
-                                  <Badge bg="warning">Homework Assigned</Badge>
-                                  {lesson.homework_due_date && (
-                                    <small className="text-muted ms-2">
-                                      Due: {formatDate(lesson.homework_due_date)}
-                                    </small>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                            <Button 
-                              variant="outline-primary" 
-                              size="sm"
-                              onClick={() => navigate(`/student/lessons/${lesson.lesson_id}`)}
-                            >
-                              View Details
-                            </Button>
-                          </div>
-                        </ListGroup.Item>
-                      ))}
-                    </ListGroup>
-                  </Card.Body>
-                </Card>
-              </Col>
-            )}
-            
-            {/* Past Lessons */}
-            {pastLessons.length > 0 && (
-              <Col className="mt-4">
-                <Card className="border-0 shadow-sm">
-                  <Card.Header className="bg-white border-0 py-3">
-                    <h5 className="mb-0">
-                      <FaCalendarAlt className="me-2" />
-                      Past Lessons
-                    </h5>
-                  </Card.Header>
-                  <Card.Body>
-                    <ListGroup variant="flush">
-                      {pastLessons.slice(0, 10).map((lesson, index) => (
-                        <ListGroup.Item key={index} className="border-0 px-0 py-3 border-bottom">
-                          <div className="d-flex justify-content-between align-items-start">
-                            <div className="flex-grow-1">
-                              <h6 className="mb-1">{lesson.lesson_title || 'Lesson'}</h6>
-                              <div className="text-muted small mb-2">
-                                <FaCalendarAlt className="me-1" />
-                                {formatDate(lesson.lesson_date)}
-                              </div>
-                              <div className="text-muted small">
-                                <FaClock className="me-1" />
-                                {formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}
-                              </div>
-                            </div>
-                            <Button 
-                              variant="outline-secondary" 
-                              size="sm"
-                              onClick={() => navigate(`/student/lessons/${lesson.lesson_id}`)}
-                            >
-                              View
-                            </Button>
-                          </div>
-                        </ListGroup.Item>
-                      ))}
-                    </ListGroup>
-                  </Card.Body>
-                </Card>
-              </Col>
-            )}
-            
-            {lessons.length === 0 && (
-              <Col>
-                <Card className="border-0 shadow-sm">
-                  <Card.Body className="text-center py-5">
-                    <p className="text-muted mb-0">No lessons scheduled yet</p>
-                  </Card.Body>
-                </Card>
-              </Col>
-            )}
-          </Row>
+          <LessonsStream lessons={lessons} classSubjectId={classSubjectId} />
         </Tab>
         
         <Tab eventKey="assignments" title={`Assignments (${assessments.length})`}>

@@ -22,13 +22,13 @@ export function AuthProvider({ children }) {
     const initializeAuth = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('Session error:', error);
           setIsLoading(false);
           return;
         }
-        
+
         if (session?.user) {
           await loadUserProfile(session.user.id);
         }
@@ -43,17 +43,17 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('Auth state changed:', event, session?.user?.email);
-        
+
         if (event === 'SIGNED_IN' && session?.user) {
           console.log('[AuthContext] SIGNED_IN event, loading profile for:', session.user.email);
           setIsLoading(true); // Set loading while fetching profile
-          
+
           // Immediately set a basic user from session to prevent dashboards from showing "no user"
           const email = session.user.email;
           const emailLower = email?.toLowerCase() || '';
           const isAdmin = emailLower.includes('admin');
           const isTeacher = emailLower.includes('teacher') || emailLower.includes('instructor');
-          
+
           // Determine role: check email first, then metadata, then default
           let tempRole = session.user.user_metadata?.role;
           if (!tempRole) {
@@ -61,7 +61,7 @@ export function AuthProvider({ children }) {
             else if (isTeacher) tempRole = 'INSTRUCTOR';
             else tempRole = 'STUDENT';
           }
-          
+
           const tempUser = {
             userId: session.user.id,
             email: email,
@@ -71,14 +71,14 @@ export function AuthProvider({ children }) {
             refreshToken: session.refresh_token,
             loginTime: Date.now()
           };
-          
+
           // Store temp user immediately so components can use it
           localStorage.setItem('user', JSON.stringify(tempUser));
           localStorage.setItem('token', session.access_token);
           setUser(tempUser);
           setIsAuthenticated(true);
           setIsLoading(false); // Set to false immediately so dashboards can render
-          
+
           // Then load full profile in background (non-blocking)
           loadUserProfile(session.user.id).catch(error => {
             console.warn('[AuthContext] Background profile load failed:', error);
@@ -122,10 +122,10 @@ export function AuthProvider({ children }) {
   // Load user profile from users table
   const loadUserProfile = async (userId) => {
     console.log('[AuthContext] loadUserProfile called for userId:', userId);
-    
+
     // First get session - we need this regardless
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
+
     if (sessionError || !session) {
       console.error('[AuthContext] No session available:', sessionError);
       setUser(null);
@@ -133,16 +133,16 @@ export function AuthProvider({ children }) {
       setIsLoading(false);
       return;
     }
-    
+
     console.log('[AuthContext] Session found, email:', session.user.email);
-    
+
     try {
       // Try to get user profile from users table with shorter timeout (2 seconds)
       const profilePromise = supabaseService.getUserProfile(userId);
-      const timeoutPromise = new Promise((_, reject) => 
+      const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Profile fetch timeout')), 2000)
       );
-      
+
       let profile;
       try {
         profile = await Promise.race([profilePromise, timeoutPromise]);
@@ -152,12 +152,16 @@ export function AuthProvider({ children }) {
         console.warn('[AuthContext] Profile fetch failed or timed out:', raceError);
         throw raceError;
       }
-      
+
       // Ensure role is set and valid
-      const userRole = (profile.role || 'STUDENT').toUpperCase().trim();
+      // Normalize TEACHER to INSTRUCTOR for consistency
+      let userRole = (profile.role || 'STUDENT').toUpperCase().trim();
+      if (userRole === 'TEACHER') {
+        userRole = 'INSTRUCTOR';
+      }
       const validRoles = ['ADMIN', 'INSTRUCTOR', 'STUDENT'];
       const finalRole = validRoles.includes(userRole) ? userRole : (session.user.email.includes('admin') ? 'ADMIN' : 'STUDENT');
-      
+
       // Combine profile and auth data
       // Map snake_case DB fields to camelCase for consistency
       const userData = {
@@ -175,34 +179,34 @@ export function AuthProvider({ children }) {
         isActive: profile.is_active !== undefined ? profile.is_active : profile.isActive,
         ...profile // Include all profile fields (may be snake_case or camelCase)
       };
-      
+
       // Override role to ensure consistency
       userData.role = finalRole;
-      
+
       // Store in localStorage for compatibility
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('token', session.access_token);
       sessionStorage.setItem('sessionActive', 'true');
-      
+
       setUser(userData);
       setIsAuthenticated(true);
       setIsLoading(false);
-      console.log('[AuthContext] User profile loaded, user set:', { 
-        role: userData.role, 
+      console.log('[AuthContext] User profile loaded, user set:', {
+        role: userData.role,
         email: userData.email,
         profileRole: profile.role,
         finalRole: finalRole
       });
     } catch (error) {
       console.warn('[AuthContext] Profile not found in database or timeout, using fallback:', error);
-      
+
       // Profile doesn't exist or timed out - create minimal user from auth session
       // This ensures redirect can still happen
       const email = session.user.email;
       const emailLower = email?.toLowerCase() || '';
       const isAdmin = emailLower.includes('admin');
       const isTeacher = emailLower.includes('teacher') || emailLower.includes('instructor');
-      
+
       // Determine role: check email first, then metadata, then default
       let userRole = session.user.user_metadata?.role;
       if (!userRole) {
@@ -210,12 +214,12 @@ export function AuthProvider({ children }) {
         else if (isTeacher) userRole = 'INSTRUCTOR';
         else userRole = 'STUDENT';
       }
-      
+
       // Ensure role is valid
       const userRoleUpper = (userRole || 'STUDENT').toUpperCase().trim();
       const validRoles = ['ADMIN', 'INSTRUCTOR', 'STUDENT'];
       const finalRole = validRoles.includes(userRoleUpper) ? userRoleUpper : (isAdmin ? 'ADMIN' : 'STUDENT');
-      
+
       const userData = {
         userId: session.user.id,
         email: email,
@@ -225,19 +229,19 @@ export function AuthProvider({ children }) {
         refreshToken: session.refresh_token,
         loginTime: Date.now()
       };
-      
+
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('token', session.access_token);
       sessionStorage.setItem('sessionActive', 'true');
-      
+
       setUser(userData);
       setIsAuthenticated(true);
       setIsLoading(false);
-      console.log('[AuthContext] Set fallback user from auth session:', { 
-        role: userData.role, 
-        email: userData.email 
+      console.log('[AuthContext] Set fallback user from auth session:', {
+        role: userData.role,
+        email: userData.email
       });
-      
+
       // Try to create profile in database for future use (only if it doesn't exist)
       // Use upsert to avoid 409 conflicts - if profile exists, just update it silently
       try {
@@ -247,7 +251,7 @@ export function AuthProvider({ children }) {
           .select('user_id')
           .eq('id', session.user.id)
           .maybeSingle();
-        
+
         if (!existingProfile) {
           // Only insert if it doesn't exist
           const { error: createError } = await supabase
@@ -260,7 +264,7 @@ export function AuthProvider({ children }) {
               is_active: true,
               created_at: new Date().toISOString()
             });
-          
+
           if (createError) {
             // Ignore conflict errors silently
             if (createError.code !== '23505' && createError.status !== 409 && !createError.message?.includes('duplicate')) {
@@ -275,7 +279,7 @@ export function AuthProvider({ children }) {
         // Silently ignore all errors here - profile creation is optional
         // The profile might already exist, which is fine
       }
-      
+
       // Ensure loading is set to false
       setIsLoading(false);
     }
@@ -325,15 +329,15 @@ export function AuthProvider({ children }) {
   const updateUserProfile = async (updatedUser) => {
     try {
       if (!user?.userId) throw new Error('No user logged in');
-      
+
       // Update in database
       const updated = await supabaseService.updateUserProfile(user.userId, updatedUser);
-      
+
       // Update local state
       const newUserData = { ...user, ...updated };
       localStorage.setItem('user', JSON.stringify(newUserData));
       setUser(newUserData);
-      
+
       return updated;
     } catch (error) {
       console.error('Update profile error:', error);
@@ -392,11 +396,11 @@ export function AuthProvider({ children }) {
 // Custom hook to use AuthContext
 export function useAuth() {
   const context = useContext(AuthContext);
-  
+
   if (context === null) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  
+
   return context;
 }
 
