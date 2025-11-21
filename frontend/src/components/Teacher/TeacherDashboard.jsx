@@ -118,19 +118,31 @@ function TeacherDashboard() {
       setIsLoading(false);
     }, 5000);
     
-    if (user && (user.userId || user.id)) {
+    // Check if user exists and has required properties
+    // User can have userId (from DB) or id (from Auth), or both
+    const hasValidUser = user && (user.userId || user.id || user.user_id);
+    
+    if (hasValidUser) {
+      console.log('[TeacherDashboard] User found, fetching data. UserId:', user.userId || user.id || user.user_id);
       fetchTeacherData().then(() => {
         clearTimeout(maxTimeout);
-      }).catch(() => {
+      }).catch((err) => {
+        console.error('[TeacherDashboard] Error fetching data:', err);
         clearTimeout(maxTimeout);
+        setIsLoading(false);
       });
     } else {
       // If no user, stop loading after shorter timeout
-      setTimeout(() => {
+      const shortTimeout = setTimeout(() => {
         console.warn('[TeacherDashboard] No user after timeout, stopping loading');
         setIsLoading(false);
         clearTimeout(maxTimeout);
       }, 2000);
+      
+      return () => {
+        clearTimeout(maxTimeout);
+        clearTimeout(shortTimeout);
+      };
     }
     
     return () => clearTimeout(maxTimeout);

@@ -283,7 +283,7 @@ function EnhancedLessonPlannerForm({
               Basic Info
             </span>
           }>
-            <Form className="mt-3">
+            <div className="mt-3">
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
@@ -291,9 +291,8 @@ function EnhancedLessonPlannerForm({
                     <Form.Control
                       type="text"
                       name="subject"
-                      value={formData.subject}
+                      value={formData.subject || ''}
                       onChange={handleInputChange}
-                      required
                     />
                   </Form.Group>
                 </Col>
@@ -303,9 +302,8 @@ function EnhancedLessonPlannerForm({
                     <Form.Control
                       type="text"
                       name="form"
-                      value={formData.form}
+                      value={formData.form || ''}
                       onChange={handleInputChange}
-                      required
                     />
                   </Form.Group>
                 </Col>
@@ -315,7 +313,7 @@ function EnhancedLessonPlannerForm({
                     <Form.Control
                       type="text"
                       name="class"
-                      value={formData.class}
+                      value={formData.class || ''}
                       onChange={handleInputChange}
                       placeholder="e.g., 3A"
                     />
@@ -328,10 +326,9 @@ function EnhancedLessonPlannerForm({
                 <Form.Control
                   type="text"
                   name="topic"
-                  value={formData.topic}
+                  value={formData.topic || ''}
                   onChange={handleInputChange}
                   placeholder="e.g., Introduction to Algebra"
-                  required
                 />
               </Form.Group>
 
@@ -341,7 +338,7 @@ function EnhancedLessonPlannerForm({
                   as="textarea"
                   rows={3}
                   name="essentialLearningOutcomes"
-                  value={formData.essentialLearningOutcomes}
+                  value={formData.essentialLearningOutcomes || ''}
                   onChange={handleInputChange}
                   placeholder="Key learning outcomes students should achieve..."
                 />
@@ -353,7 +350,7 @@ function EnhancedLessonPlannerForm({
                   as="textarea"
                   rows={3}
                   name="learningOutcomes"
-                  value={formData.learningOutcomes}
+                  value={formData.learningOutcomes || ''}
                   onChange={handleInputChange}
                   placeholder="Specific curriculum outcomes..."
                 />
@@ -366,7 +363,7 @@ function EnhancedLessonPlannerForm({
                     <Form.Control
                       type="number"
                       name="studentCount"
-                      value={formData.studentCount}
+                      value={formData.studentCount || ''}
                       onChange={handleInputChange}
                       min="1"
                     />
@@ -377,7 +374,7 @@ function EnhancedLessonPlannerForm({
                     <Form.Label>Duration (minutes)</Form.Label>
                     <Form.Select
                       name="duration"
-                      value={formData.duration}
+                      value={formData.duration || ''}
                       onChange={handleInputChange}
                     >
                       <option value={30}>30 minutes</option>
@@ -388,7 +385,7 @@ function EnhancedLessonPlannerForm({
                   </Form.Group>
                 </Col>
               </Row>
-            </Form>
+            </div>
           </Tab>
 
           {/* Tab 2: Teaching Strategy */}
@@ -398,7 +395,7 @@ function EnhancedLessonPlannerForm({
               Teaching Strategy
             </span>
           }>
-            <Form className="mt-3">
+            <div className="mt-3">
               <Form.Group className="mb-3">
                 <Form.Label>Pedagogical Strategies</Form.Label>
                 <div>
@@ -467,7 +464,7 @@ function EnhancedLessonPlannerForm({
                   as="textarea"
                   rows={3}
                   name="materials"
-                  value={formData.materials}
+                  value={formData.materials || ''}
                   onChange={handleInputChange}
                   placeholder="List required materials and resources..."
                 />
@@ -479,12 +476,12 @@ function EnhancedLessonPlannerForm({
                   as="textarea"
                   rows={2}
                   name="prerequisiteSkills"
-                  value={formData.prerequisiteSkills}
+                  value={formData.prerequisiteSkills || ''}
                   onChange={handleInputChange}
                   placeholder="Skills or knowledge students should have before this lesson..."
                 />
               </Form.Group>
-            </Form>
+            </div>
           </Tab>
 
           {/* Tab 3: Additional Details */}
@@ -494,7 +491,7 @@ function EnhancedLessonPlannerForm({
               Additional Details
             </span>
           }>
-            <Form className="mt-3">
+            <div className="mt-3">
               <Form.Group className="mb-3">
                 <Form.Check
                   type="checkbox"
@@ -512,7 +509,7 @@ function EnhancedLessonPlannerForm({
                     as="textarea"
                     rows={3}
                     name="specialNeedsDetails"
-                    value={formData.specialNeedsDetails}
+                    value={formData.specialNeedsDetails || ''}
                     onChange={handleInputChange}
                     placeholder="Describe specific accommodations needed..."
                   />
@@ -525,7 +522,7 @@ function EnhancedLessonPlannerForm({
                   as="textarea"
                   rows={3}
                   name="additionalInstructions"
-                  value={formData.additionalInstructions}
+                  value={formData.additionalInstructions || ''}
                   onChange={handleInputChange}
                   placeholder="Any additional instructions or context for the AI..."
                 />
@@ -536,12 +533,12 @@ function EnhancedLessonPlannerForm({
                 <Form.Control
                   type="url"
                   name="referenceUrl"
-                  value={formData.referenceUrl}
+                  value={formData.referenceUrl || ''}
                   onChange={handleInputChange}
                   placeholder="https://..."
                 />
               </Form.Group>
-            </Form>
+            </div>
           </Tab>
         </Tabs>
 

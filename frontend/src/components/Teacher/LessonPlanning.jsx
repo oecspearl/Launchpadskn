@@ -152,14 +152,31 @@ function LessonPlanning() {
       setSuccess(null);
       
       // Combine date and time for proper datetime format
-      const lessonDateTime = `${lessonData.lesson_date}T${lessonData.start_time}:00`;
-      const endDateTime = `${lessonData.lesson_date}T${lessonData.end_time}:00`;
+      // Ensure time format is HH:MM:SS
+      const formatTime = (timeStr) => {
+        if (!timeStr) return null;
+        // If already has seconds, return as is, otherwise add :00
+        return timeStr.includes(':') && timeStr.split(':').length === 3 ? timeStr : timeStr + ':00';
+      };
+      
+      // Ensure class_subject_id is a valid integer
+      // Use the classSubjectId from useParams if lessonData doesn't have it
+      const classSubjectIdValue = lessonData.class_subject_id || classSubjectId;
+      console.log('[LessonPlanning] class_subject_id value:', classSubjectIdValue, 'type:', typeof classSubjectIdValue);
+      const validClassSubjectId = parseInt(classSubjectIdValue, 10);
+      console.log('[LessonPlanning] Parsed class_subject_id:', validClassSubjectId);
+      
+      if (!validClassSubjectId || isNaN(validClassSubjectId)) {
+        console.error('[LessonPlanning] Invalid class_subject_id:', classSubjectIdValue);
+        setError(`Invalid class subject (${classSubjectIdValue}). Please refresh the page and try again.`);
+        return;
+      }
       
       const lessonPayload = {
-        class_subject_id: parseInt(lessonData.class_subject_id),
+        class_subject_id: validClassSubjectId,
         lesson_date: lessonData.lesson_date,
-        start_time: lessonData.start_time + ':00',
-        end_time: lessonData.end_time + ':00',
+        start_time: formatTime(lessonData.start_time),
+        end_time: formatTime(lessonData.end_time),
         lesson_title: lessonData.lesson_title || null,
         topic: lessonData.topic || null,
         learning_objectives: lessonData.learning_objectives || null,
@@ -182,7 +199,11 @@ function LessonPlanning() {
       fetchData();
     } catch (err) {
       console.error('Error saving lesson:', err);
-      setError(err.message || 'Failed to save lesson');
+      // Show more detailed error message
+      const errorMessage = err.message || err.error?.message || 'Failed to save lesson';
+      const details = err.details ? ` Details: ${err.details}` : '';
+      const hint = err.hint ? ` Hint: ${err.hint}` : '';
+      setError(`${errorMessage}${details}${hint}`);
     }
   };
   
@@ -742,7 +763,7 @@ function LessonPlanning() {
                   <Form.Label>Lesson Date *</Form.Label>
                   <Form.Control
                     type="date"
-                    value={lessonData.lesson_date}
+                    value={lessonData.lesson_date || ''}
                     onChange={(e) => setLessonData({ ...lessonData, lesson_date: e.target.value })}
                     required
                   />
@@ -753,7 +774,7 @@ function LessonPlanning() {
                   <Form.Label>Start Time *</Form.Label>
                   <Form.Control
                     type="time"
-                    value={lessonData.start_time}
+                    value={lessonData.start_time || ''}
                     onChange={(e) => setLessonData({ ...lessonData, start_time: e.target.value })}
                     required
                   />
@@ -764,7 +785,7 @@ function LessonPlanning() {
                   <Form.Label>End Time *</Form.Label>
                   <Form.Control
                     type="time"
-                    value={lessonData.end_time}
+                    value={lessonData.end_time || ''}
                     onChange={(e) => setLessonData({ ...lessonData, end_time: e.target.value })}
                     required
                   />
@@ -776,7 +797,7 @@ function LessonPlanning() {
               <Form.Label>Lesson Title</Form.Label>
               <Form.Control
                 type="text"
-                value={lessonData.lesson_title}
+                value={lessonData.lesson_title || ''}
                 onChange={(e) => setLessonData({ ...lessonData, lesson_title: e.target.value })}
                 placeholder="e.g., Introduction to Algebra"
               />
@@ -786,7 +807,7 @@ function LessonPlanning() {
               <Form.Label>Topic</Form.Label>
               <Form.Control
                 type="text"
-                value={lessonData.topic}
+                value={lessonData.topic || ''}
                 onChange={(e) => setLessonData({ ...lessonData, topic: e.target.value })}
                 placeholder="Lesson topic"
               />
@@ -797,7 +818,7 @@ function LessonPlanning() {
               <Form.Control
                 as="textarea"
                 rows={3}
-                value={lessonData.learning_objectives}
+                value={lessonData.learning_objectives || ''}
                 onChange={(e) => setLessonData({ ...lessonData, learning_objectives: e.target.value })}
                 placeholder="What students will learn"
               />
@@ -808,7 +829,7 @@ function LessonPlanning() {
               <Form.Control
                 as="textarea"
                 rows={5}
-                value={lessonData.lesson_plan}
+                value={lessonData.lesson_plan || ''}
                 onChange={(e) => setLessonData({ ...lessonData, lesson_plan: e.target.value })}
                 placeholder="Detailed lesson plan and activities"
               />
@@ -818,7 +839,7 @@ function LessonPlanning() {
               <Form.Label>Location</Form.Label>
               <Form.Control
                 type="text"
-                value={lessonData.location}
+                value={lessonData.location || ''}
                 onChange={(e) => setLessonData({ ...lessonData, location: e.target.value })}
                 placeholder="e.g., Room 101, Lab 2"
               />
@@ -831,7 +852,7 @@ function LessonPlanning() {
                   <Form.Control
                     as="textarea"
                     rows={3}
-                    value={lessonData.homework_description}
+                    value={lessonData.homework_description || ''}
                     onChange={(e) => setLessonData({ ...lessonData, homework_description: e.target.value })}
                     placeholder="Homework assignment"
                   />
@@ -842,7 +863,7 @@ function LessonPlanning() {
                   <Form.Label>Homework Due Date</Form.Label>
                   <Form.Control
                     type="date"
-                    value={lessonData.homework_due_date}
+                    value={lessonData.homework_due_date || ''}
                     onChange={(e) => setLessonData({ ...lessonData, homework_due_date: e.target.value })}
                   />
                 </Form.Group>
@@ -852,7 +873,7 @@ function LessonPlanning() {
             <Form.Group className="mb-3">
               <Form.Label>Status</Form.Label>
               <Form.Select
-                value={lessonData.status}
+                value={lessonData.status || 'SCHEDULED'}
                 onChange={(e) => setLessonData({ ...lessonData, status: e.target.value })}
               >
                 <option value="SCHEDULED">Scheduled</option>

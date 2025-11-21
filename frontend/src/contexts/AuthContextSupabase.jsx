@@ -64,6 +64,7 @@ export function AuthProvider({ children }) {
 
           const tempUser = {
             userId: session.user.id,
+            id: session.user.id, // Also include id for consistency
             email: email,
             name: session.user.user_metadata?.name || email.split('@')[0],
             role: tempRole.toUpperCase(),
@@ -222,6 +223,7 @@ export function AuthProvider({ children }) {
 
       const userData = {
         userId: session.user.id,
+        id: session.user.id, // Also include id for consistency
         email: email,
         name: session.user.user_metadata?.name || email.split('@')[0],
         role: finalRole,

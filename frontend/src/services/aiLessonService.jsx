@@ -32,7 +32,7 @@ export const generateLessonPlan = async ({
   learningStyle = ''
 }) => {
   if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set REACT_APP_OPENAI_API_KEY in your .env file.');
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
   }
 
   if (!subject || !topic || !gradeLevel || !duration) {
@@ -512,7 +512,7 @@ const extractField = (content, fieldName) => {
  */
 export const generateEnhancedLessonPlan = async (formData) => {
   if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set REACT_APP_OPENAI_API_KEY in your .env file.');
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
   }
 
   const {
@@ -893,7 +893,7 @@ export const generateAssignmentRubric = async ({
   criteria = []
 }) => {
   if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set REACT_APP_OPENAI_API_KEY in your .env file.');
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
   }
 
   if (!assignmentTitle || !subject || !gradeLevel) {
@@ -995,7 +995,7 @@ export const generateCompleteLessonContent = async ({
   duration = 45
 }) => {
   if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set REACT_APP_OPENAI_API_KEY in your .env file.');
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
   }
 
   if (!lessonTitle || !topic || !subject || !form) {
@@ -1555,7 +1555,7 @@ export const generateStudentFacingContent = async ({
   learningObjectives
 }) => {
   if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set REACT_APP_OPENAI_API_KEY in your .env file.');
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
   }
 
   if (!lessonTitle || !topic || !subject || !form) {
