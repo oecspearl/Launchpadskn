@@ -347,19 +347,15 @@ function LessonView() {
     };
     
     content.forEach(item => {
+      // Special handling: FLASHCARD content type always goes to Learning section
+      if (item.content_type === 'FLASHCARD') {
+        categories.learning.push(item);
+        return;
+      }
+      
       // First, check if content_section is explicitly set to one of our main categories
       // This takes priority over content_type-based categorization
       const contentSection = item.content_section?.trim()?.toLowerCase() || '';
-      
-      // Debug logging (can be removed in production)
-      if (contentSection) {
-        console.log('Content item categorization:', {
-          title: item.title,
-          content_type: item.content_type,
-          content_section: item.content_section,
-          normalized: contentSection
-        });
-      }
       
       // Check for exact matches and variations (case-insensitive)
       if (contentSection === 'homework') {
@@ -370,7 +366,7 @@ function LessonView() {
         categories.assessments.push(item);
       } else if (contentSection === 'resources' || contentSection === 'resource') {
         categories.resources.push(item);
-      } else if (contentSection === 'learning') {
+      } else if (contentSection === 'learning' || contentSection === 'main content') {
         categories.learning.push(item);
       } else if (contentSection === 'closure') {
         categories.closure.push(item);
