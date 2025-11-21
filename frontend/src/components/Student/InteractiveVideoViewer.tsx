@@ -47,6 +47,17 @@ function InteractiveVideoViewer({
   const checkpoints = contentData.checkpoints || [];
   const sortedCheckpoints = [...checkpoints].sort((a, b) => a.timestamp - b.timestamp);
 
+  // Estimate video duration based on checkpoints if not available
+  useEffect(() => {
+    if (videoDuration === 600 && checkpoints.length > 0) {
+      // Estimate duration as 1.5x the highest checkpoint timestamp
+      const maxCheckpoint = Math.max(...checkpoints.map(cp => cp.timestamp));
+      const estimatedDuration = Math.max(maxCheckpoint * 1.5, 600);
+      setVideoDuration(estimatedDuration);
+      console.log('[InteractiveVideoViewer] Estimated video duration:', estimatedDuration, 'based on max checkpoint:', maxCheckpoint);
+    }
+  }, [checkpoints, videoDuration]);
+
   // Debug: Log checkpoints on mount
   useEffect(() => {
     console.log('[InteractiveVideoViewer] Loaded with checkpoints:', {
@@ -234,6 +245,13 @@ function InteractiveVideoViewer({
                   {/* Checkpoint markers overlay for YouTube */}
                   {checkpoints.length > 0 && (
                     <div className="checkpoint-overlay">
+                      {/* Progress indicator */}
+                      <div 
+                        className="checkpoint-progress-indicator"
+                        style={{ 
+                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%` 
+                        }}
+                      />
                       {sortedCheckpoints.map((cp) => {
                         const positionPercent = videoDuration > 0 ? (cp.timestamp / videoDuration) * 100 : 0;
                         const isCompleted = completedCheckpoints.has(cp.id);
@@ -280,6 +298,13 @@ function InteractiveVideoViewer({
                   {/* Checkpoint markers overlay for Vimeo */}
                   {checkpoints.length > 0 && (
                     <div className="checkpoint-overlay">
+                      {/* Progress indicator */}
+                      <div 
+                        className="checkpoint-progress-indicator"
+                        style={{ 
+                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%` 
+                        }}
+                      />
                       {sortedCheckpoints.map((cp) => {
                         const positionPercent = videoDuration > 0 ? (cp.timestamp / videoDuration) * 100 : 0;
                         const isCompleted = completedCheckpoints.has(cp.id);
@@ -352,6 +377,13 @@ function InteractiveVideoViewer({
                   {/* Checkpoint markers overlay for direct videos */}
                   {checkpoints.length > 0 && (
                     <div className="checkpoint-overlay">
+                      {/* Progress indicator */}
+                      <div 
+                        className="checkpoint-progress-indicator"
+                        style={{ 
+                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%` 
+                        }}
+                      />
                       {sortedCheckpoints.map((cp) => {
                         const positionPercent = videoDuration > 0 ? (cp.timestamp / videoDuration) * 100 : 0;
                         const isCompleted = completedCheckpoints.has(cp.id);
