@@ -136,11 +136,13 @@ function AppNavbar() {
               {/* Profile Dropdown */}
               <NavDropdown
                 title={
-                  <div className="d-flex align-items-center gap-2">
+                  <div className="d-flex align-items-center gap-2 profile-dropdown-trigger">
                     <div className="profile-avatar">
                       {user.name ? user.name.charAt(0).toUpperCase() : <FaUser size={12} />}
                     </div>
-                    <span className="d-none d-lg-block small fw-medium">{user.name?.split(' ')[0]}</span>
+                    <span className="user-name-display small fw-medium">
+                      {user.name || user.email?.split('@')[0] || 'User'}
+                    </span>
                   </div>
                 }
                 id="profile-dropdown"

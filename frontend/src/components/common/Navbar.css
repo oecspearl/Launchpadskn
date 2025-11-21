@@ -83,4 +83,40 @@
     justify-content: center;
     font-weight: 600;
     font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.profile-dropdown .dropdown-toggle {
+    white-space: nowrap;
+    max-width: none;
+    padding: 0.5rem 0.75rem !important;
+}
+
+.profile-dropdown-trigger {
+    min-width: fit-content;
+}
+
+.profile-dropdown .dropdown-toggle .user-name-display {
+    white-space: nowrap;
+    overflow: visible;
+    text-overflow: clip;
+    max-width: 200px;
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Show name on all screen sizes, but adjust for mobile */
+@media (max-width: 991.98px) {
+    .profile-dropdown .dropdown-toggle .user-name-display {
+        max-width: 120px;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .profile-dropdown .dropdown-toggle .user-name-display {
+        max-width: 80px;
+        font-size: 0.7rem;
+    }
 }
