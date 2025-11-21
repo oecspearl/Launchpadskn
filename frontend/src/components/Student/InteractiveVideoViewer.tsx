@@ -320,31 +320,46 @@ function InteractiveVideoViewer({
           )}
 
           {/* Checkpoints List */}
-          {checkpoints.length > 0 && (
+          {checkpoints.length > 0 ? (
             <Card className="mb-3">
               <Card.Header className="d-flex justify-content-between align-items-center">
-                <h6 className="mb-0">Interactive Checkpoints</h6>
-                {contentData.videoType !== 'direct' && (
+                <h6 className="mb-0">Interactive Checkpoints ({checkpoints.length})</h6>
+                <div className="d-flex gap-2">
+                  {contentData.videoType !== 'direct' && (
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => {
+                        // Manual checkpoint check - useful for YouTube/Vimeo
+                        const checkpoint = sortedCheckpoints.find(
+                          cp => !completedCheckpoints.has(cp.id) &&
+                          Math.abs(cp.timestamp - currentTime) <= 2
+                        );
+                        if (checkpoint) {
+                          handleCheckpointReached(checkpoint);
+                        } else {
+                          // Show alert if no checkpoint nearby
+                          alert(`No checkpoint found near current time (${formatTime(currentTime)}). Checkpoints are at: ${sortedCheckpoints.map(cp => formatTime(cp.timestamp)).join(', ')}`);
+                        }
+                      }}
+                    >
+                      Check for Checkpoint
+                    </Button>
+                  )}
                   <Button
-                    variant="outline-primary"
+                    variant="outline-info"
                     size="sm"
                     onClick={() => {
-                      // Manual checkpoint check - useful for YouTube/Vimeo
-                      const checkpoint = sortedCheckpoints.find(
-                        cp => !completedCheckpoints.has(cp.id) &&
-                        Math.abs(cp.timestamp - currentTime) <= 2
-                      );
-                      if (checkpoint) {
-                        handleCheckpointReached(checkpoint);
-                      } else {
-                        // Show alert if no checkpoint nearby
-                        alert(`No checkpoint found near current time (${formatTime(currentTime)}). Checkpoints are at: ${sortedCheckpoints.map(cp => formatTime(cp.timestamp)).join(', ')}`);
-                      }
+                      // Debug: Show all checkpoint info
+                      console.log('Checkpoints:', sortedCheckpoints);
+                      console.log('Current time:', currentTime);
+                      console.log('Completed:', Array.from(completedCheckpoints));
+                      alert(`Checkpoints: ${sortedCheckpoints.length}\nCurrent time: ${formatTime(currentTime)}\nCompleted: ${completedCheckpoints.size}`);
                     }}
                   >
-                    Check for Checkpoint
+                    Debug Info
                   </Button>
-                )}
+                </div>
               </Card.Header>
               <Card.Body>
                 <ListGroup>
@@ -359,9 +374,8 @@ function InteractiveVideoViewer({
                         style={{ cursor: 'pointer' }}
                         onClick={() => {
                           // Allow manual trigger of checkpoints
-                          if (!isCompleted) {
-                            handleCheckpointReached(checkpoint);
-                          }
+                          console.log('Manual checkpoint trigger:', checkpoint);
+                          handleCheckpointReached(checkpoint);
                         }}
                       >
                         <div className="d-flex justify-content-between align-items-start">
