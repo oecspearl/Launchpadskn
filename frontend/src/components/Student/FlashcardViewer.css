@@ -9,6 +9,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  flex-direction: column;
 }
 
 .flashcard-container {
@@ -17,6 +19,9 @@
   height: 100%;
   min-height: 350px;
   position: relative;
+  max-width: 800px;
+  min-width: 600px;
+  margin: 0 auto;
 }
 
 .flashcard-front,
@@ -92,6 +97,7 @@
 
   .flashcard-container {
     min-height: 280px;
+    min-width: 100%;
   }
 
   .flashcard-text {
