@@ -41,7 +41,7 @@ function FlashcardViewer({
     if (cards.length === 0) return;
 
     let order: number[] = [];
-    
+
     if (settings.studyMode === 'random' || settings.shuffleCards) {
       // Random order
       order = Array.from({ length: cards.length }, (_, i) => i);
@@ -106,18 +106,18 @@ function FlashcardViewer({
 
   const handleMarkCard = (status: 'known' | 'unknown') => {
     if (!currentCard) return;
-    
+
     const newMarked = new Set(markedCards);
     const newKnown = new Set(knownCards);
-    
+
     newMarked.add(currentCard.id);
-    
+
     if (status === 'known') {
       newKnown.add(currentCard.id);
     } else {
       newKnown.delete(currentCard.id);
     }
-    
+
     setMarkedCards(newMarked);
     setKnownCards(newKnown);
   };
@@ -179,7 +179,7 @@ function FlashcardViewer({
   const isMarked = markedCards.has(currentCard.id);
 
   return (
-    <Container className="flashcard-viewer">
+    <Container fluid className="flashcard-viewer">
       {/* Header */}
       <div className="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -220,9 +220,9 @@ function FlashcardViewer({
             <div className="flashcard-front">
               <div className="flashcard-content">
                 {currentCard.frontImage && (
-                  <img 
-                    src={currentCard.frontImage} 
-                    alt="Front" 
+                  <img
+                    src={currentCard.frontImage}
+                    alt="Front"
                     className="flashcard-image mb-3"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
@@ -238,10 +238,10 @@ function FlashcardViewer({
                   </div>
                 )}
                 {currentCard.difficulty && (
-                  <Badge 
+                  <Badge
                     bg={
                       currentCard.difficulty === 'easy' ? 'success' :
-                      currentCard.difficulty === 'medium' ? 'warning' : 'danger'
+                        currentCard.difficulty === 'medium' ? 'warning' : 'danger'
                     }
                     className="mt-2"
                   >
@@ -253,9 +253,9 @@ function FlashcardViewer({
             <div className={`flashcard-back ${showBack || flipped ? 'visible' : ''}`}>
               <div className="flashcard-content">
                 {currentCard.backImage && (
-                  <img 
-                    src={currentCard.backImage} 
-                    alt="Back" 
+                  <img
+                    src={currentCard.backImage}
+                    alt="Back"
                     className="flashcard-image mb-3"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
