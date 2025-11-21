@@ -94,9 +94,14 @@ function InteractiveVideoViewer({
             cp.timestamp > prev
           );
 
-          if (upcomingCheckpoint) {
-            handleCheckpointReached(upcomingCheckpoint);
-          }
+                      if (upcomingCheckpoint) {
+                        // Stop interval immediately to prevent further time updates
+                        if (timeUpdateIntervalRef.current) {
+                          clearInterval(timeUpdateIntervalRef.current);
+                          timeUpdateIntervalRef.current = null;
+                        }
+                        handleCheckpointReached(upcomingCheckpoint);
+                      }
 
           return newTime;
         });
@@ -115,6 +120,44 @@ function InteractiveVideoViewer({
     };
   }, [isPlaying, sortedCheckpoints, completedCheckpoints]);
 
+  // Pause video using appropriate method for each video type
+  const pauseVideo = () => {
+    if (contentData.videoType === 'direct' && videoRef.current instanceof HTMLVideoElement) {
+      videoRef.current.pause();
+    } else if (contentData.videoType === 'youtube' && videoRef.current) {
+      // Use YouTube IFrame API postMessage to pause
+      (videoRef.current as HTMLIFrameElement).contentWindow?.postMessage(
+        '{"event":"command","func":"pauseVideo","args":""}',
+        '*'
+      );
+    } else if (contentData.videoType === 'vimeo' && videoRef.current) {
+      // Use Vimeo Player API postMessage to pause
+      (videoRef.current as HTMLIFrameElement).contentWindow?.postMessage(
+        '{"method":"pause"}',
+        '*'
+      );
+    }
+  };
+
+  // Resume video using appropriate method for each video type
+  const resumeVideo = () => {
+    if (contentData.videoType === 'direct' && videoRef.current instanceof HTMLVideoElement) {
+      videoRef.current.play();
+    } else if (contentData.videoType === 'youtube' && videoRef.current) {
+      // Use YouTube IFrame API postMessage to play
+      (videoRef.current as HTMLIFrameElement).contentWindow?.postMessage(
+        '{"event":"command","func":"playVideo","args":""}',
+        '*'
+      );
+    } else if (contentData.videoType === 'vimeo' && videoRef.current) {
+      // Use Vimeo Player API postMessage to play
+      (videoRef.current as HTMLIFrameElement).contentWindow?.postMessage(
+        '{"method":"play"}',
+        '*'
+      );
+    }
+  };
+
   // Handle checkpoint reached
   const handleCheckpointReached = (checkpoint: VideoCheckpoint) => {
     setActiveCheckpoint(checkpoint);
@@ -123,8 +166,18 @@ function InteractiveVideoViewer({
     setShowExplanation(false);
     setSelectedAnswer(null);
 
-    if (checkpoint.pauseVideo && settings.autoPause) {
+    // Always pause when checkpoint appears (unless explicitly disabled)
+    const shouldPause = checkpoint.pauseVideo !== false && (settings.autoPause !== false);
+    
+    if (shouldPause) {
       setIsPlaying(false);
+      pauseVideo(); // Pause using appropriate method for video type
+      
+      // Stop the time tracking interval
+      if (timeUpdateIntervalRef.current) {
+        clearInterval(timeUpdateIntervalRef.current);
+        timeUpdateIntervalRef.current = null;
+      }
     }
   };
 
@@ -166,8 +219,9 @@ function InteractiveVideoViewer({
       setCompletedCheckpoints(new Set([...completedCheckpoints, activeCheckpoint.id]));
       setShowCheckpointModal(false);
       setActiveCheckpoint(null);
-      if (isPlaying === false && settings.autoPause) {
+      if (isPlaying === false && settings.autoPause !== false) {
         setIsPlaying(true);
+        resumeVideo(); // Resume video playback
       }
     }
   };
@@ -180,8 +234,9 @@ function InteractiveVideoViewer({
     setShowExplanation(false);
     setSelectedAnswer(null);
 
-    if (isPlaying === false && settings.autoPause) {
+    if (isPlaying === false && settings.autoPause !== false) {
       setIsPlaying(true);
+      resumeVideo(); // Resume video playback
     }
   };
 
@@ -194,10 +249,11 @@ function InteractiveVideoViewer({
   const getVideoEmbedUrl = (): string => {
     if (contentData.videoType === 'youtube') {
       const videoId = extractYouTubeVideoId(contentData.videoUrl);
-      return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1` : '';
+      // Enable JS API and set origin for postMessage communication
+      return videoId ? `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${window.location.origin}` : '';
     } else if (contentData.videoType === 'vimeo') {
       const videoId = extractVimeoVideoId(contentData.videoUrl);
-      return videoId ? `https://player.vimeo.com/video/${videoId}` : '';
+      return videoId ? `https://player.vimeo.com/video/${videoId}?api=1` : '';
     }
     return contentData.videoUrl;
   };
@@ -351,11 +407,10 @@ function InteractiveVideoViewer({
                       );
 
                       if (upcomingCheckpoint) {
+                        // Pause video immediately
+                        video.pause();
+                        setIsPlaying(false);
                         handleCheckpointReached(upcomingCheckpoint);
-                        if (upcomingCheckpoint.pauseVideo && settings.autoPause) {
-                          video.pause();
-                          setIsPlaying(false);
-                        }
                       }
                     }}
                     onPlay={() => setIsPlaying(true)}
