@@ -141,10 +141,9 @@ function AILessonPlanner({
                   <Form.Control
                     type="text"
                     name="topic"
-                    value={formData.topic}
+                    value={formData.topic || ''}
                     onChange={handleInputChange}
                     placeholder="e.g., Introduction to Algebra"
-                    required
                   />
                 </Form.Group>
               </Col>

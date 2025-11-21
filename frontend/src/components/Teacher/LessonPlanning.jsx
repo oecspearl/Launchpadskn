@@ -187,6 +187,9 @@ function LessonPlanning() {
         status: lessonData.status || 'SCHEDULED'
       };
       
+      console.log('[LessonPlanning] Final lesson payload:', JSON.stringify(lessonPayload, null, 2));
+      console.log('[LessonPlanning] class_subject_id in payload:', lessonPayload.class_subject_id, 'type:', typeof lessonPayload.class_subject_id);
+      
       if (editingLesson) {
         await supabaseService.updateLesson(editingLesson.lesson_id, lessonPayload);
         setSuccess('Lesson updated successfully');

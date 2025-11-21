@@ -601,8 +601,9 @@ function LessonContentManager() {
                 if (q.correct_answer && (q.question_type === 'SHORT_ANSWER' || q.question_type === 'FILL_BLANK')) {
                   const answerData = {
                     question_id: question.question_id,
-                    correct_answer: q.correct_answer,
-                    points: q.points || 1
+                    correct_answer: q.correct_answer
+                    // Note: points column doesn't exist in quiz_correct_answers table
+                    // Points are stored in the quiz_questions table instead
                   };
                   
                   const { error: answerError } = await supabase

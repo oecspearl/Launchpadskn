@@ -2007,13 +2007,27 @@ class SupabaseService {
    * Create a lesson
    */
   async createLesson(lessonData) {
+    console.log('[supabaseService] createLesson called with:', JSON.stringify(lessonData, null, 2));
+    console.log('[supabaseService] class_subject_id:', lessonData.class_subject_id, 'type:', typeof lessonData.class_subject_id);
+    
+    // Ensure class_subject_id is an integer
+    const payload = {
+      ...lessonData,
+      class_subject_id: parseInt(lessonData.class_subject_id, 10)
+    };
+    
+    console.log('[supabaseService] Final payload:', JSON.stringify(payload, null, 2));
+    
     const { data, error } = await supabase
       .from('lessons')
-      .insert(lessonData)
+      .insert(payload)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('[supabaseService] Error creating lesson:', error);
+      throw error;
+    }
     return data;
   }
 
