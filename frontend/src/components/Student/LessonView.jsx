@@ -16,6 +16,7 @@ import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import FlashcardViewer from './FlashcardViewer';
+import InteractiveVideoViewer from './InteractiveVideoViewer';
 import './LessonView.css';
 
 function LessonView() {
@@ -37,6 +38,8 @@ function LessonView() {
   const [filterCategory, setFilterCategory] = useState('all'); // all, learning, practice, assessments, resources, homework
   const [showFlashcardViewer, setShowFlashcardViewer] = useState(false);
   const [currentFlashcardContent, setCurrentFlashcardContent] = useState(null);
+  const [showInteractiveVideoViewer, setShowInteractiveVideoViewer] = useState(false);
+  const [currentInteractiveVideoContent, setCurrentInteractiveVideoContent] = useState(null);
   
   useEffect(() => {
     if (lessonId) {
@@ -296,6 +299,7 @@ function LessonView() {
       case 'DISCUSSION_PROMPTS': return 'discussion';
       case 'SUMMARY': return 'summary';
       case 'FLASHCARD': return 'flashcard';
+      case 'INTERACTIVE_VIDEO': return 'video';
       default: return '';
     }
   };
@@ -315,6 +319,7 @@ function LessonView() {
       case 'DISCUSSION_PROMPTS': return <FaComments />;
       case 'SUMMARY': return <FaBook />;
       case 'FLASHCARD': return <FaClipboardList />;
+      case 'INTERACTIVE_VIDEO': return <FaPlay />;
       default: return <FaBook />;
     }
   };
@@ -347,8 +352,8 @@ function LessonView() {
     };
     
     content.forEach(item => {
-      // Special handling: FLASHCARD content type always goes to Learning section
-      if (item.content_type === 'FLASHCARD') {
+      // Special handling: FLASHCARD and INTERACTIVE_VIDEO content types always go to Learning section
+      if (item.content_type === 'FLASHCARD' || item.content_type === 'INTERACTIVE_VIDEO') {
         categories.learning.push(item);
         return;
       }
@@ -386,7 +391,7 @@ function LessonView() {
         // Learning content (including interactive content like flashcards)
         else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
                   'DISCUSSION_PROMPTS', 
-                  'VIDEO', 'IMAGE', 'DOCUMENT', 'FLASHCARD'].includes(contentType)) {
+                  'VIDEO', 'IMAGE', 'DOCUMENT', 'FLASHCARD', 'INTERACTIVE_VIDEO'].includes(contentType)) {
           categories.learning.push(item);
         }
         // Resources (files and links)
@@ -729,6 +734,28 @@ function LessonView() {
                   {!contentItem.description && contentItem.content_data.cards && contentItem.content_data.cards.length > 0 && (
                     <div className="mt-2 text-muted small">
                       Click "Study Flashcards" to begin studying this flashcard set.
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Interactive Video Preview */}
+              {contentItem.content_type === 'INTERACTIVE_VIDEO' && contentItem.content_data && (
+                <div className="classwork-info-box">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <Badge bg="primary">Interactive Video</Badge>
+                    {contentItem.content_data.checkpoints && (
+                      <span className="text-muted">
+                        {contentItem.content_data.checkpoints.length} checkpoint{contentItem.content_data.checkpoints.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  {contentItem.description && (
+                    <div className="mt-2">{contentItem.description}</div>
+                  )}
+                  {!contentItem.description && (
+                    <div className="mt-2 text-muted small">
+                      Click "Watch Interactive Video" to view this video with interactive checkpoints.
                     </div>
                   )}
                 </div>
@@ -1316,6 +1343,17 @@ function LessonView() {
                     Study Flashcards
                   </button>
                 )}
+                {contentItem.content_type === 'INTERACTIVE_VIDEO' && contentItem.content_data && (
+                  <button 
+                    className="classwork-action-btn primary"
+                    onClick={() => {
+                      setCurrentInteractiveVideoContent(contentItem);
+                      setShowInteractiveVideoViewer(true);
+                    }}
+                  >
+                    Watch Interactive Video
+                  </button>
+                )}
                 {contentItem.content_type === 'QUIZ' && quizStatuses[contentItem.content_id] && (
                   <button 
                     className="classwork-action-btn primary"
@@ -1764,6 +1802,36 @@ function LessonView() {
               onClose={() => {
                 setShowFlashcardViewer(false);
                 setCurrentFlashcardContent(null);
+              }}
+            />
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* Interactive Video Viewer Modal */}
+      <Modal
+        show={showInteractiveVideoViewer}
+        onHide={() => {
+          setShowInteractiveVideoViewer(false);
+          setCurrentInteractiveVideoContent(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Body style={{ padding: 0 }}>
+          {currentInteractiveVideoContent && currentInteractiveVideoContent.content_data && (
+            <InteractiveVideoViewer
+              contentData={currentInteractiveVideoContent.content_data}
+              title={currentInteractiveVideoContent.title}
+              description={currentInteractiveVideoContent.description}
+              onComplete={() => {
+                toggleContentComplete(currentInteractiveVideoContent.content_id);
+                setShowInteractiveVideoViewer(false);
+                setCurrentInteractiveVideoContent(null);
+              }}
+              onClose={() => {
+                setShowInteractiveVideoViewer(false);
+                setCurrentInteractiveVideoContent(null);
               }}
             />
           )}

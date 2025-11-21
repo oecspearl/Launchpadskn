@@ -80,3 +80,123 @@ export function createEmptyFlashcardData(): FlashcardData {
   };
 }
 
+/**
+ * Interactive Video Content Data Structure
+ */
+export interface InteractiveVideoData {
+  videoUrl: string; // YouTube URL, Vimeo URL, or direct video URL
+  videoType: 'youtube' | 'vimeo' | 'direct'; // Video platform type
+  checkpoints: VideoCheckpoint[]; // Interactive checkpoints at specific timestamps
+  settings: InteractiveVideoSettings; // Playback and interaction settings
+}
+
+export interface VideoCheckpoint {
+  id: string; // UUID for the checkpoint
+  timestamp: number; // Time in seconds where checkpoint appears
+  type: 'question' | 'quiz' | 'note' | 'pause' | 'reflection'; // Type of interaction
+  title?: string; // Optional title for the checkpoint
+  content: string; // Main content (question text, note text, etc.)
+  options?: CheckpointOption[]; // For question/quiz types
+  correctAnswer?: string | string[]; // For quiz types
+  explanation?: string; // Explanation shown after answering
+  required: boolean; // Whether student must complete before continuing
+  pauseVideo: boolean; // Whether video pauses at this checkpoint
+  order: number; // Display order
+}
+
+export interface CheckpointOption {
+  id: string; // UUID for the option
+  text: string; // Option text
+  isCorrect?: boolean; // For quiz types
+}
+
+export interface InteractiveVideoSettings {
+  allowSkip: boolean; // Allow students to skip checkpoints
+  showProgress: boolean; // Show progress indicator
+  showTimestamps: boolean; // Show timestamps in progress bar
+  autoPause: boolean; // Auto-pause at checkpoints
+  allowSeeking: boolean; // Allow students to seek/scrub video
+  requireCompletion: boolean; // Require all checkpoints to be completed
+  showHints: boolean; // Show hints for questions
+  allowRetry: boolean; // Allow retrying questions
+  maxAttempts?: number; // Maximum attempts per checkpoint (if allowRetry is true)
+}
+
+/**
+ * Default interactive video settings
+ */
+export const defaultInteractiveVideoSettings: InteractiveVideoSettings = {
+  allowSkip: false,
+  showProgress: true,
+  showTimestamps: true,
+  autoPause: true,
+  allowSeeking: true,
+  requireCompletion: false,
+  showHints: true,
+  allowRetry: true,
+  maxAttempts: 3
+};
+
+/**
+ * Helper function to create empty interactive video data
+ */
+export function createEmptyInteractiveVideoData(): InteractiveVideoData {
+  return {
+    videoUrl: '',
+    videoType: 'youtube',
+    checkpoints: [],
+    settings: { ...defaultInteractiveVideoSettings }
+  };
+}
+
+/**
+ * Helper function to extract video ID from YouTube URL
+ */
+export function extractYouTubeVideoId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Helper function to extract video ID from Vimeo URL
+ */
+export function extractVimeoVideoId(url: string): string | null {
+  const patterns = [
+    /(?:vimeo\.com\/)(\d+)/,
+    /(?:player\.vimeo\.com\/video\/)(\d+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  
+  return null;
+}
+
+/**
+ * Helper function to detect video type from URL
+ */
+export function detectVideoType(url: string): 'youtube' | 'vimeo' | 'direct' {
+  if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    return 'youtube';
+  }
+  if (url.includes('vimeo.com')) {
+    return 'vimeo';
+  }
+  return 'direct';
+}
+

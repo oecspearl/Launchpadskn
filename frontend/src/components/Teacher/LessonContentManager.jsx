@@ -18,6 +18,7 @@ import { supabase } from '../../config/supabase';
 import QuizBuilder from './QuizBuilder';
 import FlashcardCreator from './FlashcardCreator';
 import FlashcardViewer from '../Student/FlashcardViewer';
+import InteractiveVideoCreator from './InteractiveVideoCreator';
 import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
@@ -47,6 +48,8 @@ function LessonContentManager() {
   const [currentQuizId, setCurrentQuizId] = useState(null);
   const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
   const [currentFlashcardContentId, setCurrentFlashcardContentId] = useState(null);
+  const [showInteractiveVideoCreator, setShowInteractiveVideoCreator] = useState(false);
+  const [currentInteractiveVideoContentId, setCurrentInteractiveVideoContentId] = useState(null);
 
   // Form state
   const [contentType, setContentType] = useState('FILE');
@@ -214,6 +217,25 @@ function LessonContentManager() {
     } else {
       setEditingContent(null);
       setContentType('FILE');
+      setTitle('');
+      setUrl('');
+      setContentText('');
+      setDescription('');
+      setInstructions('');
+      setLearningOutcomes('');
+      setLearningActivities('');
+      setKeyConcepts('');
+      setReflectionQuestions('');
+      setDiscussionPrompts('');
+      setSummary('');
+      setContentSection('Learning');
+      setIsRequired(true);
+      setEstimatedMinutes('');
+      setSelectedFile(null);
+      setAssignmentDetailsFile(null);
+      setAssignmentRubricFile(null);
+      setUploadedRubricFileInfo(null);
+      setSelectedPrerequisites([]);
       setTitle('');
       setUrl('');
       setContentText('');
@@ -1370,6 +1392,14 @@ function LessonContentManager() {
         return;
       }
 
+      // For INTERACTIVE_VIDEO content type, open interactive video creator in edit mode
+      if (item.content_type === 'INTERACTIVE_VIDEO') {
+        setEditingContent(item);
+        setCurrentInteractiveVideoContentId(item.content_id);
+        setShowInteractiveVideoCreator(true);
+        return;
+      }
+
       // For QUIZ content type, load full quiz details if it's an in-app quiz
       if (item.content_type === 'QUIZ') {
         try {
@@ -2003,7 +2033,7 @@ function LessonContentManager() {
             <Form.Group className="mb-3">
               <Form.Label>Content Type *</Form.Label>
               <Form.Select
-                value={contentType}
+                value={contentType || 'FILE'}
                 onChange={(e) => {
                   const newType = e.target.value;
                   setContentType(newType);
@@ -2019,6 +2049,15 @@ function LessonContentManager() {
                     setShowModal(false);
                     setShowFlashcardCreator(true);
                     setCurrentFlashcardContentId(null);
+                    return;
+                  }
+
+                  // Open interactive video creator if INTERACTIVE_VIDEO is selected
+                  if (newType === 'INTERACTIVE_VIDEO' && !editingContent) {
+                    setShowModal(false);
+                    setShowInteractiveVideoCreator(true);
+                    setCurrentInteractiveVideoContentId(null);
+                    return;
                   }
                 }}
                 required
@@ -2040,6 +2079,7 @@ function LessonContentManager() {
                 </optgroup>
                 <optgroup label="Interactive Content">
                   <option value="FLASHCARD">Flashcard Set</option>
+                  <option value="INTERACTIVE_VIDEO">Interactive Video</option>
                 </optgroup>
                 <optgroup label="Learning Content">
                   <option value="LEARNING_OUTCOMES">Learning Outcomes</option>
@@ -2577,6 +2617,11 @@ function LessonContentManager() {
                 }
 
                 if (previewingContent.content_type === 'FLASHCARD') {
+                  // Flashcard preview handled separately
+                } else if (previewingContent.content_type === 'INTERACTIVE_VIDEO') {
+                  // Interactive video preview - handled separately in modal
+                  return null;
+                } else if (previewingContent.content_type === 'FLASHCARD') {
                   return (
                     <div className="p-3">
                       <FlashcardViewer
@@ -3830,6 +3875,43 @@ function LessonContentManager() {
             onCancel={() => {
               setShowFlashcardCreator(false);
               setCurrentFlashcardContentId(null);
+            }}
+          />
+        </Modal.Body>
+      </Modal>
+
+      {/* Interactive Video Creator Modal */}
+      <Modal
+        show={showInteractiveVideoCreator}
+        onHide={() => {
+          setShowInteractiveVideoCreator(false);
+          setCurrentInteractiveVideoContentId(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {currentInteractiveVideoContentId ? 'Edit Interactive Video' : 'Create Interactive Video'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ padding: 0 }}>
+          <InteractiveVideoCreator
+            contentId={currentInteractiveVideoContentId}
+            lessonId={parseInt(lessonId)}
+            initialTitle={editingContent?.title}
+            initialDescription={editingContent?.description}
+            initialData={editingContent?.content_data}
+            onSave={(savedContentId) => {
+              setShowInteractiveVideoCreator(false);
+              setCurrentInteractiveVideoContentId(null);
+              fetchContent();
+              setSuccess('Interactive video saved successfully!');
+              setTimeout(() => setSuccess(null), 3000);
+            }}
+            onCancel={() => {
+              setShowInteractiveVideoCreator(false);
+              setCurrentInteractiveVideoContentId(null);
             }}
           />
         </Modal.Body>
