@@ -97,10 +97,6 @@ function SubjectView() {
           }
         }
         
-        if (lcError) {
-          console.error('Error fetching lesson content assignments:', lcError);
-        }
-        
         // Convert lesson content assignments to assessment format
         const convertedAssignments = (lessonContentAssignments || []).map(content => {
           // Use homework_due_date from lesson, or lesson_date as fallback, or null
