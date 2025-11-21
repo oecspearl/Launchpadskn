@@ -19,6 +19,7 @@ import {
   extractYouTubeVideoId,
   extractVimeoVideoId
 } from '../../types/contentTypes';
+import { generateInteractiveVideo } from '../../services/aiLessonService';
 import './InteractiveVideoCreator.css';
 
 interface InteractiveVideoCreatorProps {
@@ -66,6 +67,19 @@ function InteractiveVideoCreator({
   // Autosave state
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // AI Generation state
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiSubject, setAiSubject] = useState('');
+  const [aiGradeLevel, setAiGradeLevel] = useState('');
+  const [aiLearningOutcomes, setAiLearningOutcomes] = useState('');
+  const [aiNumCheckpoints, setAiNumCheckpoints] = useState(5);
+  const [aiCheckpointTypes, setAiCheckpointTypes] = useState<string[]>(['question', 'quiz', 'reflection']);
+  const [aiVideoUrl, setAiVideoUrl] = useState('');
+  const [aiAdditionalComments, setAiAdditionalComments] = useState('');
+  const [lessonData, setLessonData] = useState<any>(null);
 
   // Load existing content if editing
   useEffect(() => {
@@ -303,6 +317,67 @@ function InteractiveVideoCreator({
     }
   }, [title, description, videoData, lessonId, contentId, user, onSave]);
 
+  // AI Generation handler
+  const handleGenerateInteractiveVideo = async () => {
+    if (!aiTopic.trim()) {
+      setError('Topic is required for AI generation');
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      setError(null);
+
+      const generatedVideo = await generateInteractiveVideo({
+        topic: aiTopic.trim(),
+        subject: aiSubject.trim() || undefined,
+        gradeLevel: aiGradeLevel.trim() || undefined,
+        learningOutcomes: aiLearningOutcomes.trim() || undefined,
+        numCheckpoints: aiNumCheckpoints,
+        checkpointTypes: aiCheckpointTypes,
+        videoUrl: aiVideoUrl.trim() || undefined,
+        additionalComments: aiAdditionalComments.trim() || undefined
+      });
+
+      // Update video data with generated content
+      setVideoData({
+        ...videoData,
+        videoUrl: generatedVideo.videoUrl,
+        videoType: generatedVideo.videoType,
+        checkpoints: [...videoData.checkpoints, ...generatedVideo.checkpoints],
+        settings: { ...videoData.settings, ...generatedVideo.settings }
+      });
+
+      // Update video URL input
+      setVideoUrlInput(generatedVideo.videoUrl);
+      
+      // Update title if empty
+      if (!title || title === 'Interactive Video') {
+        setTitle(`${aiTopic} - Interactive Video`);
+      }
+
+      setSuccess(`Successfully generated interactive video with ${generatedVideo.checkpoints.length} checkpoints!`);
+      setShowAIGenerator(false);
+      
+      // Reset AI form (keep topic and other fields for potential regeneration)
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err: any) {
+      console.error('Error generating interactive video:', err);
+      setError(err.message || 'Failed to generate interactive video. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Toggle checkpoint type selection
+  const toggleCheckpointType = (type: string) => {
+    setAiCheckpointTypes(prev => 
+      prev.includes(type) 
+        ? prev.filter(t => t !== type)
+        : [...prev, type]
+    );
+  };
+
   if (isLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
@@ -322,6 +397,14 @@ function InteractiveVideoCreator({
             <Card.Header className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">Video Configuration</h5>
               <div>
+                <Button
+                  variant="outline-success"
+                  size="sm"
+                  onClick={() => setShowAIGenerator(true)}
+                  className="me-2"
+                >
+                  <FaMagic className="me-1" /> AI Generate
+                </Button>
                 <Button
                   variant="outline-secondary"
                   size="sm"
@@ -779,6 +862,159 @@ function InteractiveVideoCreator({
           </Card>
         </Col>
       </Row>
+      {/* AI Generator Modal */}
+      <Modal show={showAIGenerator} onHide={() => setShowAIGenerator(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaMagic className="me-2" />
+            Generate Interactive Video with AI
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="info" className="mb-4">
+            <strong>AI Interactive Video Generator</strong>
+            <br />
+            Enter the topic and details below, and AI will find an appropriate video and generate interactive checkpoints for you. You can edit them after generation.
+          </Alert>
+
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Topic *</Form.Label>
+              <Form.Control
+                type="text"
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder="e.g., Photosynthesis, World War II, Algebra Basics"
+                required
+              />
+              <Form.Text className="text-muted">
+                The main topic or subject matter for the interactive video
+              </Form.Text>
+            </Form.Group>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Subject (Optional)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={aiSubject}
+                    onChange={(e) => setAiSubject(e.target.value)}
+                    placeholder="e.g., Biology, History, Mathematics"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Grade Level (Optional)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={aiGradeLevel}
+                    onChange={(e) => setAiGradeLevel(e.target.value)}
+                    placeholder="e.g., Form 1, Grade 5, High School"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Learning Outcomes (Optional)</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={aiLearningOutcomes}
+                onChange={(e) => setAiLearningOutcomes(e.target.value)}
+                placeholder="What students should learn from this video"
+              />
+            </Form.Group>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Number of Checkpoints</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={aiNumCheckpoints}
+                    onChange={(e) => setAiNumCheckpoints(parseInt(e.target.value) || 5)}
+                  />
+                  <Form.Text className="text-muted">
+                    Between 1 and 20 checkpoints
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Checkpoint Types</Form.Label>
+                  <div>
+                    {['question', 'quiz', 'note', 'pause', 'reflection'].map(type => (
+                      <Form.Check
+                        key={type}
+                        type="checkbox"
+                        id={`checkpoint-type-${type}`}
+                        label={type.charAt(0).toUpperCase() + type.slice(1)}
+                        checked={aiCheckpointTypes.includes(type)}
+                        onChange={() => toggleCheckpointType(type)}
+                        className="mb-2"
+                      />
+                    ))}
+                  </div>
+                  <Form.Text className="text-muted">
+                    Select the types of interactions to generate
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Video URL (Optional)</Form.Label>
+              <Form.Control
+                type="text"
+                value={aiVideoUrl}
+                onChange={(e) => setAiVideoUrl(e.target.value)}
+                placeholder="Leave empty to let AI find an appropriate video"
+              />
+              <Form.Text className="text-muted">
+                If left empty, AI will search for an appropriate educational video
+              </Form.Text>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Additional Comments (Optional)</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={aiAdditionalComments}
+                onChange={(e) => setAiAdditionalComments(e.target.value)}
+                placeholder="Any additional instructions or context for the AI (e.g., 'Focus on key concepts', 'Include real-world examples', 'Make questions challenging')"
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowAIGenerator(false)} disabled={isGenerating}>
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={handleGenerateInteractiveVideo}
+            disabled={isGenerating || !aiTopic.trim() || aiCheckpointTypes.length === 0}
+          >
+            {isGenerating ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FaMagic className="me-2" />
+                Generate Interactive Video
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }

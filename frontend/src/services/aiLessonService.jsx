@@ -3,7 +3,8 @@
  * Handles API calls to generate AI-powered lesson plans
  */
 
-import { findBestVideoForLesson, searchEducationalVideos } from './youtubeService';
+import { findBestVideoForLesson, searchEducationalVideos, getVideoDetails } from './youtubeService';
+import { detectVideoType, extractYouTubeVideoId } from '../types/contentTypes';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
@@ -1839,12 +1840,311 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
   }
 };
 
+/**
+ * Generate interactive video with checkpoints using AI
+ * @param {Object} params - Interactive video generation parameters
+ * @param {string} params.topic - Topic or subject matter for the video
+ * @param {string} params.subject - Subject name (optional)
+ * @param {string} params.gradeLevel - Grade level or form (optional)
+ * @param {string} params.learningOutcomes - Learning outcomes to align with (optional)
+ * @param {number} params.numCheckpoints - Number of checkpoints to generate (default: 5)
+ * @param {Array<string>} params.checkpointTypes - Types of checkpoints to generate: 'question', 'quiz', 'note', 'pause', 'reflection' (default: ['question', 'quiz', 'reflection'])
+ * @param {string} params.videoUrl - Optional video URL (if not provided, will search for appropriate video)
+ * @param {string} params.additionalComments - Additional context or instructions (optional)
+ * @returns {Promise<Object>} Generated interactive video data with video URL and checkpoints
+ */
+export const generateInteractiveVideo = async ({
+  topic,
+  subject = '',
+  gradeLevel = '',
+  learningOutcomes = '',
+  numCheckpoints = 5,
+  checkpointTypes = ['question', 'quiz', 'reflection'],
+  videoUrl = '',
+  additionalComments = ''
+}) => {
+  if (!API_KEY) {
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!topic) {
+    throw new Error('Missing required parameter: topic is required.');
+  }
+
+  if (numCheckpoints < 1 || numCheckpoints > 20) {
+    throw new Error('Number of checkpoints must be between 1 and 20.');
+  }
+
+  try {
+    console.log('[AI Service] Generating interactive video...');
+
+    // Step 1: Find appropriate video if not provided
+    let selectedVideo = null;
+    let videoUrlToUse = videoUrl;
+
+    if (!videoUrlToUse) {
+      console.log('[AI Service] Searching for appropriate video...');
+      try {
+        const videos = await searchEducationalVideos({
+          query: topic,
+          subject: subject,
+          form: gradeLevel,
+          maxResults: 3
+        });
+
+        if (videos && videos.length > 0) {
+          // Use the first (most relevant) video
+          selectedVideo = videos[0];
+          videoUrlToUse = selectedVideo.url;
+          console.log('[AI Service] Selected video:', selectedVideo.title);
+        } else {
+          throw new Error('No suitable video found. Please provide a video URL.');
+        }
+      } catch (videoError) {
+        console.error('[AI Service] Error finding video:', videoError);
+        throw new Error('Could not find an appropriate video. Please provide a video URL manually.');
+      }
+    }
+
+    // Step 2: Get video details if YouTube video
+    let videoTitle = '';
+    let videoDescription = '';
+    if (videoUrlToUse.includes('youtube.com') || videoUrlToUse.includes('youtu.be')) {
+      try {
+        const videoId = extractYouTubeVideoId(videoUrlToUse);
+        if (videoId) {
+          const videoDetails = await getVideoDetails(videoId);
+          if (videoDetails) {
+            videoTitle = videoDetails.title || '';
+            videoDescription = videoDetails.description || '';
+          }
+        }
+      } catch (err) {
+        console.warn('[AI Service] Could not get video details:', err);
+      }
+    }
+
+    // Step 3: Generate checkpoints using AI
+    const checkpointTypesStr = checkpointTypes.join(', ');
+    const prompt = `You are an expert educational content creator. Generate ${numCheckpoints} interactive video checkpoints for an educational video.
+
+Video Information:
+${videoTitle ? `Title: ${videoTitle}` : ''}
+${videoDescription ? `Description: ${videoDescription.substring(0, 500)}...` : ''}
+${videoUrlToUse ? `URL: ${videoUrlToUse}` : ''}
+
+Topic: ${topic}
+${subject ? `Subject: ${subject}` : ''}
+${gradeLevel ? `Grade Level: ${gradeLevel}` : ''}
+${learningOutcomes ? `Learning Outcomes: ${learningOutcomes}` : ''}
+${additionalComments ? `Additional Context: ${additionalComments}` : ''}
+
+Checkpoint Types to Generate: ${checkpointTypesStr}
+
+IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks. The response must be a single JSON object that can be parsed directly.
+
+Create checkpoints that are:
+- Distributed throughout the video (from early to late in the video)
+- Age-appropriate for ${gradeLevel || 'the specified grade level'}
+- Aligned with the learning outcomes: ${learningOutcomes || 'general understanding of the topic'}
+- Educational and engaging
+- Varied in type (mix of ${checkpointTypesStr})
+- Clear and concise
+
+For each checkpoint:
+- "question" type: Should have multiple choice options (3-4 options) with one correct answer
+- "quiz" type: Should have multiple choice options (3-4 options) with one correct answer and an explanation
+- "note" type: Should provide important information or key points
+- "pause" type: Should prompt students to reflect or think about what they've learned
+- "reflection" type: Should ask open-ended questions for students to reflect on
+
+Respond with this exact JSON structure:
+{
+  "videoUrl": "${videoUrlToUse}",
+  "checkpoints": [
+    {
+      "timestamp": 30,
+      "type": "question",
+      "title": "Checkpoint Title",
+      "content": "Question or content text",
+      "options": [
+        {"text": "Option 1", "isCorrect": true},
+        {"text": "Option 2", "isCorrect": false},
+        {"text": "Option 3", "isCorrect": false}
+      ],
+      "required": true,
+      "pauseVideo": true
+    },
+    {
+      "timestamp": 120,
+      "type": "quiz",
+      "title": "Quiz Checkpoint",
+      "content": "Quiz question text",
+      "options": [
+        {"text": "Option A", "isCorrect": false},
+        {"text": "Option B", "isCorrect": true},
+        {"text": "Option C", "isCorrect": false}
+      ],
+      "explanation": "Explanation of the correct answer",
+      "required": true,
+      "pauseVideo": true
+    },
+    {
+      "timestamp": 180,
+      "type": "note",
+      "title": "Key Point",
+      "content": "Important information or note",
+      "required": false,
+      "pauseVideo": false
+    },
+    {
+      "timestamp": 240,
+      "type": "reflection",
+      "title": "Reflection Question",
+      "content": "Open-ended reflection question",
+      "required": false,
+      "pauseVideo": true
+    }
+  ]
+}
+
+Generate exactly ${numCheckpoints} checkpoints. Distribute timestamps throughout a typical video length (assume video is 5-15 minutes). Make timestamps realistic and spaced appropriately.
+
+Remember: Respond with ONLY the JSON object, nothing else.`;
+
+    const requestBody = {
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert educational content creator. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 3000
+    };
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No response content received from AI');
+    }
+
+    // Parse JSON from the response
+    let videoData;
+    try {
+      // Extract JSON from markdown code blocks if present
+      const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+      if (jsonMatch) {
+        videoData = JSON.parse(jsonMatch[1]);
+      } else {
+        // Try to find JSON object directly
+        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          videoData = JSON.parse(jsonObjectMatch[0]);
+        } else {
+          videoData = JSON.parse(content);
+        }
+      }
+      console.log('[AI Service] Successfully parsed video data:', videoData);
+    } catch (parseError) {
+      console.error('[AI Service] Failed to parse JSON response:', parseError);
+      console.log('[AI Service] Raw content:', content);
+      throw new Error('Failed to parse AI response. Please try again.');
+    }
+
+    // Validate and format checkpoints
+    if (!videoData.checkpoints || !Array.isArray(videoData.checkpoints)) {
+      throw new Error('AI response does not contain valid checkpoints array');
+    }
+
+    // Transform checkpoints to match our VideoCheckpoint interface
+    const formattedCheckpoints = videoData.checkpoints.map((cp, index) => {
+      const checkpoint: any = {
+        id: crypto.randomUUID ? crypto.randomUUID() : `checkpoint-${Date.now()}-${index}`,
+        timestamp: Math.max(0, Math.floor(cp.timestamp || 0)),
+        type: cp.type || 'question',
+        title: cp.title || `${cp.type} Checkpoint`,
+        content: cp.content || '',
+        required: cp.required !== undefined ? cp.required : true,
+        pauseVideo: cp.pauseVideo !== undefined ? cp.pauseVideo : true
+      };
+
+      // Add options for question/quiz types
+      if ((cp.type === 'question' || cp.type === 'quiz') && cp.options && Array.isArray(cp.options)) {
+        checkpoint.options = cp.options.map((opt: any, optIndex: number) => ({
+          id: crypto.randomUUID ? crypto.randomUUID() : `option-${Date.now()}-${index}-${optIndex}`,
+          text: opt.text || '',
+          isCorrect: opt.isCorrect || false
+        }));
+
+        // Set correct answer ID
+        const correctOption = checkpoint.options.find((opt: any) => opt.isCorrect);
+        if (correctOption) {
+          checkpoint.correctAnswerId = correctOption.id;
+        }
+      }
+
+      // Add explanation for quiz type
+      if (cp.type === 'quiz' && cp.explanation) {
+        checkpoint.explanation = cp.explanation;
+      }
+
+      return checkpoint;
+    }).filter(cp => cp.content && cp.timestamp >= 0); // Filter out invalid checkpoints
+
+    if (formattedCheckpoints.length === 0) {
+      throw new Error('No valid checkpoints were generated. Please try again.');
+    }
+
+    // Return formatted interactive video data
+    return {
+      videoUrl: videoData.videoUrl || videoUrlToUse,
+      videoType: detectVideoType(videoData.videoUrl || videoUrlToUse),
+      checkpoints: formattedCheckpoints,
+      settings: {
+        showProgress: true,
+        showTimestamps: true,
+        autoPause: true,
+        allowSkip: false,
+        allowRetry: true,
+        maxAttempts: 3,
+        showHints: true,
+        requireCompletion: false
+      }
+    };
+  } catch (error) {
+    console.error('[AI Service] Error generating interactive video:', error);
+    throw error;
+  }
+};
+
 export default {
   generateLessonPlan,
   generateEnhancedLessonPlan,
   generateAssignmentRubric,
   generateCompleteLessonContent,
   generateStudentFacingContent,
-  generateFlashcards
+  generateFlashcards,
+  generateInteractiveVideo
 };
 
