@@ -50,7 +50,6 @@ function FlashcardCreator({
   // UI state
   const [editingCardId, setEditingCardId] = useState<string | null>(null);
   const [previewMode, setPreviewMode] = useState(false);
-  const [previewCardIndex, setPreviewCardIndex] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -899,6 +898,18 @@ function FlashcardPreview({ cards, settings, onClose }: FlashcardPreviewProps) {
   const [showBack, setShowBack] = useState(false);
   const [flipped, setFlipped] = useState(false);
 
+  // Reset index when cards change
+  useEffect(() => {
+    if (cards && cards.length > 0) {
+      // Ensure currentIndex is within bounds
+      if (currentIndex >= cards.length) {
+        setCurrentIndex(0);
+      }
+      setShowBack(false);
+      setFlipped(false);
+    }
+  }, [cards?.length]);
+
   // Safety check for empty cards
   if (!cards || cards.length === 0) {
     return (
@@ -911,20 +922,22 @@ function FlashcardPreview({ cards, settings, onClose }: FlashcardPreviewProps) {
     );
   }
 
-  const currentCard = cards[currentIndex];
-  const progress = ((currentIndex + 1) / cards.length) * 100;
+  // Ensure currentIndex is within bounds
+  const safeIndex = Math.min(currentIndex, cards.length - 1);
+  const currentCard = cards[safeIndex];
+  const progress = ((safeIndex + 1) / cards.length) * 100;
 
   const handleNext = () => {
-    if (currentIndex < cards.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+    if (safeIndex < cards.length - 1) {
+      setCurrentIndex(safeIndex + 1);
       setShowBack(false);
       setFlipped(false);
     }
   };
 
   const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+    if (safeIndex > 0) {
+      setCurrentIndex(safeIndex - 1);
       setShowBack(false);
       setFlipped(false);
     }
@@ -935,9 +948,9 @@ function FlashcardPreview({ cards, settings, onClose }: FlashcardPreviewProps) {
     if (settings.showAnswer === 'click') {
       setShowBack(!showBack);
     }
-  };
+  }
 
-  if (!currentCard || cards.length === 0) {
+  if (!currentCard) {
     return (
       <Card>
         <Card.Body className="text-center py-5">
@@ -955,7 +968,7 @@ function FlashcardPreview({ cards, settings, onClose }: FlashcardPreviewProps) {
           <h5 className="mb-0">Preview Mode</h5>
           {settings.showProgress && (
             <small className="text-muted">
-              Card {currentIndex + 1} of {cards.length}
+              Card {safeIndex + 1} of {cards.length}
             </small>
           )}
         </div>
@@ -1002,7 +1015,7 @@ function FlashcardPreview({ cards, settings, onClose }: FlashcardPreviewProps) {
           <Button
             variant="outline-secondary"
             onClick={handlePrevious}
-            disabled={currentIndex === 0}
+            disabled={safeIndex === 0}
           >
             Previous
           </Button>
@@ -1014,7 +1027,7 @@ function FlashcardPreview({ cards, settings, onClose }: FlashcardPreviewProps) {
           <Button
             variant="outline-primary"
             onClick={handleNext}
-            disabled={currentIndex === cards.length - 1}
+            disabled={safeIndex === cards.length - 1}
           >
             Next
           </Button>

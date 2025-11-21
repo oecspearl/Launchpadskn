@@ -71,15 +71,17 @@ function FlashcardViewer({
     setFlipped(false);
   }, [cards, settings.studyMode, settings.shuffleCards]);
 
-  const currentCardIndex = cardOrder[currentIndex];
-  const currentCard = cards[currentCardIndex];
-  const progress = ((currentIndex + 1) / cards.length) * 100;
-  const isFirstCard = currentIndex === 0;
-  const isLastCard = currentIndex === cards.length - 1;
+  // Ensure currentIndex is within bounds
+  const safeIndex = Math.min(currentIndex, cardOrder.length - 1);
+  const currentCardIndex = cardOrder[safeIndex];
+  const currentCard = currentCardIndex !== undefined ? cards[currentCardIndex] : null;
+  const progress = cardOrder.length > 0 ? ((safeIndex + 1) / cardOrder.length) * 100 : 0;
+  const isFirstCard = safeIndex === 0;
+  const isLastCard = safeIndex === cardOrder.length - 1;
 
   const handleNext = () => {
-    if (currentIndex < cards.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+    if (safeIndex < cardOrder.length - 1) {
+      setCurrentIndex(safeIndex + 1);
       setShowBack(false);
       setFlipped(false);
     } else if (onComplete) {
@@ -88,8 +90,8 @@ function FlashcardViewer({
   };
 
   const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
+    if (safeIndex > 0) {
+      setCurrentIndex(safeIndex - 1);
       setShowBack(false);
       setFlipped(false);
     }
@@ -142,13 +144,21 @@ function FlashcardViewer({
 
   // Auto-advance logic
   useEffect(() => {
-    if (settings.autoAdvance && showBack && flipped) {
+    if (settings.autoAdvance && showBack && flipped && currentCard && safeIndex < cardOrder.length - 1) {
       const timer = setTimeout(() => {
-        handleNext();
+        setCurrentIndex(safeIndex + 1);
+        setShowBack(false);
+        setFlipped(false);
+      }, (settings.autoAdvanceDelay || 3) * 1000);
+      return () => clearTimeout(timer);
+    } else if (settings.autoAdvance && showBack && flipped && currentCard && safeIndex === cardOrder.length - 1 && onComplete) {
+      // Auto-complete on last card
+      const timer = setTimeout(() => {
+        onComplete();
       }, (settings.autoAdvanceDelay || 3) * 1000);
       return () => clearTimeout(timer);
     }
-  }, [showBack, flipped, settings.autoAdvance, settings.autoAdvanceDelay]);
+  }, [showBack, flipped, settings.autoAdvance, settings.autoAdvanceDelay, safeIndex, cardOrder.length, onComplete, currentCard]);
 
   if (!currentCard || cards.length === 0) {
     return (
@@ -188,7 +198,7 @@ function FlashcardViewer({
         <div className="mb-4">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <span className="text-muted">
-              Card {currentIndex + 1} of {cards.length}
+              Card {safeIndex + 1} of {cardOrder.length}
             </span>
             <span className="text-muted">
               {Math.round(progress)}% Complete

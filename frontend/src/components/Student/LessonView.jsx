@@ -387,10 +387,10 @@ function LessonView() {
         else if (['SUMMARY', 'REFLECTION_QUESTIONS'].includes(contentType)) {
           categories.closure.push(item);
         }
-        // Learning content
+        // Learning content (including interactive content like flashcards)
         else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
                   'DISCUSSION_PROMPTS', 
-                  'VIDEO', 'IMAGE', 'DOCUMENT'].includes(contentType)) {
+                  'VIDEO', 'IMAGE', 'DOCUMENT', 'FLASHCARD'].includes(contentType)) {
           categories.learning.push(item);
         }
         // Resources (files and links)
@@ -596,6 +596,11 @@ function LessonView() {
                 <h3 className="classwork-title mb-0">
                   {contentItem.title || 'Material'}
                 </h3>
+                {contentItem.content_type === 'FLASHCARD' && contentItem.content_data?.cards && (
+                  <Badge bg="info" className="ms-2">
+                    {contentItem.content_data.cards.length} card{contentItem.content_data.cards.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
               </div>
               <div className="d-flex align-items-center gap-3 flex-wrap">
                 <p className="classwork-date mb-0">Posted {dateStr}</p>
@@ -615,6 +620,19 @@ function LessonView() {
               <FaLock className="me-2" />
               <strong>Prerequisites required:</strong> Please complete the following items first: {prerequisites.missing.join(', ')}
             </Alert>
+          )}
+          
+          {/* Flashcard Preview (Collapsed State) */}
+          {!isExpanded && contentItem.content_type === 'FLASHCARD' && contentItem.content_data?.cards && (
+            <div className="classwork-preview-info mt-2">
+              <Badge bg="info" className="me-2">
+                <FaClipboardList className="me-1" />
+                {contentItem.content_data.cards.length} Flashcard{contentItem.content_data.cards.length !== 1 ? 's' : ''}
+              </Badge>
+              {contentItem.description && (
+                <span className="text-muted small">{contentItem.description.substring(0, 100)}{contentItem.description.length > 100 ? '...' : ''}</span>
+              )}
+            </div>
           )}
           
           {isExpanded && (
@@ -698,7 +716,29 @@ function LessonView() {
                 </div>
               )}
                         
-              {contentItem.description && (
+              {/* Flashcard Preview */}
+              {contentItem.content_type === 'FLASHCARD' && contentItem.content_data && (
+                <div className="classwork-info-box">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <Badge bg="info">Flashcard Set</Badge>
+                    {contentItem.content_data.cards && (
+                      <span className="text-muted">
+                        {contentItem.content_data.cards.length} card{contentItem.content_data.cards.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  {contentItem.description && (
+                    <div className="mt-2">{contentItem.description}</div>
+                  )}
+                  {!contentItem.description && contentItem.content_data.cards && contentItem.content_data.cards.length > 0 && (
+                    <div className="mt-2 text-muted small">
+                      Click "Study Flashcards" to begin studying this flashcard set.
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {contentItem.description && contentItem.content_type !== 'FLASHCARD' && (
                 <div className="classwork-info-box">
                   {contentItem.description}
                 </div>
