@@ -21,20 +21,75 @@ export function AuthProvider({ children }) {
     // Get initial session
     const initializeAuth = async () => {
       try {
+        console.log('[AuthContext] Initializing auth...');
         const { data: { session }, error } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('Session error:', error);
+          console.error('[AuthContext] Session error:', error);
+          // Check localStorage as fallback
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              console.log('[AuthContext] Using stored user from localStorage:', parsedUser.email);
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+            } catch (e) {
+              console.error('[AuthContext] Error parsing stored user:', e);
+            }
+          }
           setIsLoading(false);
           return;
         }
 
         if (session?.user) {
+          console.log('[AuthContext] Session found on init, loading profile for:', session.user.email);
           await loadUserProfile(session.user.id);
+        } else {
+          console.log('[AuthContext] No session found on init');
+          // Check localStorage as fallback
+          const storedUser = localStorage.getItem('user');
+          const storedToken = localStorage.getItem('token');
+          
+          if (storedUser && storedToken) {
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              console.log('[AuthContext] No Supabase session but using stored user:', parsedUser.email);
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+              setIsLoading(false);
+              // Try to restore Supabase session in background (non-blocking)
+              // Only if we have a refresh token
+              if (parsedUser.refreshToken) {
+                supabase.auth.refreshSession().then(({ data: { session: refreshedSession }, error: refreshError }) => {
+                  if (refreshError || !refreshedSession) {
+                    console.warn('[AuthContext] Could not restore Supabase session, but user remains logged in via localStorage');
+                  } else {
+                    console.log('[AuthContext] Supabase session restored in background');
+                    // Update stored token
+                    if (refreshedSession.access_token) {
+                      localStorage.setItem('token', refreshedSession.access_token);
+                      const updatedUser = { ...parsedUser, token: refreshedSession.access_token };
+                      localStorage.setItem('user', JSON.stringify(updatedUser));
+                      setUser(updatedUser);
+                    }
+                    loadUserProfile(refreshedSession.user.id).catch(console.error);
+                  }
+                }).catch(error => {
+                  console.warn('[AuthContext] Error refreshing session:', error);
+                  // User stays logged in via localStorage
+                });
+              }
+            } catch (e) {
+              console.error('[AuthContext] Error parsing stored user:', e);
+              localStorage.removeItem('user');
+              localStorage.removeItem('token');
+            }
+          }
+          setIsLoading(false);
         }
       } catch (error) {
-        console.error('Auth initialization error:', error);
-      } finally {
+        console.error('[AuthContext] Auth initialization error:', error);
         setIsLoading(false);
       }
     };
@@ -85,6 +140,70 @@ export function AuthProvider({ children }) {
             console.warn('[AuthContext] Background profile load failed:', error);
             // User is already set from temp user above, so we can continue
           });
+        } else if (event === 'INITIAL_SESSION') {
+          // Handle initial session on page load/refresh
+          if (session?.user) {
+            console.log('[AuthContext] INITIAL_SESSION found, loading profile for:', session.user.email);
+            await loadUserProfile(session.user.id);
+          } else {
+            // No Supabase session found - check if we have stored user data in localStorage
+            const storedUser = localStorage.getItem('user');
+            const storedToken = localStorage.getItem('token');
+            
+            if (storedUser && storedToken) {
+              console.log('[AuthContext] No Supabase session but localStorage has user data. Restoring user from localStorage...');
+              try {
+                const parsedUser = JSON.parse(storedUser);
+                // Immediately set user from localStorage so app doesn't think user is logged out
+                setUser(parsedUser);
+                setIsAuthenticated(true);
+                setIsLoading(false);
+                
+                // Try to restore Supabase session in background (non-blocking)
+                // Check if there's a refresh token we can use
+                if (parsedUser.refreshToken) {
+                  console.log('[AuthContext] Attempting to restore Supabase session with refresh token...');
+                  supabase.auth.refreshSession().then(({ data: { session: refreshedSession }, error: refreshError }) => {
+                    if (refreshError || !refreshedSession) {
+                      console.warn('[AuthContext] Could not refresh Supabase session:', refreshError?.message || 'No session returned');
+                      // User stays logged in via localStorage, but Supabase session is invalid
+                      // This is okay - user can continue using the app
+                    } else {
+                      console.log('[AuthContext] Supabase session restored successfully');
+                      // Update stored token
+                      if (refreshedSession.access_token) {
+                        localStorage.setItem('token', refreshedSession.access_token);
+                        // Update user with fresh token
+                        const updatedUser = { ...parsedUser, token: refreshedSession.access_token };
+                        localStorage.setItem('user', JSON.stringify(updatedUser));
+                        setUser(updatedUser);
+                      }
+                      // Load full profile
+                      loadUserProfile(refreshedSession.user.id).catch(console.error);
+                    }
+                  }).catch(error => {
+                    console.warn('[AuthContext] Error refreshing session:', error);
+                    // User stays logged in via localStorage
+                  });
+                } else {
+                  console.log('[AuthContext] No refresh token available, user will stay logged in via localStorage');
+                }
+              } catch (e) {
+                console.error('[AuthContext] Error parsing stored user:', e);
+                // Clear invalid stored data
+                localStorage.removeItem('user');
+                localStorage.removeItem('token');
+                setUser(null);
+                setIsAuthenticated(false);
+                setIsLoading(false);
+              }
+            } else {
+              console.log('[AuthContext] No session and no stored user data - user is logged out');
+              setUser(null);
+              setIsAuthenticated(false);
+              setIsLoading(false);
+            }
+          }
         } else if (event === 'SIGNED_OUT') {
           setUser(null);
           setIsAuthenticated(false);
