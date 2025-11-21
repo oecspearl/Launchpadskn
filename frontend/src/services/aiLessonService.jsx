@@ -1678,11 +1678,173 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
   }
 };
 
+/**
+ * Generate flashcards using AI
+ * @param {Object} params - Flashcard generation parameters
+ * @param {string} params.topic - Topic or subject matter for flashcards
+ * @param {string} params.subject - Subject name (optional)
+ * @param {string} params.gradeLevel - Grade level or form (optional)
+ * @param {number} params.numCards - Number of flashcards to generate (default: 10)
+ * @param {string} params.difficulty - Difficulty level: 'easy', 'medium', or 'hard' (optional)
+ * @param {string} params.context - Additional context or instructions (optional)
+ * @returns {Promise<Array>} Generated flashcards array
+ */
+export const generateFlashcards = async ({
+  topic,
+  subject = '',
+  gradeLevel = '',
+  numCards = 10,
+  difficulty = 'medium',
+  context = ''
+}) => {
+  if (!API_KEY) {
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!topic) {
+    throw new Error('Missing required parameter: topic is required.');
+  }
+
+  if (numCards < 1 || numCards > 50) {
+    throw new Error('Number of cards must be between 1 and 50.');
+  }
+
+  const prompt = `You are an expert educational content creator. Generate ${numCards} flashcards for the topic "${topic}".
+
+${subject ? `Subject: ${subject}\n` : ''}${gradeLevel ? `Grade Level: ${gradeLevel}\n` : ''}Difficulty Level: ${difficulty}
+${context ? `Additional Context: ${context}\n` : ''}
+
+IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks. The response must be a single JSON array that can be parsed directly.
+
+Create flashcards that are:
+- Clear and concise (front side should be a question, term, or concept; back side should be the answer, definition, or explanation)
+- Age-appropriate for ${gradeLevel || 'the specified grade level'}
+- Educational and accurate
+- Varied in content (mix of definitions, questions, concepts, etc.)
+- Appropriate difficulty level: ${difficulty}
+
+Respond with this exact JSON structure (an array of flashcard objects):
+[
+  {
+    "front": "Question or term on the front of the card",
+    "back": "Answer or definition on the back of the card",
+    "difficulty": "${difficulty}",
+    "tags": ["tag1", "tag2"]
+  },
+  {
+    "front": "Another question or term",
+    "back": "Another answer or definition",
+    "difficulty": "${difficulty}",
+    "tags": ["tag1", "tag3"]
+  }
+]
+
+Each flashcard object must have:
+- "front": string (the question, term, or concept - keep it concise)
+- "back": string (the answer, definition, or explanation - can be more detailed)
+- "difficulty": string (one of: "easy", "medium", "hard")
+- "tags": array of strings (relevant tags for categorization, 1-3 tags per card)
+
+Generate exactly ${numCards} flashcards. Make them diverse and cover different aspects of "${topic}".
+
+Remember: Respond with ONLY the JSON array, nothing else.`;
+
+  try {
+    console.log('[AI Service] Generating flashcards...');
+    const requestBody = {
+      model: 'gpt-3.5-turbo',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert educational content creator. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only - specifically a JSON array of flashcard objects.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 2000
+    };
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No response content received from AI');
+    }
+
+    // Parse JSON from the response
+    let flashcards;
+    try {
+      // Extract JSON from markdown code blocks if present
+      const jsonMatch = content.match(/```(?:json)?\s*(\[[\s\S]*\])\s*```/);
+      if (jsonMatch) {
+        flashcards = JSON.parse(jsonMatch[1]);
+      } else {
+        // Try to find JSON array directly
+        const jsonArrayMatch = content.match(/\[[\s\S]*\]/);
+        if (jsonArrayMatch) {
+          flashcards = JSON.parse(jsonArrayMatch[0]);
+        } else {
+          flashcards = JSON.parse(content);
+        }
+      }
+      console.log('[AI Service] Successfully parsed flashcards:', flashcards);
+    } catch (parseError) {
+      console.error('[AI Service] Failed to parse JSON response:', parseError);
+      console.log('[AI Service] Raw content:', content);
+      throw new Error('Failed to parse AI response. Please try again.');
+    }
+
+    // Validate and format flashcards
+    if (!Array.isArray(flashcards)) {
+      throw new Error('AI response is not an array of flashcards');
+    }
+
+    // Transform to match our Flashcard interface
+    const formattedFlashcards = flashcards.map((card, index) => ({
+      id: crypto.randomUUID ? crypto.randomUUID() : `card-${Date.now()}-${index}`,
+      front: card.front || '',
+      back: card.back || '',
+      frontImage: card.frontImage || undefined,
+      backImage: card.backImage || undefined,
+      tags: Array.isArray(card.tags) ? card.tags : (card.tags ? [card.tags] : []),
+      difficulty: card.difficulty || difficulty,
+      order: index
+    })).filter(card => card.front && card.back); // Filter out invalid cards
+
+    if (formattedFlashcards.length === 0) {
+      throw new Error('No valid flashcards were generated. Please try again.');
+    }
+
+    return formattedFlashcards;
+  } catch (error) {
+    console.error('[AI Service] Error generating flashcards:', error);
+    throw error;
+  }
+};
+
 export default {
   generateLessonPlan,
   generateEnhancedLessonPlan,
   generateAssignmentRubric,
   generateCompleteLessonContent,
-  generateStudentFacingContent
+  generateStudentFacingContent,
+  generateFlashcards
 };
 

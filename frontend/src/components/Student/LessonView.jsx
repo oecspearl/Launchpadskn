@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Container, Row, Col, Card, Button, Spinner, Alert, 
-  Badge, ListGroup, ProgressBar, Accordion
+  Badge, ListGroup, ProgressBar, Accordion, Modal
 } from 'react-bootstrap';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { 
@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import FlashcardViewer from './FlashcardViewer';
 import './LessonView.css';
 
 function LessonView() {
@@ -34,6 +35,8 @@ function LessonView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all'); // all, completed, incomplete
   const [filterCategory, setFilterCategory] = useState('all'); // all, learning, practice, assessments, resources, homework
+  const [showFlashcardViewer, setShowFlashcardViewer] = useState(false);
+  const [currentFlashcardContent, setCurrentFlashcardContent] = useState(null);
   
   useEffect(() => {
     if (lessonId) {
@@ -292,6 +295,7 @@ function LessonView() {
       case 'REFLECTION_QUESTIONS': return 'reflection';
       case 'DISCUSSION_PROMPTS': return 'discussion';
       case 'SUMMARY': return 'summary';
+      case 'FLASHCARD': return 'flashcard';
       default: return '';
     }
   };
@@ -310,6 +314,7 @@ function LessonView() {
       case 'REFLECTION_QUESTIONS': return <FaQuestionCircle />;
       case 'DISCUSSION_PROMPTS': return <FaComments />;
       case 'SUMMARY': return <FaBook />;
+      case 'FLASHCARD': return <FaClipboardList />;
       default: return <FaBook />;
     }
   };
@@ -1264,6 +1269,17 @@ function LessonView() {
               
               {/* Action Buttons */}
               <div className="classwork-actions" onClick={(e) => e.stopPropagation()}>
+                {contentItem.content_type === 'FLASHCARD' && contentItem.content_data && (
+                  <button 
+                    className="classwork-action-btn primary"
+                    onClick={() => {
+                      setCurrentFlashcardContent(contentItem);
+                      setShowFlashcardViewer(true);
+                    }}
+                  >
+                    Study Flashcards
+                  </button>
+                )}
                 {contentItem.content_type === 'QUIZ' && quizStatuses[contentItem.content_id] && (
                   <button 
                     className="classwork-action-btn primary"
@@ -1687,6 +1703,36 @@ function LessonView() {
           </div>
         </div>
       </Container>
+
+      {/* Flashcard Viewer Modal */}
+      <Modal
+        show={showFlashcardViewer}
+        onHide={() => {
+          setShowFlashcardViewer(false);
+          setCurrentFlashcardContent(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Body style={{ padding: 0 }}>
+          {currentFlashcardContent && currentFlashcardContent.content_data && (
+            <FlashcardViewer
+              contentData={currentFlashcardContent.content_data}
+              title={currentFlashcardContent.title}
+              description={currentFlashcardContent.description}
+              onComplete={() => {
+                toggleContentComplete(currentFlashcardContent.content_id);
+                setShowFlashcardViewer(false);
+                setCurrentFlashcardContent(null);
+              }}
+              onClose={() => {
+                setShowFlashcardViewer(false);
+                setCurrentFlashcardContent(null);
+              }}
+            />
+          )}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 }

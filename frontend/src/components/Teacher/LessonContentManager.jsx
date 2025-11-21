@@ -16,6 +16,7 @@ import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import QuizBuilder from './QuizBuilder';
+import FlashcardCreator from './FlashcardCreator';
 import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
@@ -43,6 +44,8 @@ function LessonContentManager() {
   const [showQuizBuilder, setShowQuizBuilder] = useState(false);
   const [currentQuizContentId, setCurrentQuizContentId] = useState(null);
   const [currentQuizId, setCurrentQuizId] = useState(null);
+  const [showFlashcardCreator, setShowFlashcardCreator] = useState(false);
+  const [currentFlashcardContentId, setCurrentFlashcardContentId] = useState(null);
   
   // Form state
   const [contentType, setContentType] = useState('FILE');
@@ -1358,6 +1361,14 @@ function LessonContentManager() {
     try {
       console.log('Previewing item:', item);
       
+      // For FLASHCARD content type, open flashcard creator in edit mode
+      if (item.content_type === 'FLASHCARD') {
+        setEditingContent(item);
+        setCurrentFlashcardContentId(item.content_id);
+        setShowFlashcardCreator(true);
+        return;
+      }
+      
       // For QUIZ content type, load full quiz details if it's an in-app quiz
       if (item.content_type === 'QUIZ') {
         try {
@@ -1993,13 +2004,21 @@ function LessonContentManager() {
               <Form.Select
                 value={contentType}
                 onChange={(e) => {
-                  setContentType(e.target.value);
+                  const newType = e.target.value;
+                  setContentType(newType);
                   setSelectedFile(null);
                   setUrl('');
                   setContentText('');
                   setAssignmentDetailsFile(null);
                   setAssignmentRubricFile(null);
                   setUploadedRubricFileInfo(null);
+                  
+                  // Open flashcard creator if FLASHCARD is selected
+                  if (newType === 'FLASHCARD' && !editingContent) {
+                    setShowModal(false);
+                    setShowFlashcardCreator(true);
+                    setCurrentFlashcardContentId(null);
+                  }
                 }}
                 required
               >
@@ -2017,6 +2036,9 @@ function LessonContentManager() {
                   <option value="EXAM">Exam</option>
                   <option value="PROJECT">Project</option>
                   <option value="SURVEY">Survey/Poll</option>
+                </optgroup>
+                <optgroup label="Interactive Content">
+                  <option value="FLASHCARD">Flashcard Set</option>
                 </optgroup>
                 <optgroup label="Learning Content">
                   <option value="LEARNING_OUTCOMES">Learning Outcomes</option>
@@ -3699,8 +3721,20 @@ function LessonContentManager() {
                       </div>
                     )}
                     
+                    {/* Flashcard Content */}
+                    {item.content_type === 'FLASHCARD' && item.content_data && (
+                      <div className="mt-2">
+                        <Alert variant="info" className="mb-2">
+                          <strong>Flashcard Set:</strong> {item.content_data?.cards?.length || 0} card{item.content_data?.cards?.length !== 1 ? 's' : ''}
+                        </Alert>
+                        {item.description && (
+                          <div className="text-muted small">{item.description}</div>
+                        )}
+                      </div>
+                    )}
+                    
                     {/* Text Content */}
-                    {!['VIDEO', 'QUIZ', 'ASSIGNMENT'].includes(item.content_type) && item.content_text && (
+                    {!['VIDEO', 'QUIZ', 'ASSIGNMENT', 'FLASHCARD'].includes(item.content_type) && item.content_text && (
                       <div className="mt-2" style={{ 
                         maxHeight: '200px', 
                         overflowY: 'auto',
@@ -3750,6 +3784,83 @@ function LessonContentManager() {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Flashcard Creator Modal */}
+      <Modal 
+        show={showFlashcardCreator} 
+        onHide={() => {
+          setShowFlashcardCreator(false);
+          setCurrentFlashcardContentId(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {currentFlashcardContentId ? 'Edit Flashcard Set' : 'Create Flashcard Set'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ padding: 0 }}>
+          <FlashcardCreator
+            contentId={currentFlashcardContentId}
+            lessonId={parseInt(lessonId)}
+            initialTitle={editingContent?.title}
+            initialDescription={editingContent?.description}
+            initialData={editingContent?.content_data}
+            onSave={(savedContentId) => {
+              setShowFlashcardCreator(false);
+              setCurrentFlashcardContentId(null);
+              fetchContent();
+              setSuccess('Flashcard set saved successfully!');
+              setTimeout(() => setSuccess(null), 3000);
+            }}
+            onCancel={() => {
+              setShowFlashcardCreator(false);
+              setCurrentFlashcardContentId(null);
+            }}
+          />
+        </Modal.Body>
+      </Modal>
+
+      {/* Quiz Builder Modal */}
+      {showQuizBuilder && (
+        <Modal 
+          show={showQuizBuilder} 
+          onHide={() => {
+            setShowQuizBuilder(false);
+            setCurrentQuizContentId(null);
+            setCurrentQuizId(null);
+          }}
+          size="xl"
+          fullscreen="lg-down"
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>
+              {currentQuizId ? 'Edit Quiz' : 'Create Quiz'}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body style={{ padding: 0 }}>
+            <QuizBuilder
+              contentId={currentQuizContentId}
+              quizId={currentQuizId}
+              lessonId={parseInt(lessonId)}
+              onSave={() => {
+                setShowQuizBuilder(false);
+                setCurrentQuizContentId(null);
+                setCurrentQuizId(null);
+                fetchContent();
+                setSuccess('Quiz saved successfully!');
+                setTimeout(() => setSuccess(null), 3000);
+              }}
+              onCancel={() => {
+                setShowQuizBuilder(false);
+                setCurrentQuizContentId(null);
+                setCurrentQuizId(null);
+              }}
+            />
+          </Modal.Body>
+        </Modal>
+      )}
     </Container>
   );
 }
