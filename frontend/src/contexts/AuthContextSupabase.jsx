@@ -159,7 +159,7 @@ export function AuthProvider({ children }) {
       if (userRole === 'TEACHER') {
         userRole = 'INSTRUCTOR';
       }
-      const validRoles = ['ADMIN', 'INSTRUCTOR', 'STUDENT'];
+      const validRoles = ['ADMIN', 'SCHOOL_ADMIN', 'INSTRUCTOR', 'STUDENT'];
       const finalRole = validRoles.includes(userRole) ? userRole : (session.user.email.includes('admin') ? 'ADMIN' : 'STUDENT');
 
       // Combine profile and auth data

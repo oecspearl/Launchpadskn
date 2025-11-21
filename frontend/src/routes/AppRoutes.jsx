@@ -3,6 +3,7 @@ import { Routes } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import PublicRoutes from './PublicRoutes';
 import AdminRoutes from './AdminRoutes';
+import SchoolAdminRoutes from './SchoolAdminRoutes';
 import InstructorRoutes from './InstructorRoutes';
 import StudentRoutes from './StudentRoutes';
 import CommonRoutes from './CommonRoutes';
@@ -21,6 +22,7 @@ const AppRoutes = () => {
             <Routes>
                 {PublicRoutes()}
                 {AdminRoutes()}
+                {SchoolAdminRoutes()}
                 {InstructorRoutes()}
                 {StudentRoutes()}
                 {CommonRoutes()}

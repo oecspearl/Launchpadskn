@@ -36,6 +36,7 @@ function AppNavbar() {
     const role = (user.role || '').toLowerCase().trim();
     switch (role) {
       case 'admin': return '/admin/dashboard';
+      case 'school_admin': return '/school-admin/dashboard';
       case 'instructor': return '/teacher/dashboard';
       case 'student': return '/student/dashboard';
       default: return '/login';
@@ -115,7 +116,7 @@ function AppNavbar() {
                 </>
               )}
 
-              {/* Admin Navigation */}
+              {/* Super Admin Navigation */}
               {user.role?.toLowerCase() === 'admin' && (
                 <NavDropdown title="Management" id="admin-nav-dropdown" className="nav-link-custom p-0">
                   <NavDropdown.Item as={Link} to="/admin/forms">Forms</NavDropdown.Item>
@@ -123,6 +124,22 @@ function AppNavbar() {
                   <NavDropdown.Item as={Link} to="/admin/subjects">Subjects</NavDropdown.Item>
                   <NavDropdown.Divider />
                   <NavDropdown.Item as={Link} to="/teacher/curriculum">Curriculum</NavDropdown.Item>
+                </NavDropdown>
+              )}
+
+              {/* School Admin Navigation */}
+              {user.role?.toLowerCase() === 'school_admin' && (
+                <NavDropdown title="Management" id="school-admin-nav-dropdown" className="nav-link-custom p-0">
+                  <NavDropdown.Item as={Link} to="/school-admin/dashboard">Dashboard</NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item as={Link} to="/school-admin/forms">Forms</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/school-admin/classes">Classes</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/school-admin/subjects">Subjects</NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item as={Link} to="/school-admin/students">Students</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/school-admin/instructors">Instructors</NavDropdown.Item>
+                  <NavDropdown.Divider />
+                  <NavDropdown.Item as={Link} to="/school-admin/reports">Reports</NavDropdown.Item>
                 </NavDropdown>
               )}
 

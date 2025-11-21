@@ -333,14 +333,144 @@ class SupabaseService {
     if (error) throw error;
   }
 
-  // ---------- Admin User Management ----------
-  // Fetch all active users (institution join removed due to FK relationship not configured)
-  async getAllUsers() {
-    const { data, error } = await supabase
+  // ---------- Institution Access Helpers ----------
+  /**
+   * Check if user has access to an institution
+   */
+  async hasInstitutionAccess(userId, institutionId) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('role, institution_id')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (!user) return false;
+    
+    // Super Admin has access to all institutions
+    if (user.role === 'ADMIN') return true;
+    
+    // School Admin has access to their institution
+    if (user.role === 'SCHOOL_ADMIN') {
+      return user.institution_id === institutionId;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Get user's accessible institution IDs
+   */
+  async getUserInstitutionIds(userId) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('role, institution_id')
+      .eq('id', userId)
+      .maybeSingle();
+    
+    if (!user) return [];
+    
+    // Super Admin can access all institutions
+    if (user.role === 'ADMIN') {
+      const { data: institutions } = await supabase
+        .from('institutions')
+        .select('institution_id');
+      return institutions?.map(i => i.institution_id) || [];
+    }
+    
+    // School Admin can access their institution
+    if (user.role === 'SCHOOL_ADMIN' && user.institution_id) {
+      return [user.institution_id];
+    }
+    
+    return [];
+  }
+
+  /**
+   * Get institution-scoped users
+   */
+  async getUsersByInstitution(institutionId, userRole = null) {
+    let query = supabase
       .from('users')
       .select('*')
+      .eq('institution_id', institutionId)
+      .eq('is_active', true);
+    
+    if (userRole) {
+      query = query.eq('role', userRole.toUpperCase());
+    }
+    
+    const { data, error } = await query.order('name');
+    if (error) throw error;
+    return data || [];
+  }
+
+  /**
+   * Get forms by institution
+   */
+  async getFormsByInstitution(institutionId) {
+    const { data, error } = await supabase
+      .from('forms')
+      .select('*')
+      .eq('school_id', institutionId)
       .eq('is_active', true)
-      .order('name');
+      .order('form_number');
+    
+    if (error) throw error;
+    return data || [];
+  }
+
+  /**
+   * Get classes by institution
+   */
+  async getClassesByInstitution(institutionId) {
+    const { data, error } = await supabase
+      .from('classes')
+      .select(`
+        *,
+        form:forms(*)
+      `)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+    
+    if (error) throw error;
+    
+    // Filter by institution through forms
+    if (data) {
+      return data.filter(cls => cls.form?.school_id === institutionId);
+    }
+    
+    return [];
+  }
+
+  /**
+   * Get subjects by institution
+   */
+  async getSubjectsByInstitution(institutionId) {
+    const { data, error } = await supabase
+      .from('subjects')
+      .select('*')
+      .eq('institution_id', institutionId)
+      .eq('is_active', true)
+      .order('subject_name');
+    
+    if (error) throw error;
+    return data || [];
+  }
+
+  // ---------- Admin User Management ----------
+  // Fetch all active users (institution join removed due to FK relationship not configured)
+  async getAllUsers(institutionId = null) {
+    let query = supabase
+      .from('users')
+      .select('*')
+      .eq('is_active', true);
+    
+    // If institutionId is provided, filter by it
+    if (institutionId) {
+      query = query.eq('institution_id', institutionId);
+    }
+    
+    const { data, error } = await query.order('name');
     
     if (error) throw error;
     return data;

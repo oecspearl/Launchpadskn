@@ -43,6 +43,12 @@ function UserManagement() {
 
     const handleAddUser = async () => {
         try {
+            // Validate SCHOOL_ADMIN requires institution
+            if (newUser.role === 'SCHOOL_ADMIN' && !newUser.institution_id) {
+                setError('Institution is required for School Admin role.');
+                return;
+            }
+            
             await supabaseService.createUser(newUser);
             setShowAdd(false);
             setNewUser({ email: '', password: '', role: 'STUDENT', institution_id: '' });
@@ -200,19 +206,34 @@ function UserManagement() {
                         <Form.Group className="mb-3" controlId="role">
                             <Form.Label>Role</Form.Label>
                             <Form.Select value={newUser.role} onChange={e => setNewUser({ ...newUser, role: e.target.value })}>
-                                <option value="ADMIN">ADMIN</option>
+                                <option value="ADMIN">ADMIN (Super Admin)</option>
+                                <option value="SCHOOL_ADMIN">SCHOOL_ADMIN (School Admin)</option>
                                 <option value="INSTRUCTOR">INSTRUCTOR</option>
                                 <option value="STUDENT">STUDENT</option>
                             </Form.Select>
+                            {newUser.role === 'SCHOOL_ADMIN' && (
+                                <Form.Text className="text-warning">
+                                    School Admin requires an institution assignment.
+                                </Form.Text>
+                            )}
                         </Form.Group>
                         <Form.Group className="mb-3" controlId="institution">
-                            <Form.Label>Institution</Form.Label>
-                            <Form.Select value={newUser.institution_id} onChange={e => setNewUser({ ...newUser, institution_id: e.target.value })}>
+                            <Form.Label>Institution {newUser.role === 'SCHOOL_ADMIN' && <span className="text-danger">*</span>}</Form.Label>
+                            <Form.Select 
+                                value={newUser.institution_id} 
+                                onChange={e => setNewUser({ ...newUser, institution_id: e.target.value })}
+                                required={newUser.role === 'SCHOOL_ADMIN'}
+                            >
                                 <option value="">None</option>
                                 {institutions.map(inst => (
                                     <option key={inst.institution_id} value={inst.institution_id}>{inst.name}</option>
                                 ))}
                             </Form.Select>
+                            {newUser.role === 'SCHOOL_ADMIN' && !newUser.institution_id && (
+                                <Form.Text className="text-danger">
+                                    Institution is required for School Admin role.
+                                </Form.Text>
+                            )}
                         </Form.Group>
                     </Form>
                 </Modal.Body>
