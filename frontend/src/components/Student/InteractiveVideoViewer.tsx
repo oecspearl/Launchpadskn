@@ -30,6 +30,7 @@ function InteractiveVideoViewer({
   onClose
 }: InteractiveVideoViewerProps) {
   const [currentTime, setCurrentTime] = useState(0);
+  const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes for calculation
   const [isPlaying, setIsPlaying] = useState(true); // Start as playing when video loads
   const [activeCheckpoint, setActiveCheckpoint] = useState<VideoCheckpoint | null>(null);
   const [completedCheckpoints, setCompletedCheckpoints] = useState<Set<string>>(new Set());
@@ -214,73 +215,173 @@ function InteractiveVideoViewer({
           <div className="video-container mb-3">
             <div className="video-wrapper">
               {contentData.videoType === 'youtube' && (
-                <iframe
-                  ref={videoRef as any}
-                  width="100%"
-                  height="500"
-                  src={getVideoEmbedUrl()}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  title={title}
-                  onLoad={() => {
-                    // Start time tracking when iframe loads
-                    setIsPlaying(true);
-                    setCurrentTime(0);
-                  }}
-                />
+                <>
+                  <iframe
+                    ref={videoRef as any}
+                    width="100%"
+                    height="500"
+                    src={getVideoEmbedUrl()}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    title={title}
+                    onLoad={() => {
+                      // Start time tracking when iframe loads
+                      setIsPlaying(true);
+                      setCurrentTime(0);
+                    }}
+                  />
+                  {/* Checkpoint markers overlay for YouTube */}
+                  {checkpoints.length > 0 && (
+                    <div className="checkpoint-overlay">
+                      {sortedCheckpoints.map((cp) => {
+                        const positionPercent = videoDuration > 0 ? (cp.timestamp / videoDuration) * 100 : 0;
+                        const isCompleted = completedCheckpoints.has(cp.id);
+                        const isActive = activeCheckpoint?.id === cp.id;
+                        return (
+                          <div
+                            key={cp.id}
+                            className={`checkpoint-overlay-marker ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}`}
+                            style={{ left: `${positionPercent}%` }}
+                            title={`${formatTime(cp.timestamp)} - ${cp.title || cp.type}`}
+                            onClick={() => {
+                              // For YouTube, we can't seek directly, but we can trigger the checkpoint
+                              handleCheckpointReached(cp);
+                            }}
+                          >
+                            <div className="checkpoint-marker-dot"></div>
+                            <div className="checkpoint-marker-label">
+                              {formatTime(cp.timestamp)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
               {contentData.videoType === 'vimeo' && (
-                <iframe
-                  ref={videoRef as any}
-                  width="100%"
-                  height="500"
-                  src={getVideoEmbedUrl()}
-                  frameBorder="0"
-                  allow="autoplay; fullscreen; picture-in-picture"
-                  allowFullScreen
-                  title={title}
-                  onLoad={() => {
-                    // Start time tracking when iframe loads
-                    setIsPlaying(true);
-                    setCurrentTime(0);
-                  }}
-                />
+                <>
+                  <iframe
+                    ref={videoRef as any}
+                    width="100%"
+                    height="500"
+                    src={getVideoEmbedUrl()}
+                    frameBorder="0"
+                    allow="autoplay; fullscreen; picture-in-picture"
+                    allowFullScreen
+                    title={title}
+                    onLoad={() => {
+                      // Start time tracking when iframe loads
+                      setIsPlaying(true);
+                      setCurrentTime(0);
+                    }}
+                  />
+                  {/* Checkpoint markers overlay for Vimeo */}
+                  {checkpoints.length > 0 && (
+                    <div className="checkpoint-overlay">
+                      {sortedCheckpoints.map((cp) => {
+                        const positionPercent = videoDuration > 0 ? (cp.timestamp / videoDuration) * 100 : 0;
+                        const isCompleted = completedCheckpoints.has(cp.id);
+                        const isActive = activeCheckpoint?.id === cp.id;
+                        return (
+                          <div
+                            key={cp.id}
+                            className={`checkpoint-overlay-marker ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}`}
+                            style={{ left: `${positionPercent}%` }}
+                            title={`${formatTime(cp.timestamp)} - ${cp.title || cp.type}`}
+                            onClick={() => {
+                              handleCheckpointReached(cp);
+                            }}
+                          >
+                            <div className="checkpoint-marker-dot"></div>
+                            <div className="checkpoint-marker-label">
+                              {formatTime(cp.timestamp)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
               {contentData.videoType === 'direct' && (
-                <video
-                  ref={videoRef as any}
-                  width="100%"
-                  height="500"
-                  controls
-                  src={contentData.videoUrl}
-                  onTimeUpdate={(e) => {
-                    const video = e.target as HTMLVideoElement;
-                    const newTime = video.currentTime;
-                    setCurrentTime(newTime);
-                    
-                    // Check for checkpoints
-                    const upcomingCheckpoint = sortedCheckpoints.find(
-                      cp => !completedCheckpoints.has(cp.id) &&
-                      cp.timestamp <= newTime &&
-                      cp.timestamp > newTime - 1
-                    );
+                <>
+                  <video
+                    ref={videoRef as any}
+                    width="100%"
+                    height="500"
+                    controls
+                    src={contentData.videoUrl}
+                    onTimeUpdate={(e) => {
+                      const video = e.target as HTMLVideoElement;
+                      const newTime = video.currentTime;
+                      setCurrentTime(newTime);
+                      
+                      // Check for checkpoints
+                      const upcomingCheckpoint = sortedCheckpoints.find(
+                        cp => !completedCheckpoints.has(cp.id) &&
+                        cp.timestamp <= newTime &&
+                        cp.timestamp > newTime - 1
+                      );
 
-                    if (upcomingCheckpoint) {
-                      handleCheckpointReached(upcomingCheckpoint);
-                      if (upcomingCheckpoint.pauseVideo && settings.autoPause) {
-                        video.pause();
-                        setIsPlaying(false);
+                      if (upcomingCheckpoint) {
+                        handleCheckpointReached(upcomingCheckpoint);
+                        if (upcomingCheckpoint.pauseVideo && settings.autoPause) {
+                          video.pause();
+                          setIsPlaying(false);
+                        }
                       }
-                    }
-                  }}
-                  onPlay={() => setIsPlaying(true)}
-                  onPause={() => setIsPlaying(false)}
-                  onLoadedMetadata={() => {
-                    // Initialize time tracking
-                    setIsPlaying(true);
-                  }}
-                />
+                    }}
+                    onPlay={() => setIsPlaying(true)}
+                    onPause={() => setIsPlaying(false)}
+                    onLoadedMetadata={(e) => {
+                      // Initialize time tracking and get video duration
+                      const video = e.target as HTMLVideoElement;
+                      setVideoDuration(video.duration || 600);
+                      setIsPlaying(true);
+                    }}
+                    onDurationChange={(e) => {
+                      // Update duration if it changes
+                      const video = e.target as HTMLVideoElement;
+                      if (video.duration) {
+                        setVideoDuration(video.duration);
+                      }
+                    }}
+                  />
+                  {/* Checkpoint markers overlay for direct videos */}
+                  {checkpoints.length > 0 && (
+                    <div className="checkpoint-overlay">
+                      {sortedCheckpoints.map((cp) => {
+                        const positionPercent = videoDuration > 0 ? (cp.timestamp / videoDuration) * 100 : 0;
+                        const isCompleted = completedCheckpoints.has(cp.id);
+                        const isActive = activeCheckpoint?.id === cp.id;
+                        return (
+                          <div
+                            key={cp.id}
+                            className={`checkpoint-overlay-marker ${isCompleted ? 'completed' : ''} ${isActive ? 'active' : ''}`}
+                            style={{ left: `${positionPercent}%` }}
+                            title={`${formatTime(cp.timestamp)} - ${cp.title || cp.type}`}
+                            onClick={() => {
+                              // Seek to checkpoint timestamp
+                              if (videoRef.current instanceof HTMLVideoElement) {
+                                const video = videoRef.current;
+                                video.currentTime = cp.timestamp;
+                                setCurrentTime(cp.timestamp);
+                                handleCheckpointReached(cp);
+                              }
+                            }}
+                          >
+                            <div className="checkpoint-marker-dot"></div>
+                            <div className="checkpoint-marker-label">
+                              {formatTime(cp.timestamp)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
