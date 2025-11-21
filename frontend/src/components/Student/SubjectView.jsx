@@ -67,9 +67,69 @@ function SubjectView() {
         const subjectLessons = await supabaseService.getLessonsByClassSubject(classSubjectId);
         setLessons(subjectLessons || []);
         
-        // Get assessments
+        // Get assessments from subject_assessments table
         const subjectAssessments = await supabaseService.getAssessmentsByClassSubject(classSubjectId);
-        setAssessments(subjectAssessments || []);
+        
+        // Get assignments from lesson_content (where content_type = 'ASSIGNMENT')
+        let lessonContentAssignments = [];
+        if (subjectLessons && subjectLessons.length > 0) {
+          const lessonIds = subjectLessons.map(l => l.lesson_id);
+          const { data, error: lcError } = await supabase
+            .from('lesson_content')
+            .select(`
+              *,
+              lesson:lessons(
+                lesson_id,
+                lesson_date,
+                homework_due_date,
+                lesson_title,
+                class_subject_id
+              )
+            `)
+            .eq('content_type', 'ASSIGNMENT')
+            .eq('is_published', true)
+            .in('lesson_id', lessonIds);
+          
+          if (lcError) {
+            console.error('Error fetching lesson content assignments:', lcError);
+          } else {
+            lessonContentAssignments = data || [];
+          }
+        }
+        
+        if (lcError) {
+          console.error('Error fetching lesson content assignments:', lcError);
+        }
+        
+        // Convert lesson content assignments to assessment format
+        const convertedAssignments = (lessonContentAssignments || []).map(content => {
+          // Use homework_due_date from lesson, or lesson_date as fallback, or null
+          const dueDate = content.lesson?.homework_due_date || 
+                         (content.lesson?.lesson_date ? `${content.lesson.lesson_date}T23:59:59` : null);
+          
+          return {
+            assessment_id: `content_${content.content_id}`, // Prefix to avoid conflicts
+            assessment_name: content.title,
+            assessment_type: 'ASSIGNMENT',
+            due_date: dueDate,
+            total_marks: null, // Lesson content assignments don't have total_marks
+            class_subject_id: parseInt(classSubjectId),
+            description: content.description || content.instructions || '',
+            instructions: content.instructions || '',
+            url: content.url,
+            assignment_details_file_path: content.assignment_details_file_path,
+            assignment_details_file_name: content.assignment_details_file_name,
+            assignment_rubric_file_path: content.assignment_rubric_file_path,
+            assignment_rubric_file_name: content.assignment_rubric_file_name,
+            lesson_id: content.lesson_id,
+            content_id: content.content_id,
+            is_lesson_content: true // Flag to identify lesson content assignments
+          };
+        });
+        
+        // Merge subject assessments with lesson content assignments
+        const allAssessments = [...(subjectAssessments || []), ...convertedAssignments];
+        setAssessments(allAssessments);
         
         // Get student's grades for this subject
         if (user && (user.user_id || user.userId)) {
@@ -123,12 +183,23 @@ function SubjectView() {
   };
   
   // Group assessments by status
+  // For assignments without due dates, treat them as upcoming
   const upcomingAssessments = assessments.filter(a => {
-    return a.due_date && new Date(a.due_date) >= new Date();
-  }).sort((a, b) => new Date(a.due_date) - new Date(b.due_date));
+    if (!a.due_date) {
+      // If no due date, treat as upcoming (especially for lesson content assignments)
+      return true;
+    }
+    return new Date(a.due_date) >= new Date();
+  }).sort((a, b) => {
+    // Sort by due date, with no-due-date items at the end
+    if (!a.due_date && !b.due_date) return 0;
+    if (!a.due_date) return 1;
+    if (!b.due_date) return -1;
+    return new Date(a.due_date) - new Date(b.due_date);
+  });
   
   const pastAssessments = assessments.filter(a => {
-    return !a.due_date || new Date(a.due_date) < new Date();
+    return a.due_date && new Date(a.due_date) < new Date();
   }).sort((a, b) => {
     const dateA = a.due_date ? new Date(a.due_date) : new Date(0);
     const dateB = b.due_date ? new Date(b.due_date) : new Date(0);
@@ -214,20 +285,32 @@ function SubjectView() {
                   <Card.Body>
                     <ListGroup variant="flush">
                       {upcomingAssessments.map((assessment, index) => {
-                        const dueDate = new Date(assessment.due_date);
-                        const daysLeft = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
+                        const dueDate = assessment.due_date ? new Date(assessment.due_date) : null;
+                        const daysLeft = dueDate ? Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24)) : null;
                         return (
                           <ListGroup.Item key={index} className="border-0 px-0 py-3 border-bottom">
                             <div className="d-flex justify-content-between align-items-start">
                               <div className="flex-grow-1">
                                 <h6 className="mb-1">{assessment.assessment_name}</h6>
                                 <div className="text-muted small mb-2">
-                                  <FaCalendarAlt className="me-1" />
-                                  Due: {formatDate(assessment.due_date)}
-                                  {daysLeft > 0 && (
-                                    <Badge bg={daysLeft <= 3 ? 'danger' : 'warning'} className="ms-2">
-                                      {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
-                                    </Badge>
+                                  {assessment.due_date ? (
+                                    <>
+                                      <FaCalendarAlt className="me-1" />
+                                      Due: {formatDate(assessment.due_date)}
+                                      {daysLeft > 0 && (
+                                        <Badge bg={daysLeft <= 3 ? 'danger' : 'warning'} className="ms-2">
+                                          {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
+                                        </Badge>
+                                      )}
+                                    </>
+                                  ) : (
+                                    <>
+                                      <FaCalendarAlt className="me-1" />
+                                      <span className="text-muted">No due date set</span>
+                                      {assessment.is_lesson_content && (
+                                        <Badge bg="info" className="ms-2">From Lesson</Badge>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                                 <div className="small">
@@ -241,13 +324,28 @@ function SubjectView() {
                                   )}
                                 </div>
                               </div>
-                              <Button 
-                                variant="primary" 
-                                size="sm"
-                                onClick={() => navigate(`/student/assignments/${assessment.assessment_id}/submit`)}
-                              >
-                                Submit
-                              </Button>
+                              {assessment.is_lesson_content ? (
+                                <Button 
+                                  variant="primary" 
+                                  size="sm"
+                                  onClick={() => {
+                                    // Navigate to lesson view for lesson content assignments
+                                    if (assessment.lesson_id) {
+                                      navigate(`/student/lessons/${assessment.lesson_id}`);
+                                    }
+                                  }}
+                                >
+                                  View Assignment
+                                </Button>
+                              ) : (
+                                <Button 
+                                  variant="primary" 
+                                  size="sm"
+                                  onClick={() => navigate(`/student/assignments/${assessment.assessment_id}/submit`)}
+                                >
+                                  Submit
+                                </Button>
+                              )}
                             </div>
                           </ListGroup.Item>
                         );
@@ -271,7 +369,10 @@ function SubjectView() {
                   <Card.Body>
                     <ListGroup variant="flush">
                       {pastAssessments.map((assessment, index) => {
-                        const grade = grades.find(g => g.assessment_id === assessment.assessment_id);
+                        // For lesson content assignments, use content_id for grade lookup
+                        const grade = assessment.is_lesson_content 
+                          ? grades.find(g => g.assessment?.assessment_id === `content_${assessment.content_id}`)
+                          : grades.find(g => g.assessment?.assessment_id === assessment.assessment_id || g.assessment_id === assessment.assessment_id);
                         return (
                           <ListGroup.Item key={index} className="border-0 px-0 py-3 border-bottom">
                             <div className="d-flex justify-content-between align-items-start">
@@ -283,6 +384,9 @@ function SubjectView() {
                                       <FaCalendarAlt className="me-1" />
                                       Due: {formatDate(assessment.due_date)}
                                     </>
+                                  )}
+                                  {assessment.is_lesson_content && (
+                                    <Badge bg="info" className="ms-2">From Lesson</Badge>
                                   )}
                                 </div>
                                 <div className="small">
