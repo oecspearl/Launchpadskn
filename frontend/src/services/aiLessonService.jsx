@@ -2079,7 +2079,7 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
 
     // Transform checkpoints to match our VideoCheckpoint interface
     const formattedCheckpoints = videoData.checkpoints.map((cp, index) => {
-      const checkpoint: any = {
+      const checkpoint = {
         id: crypto.randomUUID ? crypto.randomUUID() : `checkpoint-${Date.now()}-${index}`,
         timestamp: Math.max(0, Math.floor(cp.timestamp || 0)),
         type: cp.type || 'question',
@@ -2091,14 +2091,14 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
 
       // Add options for question/quiz types
       if ((cp.type === 'question' || cp.type === 'quiz') && cp.options && Array.isArray(cp.options)) {
-        checkpoint.options = cp.options.map((opt: any, optIndex: number) => ({
+        checkpoint.options = cp.options.map((opt, optIndex) => ({
           id: crypto.randomUUID ? crypto.randomUUID() : `option-${Date.now()}-${index}-${optIndex}`,
           text: opt.text || '',
           isCorrect: opt.isCorrect || false
         }));
 
         // Set correct answer ID
-        const correctOption = checkpoint.options.find((opt: any) => opt.isCorrect);
+        const correctOption = checkpoint.options.find(opt => opt.isCorrect);
         if (correctOption) {
           checkpoint.correctAnswerId = correctOption.id;
         }
