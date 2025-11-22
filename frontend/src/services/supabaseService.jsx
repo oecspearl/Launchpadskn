@@ -2017,14 +2017,21 @@ class SupabaseService {
     };
     
     // Ensure lesson_date is in correct format (YYYY-MM-DD)
+    // Don't convert if already in correct format to avoid timezone issues
     if (payload.lesson_date) {
-      const date = new Date(payload.lesson_date);
-      if (!isNaN(date.getTime())) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        payload.lesson_date = `${year}-${month}-${day}`;
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(payload.lesson_date)) {
+        // Only convert if not already in YYYY-MM-DD format
+        // Use local date parsing to avoid timezone conversion
+        const date = new Date(payload.lesson_date);
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          payload.lesson_date = `${year}-${month}-${day}`;
+        }
       }
+      // If already in YYYY-MM-DD format, use it as-is (no conversion)
     }
     
     console.log('[supabaseService] Final payload:', JSON.stringify(payload, null, 2));
@@ -2048,15 +2055,22 @@ class SupabaseService {
    */
   async updateLesson(lessonId, updates) {
     // Ensure lesson_date is in correct format (YYYY-MM-DD) if provided
+    // Don't convert if already in correct format to avoid timezone issues
     const formattedUpdates = { ...updates };
     if (formattedUpdates.lesson_date) {
-      const date = new Date(formattedUpdates.lesson_date);
-      if (!isNaN(date.getTime())) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        formattedUpdates.lesson_date = `${year}-${month}-${day}`;
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(formattedUpdates.lesson_date)) {
+        // Only convert if not already in YYYY-MM-DD format
+        // Use local date parsing to avoid timezone conversion
+        const date = new Date(formattedUpdates.lesson_date);
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          formattedUpdates.lesson_date = `${year}-${month}-${day}`;
+        }
       }
+      // If already in YYYY-MM-DD format, use it as-is (no conversion)
     }
     
     const { data, error } = await supabase
