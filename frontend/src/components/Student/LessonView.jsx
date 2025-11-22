@@ -303,6 +303,7 @@ function LessonView() {
       case 'SUMMARY': return 'summary';
       case 'FLASHCARD': return 'flashcard';
       case 'INTERACTIVE_VIDEO': return 'video';
+      case 'INTERACTIVE_BOOK': return 'book';
       default: return '';
     }
   };
@@ -323,6 +324,7 @@ function LessonView() {
       case 'SUMMARY': return <FaBook />;
       case 'FLASHCARD': return <FaClipboardList />;
       case 'INTERACTIVE_VIDEO': return <FaPlay />;
+      case 'INTERACTIVE_BOOK': return <FaBook />;
       default: return <FaBook />;
     }
   };
@@ -605,6 +607,11 @@ function LessonView() {
                     {contentItem.content_data.cards.length} card{contentItem.content_data.cards.length !== 1 ? 's' : ''}
                   </Badge>
                 )}
+                {contentItem.content_type === 'INTERACTIVE_BOOK' && contentItem.content_data?.pages && (
+                  <Badge bg="info" className="ms-2">
+                    {contentItem.content_data.pages.length} page{contentItem.content_data.pages.length !== 1 ? 's' : ''}
+                  </Badge>
+                )}
               </div>
               <div className="d-flex align-items-center gap-3 flex-wrap">
                 <p className="classwork-date mb-0">Posted {dateStr}</p>
@@ -632,6 +639,19 @@ function LessonView() {
               <Badge bg="info" className="me-2">
                 <FaClipboardList className="me-1" />
                 {contentItem.content_data.cards.length} Flashcard{contentItem.content_data.cards.length !== 1 ? 's' : ''}
+              </Badge>
+              {contentItem.description && (
+                <span className="text-muted small">{contentItem.description.substring(0, 100)}{contentItem.description.length > 100 ? '...' : ''}</span>
+              )}
+            </div>
+          )}
+          
+          {/* Interactive Book Preview (Collapsed State) */}
+          {!isExpanded && contentItem.content_type === 'INTERACTIVE_BOOK' && contentItem.content_data?.pages && (
+            <div className="classwork-preview-info mt-2">
+              <Badge bg="info" className="me-2">
+                <FaBook className="me-1" />
+                {contentItem.content_data.pages.length} Page{contentItem.content_data.pages.length !== 1 ? 's' : ''}
               </Badge>
               {contentItem.description && (
                 <span className="text-muted small">{contentItem.description.substring(0, 100)}{contentItem.description.length > 100 ? '...' : ''}</span>
@@ -764,7 +784,29 @@ function LessonView() {
                 </div>
               )}
               
-              {contentItem.description && contentItem.content_type !== 'FLASHCARD' && (
+              {/* Interactive Book Preview */}
+              {contentItem.content_type === 'INTERACTIVE_BOOK' && contentItem.content_data && (
+                <div className="classwork-info-box">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <Badge bg="primary">Interactive Book</Badge>
+                    {contentItem.content_data.pages && (
+                      <span className="text-muted">
+                        {contentItem.content_data.pages.length} page{contentItem.content_data.pages.length !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                  {contentItem.description && (
+                    <div className="mt-2">{contentItem.description}</div>
+                  )}
+                  {!contentItem.description && (
+                    <div className="mt-2 text-muted small">
+                      Click "Read Interactive Book" to view this multi-page interactive content.
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {contentItem.description && contentItem.content_type !== 'FLASHCARD' && contentItem.content_type !== 'INTERACTIVE_VIDEO' && contentItem.content_type !== 'INTERACTIVE_BOOK' && (
                 <div className="classwork-info-box">
                   {contentItem.description}
                 </div>
