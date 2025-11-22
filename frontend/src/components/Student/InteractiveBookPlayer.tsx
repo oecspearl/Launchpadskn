@@ -423,12 +423,26 @@ function ImagePageContent({ imageData }: ImagePageContentProps) {
           {imageData.instructions}
         </Alert>
       )}
-      <img
-        src={imageData.imageUrl}
-        alt="Page content"
-        className="img-fluid"
-        style={{ maxHeight: '600px', width: 'auto', margin: '0 auto', display: 'block' }}
-      />
+      {imageData.imageUrl ? (
+        <img
+          src={imageData.imageUrl}
+          alt={imageData.imageDescription || "Page content"}
+          className="img-fluid"
+          style={{ maxHeight: '600px', width: 'auto', margin: '0 auto', display: 'block' }}
+          onError={(e) => {
+            // If image fails to load, show placeholder
+            (e.target as HTMLImageElement).style.display = 'none';
+          }}
+        />
+      ) : imageData.imageDescription ? (
+        <Alert variant="warning">
+          <strong>Image Description:</strong> {imageData.imageDescription}
+          <br />
+          <small>Image generation is pending or failed. Please contact your teacher.</small>
+        </Alert>
+      ) : (
+        <Alert variant="warning">No image available for this page.</Alert>
+      )}
     </div>
   );
 }

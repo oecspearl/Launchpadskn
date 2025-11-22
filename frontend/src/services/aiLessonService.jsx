@@ -2174,6 +2174,49 @@ export const generateInteractiveBook = async ({
   try {
     console.log('[AI Service] Generating interactive book...');
 
+    // Step 1: Search for videos if video pages are requested
+    let videoOptions = [];
+    let videoInfoMap = {};
+    if (pageTypes.includes('video')) {
+      console.log('[AI Service] Searching for YouTube videos...');
+      try {
+        videoOptions = await searchEducationalVideos({
+          query: topic,
+          subject: subject,
+          form: gradeLevel,
+          maxResults: 5
+        });
+
+        if (videoOptions && videoOptions.length > 0) {
+          // Create a map of video info for the AI to use
+          videoOptions.forEach((video, idx) => {
+            videoInfoMap[`video_${idx + 1}`] = {
+              videoId: video.videoId,
+              url: video.url,
+              title: video.title,
+              description: video.description?.substring(0, 200) || '',
+              channelTitle: video.channelTitle
+            };
+          });
+          console.log('[AI Service] Found', videoOptions.length, 'videos for book generation');
+        } else {
+          console.warn('[AI Service] No YouTube videos found, video pages may not have valid video IDs');
+        }
+      } catch (videoError) {
+        console.warn('[AI Service] Error searching for videos, continuing without video search:', videoError);
+      }
+    }
+
+    // Step 2: Prepare video information for AI prompt
+    let videoContext = '';
+    if (Object.keys(videoInfoMap).length > 0) {
+      const videoList = Object.entries(videoInfoMap).map(([key, video]) => 
+        `${key}: "${video.title}" by ${video.channelTitle}\n  Video ID: ${video.videoId}\n  URL: ${video.url}\n  Description: ${video.description}`
+      ).join('\n\n');
+      
+      videoContext = `\n\nAVAILABLE YOUTUBE VIDEOS (use these exact video IDs and URLs for video pages):\n${videoList}\n\nWhen creating video pages, you MUST use one of these video IDs and URLs from the list above. Do not make up video IDs.`;
+    }
+
     const pageTypesStr = pageTypes.join(', ');
     const prompt = `You are an expert educational content creator. Generate an interactive book with ${numPages} pages about "${topic}".
 
@@ -2186,11 +2229,16 @@ Page Types to Use: ${pageTypesStr}
 
 Generate ${numPages} pages with a mix of the following types:
 - content: Rich text pages with educational content, explanations, examples
-- video: Pages with YouTube video embeds (provide video ID and title)
+- video: Pages with YouTube video embeds (MUST use video IDs and URLs from the available videos list below)
 - quiz: Pages with interactive quiz questions (multiple choice, true/false, fill-in-the-blank)
-- image: Pages with educational images and instructions
+- image: Pages with educational images (provide detailed image descriptions that can be used to generate images)
 
-IMPORTANT: You must respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.
+${videoContext}
+
+IMPORTANT: 
+- For video pages: You MUST use the exact video IDs and URLs from the available videos list above. Do not create fake video IDs.
+- For image pages: Provide detailed, specific image descriptions (e.g., "A diagram showing the water cycle with evaporation, condensation, and precipitation labeled") that can be used to generate educational images.
+- You must respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.
 
 Respond with this exact JSON structure:
 {
@@ -2225,7 +2273,7 @@ Respond with this exact JSON structure:
         }
       },
       "imageData": {
-        "imageUrl": "https://example.com/image.jpg",
+        "imageDescription": "Detailed description of the educational image to generate (e.g., 'A diagram showing the water cycle with evaporation, condensation, and precipitation labeled')",
         "instructions": "Instructions for viewing the image"
       }
     }
@@ -2242,9 +2290,9 @@ Respond with this exact JSON structure:
 Requirements:
 - Each page must have a unique id (use UUID format or simple unique strings)
 - Content pages should have rich, educational HTML content appropriate for ${gradeLevel || 'the grade level'}
-- Video pages must include a valid YouTube video ID (search for educational videos about "${topic}")
+- Video pages: MUST use one of the video IDs from the available videos list above. Match the video to the page content.
 - Quiz pages should have 2-5 questions relevant to the content
-- Image pages should include educational image URLs and clear instructions
+- Image pages: Provide detailed image descriptions (not URLs) that describe educational diagrams, illustrations, or visual aids related to the content
 - Make content age-appropriate and engaging
 - Ensure pages flow logically from one to the next
 - Use clear, educational language
@@ -2358,12 +2406,95 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
       if (page.pageType === 'image' && page.imageData) {
         formattedPage.imageData = {
           imageUrl: page.imageData.imageUrl || '',
+          imageDescription: page.imageData.imageDescription || '',
           instructions: page.imageData.instructions || ''
         };
       }
 
       return formattedPage;
     }).filter((page) => page.title && (page.content || page.videoData || page.quizData || page.imageData));
+
+    // Step 3: Validate and fix video pages with actual video data
+    for (let i = 0; i < formattedPages.length; i++) {
+      const page = formattedPages[i];
+      if (page.pageType === 'video' && page.videoData) {
+        // Try to match AI's video ID with our searched videos
+        const matchedVideo = videoOptions.find(v => 
+          v.videoId === page.videoData.videoId || 
+          page.videoData.videoUrl?.includes(v.videoId)
+        );
+
+        if (matchedVideo) {
+          // Use the actual video data from search
+          page.videoData = {
+            videoId: matchedVideo.videoId,
+            videoUrl: matchedVideo.url,
+            title: matchedVideo.title,
+            description: matchedVideo.description?.substring(0, 500) || '',
+            instructions: page.videoData.instructions || 'Watch this video to learn more about the topic.'
+          };
+        } else if (videoOptions.length > 0) {
+          // If no match, use the first available video
+          const firstVideo = videoOptions[0];
+          page.videoData = {
+            videoId: firstVideo.videoId,
+            videoUrl: firstVideo.url,
+            title: firstVideo.title,
+            description: firstVideo.description?.substring(0, 500) || '',
+            instructions: page.videoData.instructions || 'Watch this video to learn more about the topic.'
+          };
+        } else {
+          // No videos available, convert to content page
+          console.warn(`[AI Service] No video available for page "${page.title}", converting to content page`);
+          page.pageType = 'content';
+          page.content = page.content || `<p>Video content: ${page.videoData.title || 'Educational video'}</p>`;
+          delete page.videoData;
+        }
+      }
+    }
+
+    // Step 4: Generate images for image pages using DALL-E
+    for (let i = 0; i < formattedPages.length; i++) {
+      const page = formattedPages[i];
+      if (page.pageType === 'image' && page.imageData && page.imageData.imageDescription) {
+        try {
+          console.log(`[AI Service] Generating image for page "${page.title}"...`);
+          const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${API_KEY}`
+            },
+            body: JSON.stringify({
+              model: 'dall-e-3',
+              prompt: `Educational diagram: ${page.imageData.imageDescription}. Clean, professional, suitable for ${gradeLevel || 'students'}.`,
+              n: 1,
+              size: '1024x1024',
+              quality: 'standard'
+            })
+          });
+
+          if (imageResponse.ok) {
+            const imageData = await imageResponse.json();
+            const generatedImageUrl = imageData.data[0]?.url;
+            if (generatedImageUrl) {
+              page.imageData.imageUrl = generatedImageUrl;
+              console.log(`[AI Service] Successfully generated image for page "${page.title}"`);
+            } else {
+              console.warn(`[AI Service] No image URL in response for page "${page.title}"`);
+              // Keep the description so user can generate manually
+            }
+          } else {
+            const errorData = await imageResponse.json().catch(() => ({}));
+            console.warn(`[AI Service] Failed to generate image: ${errorData.error?.message || 'Unknown error'}`);
+            // Keep the description so user can generate manually
+          }
+        } catch (imageError) {
+          console.warn(`[AI Service] Error generating image for page "${page.title}":`, imageError);
+          // Keep the description so user can generate manually
+        }
+      }
+    }
 
     if (formattedPages.length === 0) {
       throw new Error('No valid pages were generated. Please try again.');

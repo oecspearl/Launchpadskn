@@ -261,7 +261,8 @@ export interface QuizSettings {
 }
 
 export interface ImagePageData {
-  imageUrl: string;
+  imageUrl?: string; // Generated or provided image URL
+  imageDescription?: string; // Description for AI image generation
   instructions?: string;
 }
 
