@@ -5,7 +5,8 @@ import {
 } from 'react-bootstrap';
 import {
   FaPlus, FaTrash, FaEdit, FaSave, FaEye, FaArrowUp, FaArrowDown,
-  FaCog, FaMagic, FaBook, FaVideo, FaQuestionCircle, FaImage, FaFileAlt
+  FaCog, FaMagic, FaBook, FaVideo, FaQuestionCircle, FaImage, FaFileAlt,
+  FaUpload, FaLink
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { supabase } from '../../config/supabase';
@@ -16,6 +17,7 @@ import {
   createEmptyInteractiveBookData
 } from '../../types/contentTypes';
 import { searchEducationalVideos } from '../../services/youtubeService';
+import DOMPurify from 'dompurify';
 import './InteractiveBookCreator.css';
 
 interface InteractiveBookCreatorProps {
@@ -408,6 +410,7 @@ function InteractiveBookCreator({
               onUpdate={(updates) => updatePage(currentPage.id, updates)}
               onDelete={() => deletePage(currentPage.id)}
               onEmbedContent={() => setShowEmbedContentModal(true)}
+              lessonId={lessonId}
             />
           ) : (
             <Card>
@@ -535,9 +538,10 @@ interface PageEditorProps {
   onUpdate: (updates: Partial<BookPage>) => void;
   onDelete: () => void;
   onEmbedContent: () => void;
+  lessonId: number;
 }
 
-function PageEditor({ page, onUpdate, onDelete, onEmbedContent }: PageEditorProps) {
+function PageEditor({ page, onUpdate, onDelete, onEmbedContent, lessonId }: PageEditorProps) {
   const pageType = page.pageType || 'content';
 
   return (
@@ -562,7 +566,7 @@ function PageEditor({ page, onUpdate, onDelete, onEmbedContent }: PageEditorProp
 
         {/* Content Page Editor */}
         {(!pageType || pageType === 'content') && (
-          <ContentPageEditor page={page} onUpdate={onUpdate} />
+          <ContentPageEditor page={page} onUpdate={onUpdate} lessonId={lessonId} />
         )}
 
         {/* Video Page Editor */}
@@ -621,23 +625,336 @@ function PageEditor({ page, onUpdate, onDelete, onEmbedContent }: PageEditorProp
 interface ContentPageEditorProps {
   page: BookPage;
   onUpdate: (updates: Partial<BookPage>) => void;
+  lessonId: number;
 }
 
-function ContentPageEditor({ page, onUpdate }: ContentPageEditorProps) {
+function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps) {
+  const { user } = useAuth();
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [imageMode, setImageMode] = useState<'upload' | 'url' | 'ai'>('upload');
+  const [uploading, setUploading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [imageUrl, setImageUrl] = useState('');
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const handleInsertImage = (url: string, altText: string = '') => {
+    const imgTag = `<img src="${url}" alt="${altText}" style="max-width: 100%; height: auto; margin: 1rem 0;" />`;
+    const currentContent = page.content || '';
+    const newContent = currentContent + '\n' + imgTag;
+    onUpdate({ content: newContent });
+    setShowImageModal(false);
+    setImageUrl('');
+    setImagePrompt('');
+    setSelectedFile(null);
+    setPreviewUrl(null);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    try {
+      setUploading(true);
+      const bucketName = 'course-content';
+      const timestamp = Date.now();
+      const sanitizedFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+      const filePath = `lessons/${lessonId}/images/${timestamp}-${sanitizedFileName}`;
+
+      const { data, error } = await supabase.storage
+        .from(bucketName)
+        .upload(filePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from(bucketName)
+        .getPublicUrl(filePath);
+
+      handleInsertImage(urlData.publicUrl, selectedFile.name);
+    } catch (err: any) {
+      console.error('Error uploading image:', err);
+      alert('Failed to upload image: ' + (err.message || 'Unknown error'));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUrlInsert = () => {
+    if (imageUrl.trim()) {
+      handleInsertImage(imageUrl.trim());
+    }
+  };
+
+  const handleAIGenerate = async () => {
+    if (!imagePrompt.trim()) {
+      alert('Please enter a description for the image');
+      return;
+    }
+
+    const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+    if (!API_KEY) {
+      alert('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
+      return;
+    }
+
+    try {
+      setGenerating(true);
+      const response = await fetch('https://api.openai.com/v1/images/generations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify({
+          model: 'dall-e-3',
+          prompt: imagePrompt.trim(),
+          n: 1,
+          size: '1024x1024',
+          quality: 'standard'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      const generatedImageUrl = data.data[0]?.url;
+
+      if (!generatedImageUrl) {
+        throw new Error('No image URL received from AI');
+      }
+
+      handleInsertImage(generatedImageUrl, imagePrompt.trim());
+    } catch (err: any) {
+      console.error('Error generating image:', err);
+      alert('Failed to generate image: ' + (err.message || 'Unknown error'));
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        alert('Please select an image file');
+        return;
+      }
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   return (
-    <Form.Group className="mb-3">
-      <Form.Label>Content (HTML supported)</Form.Label>
-      <Form.Control
-        as="textarea"
-        rows={10}
-        value={page.content || ''}
-        onChange={(e) => onUpdate({ content: e.target.value })}
-        placeholder="Enter page content. HTML is supported."
-      />
-      <Form.Text className="text-muted">
-        You can use HTML tags for formatting (e.g., &lt;p&gt;, &lt;strong&gt;, &lt;img&gt;)
-      </Form.Text>
-    </Form.Group>
+    <>
+      <Form.Group className="mb-3">
+        <div className="d-flex justify-content-between align-items-center mb-2">
+          <Form.Label>Content (HTML supported)</Form.Label>
+          <ButtonGroup>
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={() => setShowPreview(!showPreview)}
+            >
+              <FaEye className="me-1" /> {showPreview ? 'Hide Preview' : 'Show Preview'}
+            </Button>
+            <Button
+              variant="outline-primary"
+              size="sm"
+              onClick={() => setShowImageModal(true)}
+            >
+              <FaImage className="me-1" /> Insert Image
+            </Button>
+          </ButtonGroup>
+        </div>
+        {!showPreview ? (
+          <Form.Control
+            as="textarea"
+            rows={10}
+            value={page.content || ''}
+            onChange={(e) => onUpdate({ content: e.target.value })}
+            placeholder="Enter page content. HTML is supported."
+          />
+        ) : (
+          <div
+            className="border rounded p-3"
+            style={{ minHeight: '200px', backgroundColor: '#f8f9fa' }}
+            dangerouslySetInnerHTML={{
+              __html: DOMPurify.sanitize(page.content || '<p class="text-muted">No content yet</p>')
+            }}
+          />
+        )}
+        <Form.Text className="text-muted">
+          You can use HTML tags for formatting (e.g., &lt;p&gt;, &lt;strong&gt;, &lt;img&gt;) or click "Insert Image" to add images.
+        </Form.Text>
+      </Form.Group>
+
+      {/* Image Insertion Modal */}
+      <Modal show={showImageModal} onHide={() => setShowImageModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Insert Image</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <div className="mb-3">
+            <ButtonGroup className="w-100">
+              <Button
+                variant={imageMode === 'upload' ? 'primary' : 'outline-primary'}
+                onClick={() => setImageMode('upload')}
+              >
+                <FaUpload className="me-1" /> Upload
+              </Button>
+              <Button
+                variant={imageMode === 'url' ? 'primary' : 'outline-primary'}
+                onClick={() => setImageMode('url')}
+              >
+                <FaLink className="me-1" /> URL
+              </Button>
+              <Button
+                variant={imageMode === 'ai' ? 'primary' : 'outline-primary'}
+                onClick={() => setImageMode('ai')}
+              >
+                <FaMagic className="me-1" /> AI Generate
+              </Button>
+            </ButtonGroup>
+          </div>
+
+          {/* Upload Mode */}
+          {imageMode === 'upload' && (
+            <div>
+              <Form.Group className="mb-3">
+                <Form.Label>Select Image File</Form.Label>
+                <Form.Control
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                />
+                <Form.Text className="text-muted">
+                  Supported formats: JPG, PNG, GIF, WebP
+                </Form.Text>
+              </Form.Group>
+              {previewUrl && (
+                <div className="mb-3">
+                  <img src={previewUrl} alt="Preview" style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }} />
+                </div>
+              )}
+              <Button
+                variant="primary"
+                onClick={handleUpload}
+                disabled={!selectedFile || uploading}
+                className="w-100"
+              >
+                {uploading ? (
+                  <>
+                    <Spinner size="sm" className="me-2" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <FaUpload className="me-1" /> Upload and Insert
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* URL Mode */}
+          {imageMode === 'url' && (
+            <div>
+              <Form.Group className="mb-3">
+                <Form.Label>Image URL</Form.Label>
+                <Form.Control
+                  type="url"
+                  value={imageUrl}
+                  onChange={(e) => setImageUrl(e.target.value)}
+                  placeholder="https://example.com/image.jpg"
+                />
+                <Form.Text className="text-muted">
+                  Enter the full URL of the image you want to insert
+                </Form.Text>
+              </Form.Group>
+              {imageUrl && (
+                <div className="mb-3">
+                  <img
+                    src={imageUrl}
+                    alt="Preview"
+                    style={{ maxWidth: '100%', maxHeight: '300px', borderRadius: '8px' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                  />
+                </div>
+              )}
+              <Button
+                variant="primary"
+                onClick={handleUrlInsert}
+                disabled={!imageUrl.trim()}
+                className="w-100"
+              >
+                <FaLink className="me-1" /> Insert Image
+              </Button>
+            </div>
+          )}
+
+          {/* AI Generation Mode */}
+          {imageMode === 'ai' && (
+            <div>
+              <Form.Group className="mb-3">
+                <Form.Label>Image Description</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={3}
+                  value={imagePrompt}
+                  onChange={(e) => setImagePrompt(e.target.value)}
+                  placeholder="e.g., A diagram showing the water cycle with evaporation, condensation, and precipitation"
+                />
+                <Form.Text className="text-muted">
+                  Describe the image you want to generate. Be specific and detailed for best results.
+                </Form.Text>
+              </Form.Group>
+              <Alert variant="info" className="mb-3">
+                <strong>AI Image Generation</strong>
+                <br />
+                This uses DALL-E 3 to generate images. Each generation may take 10-30 seconds.
+              </Alert>
+              <Button
+                variant="primary"
+                onClick={handleAIGenerate}
+                disabled={!imagePrompt.trim() || generating}
+                className="w-100"
+              >
+                {generating ? (
+                  <>
+                    <Spinner size="sm" className="me-2" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FaMagic className="me-1" /> Generate and Insert
+                  </>
+                )}
+              </Button>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowImageModal(false)}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 }
 
