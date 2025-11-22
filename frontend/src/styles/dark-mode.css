@@ -82,6 +82,11 @@
   border-bottom-color: var(--border-primary);
 }
 
+[data-theme="dark"] .navbar-glass {
+  background-color: var(--bg-secondary) !important;
+  border-bottom-color: var(--border-primary);
+}
+
 [data-theme="dark"] .navbar-brand,
 [data-theme="dark"] .nav-link {
   color: var(--text-primary) !important;
@@ -89,10 +94,26 @@
 
 [data-theme="dark"] .nav-link:hover {
   color: var(--text-secondary) !important;
+  background: rgba(0, 150, 57, 0.1) !important;
 }
 
 [data-theme="dark"] .nav-link.active {
   color: var(--primary-color, #009639) !important;
+  background: rgba(0, 150, 57, 0.15) !important;
+}
+
+[data-theme="dark"] .navbar .dropdown-menu {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .navbar .dropdown-item {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .navbar .dropdown-item:hover {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
 }
 
 /* Dropdowns */
@@ -212,6 +233,137 @@
 /* Images */
 [data-theme="dark"] img {
   opacity: 0.9;
+}
+
+/* Container and Layout */
+[data-theme="dark"] .container,
+[data-theme="dark"] .container-fluid {
+  background-color: transparent;
+}
+
+[data-theme="dark"] .App {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Page Content Areas */
+[data-theme="dark"] .lesson-content,
+[data-theme="dark"] .content-item,
+[data-theme="dark"] .classwork-item {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+/* Custom Components */
+[data-theme="dark"] .profile-avatar {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .profile-dropdown-trigger {
+  color: var(--text-primary);
+}
+
+/* Dashboard Cards */
+[data-theme="dark"] .dashboard-card,
+[data-theme="dark"] .stat-card,
+[data-theme="dark"] .quick-access-card {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .dashboard-card:hover,
+[data-theme="dark"] .stat-card:hover,
+[data-theme="dark"] .quick-access-card:hover {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-secondary) !important;
+}
+
+[data-theme="dark"] .stat-card-value {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .stat-card-title {
+  color: var(--text-tertiary) !important;
+}
+
+/* Content Cards */
+[data-theme="dark"] .content-card,
+[data-theme="dark"] .lesson-card {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Tables */
+[data-theme="dark"] .table {
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .table thead {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .table thead th {
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .table tbody tr {
+  border-color: var(--border-primary) !important;
+  background-color: transparent !important;
+}
+
+[data-theme="dark"] .table tbody td {
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .table-striped > tbody > tr:nth-of-type(odd) {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .table-hover > tbody > tr:hover {
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Forms and Inputs */
+[data-theme="dark"] .input-group-text {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Buttons */
+[data-theme="dark"] .btn-light {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .btn-light:hover {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-secondary) !important;
+}
+
+/* Search and Filters */
+[data-theme="dark"] .search-bar,
+[data-theme="dark"] .filter-dropdown {
+  background-color: var(--bg-tertiary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+/* Badges and Labels */
+[data-theme="dark"] .badge {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .badge.bg-light {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
 }
 
 /* Smooth transitions */
