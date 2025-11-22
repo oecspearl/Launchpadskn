@@ -2,6 +2,39 @@
   max-width: 1400px;
   margin: 0 auto;
   padding: 1rem;
+  position: relative;
+}
+
+/* Fullscreen styles */
+.interactive-book-player:fullscreen {
+  background-color: var(--bg-primary, #f7fafc);
+  padding: 2rem;
+  max-width: 100%;
+}
+
+.interactive-book-player:-webkit-full-screen {
+  background-color: var(--bg-primary, #f7fafc);
+  padding: 2rem;
+  max-width: 100%;
+}
+
+.interactive-book-player:-moz-full-screen {
+  background-color: var(--bg-primary, #f7fafc);
+  padding: 2rem;
+  max-width: 100%;
+}
+
+.interactive-book-player:-ms-fullscreen {
+  background-color: var(--bg-primary, #f7fafc);
+  padding: 2rem;
+  max-width: 100%;
+}
+
+[data-theme="dark"] .interactive-book-player:fullscreen,
+[data-theme="dark"] .interactive-book-player:-webkit-full-screen,
+[data-theme="dark"] .interactive-book-player:-moz-full-screen,
+[data-theme="dark"] .interactive-book-player:-ms-fullscreen {
+  background-color: var(--bg-primary, #1a202c);
 }
 
 .book-header {

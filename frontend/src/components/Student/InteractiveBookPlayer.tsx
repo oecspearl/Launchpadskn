@@ -5,7 +5,7 @@ import {
 } from 'react-bootstrap';
 import {
   FaArrowLeft, FaArrowRight, FaBook, FaCheckCircle, FaVolumeUp,
-  FaPlay, FaPause, FaBookOpen
+  FaPlay, FaPause, FaBookOpen, FaExpand, FaCompress
 } from 'react-icons/fa';
 import { useQuery } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
@@ -36,6 +36,8 @@ function InteractiveBookPlayer({
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [viewedPages, setViewedPages] = useState<Set<number>>(new Set([0]));
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const playerRef = useRef<HTMLDivElement>(null);
 
   const pages = contentData.pages || [];
   const currentPage = pages[currentPageIndex];
@@ -62,6 +64,34 @@ function InteractiveBookPlayer({
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Handle fullscreen changes
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Cleanup on unmount - exit fullscreen if still active
+  useEffect(() => {
+    return () => {
+      if (document.fullscreenElement) {
+        exitFullscreen();
+      }
+    };
   }, []);
 
   const saveProgress = async () => {
@@ -119,6 +149,49 @@ function InteractiveBookPlayer({
     }
   };
 
+  const enterFullscreen = async () => {
+    const element = playerRef.current;
+    if (!element) return;
+
+    try {
+      if (element.requestFullscreen) {
+        await element.requestFullscreen();
+      } else if ((element as any).webkitRequestFullscreen) {
+        await (element as any).webkitRequestFullscreen();
+      } else if ((element as any).mozRequestFullScreen) {
+        await (element as any).mozRequestFullScreen();
+      } else if ((element as any).msRequestFullscreen) {
+        await (element as any).msRequestFullscreen();
+      }
+    } catch (err) {
+      console.error('Error entering fullscreen:', err);
+    }
+  };
+
+  const exitFullscreen = async () => {
+    try {
+      if (document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        await (document as any).webkitExitFullscreen();
+      } else if ((document as any).mozCancelFullScreen) {
+        await (document as any).mozCancelFullScreen();
+      } else if ((document as any).msExitFullscreen) {
+        await (document as any).msExitFullscreen();
+      }
+    } catch (err) {
+      console.error('Error exiting fullscreen:', err);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (isFullscreen) {
+      exitFullscreen();
+    } else {
+      enterFullscreen();
+    }
+  };
+
   if (!currentPage || pages.length === 0) {
     return (
       <Container className="interactive-book-player">
@@ -135,7 +208,7 @@ function InteractiveBookPlayer({
   }
 
   return (
-    <Container fluid className="interactive-book-player">
+    <Container fluid className="interactive-book-player" ref={playerRef}>
       {/* Header */}
       <div className="book-header mb-4">
         <div className="d-flex justify-content-between align-items-center mb-2">
@@ -143,11 +216,21 @@ function InteractiveBookPlayer({
             <h4><FaBook className="me-2" />{title}</h4>
             {description && <p className="text-muted mb-0">{description}</p>}
           </div>
-          {onClose && (
-            <Button variant="outline-secondary" size="sm" onClick={onClose}>
-              <FaArrowLeft /> Back
+          <div className="d-flex gap-2">
+            <Button
+              variant="outline-secondary"
+              size="sm"
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+            >
+              {isFullscreen ? <FaCompress /> : <FaExpand />}
             </Button>
-          )}
+            {onClose && (
+              <Button variant="outline-secondary" size="sm" onClick={onClose}>
+                <FaArrowLeft /> Back
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Progress Bar */}
