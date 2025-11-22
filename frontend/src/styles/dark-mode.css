@@ -2,6 +2,81 @@
    Dark Mode Styles
    ============================================ */
 
+/* Global Text Color Overrides - Must be first */
+[data-theme="dark"] {
+  color: var(--text-primary) !important;
+}
+
+/* Force all text elements to be light in dark mode */
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div:not(.btn):not(.badge):not(.alert),
+[data-theme="dark"] label,
+[data-theme="dark"] small,
+[data-theme="dark"] strong,
+[data-theme="dark"] b,
+[data-theme="dark"] em,
+[data-theme="dark"] i,
+[data-theme="dark"] li,
+[data-theme="dark"] td,
+[data-theme="dark"] th {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: var(--text-primary) !important;
+}
+
+/* Override inline styles with hardcoded dark colors - use attribute selectors */
+[data-theme="dark"] [style*="color: #212529"],
+[data-theme="dark"] [style*="color:#212529"],
+[data-theme="dark"] [style*="color: #202124"],
+[data-theme="dark"] [style*="color:#202124"],
+[data-theme="dark"] [style*="color: #1a202c"],
+[data-theme="dark"] [style*="color:#1a202c"],
+[data-theme="dark"] [style*="color: #5f6368"],
+[data-theme="dark"] [style*="color:#5f6368"],
+[data-theme="dark"] [style*="color: rgb(33, 37, 41)"],
+[data-theme="dark"] [style*="color:rgb(33, 37, 41)"] {
+  color: var(--text-primary) !important;
+}
+
+/* Override inline background colors for dark mode */
+[data-theme="dark"] [style*="background-color: #f8f9fa"],
+[data-theme="dark"] [style*="background-color:#f8f9fa"],
+[data-theme="dark"] [style*="background-color: #ffffff"],
+[data-theme="dark"] [style*="background-color:#ffffff"],
+[data-theme="dark"] [style*="background: #f8f9fa"],
+[data-theme="dark"] [style*="background:#f8f9fa"],
+[data-theme="dark"] [style*="background: #ffffff"],
+[data-theme="dark"] [style*="background:#ffffff"] {
+  background-color: var(--bg-tertiary) !important;
+  background: var(--bg-tertiary) !important;
+}
+
+/* Lesson View Container */
+[data-theme="dark"] .lesson-view-container {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .lesson-view-container * {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] a:not(.btn):not(.nav-link):not(.dropdown-item) {
+  color: var(--primary-color, #33AD63) !important;
+}
+
+[data-theme="dark"] a:not(.btn):not(.nav-link):not(.dropdown-item):hover {
+  color: var(--skn-green-light, #66C88F) !important;
+}
+
 /* Bootstrap Overrides for Dark Mode */
 [data-theme="dark"] .bg-light {
   background-color: var(--bg-secondary) !important;
@@ -286,7 +361,115 @@
 }
 
 [data-theme="dark"] .stat-card-title {
+  color: var(--text-secondary) !important;
+}
+
+/* All text elements */
+[data-theme="dark"] .text-dark,
+[data-theme="dark"] .text-black {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .text-muted {
   color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .text-secondary {
+  color: var(--text-secondary) !important;
+}
+
+/* Content items and lesson cards */
+[data-theme="dark"] .content-item,
+[data-theme="dark"] .classwork-item,
+[data-theme="dark"] .lesson-item,
+[data-theme="dark"] .learning-item {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .classwork-item:hover,
+[data-theme="dark"] .classwork-item.selected,
+[data-theme="dark"] .classwork-item.expanded {
+  background-color: var(--bg-tertiary) !important;
+  border-left-color: var(--primary-color, #33AD63) !important;
+}
+
+[data-theme="dark"] .classwork-title,
+[data-theme="dark"] .classwork-content,
+[data-theme="dark"] .classwork-content * {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-date,
+[data-theme="dark"] .classwork-menu {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .classwork-menu:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .classwork-info-box {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .classwork-info-box h6 {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .classwork-text-content {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .classwork-text-content * {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-action-btn {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-action-btn:hover {
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-secondary) !important;
+}
+
+[data-theme="dark"] .classwork-action-btn.primary {
+  background-color: var(--primary-color, #33AD63) !important;
+  border-color: var(--primary-color, #33AD63) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-actions {
+  border-top-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .content-item *,
+[data-theme="dark"] .classwork-item *,
+[data-theme="dark"] .lesson-item *,
+[data-theme="dark"] .learning-item * {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .content-item .text-muted,
+[data-theme="dark"] .classwork-item .text-muted,
+[data-theme="dark"] .lesson-item .text-muted {
+  color: var(--text-tertiary) !important;
+}
+
+/* Buttons and links in content */
+[data-theme="dark"] .btn-link {
+  color: var(--primary-color, #33AD63) !important;
+}
+
+[data-theme="dark"] .btn-link:hover {
+  color: var(--skn-green-light, #66C88F) !important;
 }
 
 /* Content Cards */

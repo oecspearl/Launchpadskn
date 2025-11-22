@@ -707,15 +707,12 @@ function LessonView() {
                 <div className="classwork-text-content" style={{ 
                   marginBottom: '1rem', 
                   padding: '1rem', 
-                  backgroundColor: '#f8f9fa', 
-                  borderRadius: '8px',
-                  border: '1px solid #e9ecef'
+                  borderRadius: '8px'
                 }}>
                   <div style={{ 
                     whiteSpace: 'pre-wrap', 
                     fontSize: '0.95rem', 
-                    lineHeight: '1.6',
-                    color: '#212529'
+                    lineHeight: '1.6'
                   }}>
                     {contentItem.content_type === 'LEARNING_ACTIVITIES' && contentItem.learning_activities}
                     {contentItem.content_type === 'LEARNING_OUTCOMES' && contentItem.learning_outcomes}
