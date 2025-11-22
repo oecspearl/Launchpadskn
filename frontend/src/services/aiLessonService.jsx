@@ -2317,8 +2317,8 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
     }
 
     // Transform pages to match our BookPage interface
-    const formattedPages = bookData.pages.map((page: any, index: number) => {
-      const formattedPage: any = {
+    const formattedPages = bookData.pages.map((page, index) => {
+      const formattedPage = {
         id: page.id || `page-${Date.now()}-${index}`,
         title: page.title || `Page ${index + 1}`,
         pageType: page.pageType || 'content',
@@ -2339,7 +2339,7 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
 
       if (page.pageType === 'quiz' && page.quizData) {
         formattedPage.quizData = {
-          questions: (page.quizData.questions || []).map((q: any, qIndex: number) => ({
+          questions: (page.quizData.questions || []).map((q, qIndex) => ({
             id: q.id || `question-${index}-${qIndex}`,
             type: q.type || 'multiple-choice',
             question: q.question || '',
@@ -2363,7 +2363,7 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
       }
 
       return formattedPage;
-    }).filter((page: any) => page.title && (page.content || page.videoData || page.quizData || page.imageData));
+    }).filter((page) => page.title && (page.content || page.videoData || page.quizData || page.imageData));
 
     if (formattedPages.length === 0) {
       throw new Error('No valid pages were generated. Please try again.');
