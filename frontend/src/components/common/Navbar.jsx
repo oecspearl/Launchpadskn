@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Navbar, Nav, Container, NavDropdown, Button } from 'react-bootstrap';
+import { Navbar, Nav, Container, NavDropdown, Button, Badge } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaUser, FaBell, FaBook, FaUserGraduate, FaChalkboardTeacher,
@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import FlagLogo from './FlagLogo';
+import DarkModeToggle from './DarkModeToggle';
 import './Navbar.css';
 
 function AppNavbar() {
@@ -145,6 +146,9 @@ function AppNavbar() {
 
               <div className="vr mx-2 d-none d-lg-block opacity-25"></div>
 
+              {/* Dark Mode Toggle */}
+              <DarkModeToggle className="ms-2" />
+
               {/* Notifications */}
               <Nav.Link href="#" className="nav-link-custom px-2">
                 <FaBell size={16} />
@@ -186,6 +190,7 @@ function AppNavbar() {
             </Nav>
           ) : (
             <Nav className="ms-auto align-items-center gap-3">
+              <DarkModeToggle />
               <Nav.Link as={Link} to="/login" className="nav-link-custom">
                 Login
               </Nav.Link>
@@ -199,10 +204,5 @@ function AppNavbar() {
     </Navbar>
   );
 }
-
-// Helper for badge (since I used it in the dropdown but didn't import it)
-const Badge = ({ children, className, bg, text }) => (
-  <span className={`badge bg-${bg} text-${text} ${className}`}>{children}</span>
-);
 
 export default AppNavbar;

@@ -74,6 +74,28 @@
   --z-modal: 1050;
   --z-popover: 1060;
   --z-tooltip: 1070;
+
+  /* Light Mode Colors (Default) */
+  --bg-primary: #f7fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #edf2f7;
+  --text-primary: #1a202c;
+  --text-secondary: #4a5568;
+  --text-tertiary: #718096;
+  --border-primary: #e2e8f0;
+  --border-secondary: #cbd5e0;
+}
+
+/* Dark Mode Colors */
+[data-theme="dark"] {
+  --bg-primary: #1a202c;
+  --bg-secondary: #2d3748;
+  --bg-tertiary: #4a5568;
+  --text-primary: #f7fafc;
+  --text-secondary: #e2e8f0;
+  --text-tertiary: #cbd5e0;
+  --border-primary: #4a5568;
+  --border-secondary: #718096;
 }
 
 /* ============================================
@@ -90,11 +112,13 @@ body {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-normal);
-  color: #1a202c;
-  background-color: #f7fafc;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  transition: background-color var(--transition-base, 200ms) ease-in-out,
+              color var(--transition-base, 200ms) ease-in-out;
 }
 
 /* Headings */
@@ -104,7 +128,7 @@ h1, h2, h3, h4, h5, h6 {
   line-height: var(--line-height-tight);
   margin-top: 0;
   margin-bottom: var(--spacing-4);
-  color: #1a202c;
+  color: var(--text-primary);
 }
 
 h1 { font-size: var(--font-size-3xl); }

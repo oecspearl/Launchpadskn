@@ -71,6 +71,33 @@
   --shadow-color-primary: rgba(0, 150, 57, 0.15);
 }
 
+/* Dark Mode Color Adjustments */
+[data-theme="dark"] {
+  /* Keep flag colors vibrant in dark mode */
+  --skn-green: #33AD63;
+  --skn-green-light: #66C88F;
+  --skn-red: #D84356;
+  --skn-red-light: #E57585;
+  --skn-yellow: #FDDB4A;
+  --skn-yellow-light: #FEE57E;
+  
+  /* Adjust text colors for dark mode */
+  --text-dark: var(--text-primary);
+  --text-muted: var(--text-tertiary);
+  
+  /* Adjust background tints for dark mode */
+  --bg-green-tint: rgba(0, 150, 57, 0.15);
+  --bg-green-light: rgba(0, 150, 57, 0.1);
+  --bg-red-tint: rgba(206, 17, 38, 0.15);
+  --bg-red-light: rgba(206, 17, 38, 0.1);
+  --bg-yellow-tint: rgba(252, 209, 22, 0.15);
+  --bg-yellow-light: rgba(252, 209, 22, 0.1);
+  
+  /* Shadow adjustments for dark mode */
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-color-primary: rgba(0, 150, 57, 0.25);
+}
+
 /* Bootstrap Override with Flag Colors */
 .btn-primary {
   background-color: var(--skn-green) !important;
