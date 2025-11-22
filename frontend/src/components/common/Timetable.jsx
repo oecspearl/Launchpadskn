@@ -24,33 +24,48 @@ function Timetable({ lessons = [], startDate = null, onLessonClick = null, showA
 
   // If showing all upcoming, calculate the date range needed
   let weekStart;
-  let weekDays;
+  let weekDays = [];
   
   if (showAllUpcoming && upcomingLessons.length > 0) {
     // Find the earliest lesson date
-    const lessonDates = upcomingLessons.map(l => new Date(l.lesson_date));
-    const earliestDate = new Date(Math.min(...lessonDates));
-    earliestDate.setHours(0, 0, 0, 0);
+    const lessonDates = upcomingLessons
+      .map(l => new Date(l.lesson_date))
+      .filter(d => !isNaN(d.getTime()));
     
-    // Find the latest lesson date
-    const latestDate = new Date(Math.max(...lessonDates));
-    latestDate.setHours(0, 0, 0, 0);
-    
-    // Start from the beginning of the week containing the earliest lesson
-    weekStart = new Date(earliestDate);
-    weekStart.setDate(earliestDate.getDate() - earliestDate.getDay());
-    
-    // Calculate number of weeks needed
-    const daysDiff = Math.ceil((latestDate - weekStart) / (1000 * 60 * 60 * 24));
-    const weeksNeeded = Math.ceil(daysDiff / 7);
-    
-    // Generate all week days needed
-    weekDays = [];
-    for (let week = 0; week < weeksNeeded; week++) {
-      for (let day = 0; day < 7; day++) {
+    if (lessonDates.length === 0) {
+      // Fallback to current week if no valid dates
+      weekStart = new Date(Date.now() - new Date().getDay() * 24 * 60 * 60 * 1000);
+      weekStart.setHours(0, 0, 0, 0);
+      for (let i = 0; i < 7; i++) {
         const date = new Date(weekStart);
-        date.setDate(weekStart.getDate() + (week * 7) + day);
+        date.setDate(weekStart.getDate() + i);
         weekDays.push(date);
+      }
+    } else {
+      const earliestDate = new Date(Math.min(...lessonDates));
+      earliestDate.setHours(0, 0, 0, 0);
+      
+      // Find the latest lesson date
+      const latestDate = new Date(Math.max(...lessonDates));
+      latestDate.setHours(0, 0, 0, 0);
+      
+      // Start from the beginning of the week containing the earliest lesson
+      weekStart = new Date(earliestDate);
+      weekStart.setDate(earliestDate.getDate() - earliestDate.getDay());
+      
+      // Calculate number of weeks needed
+      const daysDiff = Math.ceil((latestDate - weekStart) / (1000 * 60 * 60 * 24));
+      const weeksNeeded = Math.max(1, Math.ceil(daysDiff / 7));
+      
+      // Generate all week days needed
+      for (let week = 0; week < weeksNeeded; week++) {
+        for (let day = 0; day < 7; day++) {
+          const date = new Date(weekStart);
+          date.setDate(weekStart.getDate() + (week * 7) + day);
+          if (!isNaN(date.getTime())) {
+            weekDays.push(date);
+          }
+        }
       }
     }
   } else {
@@ -59,10 +74,13 @@ function Timetable({ lessons = [], startDate = null, onLessonClick = null, showA
       ? new Date(startDate) 
       : new Date(Date.now() - new Date().getDay() * 24 * 60 * 60 * 1000);
     
+    if (isNaN(weekStart.getTime())) {
+      weekStart = new Date(Date.now() - new Date().getDay() * 24 * 60 * 60 * 1000);
+    }
+    
     weekStart.setHours(0, 0, 0, 0);
     
     // Generate week days
-    weekDays = [];
     for (let i = 0; i < 7; i++) {
       const date = new Date(weekStart);
       date.setDate(weekStart.getDate() + i);
@@ -137,6 +155,17 @@ function Timetable({ lessons = [], startDate = null, onLessonClick = null, showA
     return '';
   };
   
+  // Ensure weekDays is always defined
+  if (!weekDays || weekDays.length === 0) {
+    return (
+      <Card className="border-0 shadow-sm">
+        <Card.Body className="text-center py-5">
+          <p className="text-muted mb-0">No upcoming lessons scheduled</p>
+        </Card.Body>
+      </Card>
+    );
+  }
+
   if (upcomingLessons.length === 0) {
     return (
       <Card className="border-0 shadow-sm">
@@ -147,19 +176,66 @@ function Timetable({ lessons = [], startDate = null, onLessonClick = null, showA
     );
   }
 
+  // Filter out any invalid dates from weekDays
+  const validWeekDays = weekDays.filter(day => 
+    day instanceof Date && !isNaN(day.getTime())
+  );
+  
+  if (validWeekDays.length === 0) {
+    return (
+      <Card className="border-0 shadow-sm">
+        <Card.Body className="text-center py-5">
+          <p className="text-muted mb-0">No upcoming lessons scheduled</p>
+        </Card.Body>
+      </Card>
+    );
+  }
+  
   // Group days into weeks for display
   const weeks = [];
-  if (showAllUpcoming && weekDays.length > 7) {
-    for (let i = 0; i < weekDays.length; i += 7) {
-      weeks.push(weekDays.slice(i, i + 7));
+  if (showAllUpcoming && validWeekDays.length > 7) {
+    for (let i = 0; i < validWeekDays.length; i += 7) {
+      const weekSlice = validWeekDays.slice(i, i + 7);
+      if (weekSlice.length > 0) {
+        weeks.push(weekSlice);
+      }
     }
   } else {
-    weeks.push(weekDays);
+    if (validWeekDays.length > 0) {
+      weeks.push(validWeekDays);
+    }
+  }
+  
+  if (weeks.length === 0) {
+    return (
+      <Card className="border-0 shadow-sm">
+        <Card.Body className="text-center py-5">
+          <p className="text-muted mb-0">No upcoming lessons scheduled</p>
+        </Card.Body>
+      </Card>
+    );
   }
 
   const renderWeekTable = (weekDaysForTable, weekIndex) => {
+    if (!weekDaysForTable || weekDaysForTable.length === 0) {
+      return null;
+    }
+    
     const weekStartDate = weekDaysForTable[0];
     const weekEndDate = weekDaysForTable[weekDaysForTable.length - 1];
+    
+    if (!weekStartDate || !weekEndDate) {
+      return null;
+    }
+    
+    // Validate dates are valid Date objects
+    if (!(weekStartDate instanceof Date) || !(weekEndDate instanceof Date)) {
+      return null;
+    }
+    
+    if (isNaN(weekStartDate.getTime()) || isNaN(weekEndDate.getTime())) {
+      return null;
+    }
     
     return (
       <div key={weekIndex} className={weekIndex > 0 ? 'mt-4' : ''}>
@@ -168,8 +244,12 @@ function Timetable({ lessons = [], startDate = null, onLessonClick = null, showA
             <div className="d-flex justify-content-between align-items-center">
               <h5 className="mb-0">{showAllUpcoming ? 'Upcoming Lessons' : 'Weekly Timetable'}</h5>
               <small className="text-muted">
-                {weekStartDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - 
-                {weekEndDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                {weekStartDate && typeof weekStartDate.toLocaleDateString === 'function' 
+                  ? weekStartDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) 
+                  : 'Date unavailable'} - 
+                {weekEndDate && typeof weekEndDate.toLocaleDateString === 'function'
+                  ? weekEndDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                  : 'Date unavailable'}
               </small>
             </div>
           </Card.Header>
