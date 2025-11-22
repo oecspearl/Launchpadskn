@@ -52,26 +52,25 @@ export const useStudentData = (user) => {
         enabled: !!classId,
     });
 
-    // 3. Fetch Lessons
+    // 3. Fetch Lessons - Get all upcoming lessons (from today onwards)
     const { data: lessons, isLoading: isLoadingLessons } = useQuery({
         queryKey: ['studentLessons', studentId],
         queryFn: async () => {
             if (!studentId) return [];
             const today = new Date();
-            const weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - today.getDay());
-            weekStart.setHours(0, 0, 0, 0);
+            today.setHours(0, 0, 0, 0);
+            const todayStr = today.toISOString().split('T')[0];
 
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 7);
-
-            // Need numeric ID logic here too if not handled above, but let's assume useStudentData handles it or we duplicate logic for now
-            // Ideally we'd have a separate hook for user profile resolution
+            // Fetch all upcoming lessons (from today onwards, no end date limit)
+            // We'll fetch lessons for the next 3 months to cover a reasonable range
+            const futureDate = new Date(today);
+            futureDate.setMonth(today.getMonth() + 3);
+            const futureDateStr = futureDate.toISOString().split('T')[0];
 
             return supabaseService.getLessonsByStudent(
                 studentId, // This might need numeric ID
-                weekStart.toISOString().split('T')[0],
-                weekEnd.toISOString().split('T')[0]
+                todayStr,
+                futureDateStr
             );
         },
         enabled: !!studentId,
