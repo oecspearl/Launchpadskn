@@ -17,6 +17,7 @@ import {
   createEmptyInteractiveBookData
 } from '../../types/contentTypes';
 import { searchEducationalVideos } from '../../services/youtubeService';
+import { generateInteractiveBook } from '../../services/aiLessonService';
 import DOMPurify from 'dompurify';
 import './InteractiveBookCreator.css';
 
@@ -59,7 +60,18 @@ function InteractiveBookCreator({
   const [showAddPageModal, setShowAddPageModal] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showEmbedContentModal, setShowEmbedContentModal] = useState(false);
+  const [showAIGenerator, setShowAIGenerator] = useState(false);
   const [availableContent, setAvailableContent] = useState<any[]>([]);
+
+  // AI Generation state
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiSubject, setAiSubject] = useState('');
+  const [aiGradeLevel, setAiGradeLevel] = useState('');
+  const [aiNumPages, setAiNumPages] = useState(5);
+  const [aiPageTypes, setAiPageTypes] = useState<string[]>(['content', 'video', 'quiz']);
+  const [aiLearningOutcomes, setAiLearningOutcomes] = useState('');
+  const [aiAdditionalComments, setAiAdditionalComments] = useState('');
 
   // Autosave state
   const [autosaveEnabled, setAutosaveEnabled] = useState(true);
@@ -241,6 +253,82 @@ function InteractiveBookCreator({
     }
   };
 
+  // AI Generation handler
+  const handleGenerateBook = async () => {
+    if (!aiTopic.trim()) {
+      setError('Topic is required for AI generation');
+      return;
+    }
+
+    if (aiPageTypes.length === 0) {
+      setError('Select at least one page type');
+      return;
+    }
+
+    try {
+      setIsGenerating(true);
+      setError(null);
+
+      const generatedBook = await generateInteractiveBook({
+        topic: aiTopic.trim(),
+        subject: aiSubject.trim() || undefined,
+        gradeLevel: aiGradeLevel.trim() || undefined,
+        numPages: aiNumPages,
+        pageTypes: aiPageTypes as any,
+        learningOutcomes: aiLearningOutcomes.trim() || undefined,
+        additionalComments: aiAdditionalComments.trim() || undefined
+      });
+
+      // Replace existing book data with generated content
+      const updatedBookData = {
+        ...generatedBook,
+        pages: generatedBook.pages.map((page, index) => ({
+          ...page,
+          order: index
+        }))
+      };
+
+      // Update subject and grade level if provided
+      if (aiSubject.trim()) {
+        updatedBookData.subject = aiSubject.trim();
+      }
+      if (aiGradeLevel.trim()) {
+        updatedBookData.gradeLevel = aiGradeLevel.trim();
+      }
+
+      setBookData(updatedBookData);
+
+      // Update title if empty
+      if (!title || title === 'Interactive Book') {
+        setTitle(`${aiTopic} - Interactive Book`);
+      }
+
+      setSuccess(`Successfully generated interactive book with ${generatedBook.pages.length} pages!`);
+      setShowAIGenerator(false);
+
+      // Reset AI form
+      setAiTopic('');
+      setAiSubject('');
+      setAiGradeLevel('');
+      setAiNumPages(5);
+      setAiPageTypes(['content', 'video', 'quiz']);
+      setAiLearningOutcomes('');
+      setAiAdditionalComments('');
+
+      // Select first page
+      if (generatedBook.pages.length > 0) {
+        setCurrentPageIndex(0);
+      }
+
+      setTimeout(() => setSuccess(null), 5000);
+    } catch (err: any) {
+      console.error('Error generating interactive book:', err);
+      setError(err.message || 'Failed to generate interactive book. Please try again.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const movePage = (pageId: string, direction: 'up' | 'down') => {
     const index = bookData.pages.findIndex(p => p.id === pageId);
     if (index === -1) return;
@@ -303,6 +391,14 @@ function InteractiveBookCreator({
                 onChange={(e) => setAutosaveEnabled(e.target.checked)}
                 className="me-3"
               />
+              <Button
+                variant="outline-success"
+                size="sm"
+                onClick={() => setShowAIGenerator(true)}
+                className="me-2"
+              >
+                <FaMagic /> AI Generate
+              </Button>
               <Button
                 variant="outline-secondary"
                 size="sm"
@@ -528,6 +624,153 @@ function InteractiveBookCreator({
           </Card.Body>
         </Card>
       )}
+
+      {/* AI Generation Modal */}
+      <Modal show={showAIGenerator} onHide={() => setShowAIGenerator(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaMagic className="me-2" />
+            Generate Interactive Book with AI
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Alert variant="info" className="mb-4">
+            <strong>AI Interactive Book Generator</strong>
+            <br />
+            Enter the topic and details below, and AI will generate a complete interactive book with multiple pages. You can edit the generated content after creation.
+          </Alert>
+
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Topic *</Form.Label>
+              <Form.Control
+                type="text"
+                value={aiTopic}
+                onChange={(e) => setAiTopic(e.target.value)}
+                placeholder="e.g., Photosynthesis, World War II, Algebra Basics"
+                required
+              />
+              <Form.Text className="text-muted">
+                The main topic or subject matter for the interactive book
+              </Form.Text>
+            </Form.Group>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Subject (Optional)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={aiSubject}
+                    onChange={(e) => setAiSubject(e.target.value)}
+                    placeholder="e.g., Biology, History, Mathematics"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Grade Level (Optional)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={aiGradeLevel}
+                    onChange={(e) => setAiGradeLevel(e.target.value)}
+                    placeholder="e.g., Form 1, Grade 5, High School"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Number of Pages</Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={aiNumPages}
+                    onChange={(e) => setAiNumPages(parseInt(e.target.value) || 5)}
+                  />
+                  <Form.Text className="text-muted">
+                    Between 1 and 20 pages
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Page Types</Form.Label>
+                  <div>
+                    {['content', 'video', 'quiz', 'image'].map(type => (
+                      <Form.Check
+                        key={type}
+                        type="checkbox"
+                        id={`page-type-${type}`}
+                        label={type.charAt(0).toUpperCase() + type.slice(1)}
+                        checked={aiPageTypes.includes(type)}
+                        onChange={() => {
+                          if (aiPageTypes.includes(type)) {
+                            setAiPageTypes(aiPageTypes.filter(t => t !== type));
+                          } else {
+                            setAiPageTypes([...aiPageTypes, type]);
+                          }
+                        }}
+                        className="mb-2"
+                      />
+                    ))}
+                  </div>
+                  <Form.Text className="text-muted">
+                    Select the types of pages to include
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Learning Outcomes (Optional)</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={aiLearningOutcomes}
+                onChange={(e) => setAiLearningOutcomes(e.target.value)}
+                placeholder="What students should learn from this book"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Additional Comments (Optional)</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={aiAdditionalComments}
+                onChange={(e) => setAiAdditionalComments(e.target.value)}
+                placeholder="Any additional instructions or context for the AI (e.g., 'Focus on key concepts', 'Include real-world examples', 'Make content engaging')"
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowAIGenerator(false)} disabled={isGenerating}>
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            onClick={handleGenerateBook}
+            disabled={isGenerating || !aiTopic.trim() || aiPageTypes.length === 0}
+          >
+            {isGenerating ? (
+              <>
+                <Spinner animation="border" size="sm" className="me-2" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <FaMagic className="me-2" />
+                Generate Book
+              </>
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }

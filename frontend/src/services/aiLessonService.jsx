@@ -2138,6 +2138,254 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
   }
 };
 
+/**
+ * Generate interactive book with multiple pages using AI
+ * @param {Object} params - Interactive book generation parameters
+ * @param {string} params.topic - Main topic or subject matter for the book
+ * @param {string} params.subject - Subject name (optional)
+ * @param {string} params.gradeLevel - Grade level or form (optional)
+ * @param {number} params.numPages - Number of pages to generate (default: 5)
+ * @param {Array<string>} params.pageTypes - Types of pages to include: 'content', 'video', 'quiz', 'image' (default: ['content', 'video', 'quiz'])
+ * @param {string} params.learningOutcomes - Learning outcomes to align with (optional)
+ * @param {string} params.additionalComments - Additional context or instructions (optional)
+ * @returns {Promise<Object>} Generated interactive book data with pages array
+ */
+export const generateInteractiveBook = async ({
+  topic,
+  subject = '',
+  gradeLevel = '',
+  numPages = 5,
+  pageTypes = ['content', 'video', 'quiz'],
+  learningOutcomes = '',
+  additionalComments = ''
+}) => {
+  if (!API_KEY) {
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!topic) {
+    throw new Error('Missing required parameter: topic is required.');
+  }
+
+  if (numPages < 1 || numPages > 20) {
+    throw new Error('Number of pages must be between 1 and 20.');
+  }
+
+  try {
+    console.log('[AI Service] Generating interactive book...');
+
+    const pageTypesStr = pageTypes.join(', ');
+    const prompt = `You are an expert educational content creator. Generate an interactive book with ${numPages} pages about "${topic}".
+
+${subject ? `Subject: ${subject}` : ''}
+${gradeLevel ? `Grade Level: ${gradeLevel}` : ''}
+${learningOutcomes ? `Learning Outcomes: ${learningOutcomes}` : ''}
+${additionalComments ? `Additional Context: ${additionalComments}` : ''}
+
+Page Types to Use: ${pageTypesStr}
+
+Generate ${numPages} pages with a mix of the following types:
+- content: Rich text pages with educational content, explanations, examples
+- video: Pages with YouTube video embeds (provide video ID and title)
+- quiz: Pages with interactive quiz questions (multiple choice, true/false, fill-in-the-blank)
+- image: Pages with educational images and instructions
+
+IMPORTANT: You must respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.
+
+Respond with this exact JSON structure:
+{
+  "pages": [
+    {
+      "id": "unique-id-1",
+      "title": "Page Title",
+      "pageType": "content|video|quiz|image",
+      "content": "HTML content for content pages (can include <p>, <h2>, <ul>, <li>, <strong>, <em> tags)",
+      "videoData": {
+        "videoId": "youtube-video-id",
+        "videoUrl": "https://www.youtube.com/watch?v=...",
+        "title": "Video Title",
+        "description": "Video description",
+        "instructions": "Instructions for students"
+      },
+      "quizData": {
+        "questions": [
+          {
+            "id": "question-id",
+            "type": "multiple-choice|true-false|fill-blank",
+            "question": "Question text",
+            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+            "correctAnswer": "Option 1",
+            "explanation": "Explanation of the answer"
+          }
+        ],
+        "settings": {
+          "shuffle": false,
+          "showAnswers": true,
+          "allowRetry": true
+        }
+      },
+      "imageData": {
+        "imageUrl": "https://example.com/image.jpg",
+        "instructions": "Instructions for viewing the image"
+      }
+    }
+  ],
+  "subject": "${subject || ''}",
+  "gradeLevel": "${gradeLevel || ''}",
+  "settings": {
+    "showNavigation": true,
+    "showProgress": true,
+    "requireCompletion": false
+  }
+}
+
+Requirements:
+- Each page must have a unique id (use UUID format or simple unique strings)
+- Content pages should have rich, educational HTML content appropriate for ${gradeLevel || 'the grade level'}
+- Video pages must include a valid YouTube video ID (search for educational videos about "${topic}")
+- Quiz pages should have 2-5 questions relevant to the content
+- Image pages should include educational image URLs and clear instructions
+- Make content age-appropriate and engaging
+- Ensure pages flow logically from one to the next
+- Use clear, educational language
+
+Remember: Respond with ONLY the JSON object, nothing else.`;
+
+    const requestBody = {
+      model: 'gpt-4', // Use GPT-4 for better structured output
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert educational content creator. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    };
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content;
+
+    if (!content) {
+      throw new Error('No response content received from AI');
+    }
+
+    // Parse JSON from the response
+    let bookData;
+    try {
+      // Extract JSON from markdown code blocks if present
+      const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+      if (jsonMatch) {
+        bookData = JSON.parse(jsonMatch[1]);
+      } else {
+        // Try to find JSON object directly
+        const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonObjectMatch) {
+          bookData = JSON.parse(jsonObjectMatch[0]);
+        } else {
+          bookData = JSON.parse(content);
+        }
+      }
+      console.log('[AI Service] Successfully parsed book data:', bookData);
+    } catch (parseError) {
+      console.error('[AI Service] Failed to parse JSON response:', parseError);
+      console.log('[AI Service] Raw content:', content);
+      throw new Error('Failed to parse AI response. Please try again.');
+    }
+
+    // Validate and format pages
+    if (!bookData.pages || !Array.isArray(bookData.pages)) {
+      throw new Error('AI response does not contain valid pages array');
+    }
+
+    // Transform pages to match our BookPage interface
+    const formattedPages = bookData.pages.map((page: any, index: number) => {
+      const formattedPage: any = {
+        id: page.id || `page-${Date.now()}-${index}`,
+        title: page.title || `Page ${index + 1}`,
+        pageType: page.pageType || 'content',
+        content: page.content || '',
+        order: index
+      };
+
+      // Add page-specific data
+      if (page.pageType === 'video' && page.videoData) {
+        formattedPage.videoData = {
+          videoId: page.videoData.videoId || '',
+          videoUrl: page.videoData.videoUrl || `https://www.youtube.com/watch?v=${page.videoData.videoId}`,
+          title: page.videoData.title || '',
+          description: page.videoData.description || '',
+          instructions: page.videoData.instructions || ''
+        };
+      }
+
+      if (page.pageType === 'quiz' && page.quizData) {
+        formattedPage.quizData = {
+          questions: (page.quizData.questions || []).map((q: any, qIndex: number) => ({
+            id: q.id || `question-${index}-${qIndex}`,
+            type: q.type || 'multiple-choice',
+            question: q.question || '',
+            options: q.options || [],
+            correctAnswer: q.correctAnswer || '',
+            explanation: q.explanation || ''
+          })),
+          settings: {
+            shuffle: page.quizData.settings?.shuffle || false,
+            showAnswers: page.quizData.settings?.showAnswers !== false,
+            allowRetry: page.quizData.settings?.allowRetry !== false
+          }
+        };
+      }
+
+      if (page.pageType === 'image' && page.imageData) {
+        formattedPage.imageData = {
+          imageUrl: page.imageData.imageUrl || '',
+          instructions: page.imageData.instructions || ''
+        };
+      }
+
+      return formattedPage;
+    }).filter((page: any) => page.title && (page.content || page.videoData || page.quizData || page.imageData));
+
+    if (formattedPages.length === 0) {
+      throw new Error('No valid pages were generated. Please try again.');
+    }
+
+    // Return formatted interactive book data
+    return {
+      pages: formattedPages,
+      subject: bookData.subject || subject || '',
+      gradeLevel: bookData.gradeLevel || gradeLevel || '',
+      settings: {
+        showNavigation: bookData.settings?.showNavigation !== false,
+        showProgress: bookData.settings?.showProgress !== false,
+        requireCompletion: bookData.settings?.requireCompletion || false
+      }
+    };
+  } catch (error) {
+    console.error('[AI Service] Error generating interactive book:', error);
+    throw error;
+  }
+};
+
 export default {
   generateLessonPlan,
   generateEnhancedLessonPlan,
@@ -2145,6 +2393,7 @@ export default {
   generateCompleteLessonContent,
   generateStudentFacingContent,
   generateFlashcards,
-  generateInteractiveVideo
+  generateInteractiveVideo,
+  generateInteractiveBook
 };
 
