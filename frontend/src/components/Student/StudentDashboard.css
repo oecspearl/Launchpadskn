@@ -168,10 +168,15 @@
   transition: all var(--transition-base);
 }
 
-.lesson-item:hover {
+.lesson-item.clickable-lesson {
+  cursor: pointer;
+}
+
+.lesson-item.clickable-lesson:hover {
   border-color: var(--primary-color);
   box-shadow: var(--shadow-md);
   transform: translateX(4px);
+  background: var(--primary-50);
 }
 
 .lesson-time {

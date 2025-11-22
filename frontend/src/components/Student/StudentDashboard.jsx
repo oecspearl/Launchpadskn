@@ -49,6 +49,13 @@ function StudentDashboard() {
     return timeStr.substring(0, 5);
   };
 
+  // Handle lesson click - navigate to lesson view
+  const handleLessonClick = (lesson) => {
+    if (lesson && lesson.lesson_id) {
+      navigate(`/student/lessons/${lesson.lesson_id}`);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="student-dashboard dashboard-loading">
@@ -118,7 +125,12 @@ function StudentDashboard() {
                         {todayLessons.map((lesson, index) => {
                           const subjectName = lesson.class_subject?.subject_offering?.subject?.subject_name || 'Lesson';
                           return (
-                            <div key={index} className="lesson-item">
+                            <div 
+                              key={index} 
+                              className="lesson-item clickable-lesson"
+                              onClick={() => handleLessonClick(lesson)}
+                              style={{ cursor: 'pointer' }}
+                            >
                               <div className="lesson-time">
                                 {formatTime(lesson.start_time)}<br />
                                 <span className="opacity-75">-</span><br />
@@ -297,7 +309,11 @@ function StudentDashboard() {
 
           <Tab eventKey="timetable" title="Timetable">
             <Card className="glass-card border-0 p-3">
-              <Timetable lessons={weekLessons} />
+              <Timetable 
+                lessons={weekLessons} 
+                onLessonClick={handleLessonClick}
+                showAllUpcoming={true}
+              />
             </Card>
           </Tab>
 
