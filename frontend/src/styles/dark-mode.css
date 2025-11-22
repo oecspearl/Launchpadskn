@@ -59,9 +59,11 @@
   background: var(--bg-tertiary) !important;
 }
 
-/* Lesson View Container */
+/* Lesson View Container - Same background color for both light and dark mode */
+.lesson-view-container,
 [data-theme="dark"] .lesson-view-container {
-  background-color: var(--bg-primary) !important;
+  background-color: #66CADF !important;
+  background: #66CADF !important;
   color: var(--text-primary) !important;
 }
 

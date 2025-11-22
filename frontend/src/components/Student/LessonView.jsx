@@ -521,7 +521,7 @@ function LessonView() {
   
   if (isLoading) {
     return (
-      <div className="lesson-view-container" style={{ background: 'transparent', minHeight: '100vh', padding: '3rem 0' }}>
+      <div className="lesson-view-container" style={{ minHeight: '100vh', padding: '3rem 0' }}>
         <Container>
           <div className="text-center py-5">
             <Spinner animation="border" role="status" variant="primary">
@@ -536,7 +536,7 @@ function LessonView() {
   
   if (error) {
     return (
-      <div className="lesson-view-container" style={{ background: 'transparent', minHeight: '100vh', padding: '3rem 0' }}>
+      <div className="lesson-view-container" style={{ minHeight: '100vh', padding: '3rem 0' }}>
         <Container>
           <Alert variant="danger">{error}</Alert>
           <Button variant="primary" onClick={() => navigate('/student/dashboard')}>
@@ -549,7 +549,7 @@ function LessonView() {
   
   if (!lesson) {
     return (
-      <div className="lesson-view-container" style={{ background: 'transparent', minHeight: '100vh', padding: '3rem 0' }}>
+      <div className="lesson-view-container" style={{ minHeight: '100vh', padding: '3rem 0' }}>
         <Container>
           <Alert variant="warning">Lesson not found</Alert>
           <Button variant="primary" onClick={() => navigate('/student/dashboard')}>
