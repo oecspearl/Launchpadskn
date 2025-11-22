@@ -380,12 +380,13 @@
   color: var(--text-secondary) !important;
 }
 
-/* Content items and lesson cards */
+/* Content items and lesson cards - Use the same background color in dark mode */
 [data-theme="dark"] .content-item,
 [data-theme="dark"] .classwork-item,
 [data-theme="dark"] .lesson-item,
 [data-theme="dark"] .learning-item {
-  background-color: var(--bg-secondary) !important;
+  background-color: #66CADF !important;
+  background: #66CADF !important;
   color: var(--text-primary) !important;
   border-color: var(--border-primary) !important;
 }
@@ -393,7 +394,8 @@
 [data-theme="dark"] .classwork-item:hover,
 [data-theme="dark"] .classwork-item.selected,
 [data-theme="dark"] .classwork-item.expanded {
-  background-color: var(--bg-tertiary) !important;
+  background-color: #5ab8cc !important;
+  background: #5ab8cc !important;
   border-left-color: var(--primary-color, #33AD63) !important;
 }
 
@@ -413,9 +415,15 @@
 }
 
 [data-theme="dark"] .classwork-info-box {
-  background-color: var(--bg-tertiary) !important;
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
   color: var(--text-primary) !important;
-  border-color: var(--border-primary) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.classwork-info-box {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
 }
 
 [data-theme="dark"] .classwork-info-box h6 {
@@ -423,8 +431,15 @@
 }
 
 [data-theme="dark"] .classwork-text-content {
-  background-color: var(--bg-tertiary) !important;
-  border-color: var(--border-primary) !important;
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.classwork-text-content {
+  background-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
 }
 
 [data-theme="dark"] .classwork-text-content * {

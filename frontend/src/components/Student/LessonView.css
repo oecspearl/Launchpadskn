@@ -122,7 +122,7 @@ body .container-fluid .lesson-view-container {
   margin-top: 0;
   position: relative;
   z-index: 2;
-  background: white !important;
+  background: #66CADF !important;
   padding-top: 1.5rem !important;
 }
 
@@ -201,7 +201,7 @@ body .container-fluid .lesson-view-container {
 
 /* Google Classroom Style Content Items */
 .classwork-item {
-  background: white;
+  background: #66CADF;
   border: 1px solid transparent;
   border-radius: 0;
   margin-bottom: 0.5rem;
@@ -215,17 +215,17 @@ body .container-fluid .lesson-view-container {
 }
 
 .classwork-item:hover {
-  background: #f8f9fa;
+  background: #5ab8cc;
   border-left: 4px solid #1a73e8;
 }
 
 .classwork-item.selected {
-  background: #f8f9fa;
+  background: #5ab8cc;
   border-left: 4px solid #1a73e8;
 }
 
 .classwork-item.expanded {
-  background: white;
+  background: #66CADF;
   border-left: 4px solid #1a73e8;
 }
 
