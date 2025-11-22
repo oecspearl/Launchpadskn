@@ -172,9 +172,69 @@ function LessonPlanning() {
         return;
       }
       
+      // Validate and format date
+      const validateAndFormatDate = (dateStr) => {
+        if (!dateStr) return null;
+        
+        // Check if already in YYYY-MM-DD format (from HTML5 date input)
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (dateRegex.test(dateStr)) {
+          // Validate the date is actually valid (check if it's a real date)
+          const [year, month, day] = dateStr.split('-').map(Number);
+          const date = new Date(year, month - 1, day);
+          
+          // Check if the date components match (handles invalid dates like 2024-02-30)
+          if (date.getFullYear() === year && 
+              date.getMonth() === month - 1 && 
+              date.getDate() === day) {
+            return dateStr; // Already in correct format
+          } else {
+            throw new Error('Invalid date. Please select a valid date.');
+          }
+        }
+        
+        // Try to parse and format if not in YYYY-MM-DD format
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid date format. Please use YYYY-MM-DD format.');
+        }
+        
+        // Return date in YYYY-MM-DD format (avoid timezone issues by using local date)
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+
+      // Validate date is provided
+      if (!lessonData.lesson_date) {
+        setError('Lesson date is required');
+        return;
+      }
+
+      const formattedDate = validateAndFormatDate(lessonData.lesson_date);
+      if (!formattedDate) {
+        setError('Invalid lesson date. Please select a valid date.');
+        return;
+      }
+
+      // Validate times
+      if (!lessonData.start_time || !lessonData.end_time) {
+        setError('Start time and end time are required');
+        return;
+      }
+
+      // Validate end time is after start time
+      const startTime = lessonData.start_time;
+      const endTime = lessonData.end_time;
+      if (endTime <= startTime) {
+        setError('End time must be after start time');
+        return;
+      }
+
       const lessonPayload = {
         class_subject_id: validClassSubjectId,
-        lesson_date: lessonData.lesson_date,
+        lesson_date: formattedDate,
         start_time: formatTime(lessonData.start_time),
         end_time: formatTime(lessonData.end_time),
         lesson_title: lessonData.lesson_title || null,
@@ -183,7 +243,7 @@ function LessonPlanning() {
         lesson_plan: lessonData.lesson_plan || null,
         location: lessonData.location || null,
         homework_description: lessonData.homework_description || null,
-        homework_due_date: lessonData.homework_due_date || null,
+        homework_due_date: lessonData.homework_due_date ? validateAndFormatDate(lessonData.homework_due_date) : null,
         status: lessonData.status || 'SCHEDULED'
       };
       
@@ -767,9 +827,17 @@ function LessonPlanning() {
                   <Form.Control
                     type="date"
                     value={lessonData.lesson_date || ''}
-                    onChange={(e) => setLessonData({ ...lessonData, lesson_date: e.target.value })}
+                    onChange={(e) => {
+                      const selectedDate = e.target.value;
+                      // HTML5 date input returns YYYY-MM-DD format
+                      setLessonData({ ...lessonData, lesson_date: selectedDate });
+                    }}
+                    min={new Date().toISOString().split('T')[0]}
                     required
                   />
+                  <Form.Text className="text-muted">
+                    Select the date for this lesson (format: YYYY-MM-DD)
+                  </Form.Text>
                 </Form.Group>
               </Col>
               <Col md={3}>

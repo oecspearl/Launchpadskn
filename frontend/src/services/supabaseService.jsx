@@ -2016,7 +2016,19 @@ class SupabaseService {
       class_subject_id: parseInt(lessonData.class_subject_id, 10)
     };
     
+    // Ensure lesson_date is in correct format (YYYY-MM-DD)
+    if (payload.lesson_date) {
+      const date = new Date(payload.lesson_date);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        payload.lesson_date = `${year}-${month}-${day}`;
+      }
+    }
+    
     console.log('[supabaseService] Final payload:', JSON.stringify(payload, null, 2));
+    console.log('[supabaseService] lesson_date formatted:', payload.lesson_date);
     
     const { data, error } = await supabase
       .from('lessons')
@@ -2035,9 +2047,21 @@ class SupabaseService {
    * Update lesson
    */
   async updateLesson(lessonId, updates) {
+    // Ensure lesson_date is in correct format (YYYY-MM-DD) if provided
+    const formattedUpdates = { ...updates };
+    if (formattedUpdates.lesson_date) {
+      const date = new Date(formattedUpdates.lesson_date);
+      if (!isNaN(date.getTime())) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        formattedUpdates.lesson_date = `${year}-${month}-${day}`;
+      }
+    }
+    
     const { data, error } = await supabase
       .from('lessons')
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...formattedUpdates, updated_at: new Date().toISOString() })
       .eq('lesson_id', lessonId)
       .select()
       .single();
