@@ -1,0 +1,46 @@
+.interactive-book-creator {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-list-item {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.page-list-item:hover {
+  background-color: #f8f9fa;
+}
+
+.page-list-item.active {
+  background-color: #e7f3ff;
+  border-left: 4px solid #007bff;
+}
+
+.page-editor {
+  min-height: 500px;
+}
+
+.video-search-results {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.quiz-question-editor {
+  border-left: 3px solid #007bff;
+  padding-left: 1rem;
+  margin-bottom: 1rem;
+}
+
+.audio-recorder {
+  border: 2px dashed #dee2e6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  background-color: #f8f9fa;
+}
+
+.audio-recorder.recording {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+

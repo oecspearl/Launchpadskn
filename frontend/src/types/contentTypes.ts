@@ -200,3 +200,93 @@ export function detectVideoType(url: string): 'youtube' | 'vimeo' | 'direct' {
   return 'direct';
 }
 
+/**
+ * Interactive Book Content Data Structure
+ */
+export interface InteractiveBookData {
+  pages: BookPage[];
+  subject?: string;
+  gradeLevel?: string;
+  settings: InteractiveBookSettings;
+}
+
+export interface BookPage {
+  id: string; // UUID for the page
+  title: string;
+  pageType?: 'content' | 'video' | 'quiz' | 'image';
+  content: string; // Rich text/HTML (for content pages)
+  
+  // Page-specific data
+  videoData?: VideoPageData;
+  quizData?: QuizPageData;
+  imageData?: ImagePageData;
+  
+  audioUrl?: string; // Base64 encoded audio for narration
+  
+  // Embedded content (two formats for backward compatibility)
+  embeddedContentId?: string; // NEW: Reference to h5pContent.id
+  embeddedContent?: {        // LEGACY: Snapshot of content data
+    type: ContentType;
+    data: any; // QuizData | FlashcardData | etc.
+  };
+}
+
+export interface VideoPageData {
+  videoId: string;
+  videoUrl: string;
+  title: string;
+  description?: string;
+  instructions?: string;
+}
+
+export interface QuizPageData {
+  questions: QuizQuestion[];
+  settings: QuizSettings;
+}
+
+export interface QuizQuestion {
+  id: string;
+  type: 'multiple-choice' | 'true-false' | 'fill-blank';
+  question: string;
+  options?: string[]; // For multiple-choice
+  correctAnswer: string | string[]; // For multiple-choice/true-false, or array for fill-blank
+  explanation?: string;
+}
+
+export interface QuizSettings {
+  shuffle: boolean;
+  showAnswers: boolean;
+  allowRetry: boolean;
+  timeLimit?: number; // seconds
+}
+
+export interface ImagePageData {
+  imageUrl: string;
+  instructions?: string;
+}
+
+export interface InteractiveBookSettings {
+  showNavigation: boolean;
+  showProgress: boolean;
+  requireCompletion: boolean; // Must complete embedded activities to proceed
+}
+
+/**
+ * Default interactive book settings
+ */
+export const defaultInteractiveBookSettings: InteractiveBookSettings = {
+  showNavigation: true,
+  showProgress: true,
+  requireCompletion: false
+};
+
+/**
+ * Helper function to create empty interactive book data
+ */
+export function createEmptyInteractiveBookData(): InteractiveBookData {
+  return {
+    pages: [],
+    settings: { ...defaultInteractiveBookSettings }
+  };
+}
+

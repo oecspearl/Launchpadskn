@@ -17,6 +17,7 @@ import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import FlashcardViewer from './FlashcardViewer';
 import InteractiveVideoViewer from './InteractiveVideoViewer';
+import InteractiveBookPlayer from './InteractiveBookPlayer';
 import './LessonView.css';
 
 function LessonView() {
@@ -40,6 +41,8 @@ function LessonView() {
   const [currentFlashcardContent, setCurrentFlashcardContent] = useState(null);
   const [showInteractiveVideoViewer, setShowInteractiveVideoViewer] = useState(false);
   const [currentInteractiveVideoContent, setCurrentInteractiveVideoContent] = useState(null);
+  const [showInteractiveBookPlayer, setShowInteractiveBookPlayer] = useState(false);
+  const [currentInteractiveBookContent, setCurrentInteractiveBookContent] = useState(null);
   
   useEffect(() => {
     if (lessonId) {
@@ -353,7 +356,7 @@ function LessonView() {
     
     content.forEach(item => {
       // Special handling: FLASHCARD and INTERACTIVE_VIDEO content types always go to Learning section
-      if (item.content_type === 'FLASHCARD' || item.content_type === 'INTERACTIVE_VIDEO') {
+      if (item.content_type === 'FLASHCARD' || item.content_type === 'INTERACTIVE_VIDEO' || item.content_type === 'INTERACTIVE_BOOK') {
         categories.learning.push(item);
         return;
       }
@@ -1354,6 +1357,17 @@ function LessonView() {
                     Watch Interactive Video
                   </button>
                 )}
+                {contentItem.content_type === 'INTERACTIVE_BOOK' && contentItem.content_data && (
+                  <button 
+                    className="classwork-action-btn primary"
+                    onClick={() => {
+                      setCurrentInteractiveBookContent(contentItem);
+                      setShowInteractiveBookPlayer(true);
+                    }}
+                  >
+                    Read Interactive Book
+                  </button>
+                )}
                 {contentItem.content_type === 'QUIZ' && quizStatuses[contentItem.content_id] && (
                   <button 
                     className="classwork-action-btn primary"
@@ -1832,6 +1846,37 @@ function LessonView() {
               onClose={() => {
                 setShowInteractiveVideoViewer(false);
                 setCurrentInteractiveVideoContent(null);
+              }}
+            />
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* Interactive Book Player Modal */}
+      <Modal
+        show={showInteractiveBookPlayer}
+        onHide={() => {
+          setShowInteractiveBookPlayer(false);
+          setCurrentInteractiveBookContent(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Body style={{ padding: 0 }}>
+          {currentInteractiveBookContent && currentInteractiveBookContent.content_data && (
+            <InteractiveBookPlayer
+              contentData={currentInteractiveBookContent.content_data}
+              title={currentInteractiveBookContent.title}
+              description={currentInteractiveBookContent.description}
+              contentId={currentInteractiveBookContent.content_id}
+              onComplete={() => {
+                toggleContentComplete(currentInteractiveBookContent.content_id);
+                setShowInteractiveBookPlayer(false);
+                setCurrentInteractiveBookContent(null);
+              }}
+              onClose={() => {
+                setShowInteractiveBookPlayer(false);
+                setCurrentInteractiveBookContent(null);
               }}
             />
           )}

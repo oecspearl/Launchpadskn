@@ -19,6 +19,7 @@ import QuizBuilder from './QuizBuilder';
 import FlashcardCreator from './FlashcardCreator';
 import FlashcardViewer from '../Student/FlashcardViewer';
 import InteractiveVideoCreator from './InteractiveVideoCreator';
+import InteractiveBookCreator from './InteractiveBookCreator';
 import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
@@ -50,6 +51,8 @@ function LessonContentManager() {
   const [currentFlashcardContentId, setCurrentFlashcardContentId] = useState(null);
   const [showInteractiveVideoCreator, setShowInteractiveVideoCreator] = useState(false);
   const [currentInteractiveVideoContentId, setCurrentInteractiveVideoContentId] = useState(null);
+  const [showInteractiveBookCreator, setShowInteractiveBookCreator] = useState(false);
+  const [currentInteractiveBookContentId, setCurrentInteractiveBookContentId] = useState(null);
 
   // Form state
   const [contentType, setContentType] = useState('FILE');
@@ -1400,6 +1403,14 @@ function LessonContentManager() {
         return;
       }
 
+      // For INTERACTIVE_BOOK content type, open interactive book creator in edit mode
+      if (item.content_type === 'INTERACTIVE_BOOK') {
+        setEditingContent(item);
+        setCurrentInteractiveBookContentId(item.content_id);
+        setShowInteractiveBookCreator(true);
+        return;
+      }
+
       // For QUIZ content type, load full quiz details if it's an in-app quiz
       if (item.content_type === 'QUIZ') {
         try {
@@ -2059,6 +2070,14 @@ function LessonContentManager() {
                     setCurrentInteractiveVideoContentId(null);
                     return;
                   }
+
+                  // Open interactive book creator if INTERACTIVE_BOOK is selected
+                  if (newType === 'INTERACTIVE_BOOK' && !editingContent) {
+                    setShowModal(false);
+                    setShowInteractiveBookCreator(true);
+                    setCurrentInteractiveBookContentId(null);
+                    return;
+                  }
                 }}
                 required
               >
@@ -2080,6 +2099,7 @@ function LessonContentManager() {
                 <optgroup label="Interactive Content">
                   <option value="FLASHCARD">Flashcard Set</option>
                   <option value="INTERACTIVE_VIDEO">Interactive Video</option>
+                  <option value="INTERACTIVE_BOOK">Interactive Book</option>
                 </optgroup>
                 <optgroup label="Learning Content">
                   <option value="LEARNING_OUTCOMES">Learning Outcomes</option>
@@ -2620,6 +2640,9 @@ function LessonContentManager() {
                   // Flashcard preview handled separately
                 } else if (previewingContent.content_type === 'INTERACTIVE_VIDEO') {
                   // Interactive video preview - handled separately in modal
+                  return null;
+                } else if (previewingContent.content_type === 'INTERACTIVE_BOOK') {
+                  // Interactive book preview - handled separately in modal
                   return null;
                 } else if (previewingContent.content_type === 'FLASHCARD') {
                   return (
@@ -3912,6 +3935,43 @@ function LessonContentManager() {
             onCancel={() => {
               setShowInteractiveVideoCreator(false);
               setCurrentInteractiveVideoContentId(null);
+            }}
+          />
+        </Modal.Body>
+      </Modal>
+
+      {/* Interactive Book Creator Modal */}
+      <Modal
+        show={showInteractiveBookCreator}
+        onHide={() => {
+          setShowInteractiveBookCreator(false);
+          setCurrentInteractiveBookContentId(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {currentInteractiveBookContentId ? 'Edit Interactive Book' : 'Create Interactive Book'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ padding: 0 }}>
+          <InteractiveBookCreator
+            contentId={currentInteractiveBookContentId}
+            lessonId={parseInt(lessonId)}
+            initialTitle={editingContent?.title}
+            initialDescription={editingContent?.description}
+            initialData={editingContent?.content_data}
+            onSave={(savedContentId) => {
+              setShowInteractiveBookCreator(false);
+              setCurrentInteractiveBookContentId(null);
+              fetchContent();
+              setSuccess('Interactive book saved successfully!');
+              setTimeout(() => setSuccess(null), 3000);
+            }}
+            onCancel={() => {
+              setShowInteractiveBookCreator(false);
+              setCurrentInteractiveBookContentId(null);
             }}
           />
         </Modal.Body>
