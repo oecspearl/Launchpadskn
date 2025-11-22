@@ -177,6 +177,109 @@
   }
 }
 
+/* List View Styles */
+.date-badge {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.date-badge.today-badge {
+  background: linear-gradient(135deg, #009639 0%, #00702B 100%);
+  box-shadow: 0 4px 8px rgba(0, 150, 57, 0.3);
+}
+
+.date-day {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.date-month {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  opacity: 0.9;
+  margin-top: 2px;
+}
+
+.date-weekday {
+  font-size: 0.65rem;
+  opacity: 0.8;
+  margin-top: 2px;
+}
+
+.lessons-list {
+  margin-left: 80px;
+}
+
+.lesson-list-item {
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+  transition: all 0.2s ease;
+}
+
+.lesson-list-item.clickable:hover {
+  background: #e9ecef;
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.lesson-time-badge {
+  min-width: 70px;
+  text-align: center;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+  flex-shrink: 0;
+}
+
+.lesson-time-badge .time-start {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.lesson-time-badge .time-end {
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 2px;
+}
+
+/* Dark mode for list view */
+[data-theme="dark"] .lesson-list-item {
+  background-color: var(--bg-tertiary) !important;
+  border-left-color: var(--primary-color, #33AD63) !important;
+}
+
+[data-theme="dark"] .lesson-list-item.clickable:hover {
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .lesson-time-badge {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .date-badge {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+}
+
+[data-theme="dark"] .date-badge.today-badge {
+  background: linear-gradient(135deg, #33AD63 0%, #00702B 100%);
+}
+
 /* Print styles */
 @media print {
   .timetable-container {

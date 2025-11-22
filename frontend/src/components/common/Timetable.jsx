@@ -1,6 +1,6 @@
-import React from 'react';
-import { Card, Badge } from 'react-bootstrap';
-import { FaClock, FaMapMarkerAlt } from 'react-icons/fa';
+import React, { useState } from 'react';
+import { Card, Badge, Button, ButtonGroup } from 'react-bootstrap';
+import { FaClock, FaMapMarkerAlt, FaList, FaTable } from 'react-icons/fa';
 import './Timetable.css';
 
 /**
@@ -9,6 +9,9 @@ import './Timetable.css';
  * Shows time slots and lessons scheduled for each day
  */
 function Timetable({ lessons = [], startDate = null, onLessonClick = null, showAllUpcoming = true }) {
+  // View mode state: 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid');
+  
   // showAllUpcoming defaults to true to show all upcoming lessons
   // Filter to only upcoming lessons (from today onwards)
   const today = new Date();
@@ -366,9 +369,147 @@ function Timetable({ lessons = [], startDate = null, onLessonClick = null, showA
     );
   };
 
+  // Render list view
+  const renderListView = () => {
+    // Sort lessons by date and time
+    const sortedLessons = [...upcomingLessons].sort((a, b) => {
+      const dateA = new Date(`${a.lesson_date}T${a.start_time || '00:00'}`);
+      const dateB = new Date(`${b.lesson_date}T${b.start_time || '00:00'}`);
+      return dateA - dateB;
+    });
+
+    // Group lessons by date
+    const lessonsByDate = {};
+    sortedLessons.forEach(lesson => {
+      const lessonDate = new Date(lesson.lesson_date).toDateString();
+      if (!lessonsByDate[lessonDate]) {
+        lessonsByDate[lessonDate] = [];
+      }
+      lessonsByDate[lessonDate].push(lesson);
+    });
+
+    const sortedDates = Object.keys(lessonsByDate).sort((a, b) => {
+      return new Date(a) - new Date(b);
+    });
+
+    return (
+      <Card className="border-0 shadow-sm">
+        <Card.Header className="bg-white border-0 py-3">
+          <div className="d-flex justify-content-between align-items-center">
+            <h5 className="mb-0">Upcoming Lessons</h5>
+            <Badge bg="primary">{sortedLessons.length} lesson{sortedLessons.length !== 1 ? 's' : ''}</Badge>
+          </div>
+        </Card.Header>
+        <Card.Body className="p-0">
+          {sortedDates.length === 0 ? (
+            <div className="text-center py-5">
+              <p className="text-muted mb-0">No upcoming lessons scheduled</p>
+            </div>
+          ) : (
+            <div className="list-group list-group-flush">
+              {sortedDates.map((dateStr, dateIndex) => {
+                const date = new Date(dateStr);
+                const dayInfo = getDayName(date);
+                const dayLessons = lessonsByDate[dateStr].sort((a, b) => {
+                  const timeA = a.start_time || '00:00';
+                  const timeB = b.start_time || '00:00';
+                  return timeA.localeCompare(timeB);
+                });
+
+                return (
+                  <div key={dateIndex} className="list-group-item border-0 px-4 py-3">
+                    <div className="d-flex align-items-center mb-3">
+                      <div className={`date-badge ${dayInfo.isToday ? 'today-badge' : ''}`}>
+                        <div className="date-day">{dayInfo.date}</div>
+                        <div className="date-month">{dayInfo.month}</div>
+                        <div className="date-weekday">{dayInfo.short}</div>
+                      </div>
+                      <div className="ms-3 flex-grow-1">
+                        <h6 className="mb-0">{dayInfo.full}</h6>
+                        <small className="text-muted">
+                          {dayLessons.length} lesson{dayLessons.length !== 1 ? 's' : ''}
+                        </small>
+                      </div>
+                    </div>
+                    <div className="lessons-list">
+                      {dayLessons.map((lesson, lessonIndex) => {
+                        const subjectName = getSubjectName(lesson);
+                        const className = getClassName(lesson);
+                        const startTime = lesson.start_time?.substring(0, 5) || '00:00';
+                        const endTime = lesson.end_time?.substring(0, 5) || '00:00';
+
+                        return (
+                          <div
+                            key={lessonIndex}
+                            className={`lesson-list-item ${onLessonClick ? 'clickable' : ''}`}
+                            onClick={onLessonClick ? () => onLessonClick(lesson) : undefined}
+                            style={onLessonClick ? { cursor: 'pointer' } : {}}
+                          >
+                            <div className="d-flex align-items-start gap-3">
+                              <div className="lesson-time-badge">
+                                <div className="time-start">{startTime}</div>
+                                <div className="time-end">{endTime}</div>
+                              </div>
+                              <div className="flex-grow-1">
+                                <h6 className="mb-1">{subjectName}</h6>
+                                {className && (
+                                  <Badge bg="secondary" className="me-2 mb-1">{className}</Badge>
+                                )}
+                                {lesson.lesson_title && (
+                                  <p className="mb-1 small text-muted">{lesson.lesson_title}</p>
+                                )}
+                                <div className="d-flex align-items-center gap-3 flex-wrap">
+                                  {lesson.location && (
+                                    <small className="text-muted">
+                                      <FaMapMarkerAlt size={10} className="me-1" />
+                                      {lesson.location}
+                                    </small>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </Card.Body>
+      </Card>
+    );
+  };
+
   return (
     <div className="timetable-container">
-      {weeks.map((weekDaysForTable, weekIndex) => renderWeekTable(weekDaysForTable, weekIndex))}
+      {/* View Toggle */}
+      <div className="d-flex justify-content-end mb-3">
+        <ButtonGroup>
+          <Button
+            variant={viewMode === 'grid' ? 'primary' : 'outline-secondary'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+            title="Grid View"
+          >
+            <FaTable className="me-1" />
+            Grid
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'primary' : 'outline-secondary'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+            title="List View"
+          >
+            <FaList className="me-1" />
+            List
+          </Button>
+        </ButtonGroup>
+      </div>
+
+      {/* Render based on view mode */}
+      {viewMode === 'list' ? renderListView() : weeks.map((weekDaysForTable, weekIndex) => renderWeekTable(weekDaysForTable, weekIndex))}
     </div>
   );
 }
