@@ -1878,6 +1878,25 @@ class SupabaseService {
       .order('start_time', { ascending: true });
 
     if (error) throw error;
+    
+    // Normalize all lesson dates to YYYY-MM-DD format
+    if (data && Array.isArray(data)) {
+      data.forEach(lesson => {
+        if (lesson.lesson_date) {
+          let dateStr = String(lesson.lesson_date);
+          if (dateStr.includes('T')) {
+            dateStr = dateStr.split('T')[0];
+          } else if (dateStr.length > 10) {
+            dateStr = dateStr.substring(0, 10);
+          }
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(dateStr)) {
+            lesson.lesson_date = dateStr;
+          }
+        }
+      });
+    }
+    
     return data;
   }
 
@@ -1949,6 +1968,25 @@ class SupabaseService {
       .order('start_time', { ascending: true });
 
     if (error) throw error;
+    
+    // Normalize all lesson dates to YYYY-MM-DD format
+    if (data && Array.isArray(data)) {
+      data.forEach(lesson => {
+        if (lesson.lesson_date) {
+          let dateStr = String(lesson.lesson_date);
+          if (dateStr.includes('T')) {
+            dateStr = dateStr.split('T')[0];
+          } else if (dateStr.length > 10) {
+            dateStr = dateStr.substring(0, 10);
+          }
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(dateStr)) {
+            lesson.lesson_date = dateStr;
+          }
+        }
+      });
+    }
+    
     return data || [];
   }
 
@@ -2000,6 +2038,25 @@ class SupabaseService {
       .order('start_time', { ascending: true });
 
     if (error) throw error;
+    
+    // Normalize all lesson dates to YYYY-MM-DD format
+    if (data && Array.isArray(data)) {
+      data.forEach(lesson => {
+        if (lesson.lesson_date) {
+          let dateStr = String(lesson.lesson_date);
+          if (dateStr.includes('T')) {
+            dateStr = dateStr.split('T')[0];
+          } else if (dateStr.length > 10) {
+            dateStr = dateStr.substring(0, 10);
+          }
+          const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+          if (dateRegex.test(dateStr)) {
+            lesson.lesson_date = dateStr;
+          }
+        }
+      });
+    }
+    
     return data || [];
   }
 
@@ -2032,16 +2089,44 @@ class SupabaseService {
         }
       }
       // If already in YYYY-MM-DD format, use it as-is (no conversion)
+      console.log('[supabaseService] lesson_date before insert:', payload.lesson_date, 'type:', typeof payload.lesson_date);
     }
     
     console.log('[supabaseService] Final payload:', JSON.stringify(payload, null, 2));
-    console.log('[supabaseService] lesson_date formatted:', payload.lesson_date);
     
     const { data, error } = await supabase
       .from('lessons')
       .insert(payload)
       .select()
       .single();
+    
+    if (error) {
+      console.error('[supabaseService] Error creating lesson:', error);
+      throw error;
+    }
+    
+    // Normalize the returned date to YYYY-MM-DD format
+    // Supabase may return dates as timestamps, so extract just the date part
+    if (data && data.lesson_date) {
+      let dateStr = String(data.lesson_date);
+      // Handle various date formats that might be returned
+      if (dateStr.includes('T')) {
+        // It's a timestamp string like "2024-01-15T00:00:00.000Z"
+        // Extract just the date part before 'T'
+        dateStr = dateStr.split('T')[0];
+      } else if (dateStr.length > 10) {
+        // It might have timezone info or other characters
+        dateStr = dateStr.substring(0, 10);
+      }
+      // Ensure it's in YYYY-MM-DD format
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (dateRegex.test(dateStr)) {
+        data.lesson_date = dateStr;
+        console.log('[supabaseService] Returned lesson_date after normalization:', data.lesson_date);
+      } else {
+        console.warn('[supabaseService] Unexpected date format returned:', dateStr);
+      }
+    }
 
     if (error) {
       console.error('[supabaseService] Error creating lesson:', error);
@@ -2071,6 +2156,7 @@ class SupabaseService {
         }
       }
       // If already in YYYY-MM-DD format, use it as-is (no conversion)
+      console.log('[supabaseService] updateLesson - lesson_date:', formattedUpdates.lesson_date);
     }
     
     const { data, error } = await supabase
@@ -2079,6 +2165,22 @@ class SupabaseService {
       .eq('lesson_id', lessonId)
       .select()
       .single();
+
+    if (error) throw error;
+    
+    // Normalize the returned date to YYYY-MM-DD format
+    if (data && data.lesson_date) {
+      let dateStr = String(data.lesson_date);
+      if (dateStr.includes('T')) {
+        dateStr = dateStr.split('T')[0];
+      } else if (dateStr.length > 10) {
+        dateStr = dateStr.substring(0, 10);
+      }
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (dateRegex.test(dateStr)) {
+        data.lesson_date = dateStr;
+      }
+    }
 
     if (error) throw error;
     return data;
