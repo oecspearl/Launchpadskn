@@ -4,7 +4,7 @@ import {
   Table, Modal, Form, Badge
 } from 'react-bootstrap';
 import {
-  FaPlus, FaTrash, FaBook, FaChartLine
+  FaPlus, FaTrash, FaBook, FaChartLine, FaUsers
 } from 'react-icons/fa';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../services/userService';
@@ -12,6 +12,7 @@ import { institutionService } from '../../services/institutionService';
 import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
 import CurriculumAnalytics from './CurriculumAnalytics';
+import CollaborationHub from '../Collaboration/CollaborationHub';
 
 function ClassSubjectAssignment() {
   const queryClient = useQueryClient();
@@ -21,6 +22,7 @@ function ClassSubjectAssignment() {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showCollaboration, setShowCollaboration] = useState(false);
   const [selectedClassSubject, setSelectedClassSubject] = useState(null);
   const [assignmentData, setAssignmentData] = useState({
     class_id: '',
@@ -267,6 +269,18 @@ function ClassSubjectAssignment() {
                         <FaChartLine />
                       </Button>
                       <Button
+                        variant="outline-success"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => {
+                          setSelectedClassSubject(classSubject);
+                          setShowCollaboration(true);
+                        }}
+                        title="Open Collaboration Hub"
+                      >
+                        <FaUsers />
+                      </Button>
+                      <Button
                         variant="outline-danger"
                         size="sm"
                         onClick={() => handleRemove(classSubject.class_subject_id)}
@@ -393,6 +407,40 @@ function ClassSubjectAssignment() {
         <Modal.Footer>
           <Button variant="secondary" onClick={() => {
             setShowAnalytics(false);
+            setSelectedClassSubject(null);
+          }}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Collaboration Hub Modal */}
+      <Modal
+        show={showCollaboration}
+        onHide={() => {
+          setShowCollaboration(false);
+          setSelectedClassSubject(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaUsers className="me-2" />
+            Collaboration Hub
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedClassSubject && (
+            <CollaborationHub
+              classSubjectId={selectedClassSubject.class_subject_id}
+              classSubject={selectedClassSubject}
+            />
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowCollaboration(false);
             setSelectedClassSubject(null);
           }}>
             Close
