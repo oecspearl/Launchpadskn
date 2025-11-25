@@ -45,6 +45,8 @@ function LessonView() {
   const [currentInteractiveVideoContent, setCurrentInteractiveVideoContent] = useState(null);
   const [showInteractiveBookPlayer, setShowInteractiveBookPlayer] = useState(false);
   const [currentInteractiveBookContent, setCurrentInteractiveBookContent] = useState(null);
+  const [show3DModelViewer, setShow3DModelViewer] = useState(false);
+  const [current3DModelContent, setCurrent3DModelContent] = useState(null);
   
   useEffect(() => {
     if (lessonId) {
