@@ -6,7 +6,7 @@ import {
 import { Link } from 'react-router-dom';
 import {
   FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, FaUserPlus,
-  FaBell, FaChartLine, FaCalendarAlt, FaSchool
+  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaCube
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -358,6 +358,15 @@ function AdminDashboard() {
                   <div className="quick-access-card-title">User Management</div>
                   <div className="quick-access-card-description">
                     Add, edit, assign roles, and manage users across institutions.
+                  </div>
+                </Link>
+                <Link to="/admin/arvr-content" className="quick-access-card">
+                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                    <FaCube />
+                  </div>
+                  <div className="quick-access-card-title">AR/VR Content</div>
+                  <div className="quick-access-card-description">
+                    Manage 3D models, VR experiences, and AR overlays for interactive learning.
                   </div>
                 </Link>
               </div>
