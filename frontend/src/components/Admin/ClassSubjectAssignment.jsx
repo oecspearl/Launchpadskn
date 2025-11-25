@@ -4,7 +4,7 @@ import {
   Table, Modal, Form, Badge
 } from 'react-bootstrap';
 import {
-  FaPlus, FaTrash, FaBook, FaChartLine, FaUsers
+  FaPlus, FaTrash, FaBook, FaChartLine, FaUsers, FaGamepad
 } from 'react-icons/fa';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../services/userService';
@@ -13,6 +13,7 @@ import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
 import CurriculumAnalytics from './CurriculumAnalytics';
 import CollaborationHub from '../Collaboration/CollaborationHub';
+import InteractiveContentHub from '../InteractiveContent/InteractiveContentHub';
 
 function ClassSubjectAssignment() {
   const queryClient = useQueryClient();
@@ -23,6 +24,7 @@ function ClassSubjectAssignment() {
   const [showModal, setShowModal] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
   const [showCollaboration, setShowCollaboration] = useState(false);
+  const [showInteractiveContent, setShowInteractiveContent] = useState(false);
   const [selectedClassSubject, setSelectedClassSubject] = useState(null);
   const [assignmentData, setAssignmentData] = useState({
     class_id: '',
@@ -281,6 +283,18 @@ function ClassSubjectAssignment() {
                         <FaUsers />
                       </Button>
                       <Button
+                        variant="outline-warning"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => {
+                          setSelectedClassSubject(classSubject);
+                          setShowInteractiveContent(true);
+                        }}
+                        title="Interactive Content"
+                      >
+                        <FaGamepad />
+                      </Button>
+                      <Button
                         variant="outline-danger"
                         size="sm"
                         onClick={() => handleRemove(classSubject.class_subject_id)}
@@ -441,6 +455,40 @@ function ClassSubjectAssignment() {
         <Modal.Footer>
           <Button variant="secondary" onClick={() => {
             setShowCollaboration(false);
+            setSelectedClassSubject(null);
+          }}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Interactive Content Hub Modal */}
+      <Modal
+        show={showInteractiveContent}
+        onHide={() => {
+          setShowInteractiveContent(false);
+          setSelectedClassSubject(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaGamepad className="me-2" />
+            Interactive Content
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedClassSubject && (
+            <InteractiveContentHub
+              classSubjectId={selectedClassSubject.class_subject_id}
+              classSubject={selectedClassSubject}
+            />
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowInteractiveContent(false);
             setSelectedClassSubject(null);
           }}>
             Close
