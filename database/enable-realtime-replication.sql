@@ -128,23 +128,29 @@ USING (
 );
 
 -- Policy: Users can see sessions they're part of or created
+-- Note: Avoid checking collaboration_participants to prevent circular dependency
 CREATE POLICY "Users can view their collaboration sessions"
 ON collaboration_sessions
 FOR SELECT
 USING (
+    -- Users can see sessions they created
     EXISTS (
         SELECT 1 FROM users u
         WHERE u.user_id = collaboration_sessions.created_by
         AND u.id = auth.uid()
     )
-    OR EXISTS (
-        SELECT 1 FROM collaboration_participants cp
-        JOIN users u ON cp.user_id = u.user_id
-        WHERE cp.session_id = collaboration_sessions.session_id
-        AND u.id = auth.uid()
-        AND cp.is_active = true
-    )
+    -- OR the session is public
     OR is_public = true
+    -- OR they're in a class-subject that has access (for class-based sessions)
+    OR (
+        class_subject_id IS NOT NULL
+        AND EXISTS (
+            SELECT 1 FROM class_subjects cs
+            JOIN users u ON cs.teacher_id = u.user_id
+            WHERE cs.class_subject_id = collaboration_sessions.class_subject_id
+            AND u.id = auth.uid()
+        )
+    )
 );
 
 -- Policy: Users can create sessions
