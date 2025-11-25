@@ -1063,11 +1063,6 @@ function LessonContentManager() {
       const contentTextValue = contentText?.trim() || '';
       const isLearningContent = textContentTypes.includes(contentType);
 
-      // For 3D_MODEL, store the content_id in metadata
-      const metadata = contentType === '3D_MODEL' && selected3DModel 
-        ? { arvr_content_id: selected3DModel.content_id, content_type: selected3DModel.content_type }
-        : null;
-
       const contentData = {
         lesson_id: parseInt(lessonId),
         content_type: contentType,
@@ -1077,7 +1072,6 @@ function LessonContentManager() {
         file_name: fileName,
         file_size: fileSize,
         mime_type: mimeType,
-        metadata: metadata,
         // For Learning Content types, only set the specific field; for Media & Files, set description, instructions, key_concepts
         description: isLearningContent ? null : (description?.trim() || null),
         instructions: isLearningContent ? null : (instructions?.trim() || null),
@@ -1107,6 +1101,14 @@ function LessonContentManager() {
         prerequisite_content_ids: isLearningContent ? null : (selectedPrerequisites.length > 0 ? selectedPrerequisites : null)
       };
 
+      // Add metadata for 3D_MODEL content type
+      if (contentType === '3D_MODEL' && selected3DModel) {
+        contentData.metadata = {
+          arvr_content_id: selected3DModel.content_id,
+          content_type: selected3DModel.content_type
+        };
+      }
+
       if (editingContent) {
         // Update existing content - exclude fields that shouldn't be updated
         const { lesson_id, uploaded_by, ...updateFields } = contentData;
@@ -1132,6 +1134,11 @@ function LessonContentManager() {
           prerequisite_content_ids: updateFields.prerequisite_content_ids,
           updated_at: new Date().toISOString()
         };
+
+        // Include metadata if it exists (for 3D_MODEL)
+        if (updateFields.metadata) {
+          updateData.metadata = updateFields.metadata;
+        }
 
         // Only include file fields if content type is FILE
         if (contentType === 'FILE') {
