@@ -14,6 +14,7 @@ import ModelViewerComponent from './Viewers/ModelViewerComponent';
 import ThreeDModelViewerV2 from './Viewers/ThreeDModelViewerV2';
 import WebXRViewerV2 from './Viewers/WebXRViewerV2';
 import ARViewer from './Viewers/ARViewer';
+import ARViewerEnhanced from './Viewers/ARViewerEnhanced';
 import VirtualFieldTripViewer from './Viewers/VirtualFieldTripViewer';
 
 const viewersAvailable = true;
@@ -344,20 +345,19 @@ function ARVRIntegration({ classSubjectId, classSubject, studentId = null }) {
                 </ViewerErrorBoundary>
               )}
 
-              {/* AR Overlay Viewer */}
+              {/* AR Overlay Viewer - Enhanced */}
               {selectedContent.content_type === 'AR_OVERLAY' && (
                 <ViewerErrorBoundary viewerType="AR Overlay" contentUrl={selectedContent.content_url}>
-                  {viewersAvailable && ARViewer ? (
-                    <Suspense fallback={<div className="text-center py-5"><Spinner /> Loading AR viewer...</div>}>
-                      <ARViewer
-                        contentUrl={selectedContent.content_url}
-                        arMarkerUrl={selectedContent.ar_marker_url}
-                        modelFormat={selectedContent.model_format}
-                        platform={selectedContent.platform || 'WEBXR'}
-                        onInteraction={handleInteraction}
-                        onStateChange={handleStateChange}
-                      />
-                    </Suspense>
+                  {viewersAvailable ? (
+                    <ARViewerEnhanced
+                      contentUrl={selectedContent.content_url}
+                      arMarkerUrl={selectedContent.ar_marker_url}
+                      modelFormat={selectedContent.model_format || 'GLTF'}
+                      platform={selectedContent.platform || 'WEBXR'}
+                      modelProperties={selectedContent.model_properties || {}}
+                      onInteraction={handleInteraction}
+                      onStateChange={handleStateChange}
+                    />
                   ) : (
                     <FallbackViewer type="AR Overlay" contentUrl={selectedContent.content_url} />
                   )}

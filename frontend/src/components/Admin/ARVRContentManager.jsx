@@ -25,6 +25,7 @@ function ARVRContentManager() {
     content_type: '3D_MODEL',
     content_url: '',
     model_format: 'GLTF',
+    ar_marker_url: '',
     subject_id: '',
     class_subject_id: '',
     difficulty_level: 'MEDIUM',
@@ -88,6 +89,7 @@ function ARVRContentManager() {
         content_type: data.content_type,
         content_url: data.content_url || null,
         model_format: data.model_format || null,
+        ar_marker_url: data.ar_marker_url && data.ar_marker_url !== '' ? data.ar_marker_url : null,
         platform: data.platform || null,
         subject_id: data.subject_id && data.subject_id !== '' ? parseInt(data.subject_id) : null,
         class_subject_id: data.class_subject_id && data.class_subject_id !== '' ? parseInt(data.class_subject_id) : null,
@@ -230,6 +232,7 @@ function ARVRContentManager() {
       content_type: '3D_MODEL',
       content_url: '',
       model_format: 'GLTF',
+      ar_marker_url: '',
       subject_id: '',
       class_subject_id: '',
       difficulty_level: 'MEDIUM',
@@ -256,7 +259,8 @@ function ARVRContentManager() {
       content_type: item.content_type || '3D_MODEL',
       content_url: item.content_url || '',
       model_format: item.model_format || 'GLTF',
-      subject_id: item.subject_id || '',
+      ar_marker_url: item.ar_marker_url || '',
+      subject_id: item.subject_id ? String(item.subject_id) : '',
       class_subject_id: item.class_subject_id || '',
       difficulty_level: item.difficulty_level || 'MEDIUM',
       estimated_duration_minutes: item.estimated_duration_minutes || 15,
@@ -472,6 +476,22 @@ function ARVRContentManager() {
                 <option value="USDZ">USDZ</option>
               </Form.Select>
             </Form.Group>
+
+            {/* AR Marker URL - Only show for AR_OVERLAY */}
+            {formData.content_type === 'AR_OVERLAY' && (
+              <Form.Group className="mb-3">
+                <Form.Label>AR Marker URL (Optional)</Form.Label>
+                <Form.Control
+                  type="url"
+                  value={formData.ar_marker_url || ''}
+                  onChange={(e) => setFormData({ ...formData, ar_marker_url: e.target.value })}
+                  placeholder="https://cdn.example.com/markers/marker.png"
+                />
+                <Form.Text className="text-muted">
+                  URL to AR marker image for marker-based AR. Leave empty for markerless AR (WebXR).
+                </Form.Text>
+              </Form.Group>
+            )}
 
             <Form.Group className="mb-3">
               <Form.Label>Subject</Form.Label>
