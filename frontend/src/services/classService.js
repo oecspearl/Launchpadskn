@@ -289,6 +289,27 @@ export const classService = {
         return data;
     },
 
+    /**
+     * Get paginated lessons for a specific class subject.
+     * @param {string|number} classSubjectId - The ID of the class_subject.
+     * @param {number} page - 1‑based page number (default 1).
+     * @param {number} pageSize - Number of lessons per page (default 20).
+     * @returns {{ lessons: any[], total: number }}
+     */
+    async getLessonsByClassSubjectPaginated(classSubjectId, page = 1, pageSize = 20) {
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+        const { data, error, count } = await supabase
+            .from('lessons')
+            .select('*', { count: 'exact' })
+            .eq('class_subject_id', classSubjectId)
+            .order('lesson_date', { ascending: true })
+            .range(from, to);
+        if (error) throw error;
+        return { lessons: data || [], total: count || 0 };
+    },
+
+
     async assignStudentToClass(studentId, classId, academicYear) {
         const { data, error } = await supabase
             .from('student_class_assignments')
