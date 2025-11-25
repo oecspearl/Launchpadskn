@@ -10,7 +10,7 @@ import {
   FaClipboardCheck, FaTasks, FaFilePdf, FaDownload, FaExternalLinkAlt,
   FaPlay, FaImage, FaFileAlt, FaLightbulb, FaQuestionCircle, FaComments,
   FaGraduationCap, FaRocket, FaStar, FaChevronDown, FaChevronUp,
-  FaSearch, FaFilter, FaLock, FaArrowRight, FaHashtag
+  FaSearch, FaFilter, FaLock, FaArrowRight, FaHashtag, FaCube
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -18,6 +18,8 @@ import { supabase } from '../../config/supabase';
 import FlashcardViewer from './FlashcardViewer';
 import InteractiveVideoViewer from './InteractiveVideoViewer';
 import InteractiveBookPlayer from './InteractiveBookPlayer';
+import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
+import ViewerErrorBoundary from '../InteractiveContent/Viewers/ViewerErrorBoundary';
 import './LessonView.css';
 
 function LessonView() {
@@ -304,6 +306,7 @@ function LessonView() {
       case 'FLASHCARD': return 'flashcard';
       case 'INTERACTIVE_VIDEO': return 'video';
       case 'INTERACTIVE_BOOK': return 'book';
+      case '3D_MODEL': return '3d-model';
       default: return '';
     }
   };
@@ -325,6 +328,7 @@ function LessonView() {
       case 'FLASHCARD': return <FaClipboardList />;
       case 'INTERACTIVE_VIDEO': return <FaPlay />;
       case 'INTERACTIVE_BOOK': return <FaBook />;
+      case '3D_MODEL': return <FaCube />;
       default: return <FaBook />;
     }
   };
@@ -357,8 +361,8 @@ function LessonView() {
     };
     
     content.forEach(item => {
-      // Special handling: FLASHCARD and INTERACTIVE_VIDEO content types always go to Learning section
-      if (item.content_type === 'FLASHCARD' || item.content_type === 'INTERACTIVE_VIDEO' || item.content_type === 'INTERACTIVE_BOOK') {
+      // Special handling: FLASHCARD, INTERACTIVE_VIDEO, INTERACTIVE_BOOK, and 3D_MODEL content types always go to Learning section
+      if (item.content_type === 'FLASHCARD' || item.content_type === 'INTERACTIVE_VIDEO' || item.content_type === 'INTERACTIVE_BOOK' || item.content_type === '3D_MODEL') {
         categories.learning.push(item);
         return;
       }
@@ -396,7 +400,7 @@ function LessonView() {
         // Learning content (including interactive content like flashcards)
         else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
                   'DISCUSSION_PROMPTS', 
-                  'VIDEO', 'IMAGE', 'DOCUMENT', 'FLASHCARD', 'INTERACTIVE_VIDEO'].includes(contentType)) {
+                  'VIDEO', 'IMAGE', 'DOCUMENT', 'FLASHCARD', 'INTERACTIVE_VIDEO', '3D_MODEL'].includes(contentType)) {
           categories.learning.push(item);
         }
         // Resources (files and links)
@@ -803,7 +807,44 @@ function LessonView() {
                 </div>
               )}
               
-              {contentItem.description && contentItem.content_type !== 'FLASHCARD' && contentItem.content_type !== 'INTERACTIVE_VIDEO' && contentItem.content_type !== 'INTERACTIVE_BOOK' && (
+              {/* 3D Model Preview */}
+              {contentItem.content_type === '3D_MODEL' && (
+                <div className="classwork-info-box">
+                  <div className="d-flex align-items-center gap-2 mb-2">
+                    <Badge bg="primary">3D Model / AR/VR</Badge>
+                    {contentItem.metadata && (() => {
+                      try {
+                        const metadata = typeof contentItem.metadata === 'string' 
+                          ? JSON.parse(contentItem.metadata) 
+                          : contentItem.metadata;
+                        if (metadata.content_type) {
+                          return <Badge bg="secondary">{metadata.content_type.replace('_', ' ')}</Badge>;
+                        }
+                      } catch (e) {}
+                      return null;
+                    })()}
+                  </div>
+                  {contentItem.description && (
+                    <div className="mt-2">{contentItem.description}</div>
+                  )}
+                  {contentItem.url && (
+                    <div className="mt-3">
+                      <Button 
+                        variant="primary" 
+                        onClick={() => {
+                          setCurrent3DModelContent(contentItem);
+                          setShow3DModelViewer(true);
+                        }}
+                      >
+                        <FaCube className="me-2" />
+                        View 3D Model
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {contentItem.description && contentItem.content_type !== 'FLASHCARD' && contentItem.content_type !== 'INTERACTIVE_VIDEO' && contentItem.content_type !== 'INTERACTIVE_BOOK' && contentItem.content_type !== '3D_MODEL' && (
                 <div className="classwork-info-box">
                   {contentItem.description}
                 </div>
@@ -1918,6 +1959,47 @@ function LessonView() {
                 setCurrentInteractiveBookContent(null);
               }}
             />
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* 3D Model Viewer Modal */}
+      <Modal
+        show={show3DModelViewer}
+        onHide={() => {
+          setShow3DModelViewer(false);
+          setCurrent3DModelContent(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaCube className="me-2" />
+            {current3DModelContent?.title || '3D Model'}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {current3DModelContent && current3DModelContent.url && (
+            <ViewerErrorBoundary>
+              <ModelViewerComponent
+                contentUrl={current3DModelContent.url}
+                modelFormat="GLTF"
+                modelProperties={{}}
+                annotations={[]}
+                onInteraction={(interaction) => {
+                  console.log('3D Model interaction:', interaction);
+                }}
+                onStateChange={(state) => {
+                  console.log('3D Model state:', state);
+                }}
+              />
+            </ViewerErrorBoundary>
+          )}
+          {current3DModelContent?.description && (
+            <div className="mt-3">
+              <p>{current3DModelContent.description}</p>
+            </div>
           )}
         </Modal.Body>
       </Modal>

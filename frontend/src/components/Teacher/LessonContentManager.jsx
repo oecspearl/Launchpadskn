@@ -53,6 +53,9 @@ function LessonContentManager() {
   const [currentInteractiveVideoContentId, setCurrentInteractiveVideoContentId] = useState(null);
   const [showInteractiveBookCreator, setShowInteractiveBookCreator] = useState(false);
   const [currentInteractiveBookContentId, setCurrentInteractiveBookContentId] = useState(null);
+  const [selected3DModel, setSelected3DModel] = useState(null);
+  const [available3DModels, setAvailable3DModels] = useState([]);
+  const [loading3DModels, setLoading3DModels] = useState(false);
 
   // Form state
   const [contentType, setContentType] = useState('FILE');
@@ -116,6 +119,31 @@ function LessonContentManager() {
       setLessonData(data);
     } catch (err) {
       console.error('Error fetching lesson data:', err);
+    }
+  };
+
+  const fetchAvailable3DModels = async () => {
+    try {
+      setLoading3DModels(true);
+      const { data, error } = await supabase
+        .from('arvr_content')
+        .select('*, subjects:subject_id (subject_name)')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist
+          setAvailable3DModels([]);
+          return;
+        }
+        throw error;
+      }
+      setAvailable3DModels(data || []);
+    } catch (err) {
+      console.error('Error fetching 3D models:', err);
+      setAvailable3DModels([]);
+    } finally {
+      setLoading3DModels(false);
     }
   };
 
@@ -889,7 +917,14 @@ function LessonContentManager() {
       // Note: QUIZ can have URL (external) or be created in-app (no URL required)
       const assessmentTypes = ['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'];
       let finalUrl = null;
-      if (contentType === 'LINK' || contentType === 'VIDEO' || contentType === 'IMAGE' || contentType === 'DOCUMENT' || assessmentTypes.includes(contentType)) {
+      if (contentType === '3D_MODEL') {
+        if (!selected3DModel) {
+          setError('Please select a 3D model');
+          setUploading(false);
+          return;
+        }
+        finalUrl = selected3DModel.content_url;
+      } else if (contentType === 'LINK' || contentType === 'VIDEO' || contentType === 'IMAGE' || contentType === 'DOCUMENT' || assessmentTypes.includes(contentType)) {
         finalUrl = url || null; // Use the URL from the form (optional for QUIZ)
       } else if (contentType === 'FILE') {
         finalUrl = null; // Don't store URL for FILE type - always use file_path with signed URLs
@@ -1004,6 +1039,11 @@ function LessonContentManager() {
       const contentTextValue = contentText?.trim() || '';
       const isLearningContent = textContentTypes.includes(contentType);
 
+      // For 3D_MODEL, store the content_id in metadata
+      const metadata = contentType === '3D_MODEL' && selected3DModel 
+        ? { arvr_content_id: selected3DModel.content_id, content_type: selected3DModel.content_type }
+        : null;
+
       const contentData = {
         lesson_id: parseInt(lessonId),
         content_type: contentType,
@@ -1013,6 +1053,7 @@ function LessonContentManager() {
         file_name: fileName,
         file_size: fileSize,
         mime_type: mimeType,
+        metadata: metadata,
         // For Learning Content types, only set the specific field; for Media & Files, set description, instructions, key_concepts
         description: isLearningContent ? null : (description?.trim() || null),
         instructions: isLearningContent ? null : (instructions?.trim() || null),
@@ -2100,6 +2141,7 @@ function LessonContentManager() {
                   <option value="FLASHCARD">Flashcard Set</option>
                   <option value="INTERACTIVE_VIDEO">Interactive Video</option>
                   <option value="INTERACTIVE_BOOK">Interactive Book</option>
+                  <option value="3D_MODEL">3D Model / AR/VR</option>
                 </optgroup>
                 <optgroup label="Learning Content">
                   <option value="LEARNING_OUTCOMES">Learning Outcomes</option>
