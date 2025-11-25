@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   Modal, Button, Card, Row, Col, Form, Badge, Alert,
-  Tabs, Tab, InputGroup, Dropdown, Spinner, Tooltip, OverlayTrigger
+  Tabs, Tab, InputGroup, Dropdown, Spinner, Tooltip, OverlayTrigger,
+  ListGroup
 } from 'react-bootstrap';
 import {
   FaGripVertical, FaPlus, FaEdit, FaTrash, FaSave, FaCopy,
@@ -476,10 +477,25 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
 
       <Modal.Body className="curriculum-builder-body">
         <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-3">
+          <Tab eventKey="frontMatter" title={
+            <>
+              <FaBook className="me-1" />
+              Front Matter
+            </>
+          }>
+            <FrontMatterEditor
+              frontMatter={curriculumData.frontMatter}
+              offering={offering}
+              onUpdate={(updates) => setCurriculumData({
+                ...curriculumData,
+                frontMatter: { ...curriculumData.frontMatter, ...updates }
+              })}
+            />
+          </Tab>
           <Tab eventKey="builder" title={
             <>
               <FaBook className="me-1" />
-              Builder
+              Topics
             </>
           }>
             <div className="d-flex justify-content-between align-items-center mb-3">
@@ -731,13 +747,101 @@ function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete
   );
 }
 
-// Topic Editor Component (simplified - full implementation would be more detailed)
+// Topic Editor Component (Full Implementation)
 function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onRequestAISuggestions }) {
-  const [formData, setFormData] = useState(topic);
+  const [formData, setFormData] = useState({
+    ...topic,
+    essentialLearningOutcomes: topic.essentialLearningOutcomes || [],
+    gradeLevelGuidelines: topic.gradeLevelGuidelines || [],
+    instructionalUnits: topic.instructionalUnits || [],
+    resources: topic.resources || {
+      webLinks: [],
+      videos: [],
+      games: [],
+      worksheets: []
+    },
+    closingFramework: topic.closingFramework || {
+      essentialEducationCompetencies: [],
+      crossCurricularConnections: {
+        socialStudies: '',
+        science: '',
+        english: ''
+      },
+      localCultureIntegration: '',
+      technologyIntegration: '',
+      itemsOfInspiration: []
+    }
+  });
+  const [activeTab, setActiveTab] = useState('overview');
+  const [editingUnitIndex, setEditingUnitIndex] = useState(null);
 
   const handleSave = () => {
     onUpdate(formData);
     onCancel();
+  };
+
+  const handleAddOutcome = () => {
+    setFormData({
+      ...formData,
+      essentialLearningOutcomes: [...formData.essentialLearningOutcomes, '']
+    });
+  };
+
+  const handleRemoveOutcome = (idx) => {
+    const updated = formData.essentialLearningOutcomes.filter((_, i) => i !== idx);
+    setFormData({ ...formData, essentialLearningOutcomes: updated });
+  };
+
+  const handleAddUnit = () => {
+    const newUnit = {
+      unitNumber: formData.instructionalUnits.length + 1,
+      scoNumber: `${formData.topicNumber}.${formData.instructionalUnits.length + 1}`,
+      specificCurriculumOutcomes: '',
+      inclusiveAssessmentStrategies: '',
+      inclusiveLearningStrategies: '',
+      activities: []
+    };
+    setFormData({
+      ...formData,
+      instructionalUnits: [...formData.instructionalUnits, newUnit]
+    });
+  };
+
+  const handleUpdateUnit = (unitIndex, updates) => {
+    const updatedUnits = [...formData.instructionalUnits];
+    updatedUnits[unitIndex] = { ...updatedUnits[unitIndex], ...updates };
+    setFormData({ ...formData, instructionalUnits: updatedUnits });
+  };
+
+  const handleDeleteUnit = (unitIndex) => {
+    const updatedUnits = formData.instructionalUnits.filter((_, i) => i !== unitIndex);
+    // Renumber units
+    updatedUnits.forEach((unit, idx) => {
+      unit.unitNumber = idx + 1;
+      unit.scoNumber = `${formData.topicNumber}.${idx + 1}`;
+    });
+    setFormData({ ...formData, instructionalUnits: updatedUnits });
+  };
+
+  const handleAddActivity = (unitIndex) => {
+    const unit = formData.instructionalUnits[unitIndex];
+    const newActivity = {
+      id: Date.now(),
+      description: '',
+      materials: [],
+      duration: '',
+      learningObjectives: []
+    };
+    const updatedActivities = [...(unit.activities || []), newActivity];
+    handleUpdateUnit(unitIndex, { activities: updatedActivities });
+  };
+
+  const handleAddResource = (resourceType, resource) => {
+    const updatedResources = {
+      ...formData.resources,
+      [resourceType]: [...(formData.resources[resourceType] || []), resource]
+    };
+    setFormData({ ...formData, resources: updatedResources });
   };
 
   return (
@@ -761,29 +865,781 @@ function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onReque
         </div>
       </Card.Header>
       <Card.Body>
-        <Form>
-          <Form.Group className="mb-3">
-            <Form.Label>Topic Title</Form.Label>
-            <Form.Control
-              type="text"
-              value={formData.title || ''}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Enter topic title"
+        <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-3">
+          <Tab eventKey="overview" title="Overview">
+            <Form.Group className="mb-3">
+              <Form.Label>Topic Title *</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.title || ''}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="e.g., Number and Operations"
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Strand Identification</Form.Label>
+              <Form.Control
+                type="text"
+                value={formData.strandIdentification || ''}
+                onChange={(e) => setFormData({ ...formData, strandIdentification: e.target.value })}
+                placeholder="Strand or domain identification"
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Essential Learning Outcomes</Form.Label>
+              {formData.essentialLearningOutcomes.map((outcome, idx) => (
+                <InputGroup key={idx} className="mb-2">
+                  <Form.Control
+                    type="text"
+                    value={outcome}
+                    onChange={(e) => {
+                      const updated = [...formData.essentialLearningOutcomes];
+                      updated[idx] = e.target.value;
+                      setFormData({ ...formData, essentialLearningOutcomes: updated });
+                    }}
+                    placeholder="Learning outcome..."
+                  />
+                  <Button
+                    variant="outline-danger"
+                    onClick={() => handleRemoveOutcome(idx)}
+                  >
+                    <FaTrash />
+                  </Button>
+                </InputGroup>
+              ))}
+              <Button variant="outline-primary" size="sm" onClick={handleAddOutcome}>
+                <FaPlus className="me-1" />
+                Add Outcome
+              </Button>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Grade Level Guidelines</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                value={Array.isArray(formData.gradeLevelGuidelines) 
+                  ? formData.gradeLevelGuidelines.join('\n') 
+                  : formData.gradeLevelGuidelines || ''}
+                onChange={(e) => setFormData({
+                  ...formData,
+                  gradeLevelGuidelines: e.target.value.split('\n').filter(l => l.trim())
+                })}
+                placeholder="One guideline per line..."
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Useful Content Knowledge</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                value={formData.usefulContentKnowledge || ''}
+                onChange={(e) => setFormData({ ...formData, usefulContentKnowledge: e.target.value })}
+                placeholder="Key content knowledge for this topic..."
+              />
+            </Form.Group>
+          </Tab>
+
+          <Tab eventKey="units" title={`Units (${formData.instructionalUnits.length})`}>
+            <div className="mb-3">
+              <Button variant="primary" size="sm" onClick={handleAddUnit}>
+                <FaPlus className="me-1" />
+                Add Unit
+              </Button>
+            </div>
+
+            <UnitList
+              units={formData.instructionalUnits}
+              topicNumber={formData.topicNumber}
+              onUpdate={handleUpdateUnit}
+              onDelete={handleDeleteUnit}
+              onAddActivity={handleAddActivity}
             />
-          </Form.Group>
-          <Form.Group className="mb-3">
-            <Form.Label>Strand Identification</Form.Label>
-            <Form.Control
-              type="text"
-              value={formData.strandIdentification || ''}
-              onChange={(e) => setFormData({ ...formData, strandIdentification: e.target.value })}
-              placeholder="Enter strand identification"
+          </Tab>
+
+          <Tab eventKey="resources" title="Resources">
+            <ResourceManager
+              resources={formData.resources}
+              onAddResource={handleAddResource}
+              onLinkResource={onLinkResource}
             />
-          </Form.Group>
-          {/* Add more fields as needed */}
-        </Form>
+          </Tab>
+
+          <Tab eventKey="framework" title="Closing Framework">
+            <ClosingFrameworkEditor
+              framework={formData.closingFramework}
+              onUpdate={(updates) => setFormData({ ...formData, closingFramework: { ...formData.closingFramework, ...updates } })}
+            />
+          </Tab>
+        </Tabs>
       </Card.Body>
     </Card>
+  );
+}
+
+// Unit List Component with Drag-and-Drop
+function UnitList({ units, topicNumber, onUpdate, onDelete, onAddActivity }) {
+  const [editingUnitIndex, setEditingUnitIndex] = useState(null);
+  const [activeDragId, setActiveDragId] = useState(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) {
+      setActiveDragId(null);
+      return;
+    }
+
+    const oldIndex = units.findIndex(u => `unit-${u.unitNumber}` === active.id);
+    const newIndex = units.findIndex(u => `unit-${u.unitNumber}` === over.id);
+
+    if (oldIndex !== -1 && newIndex !== -1) {
+      const newUnits = arrayMove(units, oldIndex, newIndex);
+      // Renumber units
+      newUnits.forEach((unit, idx) => {
+        unit.unitNumber = idx + 1;
+        unit.scoNumber = `${topicNumber}.${idx + 1}`;
+        onUpdate(idx, { ...unit, unitNumber: idx + 1, scoNumber: `${topicNumber}.${idx + 1}` });
+      });
+    }
+    setActiveDragId(null);
+  };
+
+  const handleDragStart = (event) => {
+    setActiveDragId(event.active.id);
+  };
+
+  if (units.length === 0) {
+    return <Alert variant="info">No units yet. Click "Add Unit" to get started.</Alert>;
+  }
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <SortableContext
+        items={units.map(u => `unit-${u.unitNumber}`)}
+        strategy={verticalListSortingStrategy}
+      >
+        <div className="units-list">
+          {units.map((unit, index) => (
+            <SortableUnitItem
+              key={`unit-${unit.unitNumber}`}
+              unit={unit}
+              index={index}
+              topicNumber={topicNumber}
+              isEditing={editingUnitIndex === index}
+              onEdit={() => setEditingUnitIndex(index)}
+              onUpdate={(updates) => {
+                onUpdate(index, updates);
+                setEditingUnitIndex(null);
+              }}
+              onCancel={() => setEditingUnitIndex(null)}
+              onDelete={() => {
+                onDelete(index);
+                setEditingUnitIndex(null);
+              }}
+              onAddActivity={() => onAddActivity(index)}
+            />
+          ))}
+        </div>
+      </SortableContext>
+      <DragOverlay>
+        {activeDragId ? (
+          <Card className="unit-card dragging">
+            <Card.Body>
+              Unit {units.find(u => `unit-${u.unitNumber}` === activeDragId)?.unitNumber}
+            </Card.Body>
+          </Card>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  );
+}
+
+// Sortable Unit Item
+function SortableUnitItem({ unit, index, topicNumber, isEditing, onEdit, onUpdate, onCancel, onDelete, onAddActivity }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: `unit-${unit.unitNumber}` });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1
+  };
+
+  if (isEditing) {
+    return (
+      <UnitEditor
+        unit={unit}
+        topicNumber={topicNumber}
+        onUpdate={onUpdate}
+        onCancel={onCancel}
+        onAddActivity={onAddActivity}
+      />
+    );
+  }
+
+  return (
+    <Card
+      ref={setNodeRef}
+      style={style}
+      className={`unit-card mb-3 ${isDragging ? 'dragging' : ''}`}
+    >
+      <Card.Header className="d-flex align-items-center justify-content-between">
+        <div className="d-flex align-items-center gap-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="drag-handle"
+            style={{ cursor: 'grab' }}
+          >
+            <FaGripVertical />
+          </div>
+          <Badge bg="info">Unit {unit.unitNumber}</Badge>
+          <strong>SCO {unit.scoNumber}</strong>
+        </div>
+        <div className="d-flex gap-2">
+          <Button variant="outline-primary" size="sm" onClick={onEdit}>
+            <FaEdit />
+          </Button>
+          <Button variant="outline-danger" size="sm" onClick={onDelete}>
+            <FaTrash />
+          </Button>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        {unit.specificCurriculumOutcomes && (
+          <p className="small text-muted mb-1">
+            <strong>SCOs:</strong> {unit.specificCurriculumOutcomes.substring(0, 100)}
+            {unit.specificCurriculumOutcomes.length > 100 ? '...' : ''}
+          </p>
+        )}
+        {unit.activities && unit.activities.length > 0 && (
+          <Badge bg="secondary">{unit.activities.length} Activities</Badge>
+        )}
+      </Card.Body>
+    </Card>
+  );
+}
+
+// Unit Editor Component
+function UnitEditor({ unit, topicNumber, onUpdate, onCancel, onAddActivity }) {
+  const [formData, setFormData] = useState({
+    ...unit,
+    activities: unit.activities || []
+  });
+
+  const handleSave = () => {
+    onUpdate(formData);
+  };
+
+  const handleUpdateActivity = (activityIndex, updates) => {
+    const updatedActivities = [...formData.activities];
+    updatedActivities[activityIndex] = { ...updatedActivities[activityIndex], ...updates };
+    setFormData({ ...formData, activities: updatedActivities });
+  };
+
+  const handleDeleteActivity = (activityIndex) => {
+    const updatedActivities = formData.activities.filter((_, i) => i !== activityIndex);
+    setFormData({ ...formData, activities: updatedActivities });
+  };
+
+  return (
+    <Card className="unit-editor mb-3">
+      <Card.Header>
+        <div className="d-flex justify-content-between align-items-center">
+          <strong>Editing Unit {unit.unitNumber} - SCO {unit.scoNumber}</strong>
+          <div className="d-flex gap-2">
+            <Button variant="outline-secondary" size="sm" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button variant="primary" size="sm" onClick={handleSave}>
+              <FaCheck className="me-1" />
+              Save
+            </Button>
+          </div>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        <Row>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Specific Curriculum Outcomes (SCOs) *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={8}
+                value={formData.specificCurriculumOutcomes || ''}
+                onChange={(e) => setFormData({ ...formData, specificCurriculumOutcomes: e.target.value })}
+                placeholder="Numbered learning objectives..."
+                required
+              />
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Inclusive Assessment Strategies</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={8}
+                value={formData.inclusiveAssessmentStrategies || ''}
+                onChange={(e) => setFormData({ ...formData, inclusiveAssessmentStrategies: e.target.value })}
+                placeholder="Assessment methods and strategies..."
+              />
+            </Form.Group>
+          </Col>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Inclusive Learning Strategies</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={8}
+                value={formData.inclusiveLearningStrategies || ''}
+                onChange={(e) => setFormData({ ...formData, inclusiveLearningStrategies: e.target.value })}
+                placeholder="Teaching and learning strategies..."
+              />
+            </Form.Group>
+          </Col>
+        </Row>
+
+        <hr />
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h6>Activities ({formData.activities.length})</h6>
+          <Button variant="outline-primary" size="sm" onClick={onAddActivity}>
+            <FaPlus className="me-1" />
+            Add Activity
+          </Button>
+        </div>
+
+        {formData.activities.map((activity, idx) => (
+          <Card key={activity.id || idx} className="mb-2">
+            <Card.Body>
+              <div className="d-flex justify-content-between align-items-start mb-2">
+                <strong>Activity {idx + 1}</strong>
+                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteActivity(idx)}>
+                  <FaTrash />
+                </Button>
+              </div>
+              <Form.Group className="mb-2">
+                <Form.Label>Description</Form.Label>
+                <Form.Control
+                  as="textarea"
+                  rows={2}
+                  value={activity.description || ''}
+                  onChange={(e) => handleUpdateActivity(idx, { description: e.target.value })}
+                  placeholder="Activity description..."
+                />
+              </Form.Group>
+              <Row>
+                <Col md={6}>
+                  <Form.Group className="mb-2">
+                    <Form.Label>Duration</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={activity.duration || ''}
+                      onChange={(e) => handleUpdateActivity(idx, { duration: e.target.value })}
+                      placeholder="e.g., 30 minutes"
+                    />
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group className="mb-2">
+                    <Form.Label>Materials (comma-separated)</Form.Label>
+                    <Form.Control
+                      type="text"
+                      value={Array.isArray(activity.materials) ? activity.materials.join(', ') : activity.materials || ''}
+                      onChange={(e) => handleUpdateActivity(idx, {
+                        materials: e.target.value.split(',').map(m => m.trim()).filter(m => m)
+                      })}
+                      placeholder="Material 1, Material 2..."
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+        ))}
+      </Card.Body>
+    </Card>
+  );
+}
+
+// Resource Manager Component
+function ResourceManager({ resources, onAddResource, onLinkResource }) {
+  const [showResourceLibrary, setShowResourceLibrary] = useState(false);
+
+  return (
+    <div>
+      <div className="mb-3">
+        <Button variant="primary" size="sm" onClick={() => setShowResourceLibrary(true)}>
+          <FaLink className="me-1" />
+          Link from Library
+        </Button>
+      </div>
+
+      <Tabs defaultActiveKey="webLinks">
+        <Tab eventKey="webLinks" title={`Web Links (${resources.webLinks?.length || 0})`}>
+          <ResourceList
+            resources={resources.webLinks || []}
+            type="webLinks"
+            onAdd={(url) => onAddResource('webLinks', { url, title: url })}
+          />
+        </Tab>
+        <Tab eventKey="videos" title={`Videos (${resources.videos?.length || 0})`}>
+          <ResourceList
+            resources={resources.videos || []}
+            type="videos"
+            onAdd={(url) => onAddResource('videos', { url, title: url })}
+          />
+        </Tab>
+        <Tab eventKey="games" title={`Games (${resources.games?.length || 0})`}>
+          <ResourceList
+            resources={resources.games || []}
+            type="games"
+            onAdd={(url) => onAddResource('games', { url, title: url })}
+          />
+        </Tab>
+        <Tab eventKey="worksheets" title={`Worksheets (${resources.worksheets?.length || 0})`}>
+          <ResourceList
+            resources={resources.worksheets || []}
+            type="worksheets"
+            onAdd={(url) => onAddResource('worksheets', { url, title: url })}
+          />
+        </Tab>
+      </Tabs>
+    </div>
+  );
+}
+
+function ResourceList({ resources, type, onAdd }) {
+  const [newResource, setNewResource] = useState('');
+
+  const handleAdd = () => {
+    if (newResource.trim()) {
+      onAdd(newResource);
+      setNewResource('');
+    }
+  };
+
+  return (
+    <div>
+      <InputGroup className="mb-3">
+        <Form.Control
+          type="url"
+          value={newResource}
+          onChange={(e) => setNewResource(e.target.value)}
+          placeholder="Enter resource URL..."
+        />
+        <Button variant="primary" onClick={handleAdd}>
+          <FaPlus />
+        </Button>
+      </InputGroup>
+      {resources.length === 0 ? (
+        <Alert variant="info">No {type} added yet.</Alert>
+      ) : (
+        <ListGroup>
+          {resources.map((resource, idx) => (
+            <ListGroup.Item key={idx} className="d-flex justify-content-between align-items-center">
+              <a href={resource.url || resource} target="_blank" rel="noopener noreferrer">
+                {resource.title || resource.url || resource}
+              </a>
+              <Button variant="outline-danger" size="sm">
+                <FaTrash />
+              </Button>
+            </ListGroup.Item>
+          ))}
+        </ListGroup>
+      )}
+    </div>
+  );
+}
+
+// Closing Framework Editor Component
+function ClosingFrameworkEditor({ framework, onUpdate }) {
+  const [formData, setFormData] = useState(framework || {
+    essentialEducationCompetencies: [],
+    crossCurricularConnections: {
+      socialStudies: '',
+      science: '',
+      english: ''
+    },
+    localCultureIntegration: '',
+    technologyIntegration: '',
+    itemsOfInspiration: []
+  });
+
+  const handleSave = () => {
+    onUpdate(formData);
+  };
+
+  const handleAddCompetency = () => {
+    setFormData({
+      ...formData,
+      essentialEducationCompetencies: [...(formData.essentialEducationCompetencies || []), '']
+    });
+  };
+
+  const handleAddInspiration = () => {
+    setFormData({
+      ...formData,
+      itemsOfInspiration: [...(formData.itemsOfInspiration || []), '']
+    });
+  };
+
+  return (
+    <div>
+      <Form.Group className="mb-3">
+        <Form.Label>Essential Education Competencies</Form.Label>
+        {(formData.essentialEducationCompetencies || []).map((comp, idx) => (
+          <InputGroup key={idx} className="mb-2">
+            <Form.Control
+              type="text"
+              value={comp}
+              onChange={(e) => {
+                const updated = [...formData.essentialEducationCompetencies];
+                updated[idx] = e.target.value;
+                setFormData({ ...formData, essentialEducationCompetencies: updated });
+              }}
+            />
+            <Button variant="outline-danger" onClick={() => {
+              const updated = formData.essentialEducationCompetencies.filter((_, i) => i !== idx);
+              setFormData({ ...formData, essentialEducationCompetencies: updated });
+            }}>
+              <FaTrash />
+            </Button>
+          </InputGroup>
+        ))}
+        <Button variant="outline-primary" size="sm" onClick={handleAddCompetency}>
+          <FaPlus className="me-1" />
+          Add Competency
+        </Button>
+      </Form.Group>
+
+      <Form.Group className="mb-3">
+        <Form.Label>Cross-Curricular Connections</Form.Label>
+        <Row>
+          <Col md={4}>
+            <Form.Label>Social Studies</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={formData.crossCurricularConnections?.socialStudies || ''}
+              onChange={(e) => setFormData({
+                ...formData,
+                crossCurricularConnections: {
+                  ...formData.crossCurricularConnections,
+                  socialStudies: e.target.value
+                }
+              })}
+            />
+          </Col>
+          <Col md={4}>
+            <Form.Label>Science</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={formData.crossCurricularConnections?.science || ''}
+              onChange={(e) => setFormData({
+                ...formData,
+                crossCurricularConnections: {
+                  ...formData.crossCurricularConnections,
+                  science: e.target.value
+                }
+              })}
+            />
+          </Col>
+          <Col md={4}>
+            <Form.Label>English</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={formData.crossCurricularConnections?.english || ''}
+              onChange={(e) => setFormData({
+                ...formData,
+                crossCurricularConnections: {
+                  ...formData.crossCurricularConnections,
+                  english: e.target.value
+                }
+              })}
+            />
+          </Col>
+        </Row>
+      </Form.Group>
+
+      <Form.Group className="mb-3">
+        <Form.Label>Local Culture Integration</Form.Label>
+        <Form.Control
+          as="textarea"
+          rows={4}
+          value={formData.localCultureIntegration || ''}
+          onChange={(e) => setFormData({ ...formData, localCultureIntegration: e.target.value })}
+        />
+      </Form.Group>
+
+      <Form.Group className="mb-3">
+        <Form.Label>Technology Integration</Form.Label>
+        <Form.Control
+          as="textarea"
+          rows={4}
+          value={formData.technologyIntegration || ''}
+          onChange={(e) => setFormData({ ...formData, technologyIntegration: e.target.value })}
+        />
+      </Form.Group>
+
+      <Form.Group className="mb-3">
+        <Form.Label>Items of Inspiration</Form.Label>
+        {(formData.itemsOfInspiration || []).map((item, idx) => (
+          <InputGroup key={idx} className="mb-2">
+            <Form.Control
+              type="text"
+              value={item}
+              onChange={(e) => {
+                const updated = [...formData.itemsOfInspiration];
+                updated[idx] = e.target.value;
+                setFormData({ ...formData, itemsOfInspiration: updated });
+              }}
+            />
+            <Button variant="outline-danger" onClick={() => {
+              const updated = formData.itemsOfInspiration.filter((_, i) => i !== idx);
+              setFormData({ ...formData, itemsOfInspiration: updated });
+            }}>
+              <FaTrash />
+            </Button>
+          </InputGroup>
+        ))}
+        <Button variant="outline-primary" size="sm" onClick={handleAddInspiration}>
+          <FaPlus className="me-1" />
+          Add Item
+        </Button>
+      </Form.Group>
+
+      <Button variant="primary" onClick={handleSave}>
+        <FaCheck className="me-1" />
+        Save Framework
+      </Button>
+    </div>
+  );
+}
+
+// Front Matter Editor Component
+function FrontMatterEditor({ frontMatter, offering, onUpdate }) {
+  const [formData, setFormData] = useState({
+    coverPage: frontMatter?.coverPage || {
+      ministryBranding: true,
+      title: '',
+      academicYear: offering?.form?.academic_year || '2024-2025',
+      subjectName: offering?.subject?.subject_name || ''
+    },
+    introduction: frontMatter?.introduction || ''
+  });
+
+  const handleSave = () => {
+    onUpdate(formData);
+  };
+
+  return (
+    <div>
+      <Card className="mb-3">
+        <Card.Header>
+          <h5>Cover Page</h5>
+        </Card.Header>
+        <Card.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>Curriculum Title</Form.Label>
+            <Form.Control
+              type="text"
+              value={formData.coverPage.title || ''}
+              onChange={(e) => setFormData({
+                ...formData,
+                coverPage: { ...formData.coverPage, title: e.target.value }
+              })}
+              placeholder="e.g., Mathematics Curriculum - Form 1"
+            />
+          </Form.Group>
+          <Row>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Academic Year</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.coverPage.academicYear || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    coverPage: { ...formData.coverPage, academicYear: e.target.value }
+                  })}
+                  placeholder="2024-2025"
+                />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group className="mb-3">
+                <Form.Label>Subject Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={formData.coverPage.subjectName || ''}
+                  onChange={(e) => setFormData({
+                    ...formData,
+                    coverPage: { ...formData.coverPage, subjectName: e.target.value }
+                  })}
+                  placeholder="Subject name"
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+          <Form.Check
+            type="checkbox"
+            label="Include Ministry of Education Branding"
+            checked={formData.coverPage.ministryBranding || false}
+            onChange={(e) => setFormData({
+              ...formData,
+              coverPage: { ...formData.coverPage, ministryBranding: e.target.checked }
+            })}
+          />
+        </Card.Body>
+      </Card>
+
+      <Card className="mb-3">
+        <Card.Header>
+          <h5>Introduction</h5>
+        </Card.Header>
+        <Card.Body>
+          <Form.Group>
+            <Form.Label>Curriculum Introduction</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={10}
+              value={formData.introduction || ''}
+              onChange={(e) => setFormData({ ...formData, introduction: e.target.value })}
+              placeholder="Explain the educational vision and competencies for Saint Kitts and Nevis..."
+            />
+          </Form.Group>
+        </Card.Body>
+      </Card>
+
+      <Button variant="primary" onClick={handleSave}>
+        <FaSave className="me-1" />
+        Save Front Matter
+      </Button>
+    </div>
   );
 }
 
