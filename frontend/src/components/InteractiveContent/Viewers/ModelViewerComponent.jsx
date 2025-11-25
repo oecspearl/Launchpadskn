@@ -64,12 +64,42 @@ function ModelViewerComponent({
 
   const [loadError, setLoadError] = useState(null);
 
-  // Check if URL is a Sketchfab link (needs special handling)
-  const isSketchfabLink = contentUrl && (
-    contentUrl.includes('sketchfab.com') || 
-    contentUrl.includes('skfb.ly') ||
-    contentUrl.includes('sketchfab.io')
+  // Check if URL is an embed link or iframe src
+  const isEmbedLink = contentUrl && (
+    contentUrl.includes('/embed') ||
+    contentUrl.includes('iframe') ||
+    contentUrl.includes('embed/')
   );
+
+  // Check if URL is a Sketchfab sharing link (not embed)
+  const isSketchfabSharingLink = contentUrl && (
+    (contentUrl.includes('sketchfab.com') && !contentUrl.includes('/embed')) ||
+    contentUrl.includes('skfb.ly') ||
+    (contentUrl.includes('sketchfab.io') && !contentUrl.includes('/embed'))
+  );
+
+  // Extract iframe src from embed code if it's a full HTML embed
+  const extractIframeSrc = (url) => {
+    // If it's already an embed URL, return as is
+    if (url.includes('/embed') || url.startsWith('https://sketchfab.com/models/')) {
+      // Convert Sketchfab model URL to embed URL
+      if (url.includes('sketchfab.com/models/') && !url.includes('/embed')) {
+        const modelIdMatch = url.match(/sketchfab\.com\/models\/([^\/\?]+)/);
+        if (modelIdMatch) {
+          return `https://sketchfab.com/models/${modelIdMatch[1]}/embed`;
+        }
+      }
+      return url;
+    }
+    
+    // Try to extract iframe src from HTML embed code
+    const iframeMatch = url.match(/src=["']([^"']+)["']/);
+    if (iframeMatch) {
+      return iframeMatch[1];
+    }
+    
+    return url;
+  };
 
   if (!contentUrl) {
     return (
@@ -79,28 +109,79 @@ function ModelViewerComponent({
     );
   }
 
-  if (isSketchfabLink) {
+  // Handle embed links (iframe)
+  if (isEmbedLink || isSketchfabSharingLink) {
+    const embedSrc = extractIframeSrc(contentUrl);
+    
+    // If it's a Sketchfab sharing link, try to convert to embed URL
+    if (isSketchfabSharingLink && !embedSrc.includes('/embed')) {
+      // Try to extract model ID from various Sketchfab URL formats
+      const modelIdMatch = contentUrl.match(/(?:sketchfab\.com\/models\/|skfb\.ly\/)([^\/\?]+)/);
+      if (modelIdMatch) {
+        const embedUrl = `https://sketchfab.com/models/${modelIdMatch[1]}/embed`;
+        return (
+          <div style={{ width: '100%', height: '600px', position: 'relative' }}>
+            <iframe
+              src={embedUrl}
+              title="3D Model"
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: '8px'
+              }}
+              allow="autoplay; fullscreen; xr-spatial-tracking"
+              allowFullScreen
+            />
+          </div>
+        );
+      }
+    }
+    
+    // Handle generic embed links
+    if (isEmbedLink) {
+      return (
+        <div style={{ width: '100%', height: '600px', position: 'relative' }}>
+          <iframe
+            src={embedSrc}
+            title="3D Model"
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              borderRadius: '8px'
+            }}
+            allow="autoplay; fullscreen; xr-spatial-tracking; accelerometer; gyroscope"
+            allowFullScreen
+          />
+        </div>
+      );
+    }
+    
+    // Fallback for Sketchfab sharing links that can't be converted
     return (
       <Alert variant="info">
         <strong>Sketchfab Model Detected</strong>
         <p className="mb-2 mt-2">
-          Sketchfab sharing links cannot be directly loaded due to CORS restrictions. 
-          Please use one of the following options:
+          To use this Sketchfab model, please:
         </p>
         <ol className="mb-2">
-          <li><strong>Download the model</strong> from Sketchfab and upload it to Supabase Storage</li>
-          <li><strong>Use a direct GLTF/GLB URL</strong> from a CORS-enabled source</li>
-          <li><strong>Embed via iframe</strong> (requires Sketchfab embed code)</li>
+          <li><strong>Get the embed URL:</strong> On the Sketchfab model page, click "Embed" and copy the iframe src URL</li>
+          <li><strong>Or use the model page URL:</strong> Use the full Sketchfab model page URL (e.g., https://sketchfab.com/models/[model-id])</li>
+          <li><strong>Or download and upload:</strong> Download the GLTF file and upload to Supabase Storage</li>
         </ol>
         <div className="mt-3">
           <a 
             href={contentUrl} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="btn btn-outline-primary btn-sm"
+            className="btn btn-outline-primary btn-sm me-2"
           >
-            Open in Sketchfab (External)
+            Open in Sketchfab
           </a>
+          <small className="text-muted d-block mt-2">
+            Current URL: {contentUrl}
+          </small>
         </div>
       </Alert>
     );
