@@ -9,6 +9,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { institutionService } from '../../services/institutionService';
 import StructuredCurriculumEditor from './StructuredCurriculumEditor';
+import InteractiveCurriculumBuilder from './InteractiveCurriculumBuilder';
 
 function SubjectManagement() {
   const queryClient = useQueryClient();
@@ -29,6 +30,7 @@ function SubjectManagement() {
   // Modal state for form offerings
   const [showOfferingModal, setShowOfferingModal] = useState(false);
   const [showStructuredEditor, setShowStructuredEditor] = useState(false);
+  const [showInteractiveBuilder, setShowInteractiveBuilder] = useState(false);
   const [editingOffering, setEditingOffering] = useState(null);
   const [offeringData, setOfferingData] = useState({
     subject_id: '',
@@ -134,6 +136,7 @@ function SubjectManagement() {
     setShowSubjectModal(false);
     setShowOfferingModal(false);
     setShowStructuredEditor(false);
+    setShowInteractiveBuilder(false);
     setEditingSubject(null);
     setEditingOffering(null);
     setSubjectData({
@@ -369,9 +372,22 @@ function SubjectManagement() {
                             });
                             setShowStructuredEditor(true);
                           }}
-                          title="Edit Curriculum"
+                          title="Edit Curriculum (Classic Editor)"
                         >
                           <FaBook />
+                        </Button>
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          className="me-2"
+                          onClick={() => {
+                            setEditingOffering(offering);
+                            setShowInteractiveBuilder(true);
+                          }}
+                          title="Interactive Curriculum Builder (Drag & Drop, Collaboration, AI)"
+                        >
+                          <FaBook className="me-1" />
+                          Interactive Builder
                         </Button>
                         <Button
                           variant="outline-danger"
@@ -591,6 +607,24 @@ function SubjectManagement() {
           />
         </Modal.Body>
       </Modal>
+
+      {/* Interactive Curriculum Builder Modal */}
+      <InteractiveCurriculumBuilder
+        show={showInteractiveBuilder}
+        onHide={handleCloseModals}
+        offering={editingOffering}
+        onSave={async (curriculumData) => {
+          // Save curriculum data
+          try {
+            // This will be handled by the InteractiveCurriculumBuilder component
+            // but we can refresh the query here
+            queryClient.invalidateQueries(['formOfferings']);
+            setSuccess('Curriculum saved successfully!');
+          } catch (error) {
+            setError('Failed to save curriculum');
+          }
+        }}
+      />
     </Container>
   );
 }
