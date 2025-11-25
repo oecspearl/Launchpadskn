@@ -807,40 +807,76 @@ function LessonView() {
                 </div>
               )}
               
-              {/* 3D Model Preview */}
+              {/* 3D Model - Embedded Viewer */}
               {contentItem.content_type === '3D_MODEL' && (
-                <div className="classwork-info-box">
-                  <div className="d-flex align-items-center gap-2 mb-2">
-                    <Badge bg="primary">3D Model / AR/VR</Badge>
-                    {contentItem.metadata && (() => {
-                      try {
-                        const metadata = typeof contentItem.metadata === 'string' 
-                          ? JSON.parse(contentItem.metadata) 
-                          : contentItem.metadata;
-                        if (metadata.content_type) {
-                          return <Badge bg="secondary">{metadata.content_type.replace('_', ' ')}</Badge>;
-                        }
-                      } catch (e) {}
-                      return null;
-                    })()}
+                <div className="classwork-3d-model-container" onClick={(e) => e.stopPropagation()}>
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <div className="d-flex align-items-center gap-2">
+                      <Badge bg="primary">3D Model / AR/VR</Badge>
+                      {contentItem.metadata && (() => {
+                        try {
+                          const metadata = typeof contentItem.metadata === 'string' 
+                            ? JSON.parse(contentItem.metadata) 
+                            : contentItem.metadata;
+                          if (metadata.content_type) {
+                            return <Badge bg="secondary">{metadata.content_type.replace('_', ' ')}</Badge>;
+                          }
+                        } catch (e) {}
+                        return null;
+                      })()}
+                    </div>
+                    <Button 
+                      variant="outline-primary" 
+                      size="sm"
+                      onClick={() => {
+                        setCurrent3DModelContent(contentItem);
+                        setShow3DModelViewer(true);
+                      }}
+                    >
+                      <FaCube className="me-2" />
+                      Full Screen
+                    </Button>
                   </div>
                   {contentItem.description && (
-                    <div className="mt-2">{contentItem.description}</div>
+                    <div className="mb-3">{contentItem.description}</div>
                   )}
-                  {contentItem.url && (
-                    <div className="mt-3">
-                      <Button 
-                        variant="primary" 
-                        onClick={() => {
-                          setCurrent3DModelContent(contentItem);
-                          setShow3DModelViewer(true);
-                        }}
-                      >
-                        <FaCube className="me-2" />
-                        View 3D Model
-                      </Button>
+                  {contentItem.url ? (
+                    <div style={{ 
+                      width: '100%', 
+                      height: '500px', 
+                      borderRadius: '8px', 
+                      overflow: 'hidden',
+                      border: '1px solid #dee2e6',
+                      backgroundColor: '#1a1a1a'
+                    }}>
+                      <ViewerErrorBoundary>
+                        <ModelViewerComponent
+                          contentUrl={contentItem.url}
+                          modelFormat="GLTF"
+                          modelProperties={{
+                            autoRotate: true,
+                            cameraControls: true,
+                            exposure: 1,
+                            shadowIntensity: 1
+                          }}
+                          annotations={[]}
+                          onInteraction={(interaction) => {
+                            console.log('3D Model interaction:', interaction);
+                          }}
+                          onStateChange={(state) => {
+                            console.log('3D Model state:', state);
+                          }}
+                        />
+                      </ViewerErrorBoundary>
                     </div>
+                  ) : (
+                    <Alert variant="warning">
+                      No 3D model URL configured. Please contact your teacher.
+                    </Alert>
                   )}
+                  <div className="mt-2 small text-muted">
+                    <strong>Tips:</strong> Click and drag to rotate • Scroll to zoom • Use AR button (if available) to view in augmented reality
+                  </div>
                 </div>
               )}
 
@@ -1979,27 +2015,45 @@ function LessonView() {
             {current3DModelContent?.title || '3D Model'}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          {current3DModelContent && current3DModelContent.url && (
-            <ViewerErrorBoundary>
-              <ModelViewerComponent
-                contentUrl={current3DModelContent.url}
-                modelFormat="GLTF"
-                modelProperties={{}}
-                annotations={[]}
-                onInteraction={(interaction) => {
-                  console.log('3D Model interaction:', interaction);
-                }}
-                onStateChange={(state) => {
-                  console.log('3D Model state:', state);
-                }}
-              />
-            </ViewerErrorBoundary>
-          )}
-          {current3DModelContent?.description && (
-            <div className="mt-3">
-              <p>{current3DModelContent.description}</p>
-            </div>
+        <Modal.Body style={{ padding: 0 }}>
+          {current3DModelContent && current3DModelContent.url ? (
+            <>
+              <div style={{ 
+                width: '100%', 
+                height: '70vh', 
+                minHeight: '500px',
+                backgroundColor: '#1a1a1a'
+              }}>
+                <ViewerErrorBoundary>
+                  <ModelViewerComponent
+                    contentUrl={current3DModelContent.url}
+                    modelFormat="GLTF"
+                    modelProperties={{
+                      autoRotate: true,
+                      cameraControls: true,
+                      exposure: 1,
+                      shadowIntensity: 1
+                    }}
+                    annotations={[]}
+                    onInteraction={(interaction) => {
+                      console.log('3D Model interaction:', interaction);
+                    }}
+                    onStateChange={(state) => {
+                      console.log('3D Model state:', state);
+                    }}
+                  />
+                </ViewerErrorBoundary>
+              </div>
+              {current3DModelContent.description && (
+                <div className="p-3 border-top">
+                  <p className="mb-0">{current3DModelContent.description}</p>
+                </div>
+              )}
+            </>
+          ) : (
+            <Alert variant="warning" className="m-3">
+              No 3D model URL configured. Please contact your teacher.
+            </Alert>
           )}
         </Modal.Body>
       </Modal>
