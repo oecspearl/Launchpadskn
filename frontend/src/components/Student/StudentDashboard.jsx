@@ -337,7 +337,7 @@ function StudentDashboard() {
                     <Button
                       variant="primary"
                       className="w-100 rounded-pill"
-                      onClick={() => navigate(`/ student / subjects / ${classSubject.class_subject_id} `)}
+                      onClick={() => navigate(`/student/subjects/${classSubject.class_subject_id}`)}
                     >
                       View Subject Details
                     </Button>
