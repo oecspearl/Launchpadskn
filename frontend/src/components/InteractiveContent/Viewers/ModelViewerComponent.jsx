@@ -212,8 +212,11 @@ function ModelViewerComponent({
     );
   }
 
+  // Allow custom height via props
+  const containerHeight = modelProperties?.height || '600px';
+
   return (
-    <div style={{ width: '100%', height: '600px', position: 'relative', background: '#1a1a1a' }}>
+    <div style={{ width: '100%', height: containerHeight, position: 'relative', background: '#1a1a1a' }}>
       <model-viewer
         ref={modelViewerRef}
         src={contentUrl}
