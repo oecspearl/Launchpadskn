@@ -173,32 +173,53 @@ function ARVRContentManager() {
 
     setUploading(true);
     setUploadProgress(0);
+    setError(null);
 
     try {
-      // Check if bucket exists, create if not
-      const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
-      
-      const bucketExists = buckets?.some(b => b.id === '3d-models');
+      // Check if bucket exists
+      let bucketExists = false;
+      try {
+        const { data: buckets, error: bucketError } = await supabase.storage.listBuckets();
+        if (bucketError) {
+          console.warn('Error listing buckets:', bucketError);
+          // Continue anyway - bucket might exist but we can't list it
+        } else {
+          bucketExists = buckets?.some(b => b.id === '3d-models') || false;
+        }
+      } catch (listError) {
+        console.warn('Error checking buckets:', listError);
+        // Continue - we'll try to upload and see if it works
+      }
+
+      // Only try to create bucket if we confirmed it doesn't exist
+      // Note: Bucket creation via API may fail even if bucket exists (permissions)
+      // So we'll try to upload anyway - if bucket exists, upload will work
       if (!bucketExists) {
-        // Try to create bucket (requires admin privileges)
-        const { error: createError } = await supabase.storage.createBucket('3d-models', {
-          public: true,
-          fileSizeLimit: 52428800, // 50MB
-          allowedMimeTypes: ['model/gltf-binary', 'model/gltf+json', 'model/obj', 'model/usd']
-        });
-        
-        if (createError) {
-          console.warn('Could not create bucket automatically:', createError);
-          alert('Storage bucket not set up. Please run the setup script in Supabase SQL Editor or use an external CDN URL.');
-          setUploading(false);
-          return;
+        try {
+          const { error: createError } = await supabase.storage.createBucket('3d-models', {
+            public: true,
+            fileSizeLimit: 52428800, // 50MB
+            allowedMimeTypes: ['model/gltf-binary', 'model/gltf+json', 'model/obj', 'model/usd']
+          });
+          
+          if (createError) {
+            // Bucket might already exist (created via SQL) but API can't create it
+            // This is OK - we'll try to upload anyway
+            console.warn('Could not create bucket via API (this is OK if bucket was created via SQL):', createError.message);
+            // Don't return - continue to try upload
+          }
+        } catch (createErr) {
+          console.warn('Bucket creation attempt failed (this is OK if bucket exists):', createErr);
+          // Continue to upload attempt
         }
       }
 
       // Upload to Supabase Storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = fileName;
+      const filePath = `${user?.id || 'uploads'}/${fileName}`;
+
+      setUploadProgress(25);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('3d-models')
@@ -207,7 +228,17 @@ function ARVRContentManager() {
           upsert: false
         });
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        // Check if it's a bucket not found error
+        if (uploadError.message?.includes('Bucket not found') || uploadError.message?.includes('not found')) {
+          setError('Storage bucket "3d-models" not found. Please run the setup script: database/setup-3d-models-storage.sql in Supabase SQL Editor.');
+          setUploading(false);
+          return;
+        }
+        throw uploadError;
+      }
+
+      setUploadProgress(75);
 
       // Get public URL
       const { data: { publicUrl } } = supabase.storage
@@ -218,10 +249,16 @@ function ARVRContentManager() {
       setShowUploadModal(false);
       setUploading(false);
       setUploadProgress(100);
+      setSuccess('File uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Upload failed: ' + error.message + '\n\nTip: You can also use an external CDN URL instead.');
+      if (error.message?.includes('Bucket not found') || error.message?.includes('not found')) {
+        setError('Storage bucket "3d-models" not found. Please run database/setup-3d-models-storage.sql in Supabase SQL Editor.');
+      } else {
+        setError(`Upload failed: ${error.message}. You can also use an external CDN URL instead.`);
+      }
       setUploading(false);
+      setUploadProgress(0);
     }
   };
 
