@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Alert } from 'react-bootstrap';
-import { FaSearch, FaUserGraduate, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEye, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaSearch, FaUserGraduate, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEye, FaCheck, FaTimes, FaInfoCircle } from 'react-icons/fa';
 import supabaseService from '../../services/supabaseService';
 import Breadcrumb from '../common/Breadcrumb';
+import StudentInformationManagement from './StudentInformationManagement';
 
 function StudentManagement() {
   const [students, setStudents] = useState([]);
@@ -12,6 +13,7 @@ function StudentManagement() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [enrollmentRequests, setEnrollmentRequests] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -290,9 +292,21 @@ function StudentManagement() {
                       <Button
                         variant="outline-primary"
                         size="sm"
+                        className="me-2"
                         onClick={() => handleViewStudent(student)}
                       >
                         <FaEye /> View
+                      </Button>
+                      <Button
+                        variant="outline-info"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedStudent(student);
+                          setShowInfoModal(true);
+                        }}
+                        title="Student Information Management"
+                      >
+                        <FaInfoCircle /> Info
                       </Button>
                     </td>
                   </tr>
@@ -337,6 +351,37 @@ function StudentManagement() {
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowModal(false)}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Student Information Management Modal */}
+      <Modal
+        show={showInfoModal}
+        onHide={() => {
+          setShowInfoModal(false);
+          setSelectedStudent(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Student Information Management</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedStudent && (
+            <StudentInformationManagement
+              studentId={selectedStudent.userId}
+              student={selectedStudent}
+            />
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowInfoModal(false);
+            setSelectedStudent(null);
+          }}>
             Close
           </Button>
         </Modal.Footer>
