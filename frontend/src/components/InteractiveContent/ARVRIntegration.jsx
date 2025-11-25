@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Card, Button, Row, Col, Badge, Spinner, Alert,
   ListGroup, Modal, ProgressBar
@@ -7,6 +7,10 @@ import { FaCube, FaPlay, FaCheckCircle, FaMapMarkerAlt, FaGlobe } from 'react-ic
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import interactiveContentService from '../../services/interactiveContentService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import ThreeDModelViewer from './Viewers/ThreeDModelViewer';
+import WebXRViewer from './Viewers/WebXRViewer';
+import ARViewer from './Viewers/ARViewer';
+import VirtualFieldTripViewer from './Viewers/VirtualFieldTripViewer';
 
 function ARVRIntegration({ classSubjectId, classSubject, studentId = null }) {
   const { user } = useAuth();
@@ -55,6 +59,33 @@ function ARVRIntegration({ classSubjectId, classSubject, studentId = null }) {
       queryClient.invalidateQueries(['arvr-sessions', actualStudentId, classSubjectId]);
     }
   });
+
+  // Handle interactions and state changes
+  const handleInteraction = useCallback((interaction) => {
+    if (contentSession) {
+      const currentLog = contentSession.interactions_log || [];
+      const updatedLog = [...currentLog, interaction];
+      
+      updateARVRSessionMutation.mutate({
+        sessionId: contentSession.session_id,
+        updateData: {
+          interactions_log: updatedLog
+        }
+      });
+    }
+  }, [contentSession, updateARVRSessionMutation]);
+
+  const handleStateChange = useCallback((state) => {
+    if (contentSession) {
+      updateARVRSessionMutation.mutate({
+        sessionId: contentSession.session_id,
+        updateData: {
+          session_state: state,
+          last_accessed: new Date().toISOString()
+        }
+      });
+    }
+  }, [contentSession, updateARVRSessionMutation]);
 
   const handleStartContent = (contentId) => {
     createARVRSessionMutation.mutate(contentId);
@@ -245,73 +276,75 @@ function ARVRIntegration({ classSubjectId, classSubject, studentId = null }) {
                   </p>
                 )}
               </Alert>
-              <div className="text-center py-5">
-                {selectedContent.content_type === '3D_MODEL' && (
-                  <>
-                    <FaCube size={64} className="text-primary mb-3" />
-                    <h5>3D Model Viewer</h5>
-                    <p className="text-muted">
-                      The 3D model would be displayed here using WebGL or Three.js.
-                      <br />
-                      Users can rotate, zoom, and interact with the model.
-                    </p>
-                    {selectedContent.content_url && (
-                      <Button variant="outline-primary" href={selectedContent.content_url} target="_blank">
-                        Open 3D Model
-                      </Button>
-                    )}
-                  </>
-                )}
-                {selectedContent.content_type === 'AR_OVERLAY' && (
-                  <>
-                    <FaGlobe size={64} className="text-info mb-3" />
-                    <h5>AR Overlay</h5>
-                    <p className="text-muted">
-                      Point your device camera at the AR marker to view the augmented reality content.
-                      {selectedContent.ar_marker_url && (
-                        <>
-                          <br />
-                          <a href={selectedContent.ar_marker_url} target="_blank" rel="noopener noreferrer">
-                            Download AR Marker
-                          </a>
-                        </>
-                      )}
-                    </p>
-                  </>
-                )}
-                {selectedContent.content_type === 'VR_EXPERIENCE' && (
-                  <>
-                    <FaCube size={64} className="text-warning mb-3" />
-                    <h5>VR Experience</h5>
-                    <p className="text-muted">
-                      Put on your VR headset to experience this immersive virtual reality content.
-                      <br />
-                      This would use WebXR for browser-based VR or link to a VR app.
-                    </p>
-                    {selectedContent.content_url && (
-                      <Button variant="outline-warning" href={selectedContent.content_url} target="_blank">
-                        Launch VR Experience
-                      </Button>
-                    )}
-                  </>
-                )}
-                {selectedContent.content_type === 'FIELD_TRIP' && (
-                  <>
-                    <FaMapMarkerAlt size={64} className="text-success mb-3" />
-                    <h5>Virtual Field Trip</h5>
-                    <p className="text-muted">
-                      Explore {selectedContent.location_name || 'this location'} through a virtual tour.
-                      <br />
-                      Navigate through 360° images and interactive hotspots.
-                    </p>
-                    {selectedContent.virtual_tour_url && (
-                      <Button variant="outline-success" href={selectedContent.virtual_tour_url} target="_blank">
-                        Start Virtual Tour
-                      </Button>
-                    )}
-                  </>
-                )}
-              </div>
+
+              {/* 3D Model Viewer */}
+              {selectedContent.content_type === '3D_MODEL' && (
+                <ThreeDModelViewer
+                  contentUrl={selectedContent.content_url}
+                  modelFormat={selectedContent.model_format}
+                  modelProperties={selectedContent.model_properties || {}}
+                  annotations={selectedContent.annotations || []}
+                  interactionMode={selectedContent.interaction_mode || 'INTERACTIVE'}
+                  onInteraction={handleInteraction}
+                  onStateChange={handleStateChange}
+                />
+              )}
+
+              {/* VR Experience Viewer */}
+              {selectedContent.content_type === 'VR_EXPERIENCE' && (
+                <WebXRViewer
+                  contentUrl={selectedContent.content_url}
+                  sceneConfig={selectedContent.vr_scene_config || {}}
+                  onInteraction={handleInteraction}
+                  onStateChange={handleStateChange}
+                  onVREnter={() => {
+                    handleInteraction({ type: 'vr_enter', timestamp: new Date().toISOString() });
+                  }}
+                  onVRExit={() => {
+                    handleInteraction({ type: 'vr_exit', timestamp: new Date().toISOString() });
+                  }}
+                />
+              )}
+
+              {/* AR Overlay Viewer */}
+              {selectedContent.content_type === 'AR_OVERLAY' && (
+                <ARViewer
+                  contentUrl={selectedContent.content_url}
+                  arMarkerUrl={selectedContent.ar_marker_url}
+                  modelFormat={selectedContent.model_format}
+                  platform={selectedContent.platform || 'WEBXR'}
+                  onInteraction={handleInteraction}
+                  onStateChange={handleStateChange}
+                />
+              )}
+
+              {/* Virtual Field Trip Viewer */}
+              {selectedContent.content_type === 'FIELD_TRIP' && (
+                <VirtualFieldTripViewer
+                  virtualTourUrl={selectedContent.virtual_tour_url}
+                  locationName={selectedContent.location_name}
+                  locationCoordinates={selectedContent.location_coordinates}
+                  scenes={selectedContent.vr_scene_config?.scenes || []}
+                  onStateChange={handleStateChange}
+                  onInteraction={handleInteraction}
+                />
+              )}
+
+              {/* Fallback for unsupported types */}
+              {!['3D_MODEL', 'VR_EXPERIENCE', 'AR_OVERLAY', 'FIELD_TRIP'].includes(selectedContent.content_type) && (
+                <div className="text-center py-5">
+                  <FaCube size={64} className="text-muted mb-3" />
+                  <h5>Content Type: {selectedContent.content_type}</h5>
+                  <p className="text-muted">
+                    Viewer for this content type is not yet implemented.
+                  </p>
+                  {selectedContent.content_url && (
+                    <Button variant="outline-primary" href={selectedContent.content_url} target="_blank">
+                      Open External Link
+                    </Button>
+                  )}
+                </div>
+              )}
               {contentSession && (
                 <div className="mt-4">
                   <h6>Session Progress</h6>
