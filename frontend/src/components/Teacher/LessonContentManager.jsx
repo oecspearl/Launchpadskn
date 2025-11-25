@@ -95,6 +95,19 @@ function LessonContentManager() {
     }
   }, [lessonId]);
 
+  // Fetch available 3D models when 3D_MODEL content type is selected
+  useEffect(() => {
+    if (contentType === '3D_MODEL') {
+      fetchAvailable3DModels();
+    } else {
+      // Reset when switching away from 3D_MODEL
+      setSelected3DModel(null);
+      setAvailable3DModels([]);
+      setLoading3DModels(false);
+      // Don't clear error here - let user see it if it was from 3D model fetch
+    }
+  }, [contentType]);
+
   const fetchLessonData = async () => {
     try {
       const { data, error } = await supabase
@@ -125,22 +138,33 @@ function LessonContentManager() {
   const fetchAvailable3DModels = async () => {
     try {
       setLoading3DModels(true);
+      setError(null); // Clear any previous errors
       const { data, error } = await supabase
         .from('arvr_content')
         .select('*, subjects:subject_id (subject_name)')
         .order('created_at', { ascending: false });
       
       if (error) {
+        console.error('Error fetching 3D models:', error);
         if (error.code === '42P01') {
           // Table doesn't exist
+          setError('The arvr_content table does not exist. Please run the database migration script: database/add-interactive-content-tables.sql');
           setAvailable3DModels([]);
           return;
         }
-        throw error;
+        // Show other errors to user
+        setError(`Failed to load 3D models: ${error.message || 'Unknown error'}`);
+        setAvailable3DModels([]);
+        return;
       }
       setAvailable3DModels(data || []);
+      if (data && data.length === 0) {
+        // No error, just no models available
+        console.log('No 3D models found in database');
+      }
     } catch (err) {
       console.error('Error fetching 3D models:', err);
+      setError(`Failed to load 3D models: ${err.message || 'Unknown error'}`);
       setAvailable3DModels([]);
     } finally {
       setLoading3DModels(false);
@@ -2082,6 +2106,11 @@ function LessonContentManager() {
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+            {error && (
+              <Alert variant="danger" dismissible onClose={() => setError(null)} className="mb-3">
+                <strong>Error:</strong> {error}
+              </Alert>
+            )}
             <Form.Group className="mb-3">
               <Form.Label>Content Type *</Form.Label>
               <Form.Select
@@ -2257,6 +2286,91 @@ function LessonContentManager() {
                   <Form.Text className="text-muted">
                     Enter the URL to your survey or poll (Google Forms, SurveyMonkey, or other survey platform)
                   </Form.Text>
+                )}
+              </Form.Group>
+            )}
+
+            {/* 3D Model Selector */}
+            {contentType === '3D_MODEL' && (
+              <Form.Group className="mb-3">
+                <Form.Label>Select 3D Model *</Form.Label>
+                {loading3DModels ? (
+                  <div className="text-center py-3">
+                    <Spinner animation="border" size="sm" />
+                    <p className="text-muted mt-2">Loading 3D models...</p>
+                  </div>
+                ) : available3DModels.length === 0 ? (
+                  <Alert variant="warning">
+                    <strong>No 3D models available.</strong>
+                    <div className="mt-2">
+                      <p className="mb-2">To add 3D models:</p>
+                      <ol className="mb-0">
+                        <li>Go to <strong>Admin Dashboard → AR/VR Content</strong></li>
+                        <li>Click <strong>"Add 3D Model"</strong></li>
+                        <li>Upload your 3D model file (GLTF/GLB format)</li>
+                      </ol>
+                    </div>
+                  </Alert>
+                ) : (
+                  <>
+                    <Form.Select
+                      value={selected3DModel?.content_id || ''}
+                      onChange={(e) => {
+                        const modelId = e.target.value;
+                        const model = available3DModels.find(m => m.content_id.toString() === modelId);
+                        setSelected3DModel(model || null);
+                        if (model) {
+                          setUrl(model.content_url || '');
+                          setTitle(model.content_name || title);
+                          setDescription(model.description || description);
+                        }
+                      }}
+                      required
+                    >
+                      <option value="">-- Select a 3D Model --</option>
+                      {available3DModels.map((model) => (
+                        <option key={model.content_id} value={model.content_id}>
+                          {model.content_name} ({model.content_type.replace('_', ' ')}) - {model.subjects?.subject_name || 'All Subjects'}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    {selected3DModel && (
+                      <div className="mt-3">
+                        <Card>
+                          <Card.Body>
+                            <div className="d-flex justify-content-between align-items-start mb-2">
+                              <div>
+                                <h6 className="mb-1">{selected3DModel.content_name}</h6>
+                                <Badge bg="primary" className="me-2">
+                                  {selected3DModel.content_type.replace('_', ' ')}
+                                </Badge>
+                                {selected3DModel.model_format && (
+                                  <Badge bg="secondary">{selected3DModel.model_format}</Badge>
+                                )}
+                              </div>
+                            </div>
+                            {selected3DModel.description && (
+                              <p className="text-muted small mb-2">{selected3DModel.description}</p>
+                            )}
+                            <div className="small text-muted">
+                              <div><strong>Format:</strong> {selected3DModel.model_format || 'N/A'}</div>
+                              {selected3DModel.estimated_duration_minutes && (
+                                <div><strong>Duration:</strong> ~{selected3DModel.estimated_duration_minutes} minutes</div>
+                              )}
+                            </div>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    )}
+                    <Form.Text className="text-muted">
+                      Select a 3D model from your library. Students will be able to view and interact with it in the lesson.
+                    </Form.Text>
+                  </>
+                )}
+                {error && error.includes('arvr_content') && (
+                  <Alert variant="danger" className="mt-2">
+                    <strong>Database Error:</strong> {error}
+                  </Alert>
                 )}
               </Form.Group>
             )}
