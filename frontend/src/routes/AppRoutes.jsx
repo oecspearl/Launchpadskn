@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react';
-import { Routes } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import { Spinner } from 'react-bootstrap';
 import PublicRoutes from './PublicRoutes';
 import AdminRoutes from './AdminRoutes';
@@ -7,6 +7,7 @@ import SchoolAdminRoutes from './SchoolAdminRoutes';
 import InstructorRoutes from './InstructorRoutes';
 import StudentRoutes from './StudentRoutes';
 import CommonRoutes from './CommonRoutes';
+import NotFound from '../components/common/NotFound';
 
 const LoadingFallback = () => (
     <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh' }}>
@@ -26,6 +27,8 @@ const AppRoutes = () => {
                 {InstructorRoutes()}
                 {StudentRoutes()}
                 {CommonRoutes()}
+                {/* Catch-all 404 route */}
+                <Route path="*" element={<NotFound />} />
             </Routes>
         </Suspense>
     );
