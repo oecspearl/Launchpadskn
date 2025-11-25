@@ -12,7 +12,6 @@ import { institutionService } from '../../services/institutionService';
 import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
 import CurriculumAnalytics from './CurriculumAnalytics';
-import CurriculumAnalytics from './CurriculumAnalytics';
 
 function ClassSubjectAssignment() {
   const queryClient = useQueryClient();
@@ -366,43 +365,6 @@ function ClassSubjectAssignment() {
           </Modal.Footer>
         </Form>
       </Modal>
-
-      {/* Curriculum Analytics Modal */}
-      <Modal
-        show={showAnalytics}
-        onHide={() => {
-          setShowAnalytics(false);
-          setSelectedClassSubject(null);
-        }}
-        size="xl"
-        fullscreen="lg-down"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <FaChartLine className="me-2" />
-            Curriculum Analytics
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {selectedClassSubject && (
-            <CurriculumAnalytics
-              classSubjectId={selectedClassSubject.class_subject_id}
-              classSubject={selectedClassSubject}
-            />
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => {
-            setShowAnalytics(false);
-            setSelectedClassSubject(null);
-          }}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
-    </Container>
-  );
-}
 
       {/* Curriculum Analytics Modal */}
       <Modal
