@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal, Button, Card, Row, Col, Form, Badge, Alert,
   Tabs, Tab, InputGroup, Dropdown, Spinner, Tooltip, OverlayTrigger,
@@ -576,6 +576,8 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
                           const newTopics = [...curriculumData.topics];
                           newTopics[index] = { ...newTopics[index], ...updates };
                           setCurriculumData({ ...curriculumData, topics: newTopics });
+                          setEditingTopicIndex(null); // Close editor after update
+                          logChange('UPDATE', `topics[${index}]`, topic, updates, 'Updated topic');
                         }}
                         onDelete={() => {
                           const newTopics = curriculumData.topics.filter((_, i) => i !== index);
@@ -700,7 +702,9 @@ function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete
         topic={topic}
         index={index}
         onUpdate={onUpdate}
-        onCancel={() => onEdit(null)}
+                        onCancel={() => {
+                          setEditingTopicIndex(null);
+                        }}
         onLinkResource={onLinkResource}
         onRequestAISuggestions={onRequestAISuggestions}
       />
@@ -749,6 +753,8 @@ function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete
 
 // Topic Editor Component (Full Implementation)
 function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onRequestAISuggestions }) {
+  const initialData = useRef(topic);
+  
   const [formData, setFormData] = useState({
     ...topic,
     essentialLearningOutcomes: topic.essentialLearningOutcomes || [],
@@ -775,8 +781,69 @@ function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onReque
   const [activeTab, setActiveTab] = useState('overview');
   const [editingUnitIndex, setEditingUnitIndex] = useState(null);
 
+  // Reset form data if topic changes
+  useEffect(() => {
+    if (topic !== initialData.current) {
+      initialData.current = topic;
+      setFormData({
+        ...topic,
+        essentialLearningOutcomes: topic.essentialLearningOutcomes || [],
+        gradeLevelGuidelines: topic.gradeLevelGuidelines || [],
+        instructionalUnits: topic.instructionalUnits || [],
+        resources: topic.resources || {
+          webLinks: [],
+          videos: [],
+          games: [],
+          worksheets: []
+        },
+        closingFramework: topic.closingFramework || {
+          essentialEducationCompetencies: [],
+          crossCurricularConnections: {
+            socialStudies: '',
+            science: '',
+            english: ''
+          },
+          localCultureIntegration: '',
+          technologyIntegration: '',
+          itemsOfInspiration: []
+        }
+      });
+    }
+  }, [topic]);
+
   const handleSave = () => {
-    onUpdate(formData);
+    // Validate required fields
+    if (!formData.title || formData.title.trim() === '') {
+      alert('Please enter a topic title');
+      return;
+    }
+    
+    // Ensure all arrays are properly initialized
+    const updatedData = {
+      ...formData,
+      essentialLearningOutcomes: formData.essentialLearningOutcomes || [],
+      gradeLevelGuidelines: formData.gradeLevelGuidelines || [],
+      instructionalUnits: formData.instructionalUnits || [],
+      resources: formData.resources || {
+        webLinks: [],
+        videos: [],
+        games: [],
+        worksheets: []
+      },
+      closingFramework: formData.closingFramework || {
+        essentialEducationCompetencies: [],
+        crossCurricularConnections: {
+          socialStudies: '',
+          science: '',
+          english: ''
+        },
+        localCultureIntegration: '',
+        technologyIntegration: '',
+        itemsOfInspiration: []
+      }
+    };
+    
+    onUpdate(updatedData);
     onCancel();
   };
 
@@ -810,6 +877,9 @@ function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onReque
   const handleUpdateUnit = (unitIndex, updates) => {
     const updatedUnits = [...formData.instructionalUnits];
     updatedUnits[unitIndex] = { ...updatedUnits[unitIndex], ...updates };
+    // Ensure unit number and SCO are preserved
+    updatedUnits[unitIndex].unitNumber = updatedUnits[unitIndex].unitNumber || unitIndex + 1;
+    updatedUnits[unitIndex].scoNumber = updatedUnits[unitIndex].scoNumber || `${formData.topicNumber}.${unitIndex + 1}`;
     setFormData({ ...formData, instructionalUnits: updatedUnits });
   };
 
@@ -1005,11 +1075,14 @@ function UnitList({ units, topicNumber, onUpdate, onDelete, onAddActivity }) {
 
     if (oldIndex !== -1 && newIndex !== -1) {
       const newUnits = arrayMove(units, oldIndex, newIndex);
-      // Renumber units
+      // Renumber units and update each one
       newUnits.forEach((unit, idx) => {
-        unit.unitNumber = idx + 1;
-        unit.scoNumber = `${topicNumber}.${idx + 1}`;
-        onUpdate(idx, { ...unit, unitNumber: idx + 1, scoNumber: `${topicNumber}.${idx + 1}` });
+        const renumberedUnit = {
+          ...unit,
+          unitNumber: idx + 1,
+          scoNumber: `${topicNumber}.${idx + 1}`
+        };
+        onUpdate(idx, renumberedUnit);
       });
     }
     setActiveDragId(null);
@@ -1144,13 +1217,39 @@ function SortableUnitItem({ unit, index, topicNumber, isEditing, onEdit, onUpdat
 
 // Unit Editor Component
 function UnitEditor({ unit, topicNumber, onUpdate, onCancel, onAddActivity }) {
+  const initialData = useRef(unit);
+  
   const [formData, setFormData] = useState({
     ...unit,
     activities: unit.activities || []
   });
 
+  // Reset form data if unit changes
+  useEffect(() => {
+    if (unit !== initialData.current) {
+      initialData.current = unit;
+      setFormData({
+        ...unit,
+        activities: unit.activities || []
+      });
+    }
+  }, [unit]);
+
   const handleSave = () => {
-    onUpdate(formData);
+    // Validate required fields
+    if (!formData.specificCurriculumOutcomes || formData.specificCurriculumOutcomes.trim() === '') {
+      alert('Please enter Specific Curriculum Outcomes (SCOs)');
+      return;
+    }
+    
+    // Ensure activities array is properly initialized
+    const updatedData = {
+      ...formData,
+      activities: formData.activities || []
+    };
+    
+    onUpdate(updatedData);
+    onCancel(); // Close editor after saving
   };
 
   const handleUpdateActivity = (activityIndex, updates) => {
@@ -1553,7 +1652,21 @@ function FrontMatterEditor({ frontMatter, offering, onUpdate }) {
   });
 
   const handleSave = () => {
-    onUpdate(formData);
+    // Ensure all arrays are properly initialized
+    const updatedData = {
+      ...formData,
+      essentialEducationCompetencies: formData.essentialEducationCompetencies || [],
+      itemsOfInspiration: formData.itemsOfInspiration || [],
+      crossCurricularConnections: formData.crossCurricularConnections || {
+        socialStudies: '',
+        science: '',
+        english: ''
+      }
+    };
+    
+    onUpdate(updatedData);
+    // Show success feedback
+    alert('Closing framework saved successfully!');
   };
 
   return (
