@@ -95,12 +95,12 @@ function LessonContentManager() {
     }
   }, [lessonId]);
 
-  // Fetch available 3D models when 3D_MODEL content type is selected
+  // Fetch available 3D models when 3D_MODEL or AR_OVERLAY content type is selected
   useEffect(() => {
-    if (contentType === '3D_MODEL') {
+    if (contentType === '3D_MODEL' || contentType === 'AR_OVERLAY') {
       fetchAvailable3DModels();
     } else {
-      // Reset when switching away from 3D_MODEL
+      // Reset when switching away from 3D_MODEL or AR_OVERLAY
       setSelected3DModel(null);
       setAvailable3DModels([]);
       setLoading3DModels(false);
@@ -1101,12 +1101,16 @@ function LessonContentManager() {
         prerequisite_content_ids: isLearningContent ? null : (selectedPrerequisites.length > 0 ? selectedPrerequisites : null)
       };
 
-      // Add metadata for 3D_MODEL content type
-      if (contentType === '3D_MODEL' && selected3DModel) {
+      // Add metadata for 3D_MODEL and AR_OVERLAY content types
+      if ((contentType === '3D_MODEL' || contentType === 'AR_OVERLAY') && selected3DModel) {
         contentData.metadata = {
           arvr_content_id: selected3DModel.content_id,
           content_type: selected3DModel.content_type
         };
+        // For AR_OVERLAY, also store the content URL from the AR/VR content
+        if (contentType === 'AR_OVERLAY' && selected3DModel.content_url) {
+          contentData.url = selected3DModel.content_url;
+        }
       }
 
       if (editingContent) {
@@ -2177,7 +2181,8 @@ function LessonContentManager() {
                   <option value="FLASHCARD">Flashcard Set</option>
                   <option value="INTERACTIVE_VIDEO">Interactive Video</option>
                   <option value="INTERACTIVE_BOOK">Interactive Book</option>
-                  <option value="3D_MODEL">3D Model / AR/VR</option>
+                  <option value="3D_MODEL">3D Model</option>
+                  <option value="AR_OVERLAY">AR Content (Augmented Reality)</option>
                 </optgroup>
                 <optgroup label="Learning Content">
                   <option value="LEARNING_OUTCOMES">Learning Outcomes</option>
@@ -2297,10 +2302,17 @@ function LessonContentManager() {
               </Form.Group>
             )}
 
-            {/* 3D Model Selector */}
-            {contentType === '3D_MODEL' && (
+            {/* 3D Model / AR Content Selector */}
+            {(contentType === '3D_MODEL' || contentType === 'AR_OVERLAY') && (
               <Form.Group className="mb-3">
-                <Form.Label>Select 3D Model *</Form.Label>
+                <Form.Label>
+                  Select {contentType === 'AR_OVERLAY' ? 'AR Content' : '3D Model'} *
+                </Form.Label>
+                {contentType === 'AR_OVERLAY' && (
+                  <Alert variant="info" className="mb-3">
+                    <strong>AR Content:</strong> Select an AR Overlay from the list below. Students will be able to superimpose this 3D object into their world view using their device camera.
+                  </Alert>
+                )}
                 {loading3DModels ? (
                   <div className="text-center py-3">
                     <Spinner animation="border" size="sm" />
@@ -2308,13 +2320,13 @@ function LessonContentManager() {
                   </div>
                 ) : available3DModels.length === 0 ? (
                   <Alert variant="warning">
-                    <strong>No 3D models available.</strong>
+                    <strong>No {contentType === 'AR_OVERLAY' ? 'AR content' : '3D models'} available.</strong>
                     <div className="mt-2">
-                      <p className="mb-2">To add 3D models:</p>
+                      <p className="mb-2">To add {contentType === 'AR_OVERLAY' ? 'AR content' : '3D models'}:</p>
                       <ol className="mb-0">
                         <li>Go to <strong>Admin Dashboard → AR/VR Content</strong></li>
-                        <li>Click <strong>"Add 3D Model"</strong></li>
-                        <li>Upload your 3D model file (GLTF/GLB format)</li>
+                        <li>Click <strong>"Add {contentType === 'AR_OVERLAY' ? 'AR Overlay' : '3D Model'}"</strong></li>
+                        <li>{contentType === 'AR_OVERLAY' ? 'Select "AR Overlay" as content type and upload your 3D model' : 'Upload your 3D model file (GLTF/GLB format)'}</li>
                       </ol>
                     </div>
                   </Alert>
@@ -2334,12 +2346,22 @@ function LessonContentManager() {
                       }}
                       required
                     >
-                      <option value="">-- Select a 3D Model --</option>
-                      {available3DModels.map((model) => (
-                        <option key={model.content_id} value={model.content_id}>
-                          {model.content_name} ({model.content_type.replace('_', ' ')}) - {model.subjects?.subject_name || 'All Subjects'}
-                        </option>
-                      ))}
+                      <option value="">-- Select {contentType === 'AR_OVERLAY' ? 'AR Content' : '3D Model'} --</option>
+                      {available3DModels
+                        .filter(model => {
+                          // For AR_OVERLAY, only show AR_OVERLAY content types
+                          // For 3D_MODEL, show 3D_MODEL and other non-AR types
+                          if (contentType === 'AR_OVERLAY') {
+                            return model.content_type === 'AR_OVERLAY';
+                          } else {
+                            return model.content_type === '3D_MODEL' || model.content_type === 'VR_EXPERIENCE';
+                          }
+                        })
+                        .map((model) => (
+                          <option key={model.content_id} value={model.content_id}>
+                            {model.content_name} ({model.content_type.replace('_', ' ')}) - {model.subjects?.subject_name || 'All Subjects'}
+                          </option>
+                        ))}
                     </Form.Select>
                     {selected3DModel && (
                       <div className="mt-3">
@@ -2370,8 +2392,24 @@ function LessonContentManager() {
                       </div>
                     )}
                     <Form.Text className="text-muted">
-                      Select a 3D model from your library. Students will be able to view and interact with it in the lesson.
+                      {contentType === 'AR_OVERLAY' 
+                        ? 'Select AR content from your library. Students will be able to superimpose this 3D object into their real-world view using Web AR.'
+                        : 'Select a 3D model from your library. Students will be able to view and interact with it in the lesson.'}
                     </Form.Text>
+                    {contentType === 'AR_OVERLAY' && selected3DModel && (
+                      <Alert variant="success" className="mt-2">
+                        <strong>✓ AR Content Selected</strong>
+                        <p className="mb-0 mt-2">
+                          Students will be able to:
+                        </p>
+                        <ul className="mb-0 mt-2">
+                          <li>View this 3D model in Augmented Reality</li>
+                          <li>Superimpose the object into their real-world view</li>
+                          <li>Place the object on detected surfaces</li>
+                          <li>Move around to view from different angles</li>
+                        </ul>
+                      </Alert>
+                    )}
                   </>
                 )}
                 {error && error.includes('arvr_content') && (
