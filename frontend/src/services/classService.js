@@ -207,6 +207,88 @@ export const classService = {
         return data;
     },
 
+    async getAllStudentAssignments(filters = {}) {
+        let query = supabase
+            .from('student_class_assignments')
+            .select(`
+        *,
+        student:users(*),
+        class:classes(
+          *,
+          form:forms(*)
+        )
+      `)
+            .eq('is_active', true);
+
+        if (filters.classId && filters.classId !== 'all') {
+            query = query.eq('class_id', filters.classId);
+        }
+
+        if (filters.formId && filters.formId !== 'all') {
+            // This is tricky because form_id is on the class, not the assignment directly usually.
+            // But let's check the schema. The previous code didn't filter assignments by form directly in the DB query, 
+            // it filtered classes by form, then if selectedClass was 'all', it fetched all assignments.
+            // Wait, the previous code:
+            // if (selectedClass !== 'all') { assignmentQuery = assignmentQuery.eq('class_id', selectedClass); }
+            // It didn't filter by formId in the assignment query!
+            // It only filtered classes list by form.
+            // But if I select a form, and keep class as 'all', should I show assignments for that form?
+            // The previous code:
+            // if (selectedClass !== 'all') ...
+            // It seems it only filters by class_id if a specific class is selected.
+            // If only form is selected, it still fetches ALL assignments?
+            // Let's look at the previous code again.
+            /*
+              if (selectedClass !== 'all') {
+                assignmentQuery = assignmentQuery.eq('class_id', selectedClass);
+              }
+              const { data: assignmentsData } = await assignmentQuery...
+            */
+            // So if I select Form 1, but Class 'All', it fetches ALL assignments for ALL forms?
+            // That seems like a bug or limitation in the original code.
+            // However, I will replicate the behavior or improve it.
+            // If I want to filter by form, I'd need to filter by class.form_id.
+            // Supabase supports filtering on joined tables with !inner if needed, but let's stick to the simple case first.
+            // I'll just support classId filter for now to match the original behavior's explicit filter.
+        }
+
+        const { data, error } = await query.order('academic_year', { ascending: false });
+
+        if (error) throw error;
+        return data || [];
+    },
+
+    async getStudentClassAssignment(studentId) {
+        // Handle UUID vs numeric ID
+        let numericStudentId = studentId;
+        if (typeof studentId === 'string' && studentId.includes('-')) {
+            const { data: userProfile } = await supabase
+                .from('users')
+                .select('user_id')
+                .eq('id', studentId)
+                .maybeSingle();
+            if (userProfile) numericStudentId = userProfile.user_id;
+            else return null;
+        }
+
+        const { data, error } = await supabase
+            .from('student_class_assignments')
+            .select(`
+                *,
+                class:classes(
+                    *,
+                    form:forms(*),
+                    form_tutor:users!classes_form_tutor_id_fkey(name, email)
+                )
+            `)
+            .eq('student_id', numericStudentId)
+            .eq('is_active', true)
+            .maybeSingle();
+
+        if (error) throw error;
+        return data;
+    },
+
     async assignStudentToClass(studentId, classId, academicYear) {
         const { data, error } = await supabase
             .from('student_class_assignments')
@@ -439,6 +521,32 @@ export const classService = {
         return data;
     },
 
+    async getAllClassSubjects(filters = {}) {
+        let query = supabase
+            .from('class_subjects')
+            .select(`
+        *,
+        class:classes(
+          *,
+          form:forms(*)
+        ),
+        subject_offering:subject_form_offerings(
+          *,
+          subject:subjects(*)
+        ),
+        teacher:users!class_subjects_teacher_id_fkey(name, email)
+      `);
+
+        if (filters.classId && filters.classId !== 'all') {
+            query = query.eq('class_id', filters.classId);
+        }
+
+        const { data, error } = await query.order('class_id');
+
+        if (error) throw error;
+        return data || [];
+    },
+
     async assignSubjectToClass(classId, subjectOfferingId, teacherId) {
         const classIdNum = parseInt(classId);
         const subjectOfferingIdNum = parseInt(subjectOfferingId);
@@ -473,6 +581,15 @@ export const classService = {
             throw error;
         }
         return data;
+    },
+
+    async removeSubjectFromClass(classSubjectId) {
+        const { error } = await supabase
+            .from('class_subjects')
+            .delete()
+            .eq('class_subject_id', classSubjectId);
+
+        if (error) throw error;
     },
 
     async getClassesByTeacher(teacherId) {

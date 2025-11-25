@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../config/supabase';
 import supabaseService from '../services/supabaseService';
+import { classService } from '../services/classService';
 
 export const useStudentData = (user) => {
     const studentId = user?.user_id || user?.userId;
@@ -8,38 +8,7 @@ export const useStudentData = (user) => {
     // 1. Fetch Class Assignment
     const { data: classAssignment, isLoading: isLoadingClass } = useQuery({
         queryKey: ['studentClass', studentId],
-        queryFn: async () => {
-            if (!studentId) return null;
-
-            let numericStudentId = studentId;
-            // Handle UUID vs numeric ID
-            if (typeof studentId === 'string' && studentId.includes('-')) {
-                const { data: userProfile } = await supabase
-                    .from('users')
-                    .select('user_id')
-                    .eq('id', studentId)
-                    .maybeSingle();
-                if (userProfile) numericStudentId = userProfile.user_id;
-                else return null;
-            }
-
-            const { data, error } = await supabase
-                .from('student_class_assignments')
-                .select(`
-          *,
-          class:classes(
-            *,
-            form:forms(*),
-            form_tutor:users!classes_form_tutor_id_fkey(name, email)
-          )
-        `)
-                .eq('student_id', numericStudentId)
-                .eq('is_active', true)
-                .maybeSingle();
-
-            if (error) throw error;
-            return data;
-        },
+        queryFn: () => classService.getStudentClassAssignment(studentId),
         enabled: !!user,
     });
 

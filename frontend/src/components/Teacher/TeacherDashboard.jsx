@@ -1,177 +1,138 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Spinner, Alert, 
+import React, { useState, useMemo } from 'react';
+import {
+  Container, Row, Col, Card, Button, Spinner, Alert,
   Badge, Tab, Tabs, ListGroup
 } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
-import { 
+import { useNavigate } from 'react-router-dom';
+import {
   FaChalkboardTeacher, FaCalendarAlt, FaClock, FaUsers,
   FaBook, FaClipboardList, FaMapMarkerAlt
 } from 'react-icons/fa';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { classService } from '../../services/classService';
+import { studentService } from '../../services/studentService';
 import Timetable from '../common/Timetable';
 import './TeacherDashboard.css';
 
 function TeacherDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  // State
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
-  
-  // Data
-  const [myClasses, setMyClasses] = useState([]);
-  const [todayLessons, setTodayLessons] = useState([]);
-  const [weekLessons, setWeekLessons] = useState([]);
-  const [upcomingAssessments, setUpcomingAssessments] = useState([]);
-  
-  // Fetch teacher data function
-  const fetchTeacherData = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Use user_id (integer) for teacher_id lookup, not UUID
-      // user.userId might be UUID initially, user.user_id is the numeric ID from database
-      const teacherId = user.user_id || user.userId || user.id;
-      
-      // If teacherId is still a UUID string, we need to wait for the profile to load
-      // or query by UUID first to get the numeric user_id
-      if (!teacherId || (typeof teacherId === 'string' && teacherId.includes('-'))) {
-        console.warn('[TeacherDashboard] Waiting for numeric user_id to load');
-        setIsLoading(false);
-        return;
-      }
-      
-      // Get all classes this teacher teaches
-      const classes = await supabaseService.getClassesByTeacher(teacherId);
-      setMyClasses(classes || []);
-      
-      // Get lessons for this week
-      const today = new Date();
-      const weekStart = new Date(today);
-      weekStart.setDate(today.getDate() - today.getDay());
-      weekStart.setHours(0, 0, 0, 0);
-      
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 7);
-      
-      const lessons = await supabaseService.getLessonsByTeacher(
-        teacherId,
-        weekStart.toISOString().split('T')[0],
-        weekEnd.toISOString().split('T')[0]
-      );
-      
-      setWeekLessons(lessons || []);
-      
-      // Get today's lessons
-      const todayStr = today.toISOString().split('T')[0];
-      const todayLessonsFiltered = (lessons || []).filter(lesson => {
-        const lessonDate = new Date(lesson.lesson_date).toISOString().split('T')[0];
-        return lessonDate === todayStr;
-      }).sort((a, b) => {
-        const timeA = a.start_time || '00:00';
-        const timeB = b.start_time || '00:00';
-        return timeA.localeCompare(timeB);
-      });
-      setTodayLessons(todayLessonsFiltered);
-      
-      // Get upcoming assessments
-      const allAssessments = [];
-      for (const classSubject of classes) {
+
+  // Get teacher ID
+  const teacherId = user?.user_id || user?.userId || user?.id;
+  const isValidTeacherId = teacherId && (typeof teacherId === 'number' || !teacherId.includes('-'));
+
+  // Queries
+  const { data: myClasses = [], isLoading: isLoadingClasses } = useQuery({
+    queryKey: ['teacher-classes', teacherId],
+    queryFn: () => classService.getClassesByTeacher(teacherId),
+    enabled: !!isValidTeacherId
+  });
+
+  // Get week date range
+  const { weekStart, weekEnd, todayStr } = useMemo(() => {
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    return {
+      weekStart: weekStart.toISOString().split('T')[0],
+      weekEnd: weekEnd.toISOString().split('T')[0],
+      todayStr: today.toISOString().split('T')[0]
+    };
+  }, []);
+
+  const { data: weekLessons = [], isLoading: isLoadingLessons } = useQuery({
+    queryKey: ['teacher-lessons', teacherId, weekStart, weekEnd],
+    queryFn: () => classService.getLessonsByTeacher(teacherId, weekStart, weekEnd),
+    enabled: !!isValidTeacherId
+  });
+
+  // Get assessments for all class subjects
+  const { data: allAssessments = [], isLoading: isLoadingAssessments } = useQuery({
+    queryKey: ['teacher-assessments', myClasses.map(cs => cs.class_subject_id)],
+    queryFn: async () => {
+      const assessments = [];
+      for (const classSubject of myClasses) {
         try {
-          const assessments = await supabaseService.getAssessmentsByClassSubject(
+          const csAssessments = await studentService.getAssessmentsByClassSubject(
             classSubject.class_subject_id
           );
-          allAssessments.push(...(assessments || []));
+          assessments.push(...(csAssessments || []));
         } catch (err) {
           console.warn('Error fetching assessments:', err);
         }
       }
-      
-      const upcoming = allAssessments
-        .filter(a => a.due_date && new Date(a.due_date) >= new Date())
-        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
-        .slice(0, 5);
-      setUpcomingAssessments(upcoming);
-      
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching teacher data:', err);
-      // Show dashboard even with errors - just show empty state
-      setError(null); // Don't show error - just show empty dashboard
-      setIsLoading(false);
-    }
-  }, [user]);
-  
-  // Fetch teacher data on mount/user change
-  useEffect(() => {
-    console.log('[TeacherDashboard] useEffect triggered, user:', user);
-    
-    // Always set a maximum timeout to prevent infinite loading
-    const maxTimeout = setTimeout(() => {
-      console.warn('[TeacherDashboard] Max timeout reached, stopping loading');
-      setIsLoading(false);
-    }, 5000);
-    
-    // Check if user exists and has required properties
-    // User can have userId (from DB) or id (from Auth), or both
-    const hasValidUser = user && (user.userId || user.id || user.user_id);
-    
-    if (hasValidUser) {
-      console.log('[TeacherDashboard] User found, fetching data. UserId:', user.userId || user.id || user.user_id);
-      fetchTeacherData().then(() => {
-        clearTimeout(maxTimeout);
-      }).catch((err) => {
-        console.error('[TeacherDashboard] Error fetching data:', err);
-        clearTimeout(maxTimeout);
-        setIsLoading(false);
+      return assessments;
+    },
+    enabled: myClasses.length > 0
+  });
+
+  const isLoading = isLoadingClasses || isLoadingLessons || isLoadingAssessments;
+
+  // Computed data
+  const todayLessons = useMemo(() => {
+    return (weekLessons || [])
+      .filter(lesson => {
+        const lessonDate = new Date(lesson.lesson_date).toISOString().split('T')[0];
+        return lessonDate === todayStr;
+      })
+      .sort((a, b) => {
+        const timeA = a.start_time || '00:00';
+        const timeB = b.start_time || '00:00';
+        return timeA.localeCompare(timeB);
       });
-    } else {
-      // If no user, stop loading after shorter timeout
-      const shortTimeout = setTimeout(() => {
-        console.warn('[TeacherDashboard] No user after timeout, stopping loading');
-        setIsLoading(false);
-        clearTimeout(maxTimeout);
-      }, 2000);
-      
-      return () => {
-        clearTimeout(maxTimeout);
-        clearTimeout(shortTimeout);
-      };
-    }
-    
-    return () => clearTimeout(maxTimeout);
-  }, [user, fetchTeacherData]);
-  
+  }, [weekLessons, todayStr]);
+
+  const upcomingAssessments = useMemo(() => {
+    return (allAssessments || [])
+      .filter(a => a.due_date && new Date(a.due_date) >= new Date())
+      .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+      .slice(0, 5);
+  }, [allAssessments]);
+
+  const uniqueClasses = useMemo(() => {
+    return Array.from(
+      new Map(myClasses.map(cs => [cs.class?.class_id, cs])).values()
+    );
+  }, [myClasses]);
+
+  // Helper functions
   const getSubjectName = (classSubject) => {
-    return classSubject?.subject_offering?.subject?.subject_name || 
-           classSubject?.subject_name || 
-           'Subject';
+    return classSubject?.subject_offering?.subject?.subject_name ||
+      classSubject?.subject_name ||
+      'Subject';
   };
-  
+
   const getClassName = (classSubject) => {
     return classSubject?.class?.class_name || '';
   };
-  
+
   const getFormName = (classSubject) => {
     return classSubject?.class?.form?.form_name || '';
   };
-  
+
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     return timeStr.substring(0, 5);
   };
-  
-  // Get unique classes (group by class_id)
-  const uniqueClasses = Array.from(
-    new Map(myClasses.map(cs => [cs.class?.class_id, cs])).values()
-  );
-  
+
+  if (!isValidTeacherId) {
+    return (
+      <Container className="mt-4">
+        <Alert variant="warning">
+          Loading user information...
+        </Alert>
+      </Container>
+    );
+  }
+
   if (isLoading) {
     return (
       <Container className="mt-4">
@@ -184,15 +145,7 @@ function TeacherDashboard() {
       </Container>
     );
   }
-  
-  if (error) {
-    return (
-      <Container className="mt-4">
-        <Alert variant="danger">{error}</Alert>
-      </Container>
-    );
-  }
-  
+
   return (
     <Container className="mt-4">
       {/* Header */}
@@ -204,7 +157,7 @@ function TeacherDashboard() {
           </p>
         </Col>
       </Row>
-      
+
       <Tabs
         activeKey={activeTab}
         onSelect={(k) => setActiveTab(k)}
@@ -257,8 +210,8 @@ function TeacherDashboard() {
                                 )}
                               </div>
                               <div className="text-end">
-                                <Button 
-                                  variant="outline-primary" 
+                                <Button
+                                  variant="outline-primary"
                                   size="sm"
                                   onClick={() => navigate(`/teacher/lessons/${lesson.lesson_id}`)}
                                 >
@@ -274,7 +227,7 @@ function TeacherDashboard() {
                 </Card.Body>
               </Card>
             </Col>
-            
+
             {/* Quick Stats */}
             <Col md={4}>
               <Row className="g-3">
@@ -291,7 +244,7 @@ function TeacherDashboard() {
                     </Card.Body>
                   </Card>
                 </Col>
-                
+
                 <Col xs={12}>
                   <Card className="border-0 shadow-sm bg-success text-white">
                     <Card.Body>
@@ -305,7 +258,7 @@ function TeacherDashboard() {
                     </Card.Body>
                   </Card>
                 </Col>
-                
+
                 <Col xs={12}>
                   <Card className="border-0 shadow-sm bg-warning text-white">
                     <Card.Body>
@@ -322,7 +275,7 @@ function TeacherDashboard() {
               </Row>
             </Col>
           </Row>
-          
+
           {/* My Classes */}
           <Row className="mt-4">
             <Col>
@@ -345,10 +298,10 @@ function TeacherDashboard() {
                         const className = getClassName(classSubject);
                         const formName = getFormName(classSubject);
                         const classId = classSubject.class?.class_id;
-                        
+
                         // Get all subjects for this class
                         const subjectsForClass = myClasses.filter(cs => cs.class?.class_id === classId);
-                        
+
                         return (
                           <Col md={4} key={index}>
                             <Card className="h-100 border">
@@ -358,9 +311,9 @@ function TeacherDashboard() {
                                   {subjectsForClass.length} subject{subjectsForClass.length !== 1 ? 's' : ''}
                                 </small>
                                 <div className="mt-2">
-                                  <Button 
-                                    variant="outline-primary" 
-                                    size="sm" 
+                                  <Button
+                                    variant="outline-primary"
+                                    size="sm"
                                     className="w-100"
                                     onClick={() => navigate(`/teacher/classes/${classId}`)}
                                   >
@@ -378,7 +331,7 @@ function TeacherDashboard() {
               </Card>
             </Col>
           </Row>
-          
+
           {/* Upcoming Assessments */}
           {upcomingAssessments.length > 0 && (
             <Row className="mt-4">
@@ -421,7 +374,7 @@ function TeacherDashboard() {
             </Row>
           )}
         </Tab>
-        
+
         <Tab eventKey="timetable" title="Timetable">
           <Row>
             <Col>
@@ -429,7 +382,7 @@ function TeacherDashboard() {
             </Col>
           </Row>
         </Tab>
-        
+
         <Tab eventKey="classes" title="My Classes">
           <Row className="g-4">
             {uniqueClasses.map((classSubject, index) => {
@@ -437,7 +390,7 @@ function TeacherDashboard() {
               const formName = getFormName(classSubject);
               const classId = classSubject.class?.class_id;
               const subjectsForClass = myClasses.filter(cs => cs.class?.class_id === classId);
-              
+
               return (
                 <Col md={6} lg={4} key={index}>
                   <Card className="h-100 border-0 shadow-sm">
@@ -453,8 +406,8 @@ function TeacherDashboard() {
                           </Badge>
                         ))}
                       </div>
-                      <Button 
-                        variant="primary" 
+                      <Button
+                        variant="primary"
                         className="w-100"
                         onClick={() => navigate(`/teacher/classes/${classId}`)}
                       >
@@ -482,4 +435,3 @@ function TeacherDashboard() {
 }
 
 export default TeacherDashboard;
-

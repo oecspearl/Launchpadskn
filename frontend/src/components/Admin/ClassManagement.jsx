@@ -1,27 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Spinner, Alert, 
+import React, { useState } from 'react';
+import {
+  Container, Row, Col, Card, Button, Spinner, Alert,
   Table, Modal, Form, Badge
 } from 'react-bootstrap';
-import { 
-  FaPlus, FaEdit, FaTrash, FaUsers, FaUser
+import {
+  FaPlus, FaEdit, FaTrash, FaUsers
 } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { institutionService } from '../../services/institutionService';
+import { userService } from '../../services/userService';
+import { classService } from '../../services/classService';
+import { ROLES } from '../../constants/roles';
 
 function ClassManagement() {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  
-  // Data
-  const [classes, setClasses] = useState([]);
-  const [forms, setForms] = useState([]);
-  const [formTutors, setFormTutors] = useState([]);
+  const queryClient = useQueryClient();
   const [selectedForm, setSelectedForm] = useState('all');
-  
+
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
@@ -41,99 +35,67 @@ function ClassManagement() {
     published: false,
     featured: false
   });
-  
-  useEffect(() => {
-    fetchData();
-  }, [selectedForm]);
-  
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Get forms
-      const { data: formsData } = await supabase
-        .from('forms')
-        .select('*')
-        .eq('is_active', true)
-        .order('form_number');
-      setForms(formsData || []);
-      
-      // Get form tutors (instructors)
-      const { data: tutorsData } = await supabase
-        .from('users')
-        .select('*')
-        .in('role', ['ADMIN', 'INSTRUCTOR'])
-        .eq('is_active', true)
-        .order('name');
-      setFormTutors(tutorsData || []);
-      
-      // Get classes
-      let query = supabase
-        .from('classes')
-        .select(`
-          *,
-          form:forms(*),
-          form_tutor:users!classes_form_tutor_id_fkey(name, email)
-        `)
-        .eq('is_active', true);
-      
-      if (selectedForm !== 'all') {
-        query = query.eq('form_id', selectedForm);
-      }
-      
-      const { data: classesData, error: classesError } = await query.order('form_id').order('class_name');
-      
-      let finalClassesData = classesData || [];
-      
-      if (classesError) {
-        console.error('Error fetching classes:', classesError);
-        // Try simpler query without foreign key
-        const { data: simpleData, error: simpleError } = await supabase
-          .from('classes')
-          .select('*')
-          .eq('is_active', true)
-          .order('form_id')
-          .order('class_name');
-        
-        if (simpleError) {
-          throw simpleError;
-        }
-        
-        // Manually join form data
-        const classesWithForm = (simpleData || []).map(cls => {
-          const form = formsData?.find(f => f.form_id === cls.form_id);
-          const tutor = formTutors?.find(t => t.user_id === cls.form_tutor_id);
-          return {
-            ...cls,
-            form: form || null,
-            form_tutor: tutor ? { name: tutor.name, email: tutor.email } : null
-          };
-        });
-        finalClassesData = classesWithForm;
-      }
-      
-      // Get enrollment count for each class
-      const currentClasses = finalClassesData;
-      const classesWithCounts = await Promise.all(currentClasses.map(async (cls) => {
-        const { count } = await supabase
-          .from('student_class_assignments')
-          .select('*', { count: 'exact', head: true })
-          .eq('class_id', cls.class_id)
-          .eq('is_active', true);
-        return { ...cls, enrollment: count || 0 };
-      }));
-      
-      setClasses(classesWithCounts);
-      
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load classes');
-      setIsLoading(false);
+
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  // Queries
+  const { data: forms = [], isLoading: isLoadingForms } = useQuery({
+    queryKey: ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(null)
+  });
+
+  const { data: tutors = [], isLoading: isLoadingTutors } = useQuery({
+    queryKey: ['tutors'],
+    queryFn: async () => {
+      const [admins, instructors] = await Promise.all([
+        userService.getUsersByRole(ROLES.ADMIN),
+        userService.getUsersByRole(ROLES.INSTRUCTOR)
+      ]);
+      const all = [...admins, ...instructors];
+      const unique = Array.from(new Map(all.map(item => [item.user_id, item])).values());
+      return unique.sort((a, b) => a.name.localeCompare(b.name));
     }
-  };
-  
+  });
+
+  const { data: classes = [], isLoading: isLoadingClasses } = useQuery({
+    queryKey: ['classes'],
+    queryFn: () => classService.getClasses(ROLES.ADMIN)
+  });
+
+  const isLoading = isLoadingForms || isLoadingTutors || isLoadingClasses;
+
+  // Mutations
+  const createClassMutation = useMutation({
+    mutationFn: (data) => classService.createClass(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['classes']);
+      setSuccess('Class created successfully');
+      handleCloseModal();
+    },
+    onError: (err) => setError(err.message || 'Failed to create class')
+  });
+
+  const updateClassMutation = useMutation({
+    mutationFn: ({ id, data }) => classService.updateClass(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['classes']);
+      setSuccess('Class updated successfully');
+      handleCloseModal();
+    },
+    onError: (err) => setError(err.message || 'Failed to update class')
+  });
+
+  const deleteClassMutation = useMutation({
+    mutationFn: (id) => classService.updateClass(id, { is_active: false }), // Soft delete
+    onSuccess: () => {
+      queryClient.invalidateQueries(['classes']);
+      setSuccess('Class deleted successfully');
+    },
+    onError: (err) => setError(err.message || 'Failed to delete class')
+  });
+
+  // Handlers
   const handleOpenModal = (classItem = null) => {
     if (classItem) {
       setEditingClass(classItem);
@@ -175,74 +137,71 @@ function ClassManagement() {
     }
     setShowModal(true);
   };
-  
+
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingClass(null);
-    setClassData({});
-    setSuccess(null);
+    setClassData({
+      form_id: '',
+      class_name: '',
+      class_code: '',
+      academic_year: '',
+      capacity: 35,
+      form_tutor_id: '',
+      room_number: '',
+      description: '',
+      thumbnail: '',
+      syllabus: '',
+      difficulty: 'intermediate',
+      subject_area: '',
+      published: false,
+      featured: false
+    });
     setError(null);
+    setSuccess(null);
   };
-  
-  const handleSubmit = async (e) => {
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      setError(null);
-      setSuccess(null);
-      
-      // Clean up classData: convert empty strings to null for optional fields
-      const cleanedData = {
-        ...classData,
-        form_id: classData.form_id ? parseInt(classData.form_id) : null,
-        capacity: classData.capacity ? parseInt(classData.capacity) : 35,
-        form_tutor_id: classData.form_tutor_id ? parseInt(classData.form_tutor_id) : null,
-        room_number: classData.room_number || null,
-        description: classData.description || null,
-        class_code: classData.class_code || null
-      };
-      
-      // Validate required fields
-      if (!cleanedData.form_id) {
-        throw new Error('Form is required');
-      }
-      if (!cleanedData.class_name || cleanedData.class_name.trim() === '') {
-        throw new Error('Class name is required');
-      }
-      if (!cleanedData.academic_year || cleanedData.academic_year.trim() === '') {
-        throw new Error('Academic year is required');
-      }
-      
-      if (editingClass) {
-        // Update class
-        await supabaseService.updateClass(editingClass.class_id, cleanedData);
-        setSuccess('Class updated successfully');
-      } else {
-        // Create class
-        await supabaseService.createClass(cleanedData);
-        setSuccess('Class created successfully');
-      }
-      
-      handleCloseModal();
-      fetchData();
-    } catch (err) {
-      console.error('Error saving class:', err);
-      setError(err.message || 'Failed to save class');
+
+    // Clean up classData: convert empty strings to null for optional fields
+    const cleanedData = {
+      ...classData,
+      form_id: classData.form_id ? parseInt(classData.form_id) : null,
+      capacity: classData.capacity ? parseInt(classData.capacity) : 35,
+      form_tutor_id: classData.form_tutor_id ? parseInt(classData.form_tutor_id) : null,
+      room_number: classData.room_number || null,
+      description: classData.description || null,
+      class_code: classData.class_code || null
+    };
+
+    // Validate required fields
+    if (!cleanedData.form_id) {
+      setError('Form is required');
+      return;
+    }
+    if (!cleanedData.class_name || cleanedData.class_name.trim() === '') {
+      setError('Class name is required');
+      return;
+    }
+    if (!cleanedData.academic_year || cleanedData.academic_year.trim() === '') {
+      setError('Academic year is required');
+      return;
+    }
+
+    if (editingClass) {
+      updateClassMutation.mutate({ id: editingClass.class_id, data: cleanedData });
+    } else {
+      createClassMutation.mutate(cleanedData);
     }
   };
-  
-  const handleDelete = async (classId) => {
+
+  const handleDelete = (classId) => {
     if (window.confirm('Are you sure you want to delete this class? This will remove all student assignments and subject assignments.')) {
-      try {
-        await supabaseService.updateClass(classId, { is_active: false });
-        setSuccess('Class deleted successfully');
-        fetchData();
-      } catch (err) {
-        console.error('Error deleting class:', err);
-        setError(err.message || 'Failed to delete class');
-      }
+      deleteClassMutation.mutate(classId);
     }
   };
-  
+
   const handleClassCodeChange = (className) => {
     // Auto-generate class code from class name
     if (className && !editingClass) {
@@ -252,33 +211,33 @@ function ClassManagement() {
       setClassData({ ...classData, class_name: className });
     }
   };
-  
+
+  // Filter classes
+  const filteredClasses = classes.filter(c => {
+    if (selectedForm === 'all') return true;
+    return c.form_id === parseInt(selectedForm);
+  });
+
   if (isLoading) {
     return (
-      <Container className="mt-4">
-        <div className="text-center py-5">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
-        </div>
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
       </Container>
     );
   }
-  
+
   return (
-    <Container className="mt-4">
-      <Row className="mb-4 pt-5">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <h2>Class Management</h2>
-            <Button variant="primary" onClick={() => handleOpenModal()}>
-              <FaPlus className="me-2" />
-              Create Class
-            </Button>
-          </div>
-        </Col>
-      </Row>
-      
+    <Container fluid className="py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2>Class Management</h2>
+        <Button variant="primary" onClick={() => handleOpenModal()}>
+          <FaPlus className="me-2" />
+          Create Class
+        </Button>
+      </div>
+
       {/* Filter by Form */}
       <Row className="mb-3">
         <Col md={4}>
@@ -290,19 +249,19 @@ function ClassManagement() {
             <option value="all">All Forms</option>
             {forms.map(form => (
               <option key={form.form_id} value={form.form_id}>
-                {form.form_name} ({form.academic_year})
+                {form.form_number}{form.stream} ({form.academic_year})
               </option>
             ))}
           </Form.Select>
         </Col>
       </Row>
-      
+
       {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess(null)}>{success}</Alert>}
-      
+
       <Card className="border-0 shadow-sm">
         <Card.Body>
-          {classes.length === 0 ? (
+          {filteredClasses.length === 0 ? (
             <div className="text-center py-5">
               <p className="text-muted mb-0">No classes found</p>
               <Button variant="primary" className="mt-3" onClick={() => handleOpenModal()}>
@@ -325,16 +284,18 @@ function ClassManagement() {
                 </tr>
               </thead>
               <tbody>
-                {classes.map((classItem) => (
+                {filteredClasses.map((classItem) => (
                   <tr key={classItem.class_id}>
                     <td><strong>{classItem.class_name}</strong></td>
                     <td><Badge bg="secondary">{classItem.class_code}</Badge></td>
-                    <td>{classItem.form?.form_name || 'N/A'}</td>
+                    <td>
+                      {classItem.form ? `${classItem.form.form_number}${classItem.form.stream || ''}` : 'N/A'}
+                    </td>
                     <td>{classItem.academic_year}</td>
                     <td>{classItem.form_tutor?.name || 'Not assigned'}</td>
                     <td>
-                      <Badge bg={classItem.enrollment >= classItem.capacity ? 'danger' : 'success'}>
-                        {classItem.enrollment || 0} / {classItem.capacity}
+                      <Badge bg={classItem.current_enrollment >= classItem.capacity ? 'danger' : 'success'}>
+                        {classItem.current_enrollment || 0} / {classItem.capacity}
                       </Badge>
                     </td>
                     <td>{classItem.capacity}</td>
@@ -345,24 +306,24 @@ function ClassManagement() {
                       </Badge>
                     </td>
                     <td>
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm" 
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
                         className="me-2"
                         onClick={() => handleOpenModal(classItem)}
                       >
                         <FaEdit />
                       </Button>
-                      <Button 
-                        variant="outline-info" 
-                        size="sm" 
+                      <Button
+                        variant="outline-info"
+                        size="sm"
                         className="me-2"
                         onClick={() => window.location.href = `/admin/classes/${classItem.class_id}/students`}
                       >
                         <FaUsers />
                       </Button>
-                      <Button 
-                        variant="outline-danger" 
+                      <Button
+                        variant="outline-danger"
                         size="sm"
                         onClick={() => handleDelete(classItem.class_id)}
                       >
@@ -376,7 +337,7 @@ function ClassManagement() {
           )}
         </Card.Body>
       </Card>
-      
+
       {/* Create/Edit Modal */}
       <Modal show={showModal} onHide={handleCloseModal} size="lg">
         <Modal.Header closeButton>
@@ -396,12 +357,12 @@ function ClassManagement() {
                 <option value="">Select Form</option>
                 {forms.map(form => (
                   <option key={form.form_id} value={form.form_id}>
-                    {form.form_name} ({form.academic_year})
+                    {form.form_number}{form.stream} ({form.academic_year})
                   </option>
                 ))}
               </Form.Select>
             </Form.Group>
-            
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -415,7 +376,7 @@ function ClassManagement() {
                   />
                 </Form.Group>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Class Code *</Form.Label>
@@ -432,7 +393,7 @@ function ClassManagement() {
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -446,7 +407,7 @@ function ClassManagement() {
                   />
                 </Form.Group>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Capacity</Form.Label>
@@ -463,7 +424,7 @@ function ClassManagement() {
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -473,7 +434,7 @@ function ClassManagement() {
                     onChange={(e) => setClassData({ ...classData, form_tutor_id: e.target.value || null })}
                   >
                     <option value="">Not assigned</option>
-                    {formTutors.map(tutor => (
+                    {tutors.map(tutor => (
                       <option key={tutor.user_id} value={tutor.user_id}>
                         {tutor.name} ({tutor.email})
                       </option>
@@ -481,7 +442,7 @@ function ClassManagement() {
                   </Form.Select>
                 </Form.Group>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Room Number</Form.Label>
@@ -494,7 +455,7 @@ function ClassManagement() {
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Description</Form.Label>
               <Form.Control
@@ -505,7 +466,7 @@ function ClassManagement() {
                 placeholder="Optional description"
               />
             </Form.Group>
-            
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -521,7 +482,7 @@ function ClassManagement() {
                   </Form.Text>
                 </Form.Group>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Subject Area</Form.Label>
@@ -534,7 +495,7 @@ function ClassManagement() {
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Difficulty</Form.Label>
               <Form.Select
@@ -546,7 +507,7 @@ function ClassManagement() {
                 <option value="advanced">Advanced</option>
               </Form.Select>
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Syllabus</Form.Label>
               <Form.Control
@@ -560,7 +521,7 @@ function ClassManagement() {
                 Detailed syllabus for the class
               </Form.Text>
             </Form.Group>
-            
+
             <Row>
               <Col md={6}>
                 <Form.Check
@@ -573,7 +534,7 @@ function ClassManagement() {
                   Published classes are visible to all users and students can enroll
                 </Form.Text>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Check
                   type="checkbox"
@@ -602,5 +563,3 @@ function ClassManagement() {
 }
 
 export default ClassManagement;
-
-

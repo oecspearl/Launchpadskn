@@ -4,10 +4,11 @@ import { FaLock } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../config/supabase';
+import { userService } from '../../services/userService';
 
 function ChangePassword() {
   const { user, updateUser } = useAuth();
-  
+
   // Debug logging
   console.log('ChangePassword - user:', user);
   console.log('ChangePassword - user.isFirstLogin:', user?.isFirstLogin, 'type:', typeof user?.isFirstLogin);
@@ -47,31 +48,28 @@ function ChangePassword() {
       const { error: updateError } = await supabase.auth.updateUser({
         password: formData.newPassword
       });
-      
+
       if (updateError) throw updateError;
-      
-      // Update user profile to mark first login as complete
+
+      // Update user profile to mark first login as complete using userService
       if (user.userId || user.id) {
-        const { error: profileError } = await supabase
-          .from('users')
-          .update({ 
+        try {
+          await userService.updateUserProfile(user.userId || user.id, {
             is_first_login: false,
             updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.userId || user.id);
-        
-        if (profileError) {
+          });
+        } catch (profileError) {
           console.warn('Failed to update is_first_login:', profileError);
         }
       }
-      
+
       // Update local user state
       console.log('ChangePassword - updating user isFirstLogin to false');
       updateUser({ ...user, isFirstLogin: false, is_first_login: false });
 
       // Navigate to appropriate dashboard
       const role = user.role.toLowerCase();
-      switch(role) {
+      switch (role) {
         case 'admin':
           navigate('/admin/dashboard');
           break;
@@ -107,9 +105,9 @@ function ChangePassword() {
               <Alert variant="info">
                 This is your first time logging in. Please change your password to continue.
               </Alert>
-              
+
               {error && <Alert variant="danger">{error}</Alert>}
-              
+
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>New Password</Form.Label>
@@ -122,7 +120,7 @@ function ChangePassword() {
                     minLength="6"
                   />
                 </Form.Group>
-                
+
                 <Form.Group className="mb-3">
                   <Form.Label>Confirm New Password</Form.Label>
                   <Form.Control
@@ -134,10 +132,10 @@ function ChangePassword() {
                     minLength="6"
                   />
                 </Form.Group>
-                
-                <Button 
-                  variant="primary" 
-                  type="submit" 
+
+                <Button
+                  variant="primary"
+                  type="submit"
                   className="w-100"
                   disabled={loading}
                 >

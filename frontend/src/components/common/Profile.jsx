@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
 import { FaUser, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import { supabase } from '../../config/supabase';
+import { userService } from '../../services/userService';
 
 function Profile() {
   const { user, updateUser } = useAuth();
+  const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,35 +34,9 @@ function Profile() {
     }
   }, [user]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSave = async () => {
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    try {
-      // Update user profile in Supabase
-      const { error } = await supabase
-        .from('users')
-        .update({
-          name: formData.name,
-          phone: formData.phone,
-          address: formData.address,
-          date_of_birth: formData.dateOfBirth || null,
-          emergency_contact: formData.emergencyContact || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('user_id', user.userId || user.id);
-      
-      if (error) throw error;
-      
+  const updateProfileMutation = useMutation({
+    mutationFn: (updates) => userService.updateUserProfile(user.userId || user.id, updates),
+    onSuccess: (data) => {
       // Update local auth context
       const updatedUser = {
         ...user,
@@ -72,17 +47,41 @@ function Profile() {
         emergencyContact: formData.emergencyContact
       };
       updateUser(updatedUser);
-      
+
+      // Invalidate relevant queries
+      queryClient.invalidateQueries(['user-profile']);
+
       setSuccess('Profile updated successfully!');
       setEditing(false);
       setTimeout(() => setSuccess(''), 3000);
-    } catch (error) {
-      console.error('Profile update error:', error);
-      setError(error.message || 'Failed to update profile');
+    },
+    onError: (err) => {
+      console.error('Profile update error:', err);
+      setError(err.message || 'Failed to update profile');
       setTimeout(() => setError(''), 3000);
-    } finally {
-      setLoading(false);
     }
+  });
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSave = async () => {
+    setError('');
+    setSuccess('');
+
+    updateProfileMutation.mutate({
+      name: formData.name,
+      phone: formData.phone,
+      address: formData.address,
+      date_of_birth: formData.dateOfBirth || null,
+      emergency_contact: formData.emergencyContact || null,
+      updated_at: new Date().toISOString()
+    });
   };
 
   const handleCancel = () => {
@@ -116,14 +115,14 @@ function Profile() {
                   </Button>
                 ) : (
                   <div>
-                    <Button 
-                      variant="success" 
+                    <Button
+                      variant="success"
                       onClick={handleSave}
-                      disabled={loading}
+                      disabled={updateProfileMutation.isPending}
                       className="me-2"
                     >
                       <FaSave className="me-1" />
-                      {loading ? 'Saving...' : 'Save'}
+                      {updateProfileMutation.isPending ? 'Saving...' : 'Save'}
                     </Button>
                     <Button variant="outline-secondary" onClick={handleCancel}>
                       <FaTimes className="me-1" />
@@ -218,7 +217,7 @@ function Profile() {
               </Form.Group>
 
               <hr />
-              
+
               <Row>
                 <Col md={6}>
                   <p><strong>Role:</strong> {user?.role}</p>

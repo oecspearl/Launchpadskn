@@ -317,6 +317,201 @@ export const institutionService = {
 
     async getSubjectById(subjectId) {
         const { data, error } = await supabase
+        return this.transformInstitution(data);
+    },
+
+    async createInstitution(institutionData) {
+        // Transform camelCase to snake_case for database
+        const dbData = this.transformInstitutionForDB(institutionData);
+        const { data, error } = await supabase
+            .from('institutions')
+            .insert(dbData)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return this.transformInstitution(data);
+    },
+
+    async updateInstitution(id, updates) {
+        // Transform camelCase to snake_case for database
+        const dbUpdates = this.transformInstitutionForDB(updates);
+        const { data, error } = await supabase
+            .from('institutions')
+            .update(dbUpdates)
+            .eq('institution_id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return this.transformInstitution(data);
+    },
+
+    async deleteInstitution(id) {
+        const { error } = await supabase
+            .from('institutions')
+            .delete()
+            .eq('institution_id', id);
+
+        if (error) throw error;
+    },
+
+    // ============================================
+    // DEPARTMENTS
+    // ============================================
+
+    async getAllDepartments() {
+        const { data, error } = await supabase
+            .from('departments')
+            .select('*')
+            .order('name');
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getDepartmentsByInstitution(institutionId) {
+        const { data, error } = await supabase
+            .from('departments')
+            .select('*')
+            .eq('institution_id', institutionId)
+            .order('name');
+
+        if (error) throw error;
+        return data;
+    },
+
+    async createDepartment(departmentData) {
+        const { data, error } = await supabase
+            .from('departments')
+            .insert(departmentData)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    // ============================================
+    // FORMS (Caribbean School Structure)
+    // ============================================
+
+    async getAllForms(schoolId) {
+        const { data, error } = await supabase
+            .from('forms')
+            .select('*')
+            .eq('school_id', schoolId)
+            .eq('is_active', true)
+            .order('form_number');
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getFormsBySchool(schoolId) {
+        let query = supabase
+            .from('forms')
+            .select('*, coordinator:users!forms_coordinator_id_fkey(name, email)')
+            .eq('is_active', true)
+            .order('form_number', { ascending: true });
+
+        // Only filter by school_id if it's provided
+        if (schoolId !== null && schoolId !== undefined) {
+            query = query.eq('school_id', schoolId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getFormById(formId) {
+        const { data, error } = await supabase
+            .from('forms')
+            .select('*, coordinator:users!forms_coordinator_id_fkey(*)')
+            .eq('form_id', formId)
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async createForm(formData) {
+        const { data, error } = await supabase
+            .from('forms')
+            .insert(formData)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async updateForm(formId, updates) {
+        const { data, error } = await supabase
+            .from('forms')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('form_id', formId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async deleteForm(formId) {
+        const { data, error } = await supabase
+            .from('forms')
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq('form_id', formId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getFormsByInstitution(institutionId) {
+        return this.getAllForms(institutionId);
+    },
+
+    // ============================================
+    // SUBJECTS
+    // ============================================
+
+    async getAllSubjects(schoolId) {
+        const { data, error } = await supabase
+            .from('subjects')
+            .select('*')
+            .eq('school_id', schoolId)
+            .eq('is_active', true)
+            .order('subject_name');
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getSubjectsBySchool(schoolId) {
+        let query = supabase
+            .from('subjects')
+            .select('*, department:departments(*)')
+            .eq('is_active', true)
+            .order('subject_name', { ascending: true });
+
+        // Only filter by school_id if it's provided
+        if (schoolId !== null && schoolId !== undefined) {
+            query = query.eq('school_id', schoolId);
+        }
+
+        const { data, error } = await query;
+
+        if (error) throw error;
+        return data;
+    },
+
+    async getSubjectById(subjectId) {
+        const { data, error } = await supabase
             .from('subjects')
             .select('*, department:departments(*)')
             .eq('subject_id', subjectId)
@@ -335,6 +530,27 @@ export const institutionService = {
 
         if (error) throw error;
         return data;
+    },
+
+    async updateSubject(subjectId, updates) {
+        const { data, error } = await supabase
+            .from('subjects')
+            .update({ ...updates, updated_at: new Date().toISOString() })
+            .eq('subject_id', subjectId)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data;
+    },
+
+    async deleteSubject(subjectId) {
+        const { error } = await supabase
+            .from('subjects')
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq('subject_id', subjectId);
+
+        if (error) throw error;
     },
 
     async getSubjectsByInstitution(institutionId) {
@@ -512,5 +728,14 @@ export const institutionService = {
 
         if (error) throw error;
         return data;
+    },
+
+    async deleteSubjectOffering(offeringId) {
+        const { error } = await supabase
+            .from('subject_form_offerings')
+            .delete()
+            .eq('offering_id', offeringId);
+
+        if (error) throw error;
     }
 };

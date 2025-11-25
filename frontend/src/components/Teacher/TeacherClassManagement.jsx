@@ -1,164 +1,124 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Spinner, Alert, 
+import React, { useState, useMemo } from 'react';
+import {
+  Container, Row, Col, Card, Button, Spinner, Alert,
   Tab, Tabs, Table, Badge, ListGroup, InputGroup, Form
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
+import {
   FaUsers, FaBook, FaUserGraduate, FaChalkboardTeacher,
   FaClipboardList, FaCalendarAlt, FaArrowLeft, FaSearch,
   FaChartLine
 } from 'react-icons/fa';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { classService } from '../../services/classService';
+import { studentService } from '../../services/studentService';
 import './TeacherClassManagement.css';
 
 function TeacherClassManagement() {
   const { classId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
-  // State
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+
   const [activeTab, setActiveTab] = useState('overview');
   const [searchQuery, setSearchQuery] = useState('');
-  
-  // Data
-  const [classInfo, setClassInfo] = useState(null);
-  const [students, setStudents] = useState([]);
-  const [classSubjects, setClassSubjects] = useState([]);
-  const [recentLessons, setRecentLessons] = useState([]);
-  const [upcomingAssessments, setUpcomingAssessments] = useState([]);
-  
-  useEffect(() => {
-    if (classId) {
-      fetchClassData();
-    }
-  }, [classId]);
-  
-  const fetchClassData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Get class details
-      const { data: classData, error: classError } = await supabase
-        .from('classes')
-        .select(`
-          *,
-          form:forms(*),
-          form_tutor:users!classes_form_tutor_id_fkey(name, email)
-        `)
-        .eq('class_id', classId)
-        .single();
-      
-      if (classError) throw classError;
-      setClassInfo(classData);
-      
-      // Get students in this class
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('student_class_assignments')
-        .select(`
-          *,
-          student:users(name, email, user_id)
-        `)
-        .eq('class_id', classId)
-        .eq('is_active', true);
-      
-      if (studentsError) {
-        console.warn('Error fetching students:', studentsError);
-      } else {
-        setStudents((studentsData || []).map(s => s.student).filter(Boolean));
-      }
-      
-      // Get subjects this teacher teaches for this class
-      const teacherId = user.user_id || user.userId;
-      if (teacherId && !isNaN(parseInt(teacherId))) {
-        const { data: subjectsData, error: subjectsError } = await supabase
-          .from('class_subjects')
-          .select(`
-            *,
-            subject_offering:subject_form_offerings(
-              *,
-              subject:subjects(*)
-            )
-          `)
-          .eq('class_id', classId)
-          .eq('teacher_id', parseInt(teacherId));
-        
-        if (subjectsError) {
-          console.warn('Error fetching subjects:', subjectsError);
-        } else {
-          setClassSubjects(subjectsData || []);
+
+  const teacherId = user?.user_id || user?.userId || user?.id;
+  const isValidTeacherId = teacherId && (typeof teacherId === 'number' || !teacherId.includes('-'));
+
+  // Queries
+  const { data: classInfo, isLoading: isLoadingClass, error: classError } = useQuery({
+    queryKey: ['class-details', classId],
+    queryFn: async () => {
+      const classes = await classService.getClasses(user?.role, teacherId);
+      return classes.find(c => c.class_id.toString() === classId) || null;
+    },
+    enabled: !!classId && !!isValidTeacherId
+  });
+
+  const { data: students = [], isLoading: isLoadingStudents } = useQuery({
+    queryKey: ['class-students', classId],
+    queryFn: () => classService.getClassRoster(classId),
+    enabled: !!classId
+  });
+
+  const { data: allClassSubjects = [], isLoading: isLoadingSubjects } = useQuery({
+    queryKey: ['class-subjects-all', classId],
+    queryFn: () => classService.getSubjectsByClass(classId),
+    enabled: !!classId
+  });
+
+  // Filter to only subjects this teacher teaches
+  const classSubjects = useMemo(() => {
+    if (!isValidTeacherId) return [];
+    return allClassSubjects.filter(cs => cs.teacher_id === parseInt(teacherId));
+  }, [allClassSubjects, teacherId, isValidTeacherId]);
+
+  // Get all class subject IDs for fetching lessons and assessments
+  const classSubjectIds = useMemo(() => {
+    return allClassSubjects.map(cs => cs.class_subject_id);
+  }, [allClassSubjects]);
+
+  const { data: recentLessons = [], isLoading: isLoadingLessons } = useQuery({
+    queryKey: ['class-recent-lessons', classSubjectIds],
+    queryFn: async () => {
+      if (classSubjectIds.length === 0) return [];
+      // Fetch lessons for all class subjects
+      const allLessons = [];
+      for (const csId of classSubjectIds) {
+        try {
+          const lessons = await classService.getLessonsByClassSubject(csId);
+          allLessons.push(...(lessons || []));
+        } catch (err) {
+          console.warn('Error fetching lessons:', err);
         }
       }
-      
-      // Get class subject IDs first (for all subjects in class, not just teacher's)
-      const classSubjectIds = await getClassSubjectIds(classId);
-      
-      // Get recent lessons for this class (last 5)
-      if (classSubjectIds.length > 0) {
-        const { data: lessonsData } = await supabase
-          .from('lessons')
-          .select(`
-            *,
-            class_subject:class_subjects(
-              subject_offering:subject_form_offerings(
-                subject:subjects(*)
-              )
-            )
-          `)
-          .in('class_subject_id', classSubjectIds)
-          .order('lesson_date', { ascending: false })
-          .order('start_time', { ascending: false })
-          .limit(5);
-        
-        setRecentLessons(lessonsData || []);
-        
-        // Get upcoming assessments
-        const { data: assessmentsData } = await supabase
-          .from('subject_assessments')
-          .select('*')
-          .in('class_subject_id', classSubjectIds)
-          .gte('due_date', new Date().toISOString())
-          .order('due_date', { ascending: true })
-          .limit(5);
-        
-        setUpcomingAssessments(assessmentsData || []);
+      // Sort by date and time, take most recent 5
+      return allLessons
+        .sort((a, b) => {
+          const dateCompare = new Date(b.lesson_date) - new Date(a.lesson_date);
+          if (dateCompare !== 0) return dateCompare;
+          return (b.start_time || '').localeCompare(a.start_time || '');
+        })
+        .slice(0, 5);
+    },
+    enabled: classSubjectIds.length > 0
+  });
+
+  const { data: upcomingAssessments = [], isLoading: isLoadingAssessments } = useQuery({
+    queryKey: ['class-upcoming-assessments', classSubjectIds],
+    queryFn: async () => {
+      if (classSubjectIds.length === 0) return [];
+      const allAssessments = [];
+      for (const csId of classSubjectIds) {
+        try {
+          const assessments = await studentService.getAssessmentsByClassSubject(csId);
+          allAssessments.push(...(assessments || []));
+        } catch (err) {
+          console.warn('Error fetching assessments:', err);
+        }
       }
-      
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching class data:', err);
-      setError(err.message || 'Failed to load class data');
-      setIsLoading(false);
-    }
-  };
-  
-  const getClassSubjectIds = async (classId) => {
-    try {
-      const { data } = await supabase
-        .from('class_subjects')
-        .select('class_subject_id')
-        .eq('class_id', classId);
-      return (data || []).map(cs => cs.class_subject_id);
-    } catch {
-      return [];
-    }
-  };
-  
+      // Filter upcoming and sort
+      return allAssessments
+        .filter(a => a.due_date && new Date(a.due_date) >= new Date())
+        .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+        .slice(0, 5);
+    },
+    enabled: classSubjectIds.length > 0
+  });
+
+  const isLoading = isLoadingClass || isLoadingStudents || isLoadingSubjects || isLoadingLessons || isLoadingAssessments;
+
   // Filter students by search query
-  const filteredStudents = students.filter(student => {
-    if (!searchQuery) return true;
+  const filteredStudents = useMemo(() => {
+    if (!searchQuery) return students;
     const query = searchQuery.toLowerCase();
-    return (
+    return students.filter(student =>
       student.name?.toLowerCase().includes(query) ||
       student.email?.toLowerCase().includes(query)
     );
-  });
-  
+  }, [students, searchQuery]);
+
   if (isLoading) {
     return (
       <Container className="mt-4">
@@ -170,12 +130,12 @@ function TeacherClassManagement() {
       </Container>
     );
   }
-  
-  if (error || !classInfo) {
+
+  if (classError || !classInfo) {
     return (
       <Container className="mt-4">
         <Alert variant="danger">
-          {error || 'Class not found'}
+          {classError?.message || 'Class not found'}
         </Alert>
         <Button variant="secondary" onClick={() => navigate('/teacher/dashboard')}>
           <FaArrowLeft className="me-2" />
@@ -184,14 +144,14 @@ function TeacherClassManagement() {
       </Container>
     );
   }
-  
+
   return (
     <Container className="mt-4">
       {/* Header */}
       <Row className="mb-4 pt-5">
         <Col>
-          <Button 
-            variant="outline-secondary" 
+          <Button
+            variant="outline-secondary"
             className="mb-3"
             onClick={() => navigate('/teacher/dashboard')}
           >
@@ -200,7 +160,7 @@ function TeacherClassManagement() {
           </Button>
           <div className="d-flex justify-content-between align-items-center">
             <div>
-              <h2>{classInfo.form?.form_name} - {classInfo.class_name}</h2>
+              <h2>{classInfo.form?.form_number}{classInfo.form?.stream} - {classInfo.class_name}</h2>
               <p className="text-muted mb-0">
                 {classInfo.description || `Class code: ${classInfo.class_code}`}
               </p>
@@ -218,9 +178,7 @@ function TeacherClassManagement() {
           </div>
         </Col>
       </Row>
-      
-      {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
-      
+
       {/* Class Info Cards */}
       <Row className="mb-4 g-3">
         <Col md={3}>
@@ -229,7 +187,7 @@ function TeacherClassManagement() {
               <div className="d-flex justify-content-between align-items-center">
                 <div>
                   <h6 className="text-muted mb-1">Form</h6>
-                  <h4 className="mb-0">{classInfo.form?.form_name}</h4>
+                  <h4 className="mb-0">{classInfo.form?.form_number}{classInfo.form?.stream}</h4>
                 </div>
                 <FaChalkboardTeacher size={30} className="text-primary" />
               </div>
@@ -276,7 +234,7 @@ function TeacherClassManagement() {
           </Card>
         </Col>
       </Row>
-      
+
       {/* Tabs */}
       <Tabs
         activeKey={activeTab}
@@ -294,13 +252,15 @@ function TeacherClassManagement() {
                     <FaCalendarAlt className="me-2" />
                     Recent Lessons
                   </h5>
-                  <Button 
-                    variant="outline-primary" 
-                    size="sm"
-                    onClick={() => navigate(`/teacher/class-subjects/${classSubjects[0]?.class_subject_id}/lessons`)}
-                  >
-                    View All
-                  </Button>
+                  {classSubjects.length > 0 && (
+                    <Button
+                      variant="outline-primary"
+                      size="sm"
+                      onClick={() => navigate(`/teacher/class-subjects/${classSubjects[0]?.class_subject_id}/lessons`)}
+                    >
+                      View All
+                    </Button>
+                  )}
                 </Card.Header>
                 <Card.Body>
                   {recentLessons.length === 0 ? (
@@ -335,7 +295,7 @@ function TeacherClassManagement() {
                   )}
                 </Card.Body>
               </Card>
-              
+
               {/* Upcoming Assessments */}
               {upcomingAssessments.length > 0 && (
                 <Card className="border-0 shadow-sm">
@@ -374,7 +334,7 @@ function TeacherClassManagement() {
                 </Card>
               )}
             </Col>
-            
+
             <Col md={4}>
               {/* Subjects Taught */}
               <Card className="border-0 shadow-sm mb-4">
@@ -427,7 +387,7 @@ function TeacherClassManagement() {
                   )}
                 </Card.Body>
               </Card>
-              
+
               {/* Class Info */}
               <Card className="border-0 shadow-sm">
                 <Card.Header className="bg-white border-0 py-3">
@@ -458,7 +418,7 @@ function TeacherClassManagement() {
             </Col>
           </Row>
         </Tab>
-        
+
         {/* Students Tab */}
         <Tab eventKey="students" title={`Students (${students.length})`}>
           <Card className="border-0 shadow-sm">
@@ -524,7 +484,7 @@ function TeacherClassManagement() {
             </Card.Body>
           </Card>
         </Tab>
-        
+
         {/* Subjects Tab */}
         <Tab eventKey="subjects" title="Subjects">
           <Row className="g-4">
@@ -586,4 +546,3 @@ function TeacherClassManagement() {
 }
 
 export default TeacherClassManagement;
-

@@ -1,29 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Spinner, Alert, 
+import React, { useState } from 'react';
+import {
+  Container, Row, Col, Card, Button, Spinner, Alert,
   Table, Modal, Form, Badge
 } from 'react-bootstrap';
-import { 
-  FaUserPlus, FaUsers, FaSearch
+import {
+  FaUserPlus, FaUsers
 } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { userService } from '../../services/userService';
+import { institutionService } from '../../services/institutionService';
+import { classService } from '../../services/classService';
+import { ROLES } from '../../constants/roles';
 
 function StudentAssignment() {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  
-  // Data
-  const [students, setStudents] = useState([]);
-  const [classes, setClasses] = useState([]);
-  const [classAssignments, setClassAssignments] = useState([]);
+  const queryClient = useQueryClient();
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedForm, setSelectedForm] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [assignmentData, setAssignmentData] = useState({
@@ -31,82 +25,65 @@ function StudentAssignment() {
     class_id: '',
     academic_year: ''
   });
-  
-  useEffect(() => {
-    fetchData();
-  }, [selectedClass, selectedForm]);
-  
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Get students
-      const { data: studentsData } = await supabase
-        .from('users')
-        .select('*')
-        .eq('role', 'STUDENT')
-        .eq('is_active', true)
-        .order('name');
-      setStudents(studentsData || []);
-      
-      // Get forms
-      const { data: formsData } = await supabase
-        .from('forms')
-        .select('*')
-        .eq('is_active', true)
-        .order('form_number');
-      
-      // Get classes with filter
-      let classQuery = supabase
-        .from('classes')
-        .select(`
-          *,
-          form:forms(*)
-        `)
-        .eq('is_active', true);
-      
+
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  // Queries
+  const { data: students = [], isLoading: isLoadingStudents } = useQuery({
+    queryKey: ['students'],
+    queryFn: () => userService.getUsersByRole(ROLES.STUDENT)
+  });
+
+  const { data: forms = [], isLoading: isLoadingForms } = useQuery({
+    queryKey: ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(null)
+  });
+
+  const { data: classes = [], isLoading: isLoadingClasses } = useQuery({
+    queryKey: ['classes', selectedForm],
+    queryFn: async () => {
+      // If a form is selected, we could filter by form, but classService.getClassesByForm returns classes for a specific form.
+      // If 'all', we want all classes. classService.getClassesByInstitution might be better if we had institutionId.
+      // For now, let's fetch all classes via getClasses() which handles roles, but we are admin so we see all.
+      // Or better, use getClassesByInstitution if we assume single tenant or context.
+      // Let's use getClasses(ROLES.ADMIN) to get all active classes.
+      const all = await classService.getClasses(ROLES.ADMIN);
       if (selectedForm !== 'all') {
-        classQuery = classQuery.eq('form_id', selectedForm);
+        return all.filter(c => c.form_id === selectedForm);
       }
-      
-      const { data: classesData } = await classQuery.order('form_id').order('class_name');
-      
-      if (selectedClass !== 'all') {
-        const filtered = classesData.filter(c => c.class_id.toString() === selectedClass);
-        setClasses(filtered);
-      } else {
-        setClasses(classesData || []);
-      }
-      
-      // Get class assignments
-      let assignmentQuery = supabase
-        .from('student_class_assignments')
-        .select(`
-          *,
-          student:users(*),
-          class:classes(
-            *,
-            form:forms(*)
-          )
-        `)
-        .eq('is_active', true);
-      
-      if (selectedClass !== 'all') {
-        assignmentQuery = assignmentQuery.eq('class_id', selectedClass);
-      }
-      
-      const { data: assignmentsData } = await assignmentQuery.order('academic_year', { ascending: false });
-      setClassAssignments(assignmentsData || []);
-      
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load data');
-      setIsLoading(false);
+      return all;
     }
-  };
-  
+  });
+
+  const { data: classAssignments = [], isLoading: isLoadingAssignments } = useQuery({
+    queryKey: ['student-assignments', selectedClass],
+    queryFn: () => classService.getAllStudentAssignments({ classId: selectedClass })
+  });
+
+  const isLoading = isLoadingStudents || isLoadingForms || isLoadingClasses || isLoadingAssignments;
+
+  // Mutations
+  const assignStudentMutation = useMutation({
+    mutationFn: (data) => classService.assignStudentToClass(data.student_id, data.class_id, data.academic_year),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['student-assignments']);
+      setSuccess('Student assigned to class successfully');
+      handleCloseModal();
+    },
+    onError: (err) => setError(err.message || 'Failed to assign student')
+  });
+
+  const removeStudentMutation = useMutation({
+    mutationFn: ({ studentId, classId }) => classService.removeStudentFromClass(studentId, classId),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['student-assignments']);
+      setSuccess('Student removed from class successfully');
+    },
+    onError: (err) => setError(err.message || 'Failed to remove student')
+  });
+
+  // Handlers
   const handleOpenModal = () => {
     const currentYear = new Date().getFullYear();
     setAssignmentData({
@@ -116,48 +93,29 @@ function StudentAssignment() {
     });
     setShowModal(true);
   };
-  
+
   const handleCloseModal = () => {
     setShowModal(false);
-    setAssignmentData({});
-    setSuccess(null);
+    setAssignmentData({
+      student_id: '',
+      class_id: '',
+      academic_year: ''
+    });
     setError(null);
+    setSuccess(null);
   };
-  
-  const handleSubmit = async (e) => {
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      setError(null);
-      setSuccess(null);
-      
-      await supabaseService.assignStudentToClass(
-        assignmentData.student_id,
-        assignmentData.class_id,
-        assignmentData.academic_year
-      );
-      
-      setSuccess('Student assigned to class successfully');
-      handleCloseModal();
-      fetchData();
-    } catch (err) {
-      console.error('Error assigning student:', err);
-      setError(err.message || 'Failed to assign student');
-    }
+    assignStudentMutation.mutate(assignmentData);
   };
-  
-  const handleRemove = async (assignmentId, studentId, classId) => {
+
+  const handleRemove = (assignmentId, studentId, classId) => {
     if (window.confirm('Are you sure you want to remove this student from the class?')) {
-      try {
-        await supabaseService.removeStudentFromClass(studentId, classId);
-        setSuccess('Student removed from class successfully');
-        fetchData();
-      } catch (err) {
-        console.error('Error removing student:', err);
-        setError(err.message || 'Failed to remove student');
-      }
+      removeStudentMutation.mutate({ studentId, classId });
     }
   };
-  
+
   // Filter students by search term
   const filteredStudents = students.filter(student => {
     const searchLower = searchTerm.toLowerCase();
@@ -166,7 +124,7 @@ function StudentAssignment() {
       student.email?.toLowerCase().includes(searchLower)
     );
   });
-  
+
   // Filter assignments by search
   const filteredAssignments = classAssignments.filter(assignment => {
     if (!searchTerm) return true;
@@ -176,41 +134,30 @@ function StudentAssignment() {
       assignment.student?.email?.toLowerCase().includes(searchLower)
     );
   });
-  
-  // Get forms for filter
-  const forms = Array.from(new Map(
-    classes.map(c => [c.form?.form_id, c.form]).filter(f => f[0])
-  ).values());
-  
+
   if (isLoading) {
     return (
-      <Container className="mt-4">
-        <div className="text-center py-5">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
-        </div>
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
       </Container>
     );
   }
-  
+
   return (
-    <Container className="mt-4">
-      <Row className="mb-4 pt-5">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <h2>Student Class Assignment</h2>
-            <Button variant="primary" onClick={handleOpenModal}>
-              <FaUserPlus className="me-2" />
-              Assign Student to Class
-            </Button>
-          </div>
-        </Col>
-      </Row>
-      
+    <Container fluid className="py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2>Student Class Assignment</h2>
+        <Button variant="primary" onClick={handleOpenModal}>
+          <FaUserPlus className="me-2" />
+          Assign Student to Class
+        </Button>
+      </div>
+
       {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess(null)}>{success}</Alert>}
-      
+
       {/* Filters */}
       <Row className="mb-3">
         <Col md={4}>
@@ -225,7 +172,7 @@ function StudentAssignment() {
             <option value="all">All Forms</option>
             {forms.map(form => (
               <option key={form.form_id} value={form.form_id}>
-                {form.form_name} ({form.academic_year})
+                {form.form_number}{form.stream} ({form.academic_year})
               </option>
             ))}
           </Form.Select>
@@ -239,7 +186,7 @@ function StudentAssignment() {
             <option value="all">All Classes</option>
             {classes.map(classItem => (
               <option key={classItem.class_id} value={classItem.class_id}>
-                {classItem.form?.form_name} - {classItem.class_name}
+                {classItem.form?.form_number}{classItem.form?.stream} - {classItem.class_name}
               </option>
             ))}
           </Form.Select>
@@ -254,7 +201,7 @@ function StudentAssignment() {
           />
         </Col>
       </Row>
-      
+
       {/* Class Assignments Table */}
       <Card className="border-0 shadow-sm mb-4">
         <Card.Header className="bg-white border-0 py-3">
@@ -288,11 +235,13 @@ function StudentAssignment() {
                     <td>
                       <Badge bg="primary">{assignment.class?.class_name || 'N/A'}</Badge>
                     </td>
-                    <td>{assignment.class?.form?.form_name || 'N/A'}</td>
+                    <td>
+                      {assignment.class?.form ? `${assignment.class.form.form_number}${assignment.class.form.stream || ''}` : 'N/A'}
+                    </td>
                     <td>{assignment.academic_year}</td>
                     <td>
-                      <Button 
-                        variant="outline-danger" 
+                      <Button
+                        variant="outline-danger"
                         size="sm"
                         onClick={() => handleRemove(
                           assignment.assignment_id,
@@ -310,7 +259,7 @@ function StudentAssignment() {
           )}
         </Card.Body>
       </Card>
-      
+
       {/* Available Students */}
       <Card className="border-0 shadow-sm">
         <Card.Header className="bg-white border-0 py-3">
@@ -336,7 +285,7 @@ function StudentAssignment() {
                     <td>
                       {assignment ? (
                         <Badge bg="success">
-                          {assignment.class?.form?.form_name} - {assignment.class?.class_name}
+                          {assignment.class?.form?.form_number}{assignment.class?.form?.stream} - {assignment.class?.class_name}
                         </Badge>
                       ) : (
                         <Badge bg="secondary">Not assigned</Badge>
@@ -359,7 +308,7 @@ function StudentAssignment() {
           )}
         </Card.Body>
       </Card>
-      
+
       {/* Assignment Modal */}
       <Modal show={showModal} onHide={handleCloseModal} size="lg">
         <Modal.Header closeButton>
@@ -376,13 +325,13 @@ function StudentAssignment() {
               >
                 <option value="">Select Student</option>
                 {students.map(student => {
-                  const hasAssignment = classAssignments.some(a => 
-                    a.student_id === student.user_id && 
+                  const hasAssignment = classAssignments.some(a =>
+                    a.student_id === student.user_id &&
                     a.academic_year === assignmentData.academic_year
                   );
                   return (
-                    <option 
-                      key={student.user_id} 
+                    <option
+                      key={student.user_id}
                       value={student.user_id}
                       disabled={hasAssignment}
                     >
@@ -393,7 +342,7 @@ function StudentAssignment() {
                 })}
               </Form.Select>
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Class *</Form.Label>
               <Form.Select
@@ -404,12 +353,12 @@ function StudentAssignment() {
                 <option value="">Select Class</option>
                 {classes.map(classItem => (
                   <option key={classItem.class_id} value={classItem.class_id}>
-                    {classItem.form?.form_name} - {classItem.class_name} ({classItem.academic_year})
+                    {classItem.form?.form_number}{classItem.form?.stream} - {classItem.class_name} ({classItem.academic_year})
                   </option>
                 ))}
               </Form.Select>
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Academic Year *</Form.Label>
               <Form.Control
@@ -436,5 +385,3 @@ function StudentAssignment() {
 }
 
 export default StudentAssignment;
-
-

@@ -1,26 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Spinner, Alert, 
+import React, { useState } from 'react';
+import {
+  Container, Row, Col, Card, Button, Spinner, Alert,
   Table, Modal, Form, Badge
 } from 'react-bootstrap';
-import { 
-  FaPlus, FaEdit, FaTrash, FaUsers, FaCalendarAlt
+import {
+  FaPlus, FaEdit, FaTrash
 } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { institutionService } from '../../services/institutionService';
+import { userService } from '../../services/userService';
+import { ROLES } from '../../constants/roles';
 
 function FormManagement() {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const [isLoading, setIsLoading] = useState(false); // Managed by React Query
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  
-  // Data
-  const [forms, setForms] = useState([]);
-  const [schools, setSchools] = useState([]);
-  const [coordinators, setCoordinators] = useState([]);
-  
+
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingForm, setEditingForm] = useState(null);
@@ -32,51 +28,65 @@ function FormManagement() {
     coordinator_id: '',
     description: ''
   });
-  
-  useEffect(() => {
-    fetchData();
-  }, []);
-  
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Get schools (institutions)
-      const { data: schoolsData } = await supabase
-        .from('institutions')
-        .select('*')
-        .order('name');
-      setSchools(schoolsData || []);
-      
-      // Get coordinators (users with admin/instructor role)
-      const { data: coordinatorsData } = await supabase
-        .from('users')
-        .select('*')
-        .in('role', ['ADMIN', 'INSTRUCTOR'])
-        .eq('is_active', true)
-        .order('name');
-      setCoordinators(coordinatorsData || []);
-      
-      // Get all forms
-      const { data: formsData } = await supabase
-        .from('forms')
-        .select(`
-          *,
-          coordinator:users!forms_coordinator_id_fkey(name, email),
-          school:institutions(name)
-        `)
-        .order('form_number');
-      setForms(formsData || []);
-      
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load forms');
-      setIsLoading(false);
+
+  // Queries
+  const { data: schools = [], isLoading: isLoadingSchools } = useQuery({
+    queryKey: ['institutions'],
+    queryFn: () => institutionService.getAllInstitutions()
+  });
+
+  const { data: coordinators = [], isLoading: isLoadingCoordinators } = useQuery({
+    queryKey: ['coordinators'],
+    queryFn: async () => {
+      const [admins, instructors] = await Promise.all([
+        userService.getUsersByRole(ROLES.ADMIN),
+        userService.getUsersByRole(ROLES.INSTRUCTOR) // Assuming INSTRUCTOR role exists in constants
+      ]);
+      // Merge and deduplicate just in case
+      const all = [...admins, ...instructors];
+      const unique = Array.from(new Map(all.map(item => [item.user_id, item])).values());
+      return unique.sort((a, b) => a.name.localeCompare(b.name));
     }
-  };
-  
+  });
+
+  const { data: forms = [], isLoading: isLoadingForms } = useQuery({
+    queryKey: ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(null)
+  });
+
+  const isLoadingData = isLoadingSchools || isLoadingCoordinators || isLoadingForms;
+
+  // Mutations
+  const createFormMutation = useMutation({
+    mutationFn: (data) => institutionService.createForm(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['forms']);
+      setSuccess('Form created successfully');
+      handleCloseModal();
+    },
+    onError: (err) => setError(err.message || 'Failed to create form')
+  });
+
+  const updateFormMutation = useMutation({
+    mutationFn: ({ id, data }) => institutionService.updateForm(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['forms']);
+      setSuccess('Form updated successfully');
+      handleCloseModal();
+    },
+    onError: (err) => setError(err.message || 'Failed to update form')
+  });
+
+  const deleteFormMutation = useMutation({
+    mutationFn: (id) => institutionService.deleteForm(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['forms']);
+      setSuccess('Form deleted successfully');
+    },
+    onError: (err) => setError(err.message || 'Failed to delete form')
+  });
+
+  // Handlers
   const handleOpenModal = (form = null) => {
     if (form) {
       setEditingForm(form);
@@ -91,7 +101,7 @@ function FormManagement() {
     } else {
       setEditingForm(null);
       setFormData({
-        school_id: schools[0]?.institution_id || '',
+        school_id: schools[0]?.institutionId || '', // Note: institutionService returns camelCase for institutions
         form_number: '',
         form_name: '',
         academic_year: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
@@ -101,95 +111,60 @@ function FormManagement() {
     }
     setShowModal(true);
   };
-  
+
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingForm(null);
-    setFormData({});
-    setSuccess(null);
+    setFormData({
+      school_id: '',
+      form_number: '',
+      form_name: '',
+      academic_year: '',
+      coordinator_id: '',
+      description: ''
+    });
     setError(null);
+    setSuccess(null);
   };
-  
-  const handleSubmit = async (e) => {
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      setError(null);
-      setSuccess(null);
-      
-      if (editingForm) {
-        // Update form
-        await supabaseService.updateForm(editingForm.form_id, formData);
-        setSuccess('Form updated successfully');
-      } else {
-        // Create form
-        await supabaseService.createForm(formData);
-        setSuccess('Form created successfully');
-      }
-      
-      handleCloseModal();
-      fetchData();
-    } catch (err) {
-      console.error('Error saving form:', err);
-      setError(err.message || 'Failed to save form');
+    if (editingForm) {
+      updateFormMutation.mutate({ id: editingForm.form_id, data: formData });
+    } else {
+      createFormMutation.mutate(formData);
     }
   };
-  
-  const handleDelete = async (formId) => {
+
+  const handleDelete = (formId) => {
     if (window.confirm('Are you sure you want to delete this form? This will also delete all associated classes.')) {
-      try {
-        await supabaseService.deleteForm(formId);
-        setSuccess('Form deleted successfully');
-        fetchData();
-      } catch (err) {
-        console.error('Error deleting form:', err);
-        setError(err.message || 'Failed to delete form');
-      }
+      deleteFormMutation.mutate(formId);
     }
   };
-  
-  // Get classes count for form
-  const getClassesCount = async (formId) => {
-    try {
-      const { count } = await supabase
-        .from('classes')
-        .select('*', { count: 'exact', head: true })
-        .eq('form_id', formId)
-        .eq('is_active', true);
-      return count || 0;
-    } catch {
-      return 0;
-    }
-  };
-  
-  if (isLoading) {
+
+  if (isLoadingData) {
     return (
-      <Container className="mt-4">
-        <div className="text-center py-5">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
-        </div>
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
       </Container>
     );
   }
-  
+
   return (
-    <Container className="mt-4">
-      <Row className="mb-4 pt-5">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <h2>Form Management</h2>
-            <Button variant="primary" onClick={() => handleOpenModal()}>
-              <FaPlus className="me-2" />
-              Create Form
-            </Button>
-          </div>
-        </Col>
-      </Row>
-      
+    <Container fluid className="py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2>Form Management</h2>
+        <Button variant="primary" onClick={() => handleOpenModal()}>
+          <FaPlus className="me-2" />
+          Create Form
+        </Button>
+      </div>
+
       {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess(null)}>{success}</Alert>}
-      
+
       <Card className="border-0 shadow-sm">
         <Card.Body>
           {forms.length === 0 ? (
@@ -218,7 +193,13 @@ function FormManagement() {
                     <td>{form.form_number}</td>
                     <td>{form.form_name}</td>
                     <td>{form.academic_year}</td>
-                    <td>{form.school?.name || 'N/A'}</td>
+                    <td>
+                      {/* institutionService returns institutions in camelCase, but forms might have school relation in snake_case or camelCase depending on how it was fetched. 
+                            getFormsBySchool uses supabase select with join, so it returns snake_case usually unless transformed.
+                            institutionService.getFormsBySchool returns raw data.
+                        */}
+                      {form.school?.name || schools.find(s => s.institutionId === form.school_id)?.name || 'N/A'}
+                    </td>
                     <td>{form.coordinator?.name || 'Not assigned'}</td>
                     <td>
                       <Badge bg={form.is_active ? 'success' : 'secondary'}>
@@ -226,16 +207,16 @@ function FormManagement() {
                       </Badge>
                     </td>
                     <td>
-                      <Button 
-                        variant="outline-primary" 
-                        size="sm" 
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
                         className="me-2"
                         onClick={() => handleOpenModal(form)}
                       >
                         <FaEdit />
                       </Button>
-                      <Button 
-                        variant="outline-danger" 
+                      <Button
+                        variant="outline-danger"
                         size="sm"
                         onClick={() => handleDelete(form.form_id)}
                       >
@@ -249,7 +230,7 @@ function FormManagement() {
           )}
         </Card.Body>
       </Card>
-      
+
       {/* Create/Edit Modal */}
       <Modal show={showModal} onHide={handleCloseModal} size="lg">
         <Modal.Header closeButton>
@@ -268,13 +249,13 @@ function FormManagement() {
               >
                 <option value="">Select School</option>
                 {schools.map(school => (
-                  <option key={school.institution_id} value={school.institution_id}>
+                  <option key={school.institutionId} value={school.institutionId}>
                     {school.name}
                   </option>
                 ))}
               </Form.Select>
             </Form.Group>
-            
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -289,7 +270,7 @@ function FormManagement() {
                   />
                 </Form.Group>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Form Name *</Form.Label>
@@ -303,7 +284,7 @@ function FormManagement() {
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -317,7 +298,7 @@ function FormManagement() {
                   />
                 </Form.Group>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Form Coordinator</Form.Label>
@@ -335,7 +316,7 @@ function FormManagement() {
                 </Form.Group>
               </Col>
             </Row>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Description</Form.Label>
               <Form.Control
@@ -362,5 +343,3 @@ function FormManagement() {
 }
 
 export default FormManagement;
-
-

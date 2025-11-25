@@ -1,29 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Spinner, Alert, 
+import React, { useState } from 'react';
+import {
+  Container, Row, Col, Card, Button, Spinner, Alert,
   Table, Modal, Form, Badge
 } from 'react-bootstrap';
-import { 
-  FaPlus, FaTrash, FaBook, FaUsers
+import {
+  FaPlus, FaTrash, FaBook
 } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { userService } from '../../services/userService';
+import { institutionService } from '../../services/institutionService';
+import { classService } from '../../services/classService';
+import { ROLES } from '../../constants/roles';
 
 function ClassSubjectAssignment() {
-  const { user } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
-  
-  // Data
-  const [classes, setClasses] = useState([]);
-  const [formOfferings, setFormOfferings] = useState([]);
-  const [classSubjects, setClassSubjects] = useState([]);
-  const [teachers, setTeachers] = useState([]);
+  const queryClient = useQueryClient();
   const [selectedClass, setSelectedClass] = useState('all');
   const [selectedForm, setSelectedForm] = useState('all');
-  
+
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [assignmentData, setAssignmentData] = useState({
@@ -31,101 +24,77 @@ function ClassSubjectAssignment() {
     subject_offering_id: '',
     teacher_id: ''
   });
-  
-  useEffect(() => {
-    fetchData();
-  }, [selectedClass, selectedForm]);
-  
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Get teachers
-      const { data: teachersData } = await supabase
-        .from('users')
-        .select('*')
-        .in('role', ['ADMIN', 'INSTRUCTOR'])
-        .eq('is_active', true)
-        .order('name');
-      setTeachers(teachersData || []);
-      
-      // Get forms
-      const { data: formsData } = await supabase
-        .from('forms')
-        .select('*')
-        .eq('is_active', true)
-        .order('form_number');
-      
-      // Get classes with filter
-      let classQuery = supabase
-        .from('classes')
-        .select(`
-          *,
-          form:forms(*)
-        `)
-        .eq('is_active', true);
-      
-      if (selectedForm !== 'all') {
-        classQuery = classQuery.eq('form_id', selectedForm);
-      }
-      
-      const { data: classesData } = await classQuery.order('form_id').order('class_name');
-      
-      if (selectedClass !== 'all') {
-        const filtered = classesData.filter(c => c.class_id.toString() === selectedClass);
-        setClasses(filtered);
-      } else {
-        setClasses(classesData || []);
-      }
-      
-      // Get form offerings
-      const { data: offeringsData } = await supabase
-        .from('subject_form_offerings')
-        .select(`
-          *,
-          subject:subjects(*),
-          form:forms(*)
-        `)
-        .order('form_id');
-      
-      if (selectedForm !== 'all') {
-        setFormOfferings(offeringsData.filter(o => o.form_id === parseInt(selectedForm)));
-      } else {
-        setFormOfferings(offeringsData || []);
-      }
-      
-      // Get class-subject assignments
-      let assignmentQuery = supabase
-        .from('class_subjects')
-        .select(`
-          *,
-          class:classes(
-            *,
-            form:forms(*)
-          ),
-          subject_offering:subject_form_offerings(
-            *,
-            subject:subjects(*)
-          ),
-          teacher:users!class_subjects_teacher_id_fkey(name, email)
-        `);
-      
-      if (selectedClass !== 'all') {
-        assignmentQuery = assignmentQuery.eq('class_id', selectedClass);
-      }
-      
-      const { data: assignmentsData } = await assignmentQuery.order('class_id');
-      setClassSubjects(assignmentsData || []);
-      
-      setIsLoading(false);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-      setError('Failed to load data');
-      setIsLoading(false);
+
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  // Queries
+  const { data: teachers = [], isLoading: isLoadingTeachers } = useQuery({
+    queryKey: ['teachers'],
+    queryFn: async () => {
+      const [admins, instructors] = await Promise.all([
+        userService.getUsersByRole(ROLES.ADMIN),
+        userService.getUsersByRole(ROLES.INSTRUCTOR)
+      ]);
+      const all = [...admins, ...instructors];
+      const unique = Array.from(new Map(all.map(item => [item.user_id, item])).values());
+      return unique.sort((a, b) => a.name.localeCompare(b.name));
     }
-  };
-  
+  });
+
+  const { data: forms = [], isLoading: isLoadingForms } = useQuery({
+    queryKey: ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(null)
+  });
+
+  const { data: classes = [], isLoading: isLoadingClasses } = useQuery({
+    queryKey: ['classes'],
+    queryFn: () => classService.getClasses(ROLES.ADMIN)
+  });
+
+  const { data: formOfferings = [], isLoading: isLoadingOfferings } = useQuery({
+    queryKey: ['offerings'],
+    queryFn: () => institutionService.getCurriculumContent(null)
+  });
+
+  const { data: classSubjects = [], isLoading: isLoadingAssignments } = useQuery({
+    queryKey: ['class-subjects', selectedClass],
+    queryFn: () => classService.getAllClassSubjects({ classId: selectedClass })
+  });
+
+  const isLoading = isLoadingTeachers || isLoadingForms || isLoadingClasses || isLoadingOfferings || isLoadingAssignments;
+
+  // Mutations
+  const assignSubjectMutation = useMutation({
+    mutationFn: (data) => classService.assignSubjectToClass(data.class_id, data.subject_offering_id, data.teacher_id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['class-subjects']);
+      setSuccess('Subject assigned to class successfully');
+      handleCloseModal();
+    },
+    onError: (err) => {
+      let errorMessage = 'Failed to assign subject';
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.code === '23505') {
+        errorMessage = 'This subject is already assigned to this class';
+      } else if (err.code === '23503') {
+        errorMessage = 'Invalid class, subject offering, or teacher selected';
+      }
+      setError(errorMessage);
+    }
+  });
+
+  const removeSubjectMutation = useMutation({
+    mutationFn: (id) => classService.removeSubjectFromClass(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['class-subjects']);
+      setSuccess('Subject removed from class successfully');
+    },
+    onError: (err) => setError(err.message || 'Failed to remove subject')
+  });
+
+  // Handlers
   const handleOpenModal = () => {
     setAssignmentData({
       class_id: selectedClass !== 'all' ? selectedClass : (classes[0]?.class_id || ''),
@@ -134,114 +103,79 @@ function ClassSubjectAssignment() {
     });
     setShowModal(true);
   };
-  
+
   const handleCloseModal = () => {
     setShowModal(false);
-    setAssignmentData({});
-    setSuccess(null);
+    setAssignmentData({
+      class_id: '',
+      subject_offering_id: '',
+      teacher_id: ''
+    });
     setError(null);
+    setSuccess(null);
   };
-  
-  const handleSubmit = async (e) => {
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    try {
-      setError(null);
-      setSuccess(null);
-      
-      // Validate required fields
-      if (!assignmentData.class_id || !assignmentData.subject_offering_id) {
-        setError('Please select both Class and Subject Offering');
-        return;
-      }
-      
-      // Convert string IDs to integers
-      const classId = parseInt(assignmentData.class_id);
-      const subjectOfferingId = parseInt(assignmentData.subject_offering_id);
-      const teacherId = assignmentData.teacher_id ? parseInt(assignmentData.teacher_id) : null;
-      
-      if (isNaN(classId) || isNaN(subjectOfferingId)) {
-        setError('Invalid class or subject offering selected');
-        return;
-      }
-      
-      await supabaseService.assignSubjectToClass(
-        classId,
-        subjectOfferingId,
-        teacherId
-      );
-      
-      setSuccess('Subject assigned to class successfully');
-      handleCloseModal();
-      fetchData();
-    } catch (err) {
-      console.error('Error assigning subject:', err);
-      // Provide more detailed error messages
-      let errorMessage = 'Failed to assign subject';
-      if (err.message) {
-        errorMessage = err.message;
-      } else if (err.details) {
-        errorMessage = err.details;
-      } else if (err.code === '23505') {
-        errorMessage = 'This subject is already assigned to this class';
-      } else if (err.code === '23503') {
-        errorMessage = 'Invalid class, subject offering, or teacher selected';
-      }
-      setError(errorMessage);
+    if (!assignmentData.class_id || !assignmentData.subject_offering_id) {
+      setError('Please select both Class and Subject Offering');
+      return;
     }
+    assignSubjectMutation.mutate(assignmentData);
   };
-  
-  const handleRemove = async (classSubjectId) => {
+
+  const handleRemove = (classSubjectId) => {
     if (window.confirm('Are you sure you want to remove this subject from the class? This action cannot be undone.')) {
-      try {
-        const { error } = await supabase
-          .from('class_subjects')
-          .delete()
-          .eq('class_subject_id', classSubjectId);
-        
-        if (error) throw error;
-        setSuccess('Subject removed from class successfully');
-        fetchData();
-      } catch (err) {
-        console.error('Error removing subject:', err);
-        setError(err.message || 'Failed to remove subject');
-      }
+      removeSubjectMutation.mutate(classSubjectId);
     }
   };
-  
-  // Get forms for filter
-  const forms = Array.from(new Map(
-    classes.map(c => [c.form?.form_id, c.form]).filter(f => f[0])
-  ).values());
-  
+
+  // Filter classes by form
+  const filteredClasses = classes.filter(c => {
+    if (selectedForm === 'all') return true;
+    return c.form_id === parseInt(selectedForm);
+  }).filter(c => {
+    if (selectedClass === 'all') return true;
+    return c.class_id.toString() === selectedClass;
+  });
+
+  // Filter assignments by form and class
+  const filteredAssignments = classSubjects.filter(cs => {
+    if (selectedForm !== 'all') {
+      if (cs.class?.form_id !== parseInt(selectedForm)) return false;
+    }
+    if (selectedClass !== 'all') {
+      if (cs.class_id.toString() !== selectedClass) return false;
+    }
+    return true;
+  });
+
+  // Get forms for filter (derived from classes to ensure relevance, or use fetched forms)
+  // Using fetched forms is better as it includes all active forms
+
   if (isLoading) {
     return (
-      <Container className="mt-4">
-        <div className="text-center py-5">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
-        </div>
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
       </Container>
     );
   }
-  
+
   return (
-    <Container className="mt-4">
-      <Row className="mb-4 pt-5">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <h2>Class-Subject Assignment</h2>
-            <Button variant="primary" onClick={handleOpenModal}>
-              <FaPlus className="me-2" />
-              Assign Subject to Class
-            </Button>
-          </div>
-        </Col>
-      </Row>
-      
+    <Container fluid className="py-4">
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2>Class-Subject Assignment</h2>
+        <Button variant="primary" onClick={handleOpenModal}>
+          <FaPlus className="me-2" />
+          Assign Subject to Class
+        </Button>
+      </div>
+
       {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
       {success && <Alert variant="success" dismissible onClose={() => setSuccess(null)}>{success}</Alert>}
-      
+
       {/* Filters */}
       <Row className="mb-3">
         <Col md={6}>
@@ -256,7 +190,7 @@ function ClassSubjectAssignment() {
             <option value="all">All Forms</option>
             {forms.map(form => (
               <option key={form.form_id} value={form.form_id}>
-                {form.form_name} ({form.academic_year})
+                {form.form_number}{form.stream} ({form.academic_year})
               </option>
             ))}
           </Form.Select>
@@ -268,15 +202,17 @@ function ClassSubjectAssignment() {
             onChange={(e) => setSelectedClass(e.target.value)}
           >
             <option value="all">All Classes</option>
-            {classes.map(classItem => (
-              <option key={classItem.class_id} value={classItem.class_id}>
-                {classItem.form?.form_name} - {classItem.class_name}
-              </option>
-            ))}
+            {classes
+              .filter(c => selectedForm === 'all' || c.form_id === parseInt(selectedForm))
+              .map(classItem => (
+                <option key={classItem.class_id} value={classItem.class_id}>
+                  {classItem.form?.form_number}{classItem.form?.stream} - {classItem.class_name}
+                </option>
+              ))}
           </Form.Select>
         </Col>
       </Row>
-      
+
       {/* Class-Subject Assignments */}
       <Card className="border-0 shadow-sm">
         <Card.Header className="bg-white border-0 py-3">
@@ -286,7 +222,7 @@ function ClassSubjectAssignment() {
           </h5>
         </Card.Header>
         <Card.Body>
-          {classSubjects.length === 0 ? (
+          {filteredAssignments.length === 0 ? (
             <div className="text-center py-5">
               <p className="text-muted mb-0">No subject assignments found</p>
             </div>
@@ -303,18 +239,20 @@ function ClassSubjectAssignment() {
                 </tr>
               </thead>
               <tbody>
-                {classSubjects.map((classSubject) => (
+                {filteredAssignments.map((classSubject) => (
                   <tr key={classSubject.class_subject_id}>
                     <td>
                       <Badge bg="primary">{classSubject.class?.class_name || 'N/A'}</Badge>
                     </td>
-                    <td>{classSubject.class?.form?.form_name || 'N/A'}</td>
+                    <td>
+                      {classSubject.class?.form ? `${classSubject.class.form.form_number}${classSubject.class.form.stream || ''}` : 'N/A'}
+                    </td>
                     <td><strong>{classSubject.subject_offering?.subject?.subject_name || 'N/A'}</strong></td>
                     <td>{classSubject.subject_offering?.subject?.subject_code || 'N/A'}</td>
                     <td>{classSubject.teacher?.name || 'Not assigned'}</td>
                     <td>
-                      <Button 
-                        variant="outline-danger" 
+                      <Button
+                        variant="outline-danger"
                         size="sm"
                         onClick={() => handleRemove(classSubject.class_subject_id)}
                       >
@@ -328,7 +266,7 @@ function ClassSubjectAssignment() {
           )}
         </Card.Body>
       </Card>
-      
+
       {/* Assignment Modal */}
       <Modal show={showModal} onHide={handleCloseModal} size="lg">
         <Modal.Header closeButton>
@@ -344,14 +282,16 @@ function ClassSubjectAssignment() {
                 required
               >
                 <option value="">Select Class</option>
-                {classes.map(classItem => (
-                  <option key={classItem.class_id} value={classItem.class_id}>
-                    {classItem.form?.form_name} - {classItem.class_name} ({classItem.academic_year})
-                  </option>
-                ))}
+                {classes
+                  .filter(c => selectedForm === 'all' || c.form_id === parseInt(selectedForm))
+                  .map(classItem => (
+                    <option key={classItem.class_id} value={classItem.class_id}>
+                      {classItem.form?.form_number}{classItem.form?.stream} - {classItem.class_name} ({classItem.academic_year})
+                    </option>
+                  ))}
               </Form.Select>
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Subject Offering *</Form.Label>
               <Form.Select
@@ -363,14 +303,16 @@ function ClassSubjectAssignment() {
                 {formOfferings.map(offering => {
                   // Only show offerings that match the selected class's form
                   if (assignmentData.class_id) {
-                    const selectedClass = classes.find(c => c.class_id.toString() === assignmentData.class_id);
-                    if (selectedClass && offering.form_id !== selectedClass.form_id) {
+                    const selectedClassObj = classes.find(c => c.class_id.toString() === assignmentData.class_id.toString());
+                    if (selectedClassObj && offering.form_id !== selectedClassObj.form_id) {
                       return null;
                     }
+                  } else if (selectedForm !== 'all') {
+                    if (offering.form_id !== parseInt(selectedForm)) return null;
                   }
                   return (
                     <option key={offering.offering_id} value={offering.offering_id}>
-                      {offering.subject?.subject_name} ({offering.subject?.subject_code}) - {offering.form?.form_name}
+                      {offering.subject?.subject_name} ({offering.subject?.subject_code}) - {offering.form?.form_number}{offering.form?.stream}
                     </option>
                   );
                 })}
@@ -379,7 +321,7 @@ function ClassSubjectAssignment() {
                 Only subjects offered for the selected class's form are shown
               </Form.Text>
             </Form.Group>
-            
+
             <Form.Group className="mb-3">
               <Form.Label>Teacher</Form.Label>
               <Form.Select
@@ -413,5 +355,3 @@ function ClassSubjectAssignment() {
 }
 
 export default ClassSubjectAssignment;
-
-
