@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 // Google Model Viewer Component (React 19 compatible)
@@ -57,14 +57,76 @@ function ModelViewerComponent({
       return () => {
         viewer.removeEventListener('load', handleLoad);
         viewer.removeEventListener('progress', handleProgress);
+        viewer.removeEventListener('error', handleError);
       };
     }
   }, [onStateChange]);
+
+  const [loadError, setLoadError] = useState(null);
+
+  // Check if URL is a Sketchfab link (needs special handling)
+  const isSketchfabLink = contentUrl && (
+    contentUrl.includes('sketchfab.com') || 
+    contentUrl.includes('skfb.ly') ||
+    contentUrl.includes('sketchfab.io')
+  );
 
   if (!contentUrl) {
     return (
       <Alert variant="warning">
         No 3D model URL provided. Please configure the content URL in the database.
+      </Alert>
+    );
+  }
+
+  if (isSketchfabLink) {
+    return (
+      <Alert variant="info">
+        <strong>Sketchfab Model Detected</strong>
+        <p className="mb-2 mt-2">
+          Sketchfab sharing links cannot be directly loaded due to CORS restrictions. 
+          Please use one of the following options:
+        </p>
+        <ol className="mb-2">
+          <li><strong>Download the model</strong> from Sketchfab and upload it to Supabase Storage</li>
+          <li><strong>Use a direct GLTF/GLB URL</strong> from a CORS-enabled source</li>
+          <li><strong>Embed via iframe</strong> (requires Sketchfab embed code)</li>
+        </ol>
+        <div className="mt-3">
+          <a 
+            href={contentUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="btn btn-outline-primary btn-sm"
+          >
+            Open in Sketchfab (External)
+          </a>
+        </div>
+      </Alert>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <Alert variant="danger">
+        <strong>Error Loading 3D Model</strong>
+        <p className="mb-2 mt-2">{loadError}</p>
+        <p className="mb-2">Common causes:</p>
+        <ul className="mb-2">
+          <li>CORS restrictions (model must be hosted on a CORS-enabled server)</li>
+          <li>Invalid file URL or file format</li>
+          <li>Network connectivity issues</li>
+        </ul>
+        <div className="mt-3">
+          <a 
+            href={contentUrl} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="btn btn-outline-primary btn-sm"
+          >
+            Try Opening Directly
+          </a>
+        </div>
       </Alert>
     );
   }
