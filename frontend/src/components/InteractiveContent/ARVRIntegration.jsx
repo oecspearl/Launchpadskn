@@ -7,10 +7,37 @@ import { FaCube, FaPlay, FaCheckCircle, FaMapMarkerAlt, FaGlobe } from 'react-ic
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import interactiveContentService from '../../services/interactiveContentService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import ThreeDModelViewer from './Viewers/ThreeDModelViewer';
-import WebXRViewer from './Viewers/WebXRViewer';
+import ViewerErrorBoundary from './Viewers/ViewerErrorBoundary';
+
+// React 19 compatible viewers using alternative libraries
+import ModelViewerComponent from './Viewers/ModelViewerComponent';
+import ThreeDModelViewerV2 from './Viewers/ThreeDModelViewerV2';
+import WebXRViewerV2 from './Viewers/WebXRViewerV2';
 import ARViewer from './Viewers/ARViewer';
 import VirtualFieldTripViewer from './Viewers/VirtualFieldTripViewer';
+
+const viewersAvailable = true;
+
+// Fallback component
+function FallbackViewer({ type, contentUrl }) {
+  return (
+    <div className="text-center py-5">
+      <Alert variant="info">
+        <h6>{type} Viewer</h6>
+        <p>
+          The {type.toLowerCase()} viewer requires React 18 for full functionality.
+          <br />
+          Your current setup uses React 19, which has compatibility limitations.
+        </p>
+        {contentUrl && (
+          <Button variant="outline-primary" href={contentUrl} target="_blank" className="mt-2">
+            Open External Link
+          </Button>
+        )}
+      </Alert>
+    </div>
+  );
+}
 
 function ARVRIntegration({ classSubjectId, classSubject, studentId = null }) {
   const { user } = useAuth();
@@ -277,57 +304,84 @@ function ARVRIntegration({ classSubjectId, classSubject, studentId = null }) {
                 )}
               </Alert>
 
-              {/* 3D Model Viewer */}
+              {/* 3D Model Viewer - Using Google Model Viewer (React 19 compatible) */}
               {selectedContent.content_type === '3D_MODEL' && (
-                <ThreeDModelViewer
-                  contentUrl={selectedContent.content_url}
-                  modelFormat={selectedContent.model_format}
-                  modelProperties={selectedContent.model_properties || {}}
-                  annotations={selectedContent.annotations || []}
-                  interactionMode={selectedContent.interaction_mode || 'INTERACTIVE'}
-                  onInteraction={handleInteraction}
-                  onStateChange={handleStateChange}
-                />
+                <ViewerErrorBoundary viewerType="3D Model" contentUrl={selectedContent.content_url}>
+                  {viewersAvailable ? (
+                    <ModelViewerComponent
+                      contentUrl={selectedContent.content_url}
+                      modelFormat={selectedContent.model_format}
+                      modelProperties={selectedContent.model_properties || {}}
+                      annotations={selectedContent.annotations || []}
+                      onInteraction={handleInteraction}
+                      onStateChange={handleStateChange}
+                    />
+                  ) : (
+                    <FallbackViewer type="3D Model" contentUrl={selectedContent.content_url} />
+                  )}
+                </ViewerErrorBoundary>
               )}
 
-              {/* VR Experience Viewer */}
+              {/* VR Experience Viewer - Using Three.js directly (React 19 compatible) */}
               {selectedContent.content_type === 'VR_EXPERIENCE' && (
-                <WebXRViewer
-                  contentUrl={selectedContent.content_url}
-                  sceneConfig={selectedContent.vr_scene_config || {}}
-                  onInteraction={handleInteraction}
-                  onStateChange={handleStateChange}
-                  onVREnter={() => {
-                    handleInteraction({ type: 'vr_enter', timestamp: new Date().toISOString() });
-                  }}
-                  onVRExit={() => {
-                    handleInteraction({ type: 'vr_exit', timestamp: new Date().toISOString() });
-                  }}
-                />
+                <ViewerErrorBoundary viewerType="VR Experience" contentUrl={selectedContent.content_url}>
+                  {viewersAvailable ? (
+                    <WebXRViewerV2
+                      contentUrl={selectedContent.content_url}
+                      sceneConfig={selectedContent.vr_scene_config || {}}
+                      onInteraction={handleInteraction}
+                      onStateChange={handleStateChange}
+                      onVREnter={() => {
+                        handleInteraction({ type: 'vr_enter', timestamp: new Date().toISOString() });
+                      }}
+                      onVRExit={() => {
+                        handleInteraction({ type: 'vr_exit', timestamp: new Date().toISOString() });
+                      }}
+                    />
+                  ) : (
+                    <FallbackViewer type="VR Experience" contentUrl={selectedContent.content_url} />
+                  )}
+                </ViewerErrorBoundary>
               )}
 
               {/* AR Overlay Viewer */}
               {selectedContent.content_type === 'AR_OVERLAY' && (
-                <ARViewer
-                  contentUrl={selectedContent.content_url}
-                  arMarkerUrl={selectedContent.ar_marker_url}
-                  modelFormat={selectedContent.model_format}
-                  platform={selectedContent.platform || 'WEBXR'}
-                  onInteraction={handleInteraction}
-                  onStateChange={handleStateChange}
-                />
+                <ViewerErrorBoundary viewerType="AR Overlay" contentUrl={selectedContent.content_url}>
+                  {viewersAvailable && ARViewer ? (
+                    <Suspense fallback={<div className="text-center py-5"><Spinner /> Loading AR viewer...</div>}>
+                      <ARViewer
+                        contentUrl={selectedContent.content_url}
+                        arMarkerUrl={selectedContent.ar_marker_url}
+                        modelFormat={selectedContent.model_format}
+                        platform={selectedContent.platform || 'WEBXR'}
+                        onInteraction={handleInteraction}
+                        onStateChange={handleStateChange}
+                      />
+                    </Suspense>
+                  ) : (
+                    <FallbackViewer type="AR Overlay" contentUrl={selectedContent.content_url} />
+                  )}
+                </ViewerErrorBoundary>
               )}
 
               {/* Virtual Field Trip Viewer */}
               {selectedContent.content_type === 'FIELD_TRIP' && (
-                <VirtualFieldTripViewer
-                  virtualTourUrl={selectedContent.virtual_tour_url}
-                  locationName={selectedContent.location_name}
-                  locationCoordinates={selectedContent.location_coordinates}
-                  scenes={selectedContent.vr_scene_config?.scenes || []}
-                  onStateChange={handleStateChange}
-                  onInteraction={handleInteraction}
-                />
+                <ViewerErrorBoundary viewerType="Virtual Field Trip" contentUrl={selectedContent.virtual_tour_url}>
+                  {viewersAvailable && VirtualFieldTripViewer ? (
+                    <Suspense fallback={<div className="text-center py-5"><Spinner /> Loading field trip viewer...</div>}>
+                      <VirtualFieldTripViewer
+                        virtualTourUrl={selectedContent.virtual_tour_url}
+                        locationName={selectedContent.location_name}
+                        locationCoordinates={selectedContent.location_coordinates}
+                        scenes={selectedContent.vr_scene_config?.scenes || []}
+                        onStateChange={handleStateChange}
+                        onInteraction={handleInteraction}
+                      />
+                    </Suspense>
+                  ) : (
+                    <FallbackViewer type="Virtual Field Trip" contentUrl={selectedContent.virtual_tour_url} />
+                  )}
+                </ViewerErrorBoundary>
               )}
 
               {/* Fallback for unsupported types */}

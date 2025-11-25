@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, PerspectiveCamera, Environment, useGLTF, Html, VRButton } from '@react-three/drei';
+import { OrbitControls, PerspectiveCamera, Environment, useGLTF, Html } from '@react-three/drei';
 import { Button, Alert, Spinner } from 'react-bootstrap';
 import * as THREE from 'three';
 
@@ -180,18 +180,50 @@ function WebXRViewer({
         onCreated={({ gl }) => {
           glRef.current = gl;
           setIsLoading(false);
+          
+          // Set up WebXR
+          if (gl.xr) {
+            gl.xr.enabled = true;
+            gl.xr.addEventListener('sessionstart', handleVREnter);
+            gl.xr.addEventListener('sessionend', handleVRExit);
+          }
         }}
         camera={{ position: [0, 1.6, 3], fov: 75 }}
       >
-        {/* VR Button */}
-        {vrSupported && (
-          <VRButton
-            onSessionStart={handleVREnter}
-            onSessionEnd={handleVRExit}
-            sessionInit={{
-              optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
-            }}
-          />
+        {/* VR Button - Manual implementation */}
+        {vrSupported && !isInVR && (
+          <Html position={[0, 2, 0]} center>
+            <button
+              onClick={async () => {
+                if (glRef.current?.xr && navigator.xr) {
+                  try {
+                    const session = await navigator.xr.requestSession('immersive-vr', {
+                      optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking']
+                    });
+                    await glRef.current.xr.setSession(session);
+                    handleVREnter();
+                  } catch (err) {
+                    console.error('Failed to start VR session:', err);
+                    setError(`Failed to start VR: ${err.message}`);
+                  }
+                }
+              }}
+              style={{
+                padding: '12px 24px',
+                fontSize: '16px',
+                backgroundColor: '#4CAF50',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: 'bold',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+                zIndex: 1000
+              }}
+            >
+              🥽 Enter VR
+            </button>
+          </Html>
         )}
 
         {/* Lighting */}
@@ -253,7 +285,7 @@ function WebXRViewer({
         >
           {vrSupported ? (
             <>
-              <div>🥽 Click the VR button to enter VR mode</div>
+              <div>🥽 Click the VR button in the scene to enter VR mode</div>
               <div>🖱️ Use mouse to look around in desktop mode</div>
             </>
           ) : (

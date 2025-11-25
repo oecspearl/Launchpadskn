@@ -9,7 +9,7 @@
   "scripts": {
     "build": "cd frontend && npm install && npm run build",
     "start": "cd frontend/build && npx serve -s . -l $PORT",
-    "heroku-postbuild": "cd frontend && npm install && npm run build"
+    "heroku-postbuild": "cd frontend && npm install --legacy-peer-deps && npm run build"
   },
   "cacheDirectories": [
     "frontend/node_modules"
