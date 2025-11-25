@@ -1,0 +1,70 @@
+.curriculum-analytics {
+  background-color: #f8f9fa;
+  min-height: 100vh;
+}
+
+.summary-card {
+  transition: all 0.2s ease;
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.summary-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.coverage-tracking .card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1rem;
+}
+
+.coverage-tracking .table {
+  margin-bottom: 0;
+}
+
+.coverage-tracking .progress {
+  height: 20px;
+}
+
+/* Time allocation styles */
+.time-allocation-card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Achievement dashboard styles */
+.achievement-badge {
+  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
+}
+
+/* Gap analysis styles */
+.gap-severity-critical {
+  border-left: 4px solid #dc3545;
+}
+
+.gap-severity-high {
+  border-left: 4px solid #ffc107;
+}
+
+.gap-severity-medium {
+  border-left: 4px solid #0dcaf0;
+}
+
+.gap-severity-low {
+  border-left: 4px solid #6c757d;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .summary-card {
+    margin-bottom: 1rem;
+  }
+
+  .curriculum-analytics .table {
+    font-size: 0.875rem;
+  }
+}
+

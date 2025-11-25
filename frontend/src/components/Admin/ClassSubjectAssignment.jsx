@@ -4,13 +4,15 @@ import {
   Table, Modal, Form, Badge
 } from 'react-bootstrap';
 import {
-  FaPlus, FaTrash, FaBook
+  FaPlus, FaTrash, FaBook, FaChartLine
 } from 'react-icons/fa';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { userService } from '../../services/userService';
 import { institutionService } from '../../services/institutionService';
 import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
+import CurriculumAnalytics from './CurriculumAnalytics';
+import CurriculumAnalytics from './CurriculumAnalytics';
 
 function ClassSubjectAssignment() {
   const queryClient = useQueryClient();
@@ -19,6 +21,8 @@ function ClassSubjectAssignment() {
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
+  const [selectedClassSubject, setSelectedClassSubject] = useState(null);
   const [assignmentData, setAssignmentData] = useState({
     class_id: '',
     subject_offering_id: '',
@@ -252,6 +256,18 @@ function ClassSubjectAssignment() {
                     <td>{classSubject.teacher?.name || 'Not assigned'}</td>
                     <td>
                       <Button
+                        variant="outline-info"
+                        size="sm"
+                        className="me-2"
+                        onClick={() => {
+                          setSelectedClassSubject(classSubject);
+                          setShowAnalytics(true);
+                        }}
+                        title="View Curriculum Analytics"
+                      >
+                        <FaChartLine />
+                      </Button>
+                      <Button
                         variant="outline-danger"
                         size="sm"
                         onClick={() => handleRemove(classSubject.class_subject_id)}
@@ -349,6 +365,77 @@ function ClassSubjectAssignment() {
             </Button>
           </Modal.Footer>
         </Form>
+      </Modal>
+
+      {/* Curriculum Analytics Modal */}
+      <Modal
+        show={showAnalytics}
+        onHide={() => {
+          setShowAnalytics(false);
+          setSelectedClassSubject(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaChartLine className="me-2" />
+            Curriculum Analytics
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedClassSubject && (
+            <CurriculumAnalytics
+              classSubjectId={selectedClassSubject.class_subject_id}
+              classSubject={selectedClassSubject}
+            />
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowAnalytics(false);
+            setSelectedClassSubject(null);
+          }}>
+            Close
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </Container>
+  );
+}
+
+      {/* Curriculum Analytics Modal */}
+      <Modal
+        show={showAnalytics}
+        onHide={() => {
+          setShowAnalytics(false);
+          setSelectedClassSubject(null);
+        }}
+        size="xl"
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaChartLine className="me-2" />
+            Curriculum Analytics
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedClassSubject && (
+            <CurriculumAnalytics
+              classSubjectId={selectedClassSubject.class_subject_id}
+              classSubject={selectedClassSubject}
+            />
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowAnalytics(false);
+            setSelectedClassSubject(null);
+          }}>
+            Close
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );
