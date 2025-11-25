@@ -1,14 +1,15 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase configuration
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zdcniidpqppwjyosooge.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkY25paWRwcXBwd2p5b3Nvb2dlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg4ODc3NDgsImV4cCI6MjA3NDQ2Mzc0OH0.nz9oqG27mtmGzso3uPAMFoj191Qr3dz03AKUS5anXuo';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Validate configuration
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[Supabase Config] Missing required configuration!');
   console.error('[Supabase Config] URL:', supabaseUrl ? 'Set' : 'MISSING');
   console.error('[Supabase Config] Key:', supabaseAnonKey ? 'Set' : 'MISSING');
+  throw new Error('Missing Supabase configuration. Please check your .env file.');
 }
 
 // Log configuration (for debugging in production)
@@ -46,7 +47,7 @@ let supabaseAdmin = null;
 
 if (!window.__SUPABASE_ADMIN_CLIENT__) {
   const supabaseServiceRoleKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  
+
   if (supabaseServiceRoleKey) {
     try {
       // Use a completely isolated storage to avoid conflicts
@@ -61,15 +62,15 @@ if (!window.__SUPABASE_ADMIN_CLIENT__) {
         setItem: (key, value) => {
           try {
             window.localStorage.setItem(`admin_${key}`, value);
-          } catch {}
+          } catch { }
         },
         removeItem: (key) => {
           try {
             window.localStorage.removeItem(`admin_${key}`);
-          } catch {}
+          } catch { }
         }
       };
-      
+
       window.__SUPABASE_ADMIN_CLIENT__ = createClient(supabaseUrl, supabaseServiceRoleKey, {
         auth: {
           autoRefreshToken: false,
@@ -84,7 +85,10 @@ if (!window.__SUPABASE_ADMIN_CLIENT__) {
       console.warn('[Supabase Config] Failed to create admin client:', error);
     }
   } else {
-    console.warn('[Supabase Config] Service role key not found. Direct password changes will not work. Use email reset method or configure VITE_SUPABASE_SERVICE_ROLE_KEY.');
+    // Only warn if we are in development mode, otherwise silence it
+    if (import.meta.env.DEV) {
+      console.warn('[Supabase Config] Service role key not found. Direct password changes will not work. Use email reset method or configure VITE_SUPABASE_SERVICE_ROLE_KEY.');
+    }
   }
 } else {
   supabaseAdmin = window.__SUPABASE_ADMIN_CLIENT__;
@@ -94,5 +98,3 @@ if (!window.__SUPABASE_ADMIN_CLIENT__) {
 // Export default for convenience
 export { supabase, supabaseAdmin };
 export default supabase;
-
-

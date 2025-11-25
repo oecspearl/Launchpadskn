@@ -1,37 +1,23 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
 import { Container, Table, Alert, Spinner } from 'react-bootstrap';
-import { supabase } from '../../config/supabase';
+import { useQuery } from '@tanstack/react-query';
+import { classService } from '../../services/classService';
 
 const ClassStudents = () => {
     const { classId } = useParams();
-    const [students, setStudents] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        const fetchStudents = async () => {
-            try {
-                const { data, error } = await supabase
-                    .from('student_class_assignments')
-                    .select('users!inner(*)')
-                    .eq('class_id', classId)
-                    .eq('is_active', true);
-                if (error) throw error;
-                // data contains objects with a "users" field
-                const studentList = (data || []).map(item => item.users);
-                setStudents(studentList);
-            } catch (err) {
-                console.error('Error loading students:', err);
-                setError('Failed to load students');
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchStudents();
-    }, [classId]);
+    const { data: students, isLoading, error } = useQuery({
+        queryKey: ['classStudents', classId],
+        queryFn: async () => {
+            const data = await classService.getClassRoster(classId);
+            // Map to just the student objects to match previous behavior
+            return (data || []).map(item => item.student);
+        },
+        enabled: !!classId
+    });
 
-    if (loading) {
+    if (isLoading) {
         return (
             <Container className="mt-4 text-center">
                 <Spinner animation="border" role="status" />
@@ -42,7 +28,7 @@ const ClassStudents = () => {
     if (error) {
         return (
             <Container className="mt-4">
-                <Alert variant="danger">{error}</Alert>
+                <Alert variant="danger">Failed to load students: {error.message}</Alert>
             </Container>
         );
     }
@@ -50,7 +36,7 @@ const ClassStudents = () => {
     return (
         <Container className="mt-4">
             <h2>Students in Class {classId}</h2>
-            {students.length === 0 ? (
+            {!students || students.length === 0 ? (
                 <Alert variant="info">No students enrolled.</Alert>
             ) : (
                 <Table striped bordered hover>
