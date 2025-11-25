@@ -36,7 +36,7 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
         .order('usage_count', { ascending: false });
 
       // Show public templates and user's own templates
-      if (user) {
+      if (user?.user_id) {
         query = query.or(`is_public.eq.true,created_by.eq.${user.user_id}`);
       } else {
         query = query.eq('is_public', true);
@@ -44,10 +44,19 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        // Table might not exist yet
+        if (error.code === '42P01') {
+          console.warn('Templates table not created yet. Please run database migrations.');
+          setTemplates([]);
+          return;
+        }
+        throw error;
+      }
       setTemplates(data || []);
     } catch (error) {
       console.error('Error loading templates:', error);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
@@ -69,7 +78,9 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
   };
 
   const handleSaveAsTemplate = async (templateData) => {
-    if (!offering || !user) return;
+    if (!offering || !user?.user_id) {
+      throw new Error('User not authenticated or offering not available');
+    }
 
     try {
       const { data, error } = await supabase
@@ -87,7 +98,12 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        if (error.code === '42P01') {
+          throw new Error('Templates table not created yet. Please run database migrations first.');
+        }
+        throw error;
+      }
       await loadTemplates();
       return data;
     } catch (error) {
@@ -98,6 +114,10 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
 
   const handleDeleteTemplate = async (templateId) => {
     if (!window.confirm('Are you sure you want to delete this template?')) return;
+    if (!user?.user_id) {
+      alert('User not authenticated');
+      return;
+    }
 
     try {
       const { error } = await supabase
@@ -116,8 +136,14 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
 
   const handleUseTemplate = async (template) => {
     try {
-      // Increment usage count
-      await supabase.rpc('increment_template_usage', { template_id: template.template_id });
+      // Increment usage count (function might not exist yet)
+      const { error: rpcError } = await supabase.rpc('increment_template_usage', { 
+        template_id: template.template_id 
+      });
+      
+      if (rpcError) {
+        console.warn('Could not increment template usage (function may not exist):', rpcError.message);
+      }
       
       if (onSelectTemplate) {
         onSelectTemplate(template);

@@ -47,10 +47,19 @@ function ResourceLibrary({ show, onHide, offering, onSelectResource }) {
 
       const { data, error } = await query;
 
-      if (error) throw error;
+      if (error) {
+        // Table might not exist yet
+        if (error.code === '42P01') {
+          console.warn('Resource library table not created yet. Please run database migrations.');
+          setResources([]);
+          return;
+        }
+        throw error;
+      }
       setResources(data || []);
     } catch (error) {
       console.error('Error loading resources:', error);
+      setResources([]);
     } finally {
       setLoading(false);
     }
@@ -83,6 +92,10 @@ function ResourceLibrary({ show, onHide, offering, onSelectResource }) {
   };
 
   const handleCreateResource = async (resourceData) => {
+    if (!user?.user_id) {
+      throw new Error('User not authenticated');
+    }
+
     try {
       const { data, error } = await supabase
         .from('curriculum_resources')
@@ -94,7 +107,13 @@ function ResourceLibrary({ show, onHide, offering, onSelectResource }) {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Table might not exist yet
+        if (error.code === '42P01') {
+          throw new Error('Resource library tables not created yet. Please run database migrations first.');
+        }
+        throw error;
+      }
       await loadResources();
       return data;
     } catch (error) {

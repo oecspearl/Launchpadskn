@@ -84,20 +84,31 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
     let editorsSubscription = null;
 
     const setupCollaborativeSession = async () => {
+      if (!user?.user_id) {
+        console.warn('User ID not available for collaborative session');
+        return;
+      }
+
       try {
         // Create or get active session
-        const { data: existingSession } = await supabase
+        const { data: existingSession, error: sessionError } = await supabase
           .from('curriculum_editing_sessions')
           .select('*')
           .eq('offering_id', offering.offering_id)
           .eq('is_active', true)
-          .single();
+          .maybeSingle();
+
+        if (sessionError && sessionError.code !== 'PGRST116') {
+          // PGRST116 is "not found" which is okay
+          console.warn('Could not check for existing session (table may not exist):', sessionError.message);
+          return;
+        }
 
         let currentSessionId;
         if (existingSession) {
           currentSessionId = existingSession.session_id;
         } else {
-          const { data: newSession, error } = await supabase
+          const { data: newSession, error: insertError } = await supabase
             .from('curriculum_editing_sessions')
             .insert({
               offering_id: offering.offering_id,
@@ -106,20 +117,27 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
             .select()
             .single();
           
-          if (error) throw error;
+          if (insertError) {
+            console.warn('Could not create editing session (table may not exist):', insertError.message);
+            return;
+          }
           currentSessionId = newSession.session_id;
         }
 
         setSessionId(currentSessionId);
 
         // Join as editor
-        await supabase
-          .from('curriculum_session_editors')
-          .upsert({
-            session_id: currentSessionId,
-            user_id: user.user_id,
-            last_seen: new Date().toISOString()
-          });
+        if (user?.user_id) {
+          await supabase
+            .from('curriculum_session_editors')
+            .upsert({
+              session_id: currentSessionId,
+              user_id: user.user_id,
+              last_seen: new Date().toISOString()
+            }, {
+              onConflict: 'session_id,user_id'
+            });
+        }
 
         // Subscribe to curriculum changes
         sessionSubscription = supabase
@@ -145,33 +163,38 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
             table: 'curriculum_session_editors',
             filter: `session_id=eq.${currentSessionId}`
           }, async () => {
-            const { data: editors } = await supabase
+            const { data: editors, error: editorsError } = await supabase
               .from('curriculum_session_editors')
               .select(`
                 user_id,
                 last_seen,
-                users:user_id (user_id, email, first_name, last_name)
+                users!curriculum_session_editors_user_id_fkey (user_id, email, first_name, last_name)
               `)
               .eq('session_id', currentSessionId)
               .gte('last_seen', new Date(Date.now() - 60000).toISOString()); // Active in last minute
 
-            if (editors) {
-              setCollaborators(editors.map(e => ({
-                user_id: e.user_id,
-                name: e.users ? `${e.users.first_name || ''} ${e.users.last_name || ''}`.trim() : e.users?.email || 'Unknown',
-                email: e.users?.email
-              })));
+            if (!editorsError && editors) {
+              setCollaborators(editors.map(e => {
+                const userData = Array.isArray(e.users) ? e.users[0] : e.users;
+                return {
+                  user_id: e.user_id,
+                  name: userData ? `${userData.first_name || ''} ${userData.last_name || ''}`.trim() || userData.email || 'Unknown' : 'Unknown',
+                  email: userData?.email
+                };
+              }));
             }
           })
           .subscribe();
 
         // Update last_seen periodically
         const updateInterval = setInterval(async () => {
-          await supabase
-            .from('curriculum_session_editors')
-            .update({ last_seen: new Date().toISOString() })
-            .eq('session_id', currentSessionId)
-            .eq('user_id', user.user_id);
+          if (user?.user_id) {
+            await supabase
+              .from('curriculum_session_editors')
+              .update({ last_seen: new Date().toISOString() })
+              .eq('session_id', currentSessionId)
+              .eq('user_id', user.user_id);
+          }
         }, 30000); // Every 30 seconds
 
         return () => {
@@ -235,10 +258,10 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
 
   // Log curriculum changes
   const logChange = async (changeType, changePath, oldValue, newValue, description) => {
-    if (!offering || !user) return;
+    if (!offering || !user?.user_id) return;
 
     try {
-      await supabase
+      const { error } = await supabase
         .from('curriculum_change_history')
         .insert({
           offering_id: offering.offering_id,
@@ -249,8 +272,13 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
           new_value: newValue,
           change_description: description
         });
+      
+      if (error) {
+        // Table might not exist yet - silently fail
+        console.warn('Could not log curriculum change (table may not exist):', error.message);
+      }
     } catch (error) {
-      console.error('Error logging change:', error);
+      console.warn('Error logging change:', error);
     }
   };
 
@@ -291,7 +319,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
 
   // Save curriculum
   const handleSave = async () => {
-    if (!offering || !user) return;
+    if (!offering) return;
 
     setIsSaving(true);
     try {
@@ -308,14 +336,19 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
       setLastSaved(new Date());
       if (onSave) onSave(curriculumData);
       
-      // Broadcast update to other editors
-      await supabase
-        .channel(`curriculum:${offering.offering_id}`)
-        .send({
-          type: 'broadcast',
-          event: 'curriculum_saved',
-          payload: { curriculum_structure: curriculumData }
-        });
+      // Broadcast update to other editors (if channel exists)
+      try {
+        await supabase
+          .channel(`curriculum:${offering.offering_id}`)
+          .send({
+            type: 'broadcast',
+            event: 'curriculum_saved',
+            payload: { curriculum_structure: curriculumData }
+          });
+      } catch (broadcastError) {
+        // Broadcast might fail if realtime not enabled - that's okay
+        console.warn('Could not broadcast update:', broadcastError);
+      }
     } catch (error) {
       console.error('Error saving curriculum:', error);
       alert('Failed to save curriculum. Please try again.');
@@ -326,10 +359,10 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
 
   // Link resource to curriculum item
   const handleLinkResource = async (resource, linkPath) => {
-    if (!offering) return;
+    if (!offering || !user?.user_id) return;
 
     try {
-      await supabase
+      const { error: linkError } = await supabase
         .from('curriculum_resource_links')
         .insert({
           offering_id: offering.offering_id,
@@ -338,10 +371,21 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
           created_by: user.user_id
         });
 
+      if (linkError) {
+        console.warn('Could not link resource (table may not exist):', linkError.message);
+        return;
+      }
+
       // Update resource usage count
-      await supabase.rpc('increment_resource_usage', { resource_id: resource.resource_id });
+      const { error: rpcError } = await supabase.rpc('increment_resource_usage', { 
+        resource_id: resource.resource_id 
+      });
+      
+      if (rpcError) {
+        console.warn('Could not increment resource usage (function may not exist):', rpcError.message);
+      }
     } catch (error) {
-      console.error('Error linking resource:', error);
+      console.warn('Error linking resource:', error);
     }
   };
 
@@ -350,18 +394,35 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
     if (!offering) return;
 
     const loadHistory = async () => {
-      const { data } = await supabase
-        .from('curriculum_change_history')
-        .select(`
-          *,
-          changed_by_user:users!curriculum_change_history_changed_by_fkey (first_name, last_name, email)
-        `)
-        .eq('offering_id', offering.offering_id)
-        .order('created_at', { ascending: false })
-        .limit(50);
+      try {
+        const { data, error } = await supabase
+          .from('curriculum_change_history')
+          .select(`
+            *,
+            users!curriculum_change_history_changed_by_fkey (first_name, last_name, email)
+          `)
+          .eq('offering_id', offering.offering_id)
+          .order('created_at', { ascending: false })
+          .limit(50);
 
-      if (data) {
-        setChangeHistory(data);
+        if (error) {
+          // Table might not exist yet
+          console.warn('Could not load change history (table may not exist):', error.message);
+          setChangeHistory([]);
+          return;
+        }
+
+        if (data) {
+          // Transform the data to handle the relationship
+          const transformedData = data.map(change => ({
+            ...change,
+            changed_by_user: Array.isArray(change.users) ? change.users[0] : change.users
+          }));
+          setChangeHistory(transformedData);
+        }
+      } catch (error) {
+        console.warn('Error loading change history:', error);
+        setChangeHistory([]);
       }
     };
 
