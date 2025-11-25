@@ -1,10 +1,17 @@
 -- LaunchPad SKN - Setup Supabase Storage for 3D Models
 -- Run this in Supabase SQL Editor
+-- This script is idempotent - safe to run multiple times
 
 -- Create storage bucket for 3D models
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('3d-models', '3d-models', true)
 ON CONFLICT (id) DO NOTHING;
+
+-- Drop existing policies if they exist (to avoid conflicts)
+DROP POLICY IF EXISTS "Public Access" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can upload 3D models" ON storage.objects;
+DROP POLICY IF EXISTS "Users can update their own 3D models" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their own 3D models" ON storage.objects;
 
 -- Set up storage policies for 3D models bucket
 -- Allow public read access
