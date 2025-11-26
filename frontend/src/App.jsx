@@ -8,6 +8,7 @@ import { NotificationsProvider } from './contexts/NotificationsContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Navbar from './components/common/Navbar';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import OfflineAlert from './components/common/OfflineAlert';
 import AppRoutes from './routes/AppRoutes';
 import queryClient from './config/queryClient';
 import { initKeyboardShortcuts, cleanupKeyboardShortcuts } from './utils/keyboardShortcuts';
@@ -30,6 +31,7 @@ function App() {
               <NotificationsProvider>
                 <Router>
                   <div className="App">
+                    <OfflineAlert />
                     <Navbar />
                     <Container className="mt-4">
                       <AppRoutes />

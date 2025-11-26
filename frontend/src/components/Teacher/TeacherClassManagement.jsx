@@ -113,10 +113,11 @@ function TeacherClassManagement() {
   const filteredStudents = useMemo(() => {
     if (!searchQuery) return students;
     const query = searchQuery.toLowerCase();
-    return students.filter(student =>
-      student.name?.toLowerCase().includes(query) ||
-      student.email?.toLowerCase().includes(query)
-    );
+    return students.filter(assignment => {
+      const studentName = assignment.student?.name?.toLowerCase() || '';
+      const studentEmail = assignment.student?.email?.toLowerCase() || '';
+      return studentName.includes(query) || studentEmail.includes(query);
+    });
   }, [students, searchQuery]);
 
   if (isLoading) {
@@ -455,24 +456,27 @@ function TeacherClassManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStudents.map((student, index) => (
-                      <tr key={student.user_id || index}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <strong>{student.name || 'N/A'}</strong>
-                        </td>
-                        <td>{student.email || 'N/A'}</td>
-                        <td>
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            onClick={() => navigate(`/admin/students?search=${student.email}`)}
-                          >
-                            View Profile
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
+                    {filteredStudents.map((assignment, index) => {
+                      const studentData = assignment.student;
+                      return (
+                        <tr key={studentData?.user_id || index}>
+                          <td>{index + 1}</td>
+                          <td>
+                            <strong>{studentData?.name || 'N/A'}</strong>
+                          </td>
+                          <td>{studentData?.email || 'N/A'}</td>
+                          <td>
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              onClick={() => navigate(`/admin/students?search=${studentData?.email}`)}
+                            >
+                              View Profile
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </Table>
               )}
