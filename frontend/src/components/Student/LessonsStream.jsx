@@ -1,305 +1,143 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { 
-  FaCalendarAlt, FaClock, FaMapMarkerAlt, FaChevronRight, FaCube
-} from 'react-icons/fa';
+import { FaGamepad } from 'react-icons/fa';
 import { supabase } from '../../config/supabase';
-import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
-import ViewerErrorBoundary from '../InteractiveContent/Viewers/ViewerErrorBoundary';
+import StreamHeader from './StreamComponents/StreamHeader';
+import HeroCard from './StreamComponents/HeroCard';
+import QuestGrid from './StreamComponents/QuestGrid';
+import ArchiveList from './StreamComponents/ArchiveList';
 import './LessonsStream.css';
 
-function LessonsStream({ lessons = [], classSubjectId }) {
+function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
   const navigate = useNavigate();
-  const [lessonContentMap, setLessonContentMap] = useState({});
-  const [loadingContent, setLoadingContent] = useState({});
+  const [heroLesson, setHeroLesson] = useState(null);
+  const [quests, setQuests] = useState([]);
+  const [archives, setArchives] = useState([]);
 
-  // Fetch content for lessons that have 3D models
+  // Process lessons into Hero, Quests (Upcoming), and Archives (Past)
   useEffect(() => {
     if (!lessons || lessons.length === 0) return;
 
-    const fetchLessonContent = async () => {
-      const lessonIds = lessons.map(l => l.lesson_id).filter(Boolean);
-      if (lessonIds.length === 0) return;
+    const now = new Date();
+    const sortedLessons = [...lessons].sort((a, b) => new Date(a.lesson_date) - new Date(b.lesson_date));
 
-      try {
-        const { data, error } = await supabase
-          .from('lesson_content')
-          .select('lesson_id, content_type, content_id, title, url, metadata')
-          .in('lesson_id', lessonIds)
-          .eq('content_type', '3D_MODEL')
-          .eq('is_published', true);
+    // Find the "Hero" lesson:
+    // 1. First lesson that is happening NOW (or within 1 hour)
+    // 2. OR the very next upcoming lesson
+    // 3. OR if no upcoming, the most recent past lesson
 
-        if (error) {
-          console.error('Error fetching lesson content:', error);
-          return;
-        }
+    let hero = null;
+    let upcoming = [];
+    let past = [];
 
-        // Group content by lesson_id
-        const contentMap = {};
-        (data || []).forEach(item => {
-          if (!contentMap[item.lesson_id]) {
-            contentMap[item.lesson_id] = [];
-          }
-          contentMap[item.lesson_id].push(item);
-        });
+    // Split into past and upcoming
+    sortedLessons.forEach(lesson => {
+      const lessonDate = new Date(lesson.lesson_date);
+      // Set end of day for comparison to include today's lessons as upcoming if not passed time
+      const endOfLessonDay = new Date(lessonDate);
+      endOfLessonDay.setHours(23, 59, 59, 999);
 
-        setLessonContentMap(contentMap);
-      } catch (err) {
-        console.error('Error fetching lesson content:', err);
+      if (endOfLessonDay < now) {
+        past.push(lesson);
+      } else {
+        upcoming.push(lesson);
       }
-    };
+    });
 
-    fetchLessonContent();
+    // Determine Hero
+    if (upcoming.length > 0) {
+      hero = upcoming[0]; // The immediate next lesson
+      upcoming = upcoming.slice(1); // Remove hero from quests
+    } else if (past.length > 0) {
+      hero = past[past.length - 1]; // Most recent past lesson
+      past = past.slice(0, past.length - 1); // Remove hero from archives
+    }
+
+    setHeroLesson(hero);
+    setQuests(upcoming);
+    setArchives(past.reverse()); // Show most recent past lessons first
   }, [lessons]);
 
-  // Helper function to format date
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('en-US', { 
-      weekday: 'short', 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+  // Helper to generate deterministic gradient based on string
+  const getGradient = (str) => {
+    const hash = str.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+    const hue1 = Math.abs(hash % 360);
+    const hue2 = (hue1 + 40) % 360;
+    return `linear-gradient(135deg, hsl(${hue1}, 70%, 60%), hsl(${hue2}, 70%, 40%))`;
   };
 
-  // Helper function to format time
-  const formatTime = (timeStr) => {
-    if (!timeStr) return '';
-    return timeStr.substring(0, 5);
+  // Helper to calculate "XP" (Duration in mins)
+  const calculateXP = (start, end) => {
+    if (!start || !end) return 50;
+    const [startH, startM] = start.split(':').map(Number);
+    const [endH, endM] = end.split(':').map(Number);
+    const duration = (endH * 60 + endM) - (startH * 60 + startM);
+    return Math.max(duration, 10); // Min 10 XP
   };
 
-  // Group lessons by month
-  const groupLessonsByMonth = (lessons) => {
-    const grouped = {};
-    
-    lessons.forEach(lesson => {
-      if (!lesson.lesson_date) return;
-      
-      const date = new Date(lesson.lesson_date);
-      const monthKey = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-      
-      if (!grouped[monthKey]) {
-        grouped[monthKey] = [];
-      }
-      grouped[monthKey].push(lesson);
-    });
+  const formatTime = (time) => time ? time.substring(0, 5) : '';
+  const formatDate = (date) => new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-    // Sort lessons within each month by date
-    Object.keys(grouped).forEach(month => {
-      grouped[month].sort((a, b) => {
-        const dateA = new Date(a.lesson_date);
-        const dateB = new Date(b.lesson_date);
-        return dateA - dateB;
-      });
-    });
-
-    return grouped;
+  // Get greeting based on time
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good Morning, Explorer';
+    if (hour < 18) return 'Good Afternoon, Explorer';
+    return 'Good Evening, Explorer';
   };
 
-  // Determine if lesson is past, today, or upcoming
-  const getLessonStatus = (lesson) => {
-    if (!lesson.lesson_date) return 'upcoming';
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const lessonDate = new Date(lesson.lesson_date);
-    lessonDate.setHours(0, 0, 0, 0);
-    
-    if (lessonDate < today) return 'past';
-    if (lessonDate.getTime() === today.getTime()) return 'today';
-    return 'upcoming';
-  };
-
-  const groupedLessons = groupLessonsByMonth(lessons);
-  const months = Object.keys(groupedLessons).sort((a, b) => {
-    return new Date(a) - new Date(b);
-  });
+  if (loading) {
+    return (
+      <div className="lessons-stream-container">
+        <div className="skeleton-hero" />
+        <div className="skeleton-grid">
+          {[1, 2, 3].map(i => <div key={i} className="skeleton-card" />)}
+        </div>
+      </div>
+    );
+  }
 
   if (!lessons || lessons.length === 0) {
     return (
       <div className="lessons-stream-container">
-        <Card>
-          <Card.Body className="text-center py-5">
-            <p className="text-muted mb-0">No lessons available</p>
-          </Card.Body>
-        </Card>
+        <StreamHeader greeting={getGreeting()} />
+        <div className="hero-card" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="text-center">
+            <FaGamepad style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.2)', marginBottom: '1rem' }} />
+            <h3 style={{ color: 'white' }}>No Missions Available</h3>
+            <p style={{ color: '#94a3b8' }}>Check back later for new quests!</p>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="lessons-stream-container">
-      <div className="lessons-stream-timeline">
-        {months.map((month) => (
-          <div key={month} className="month-section">
-            <div className="month-header">
-              <h3 className="month-title">{month}</h3>
-            </div>
-            <div className="lessons-list">
-              {groupedLessons[month].map((lesson, index) => {
-                const status = getLessonStatus(lesson);
-                const isPast = status === 'past';
-                const isToday = status === 'today';
-                
-                return (
-                  <Card 
-                    key={lesson.lesson_id || index} 
-                    className={`lesson-stream-card ${
-                      isToday ? 'lesson-today' : 
-                      isPast ? 'lesson-past' : 
-                      'lesson-upcoming'
-                    }`}
-                  >
-                    <Card.Body className="lesson-card-body">
-                      <div className="lesson-card-content">
-                        <div className="lesson-header">
-                          <h5 className="lesson-title">
-                            {lesson.lesson_title || 'Lesson'}
-                          </h5>
-                          {lesson.status && (
-                            <Badge 
-                              bg={
-                                lesson.status === 'COMPLETED' ? 'success' :
-                                lesson.status === 'CANCELLED' ? 'danger' :
-                                isPast ? 'secondary' : 'primary'
-                              }
-                              className="lesson-status-badge"
-                            >
-                              {lesson.status || (isPast ? 'Past' : 'Upcoming')}
-                            </Badge>
-                          )}
-                        </div>
+      <StreamHeader greeting={getGreeting()} />
 
-                        <div className="lesson-meta">
-                          {lesson.lesson_date && (
-                            <div className="meta-item">
-                              <FaCalendarAlt className="me-1" />
-                              <span>{formatDate(lesson.lesson_date)}</span>
-                            </div>
-                          )}
-                          {lesson.start_time && lesson.end_time && (
-                            <div className="meta-item">
-                              <FaClock className="me-1" />
-                              <span>{formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}</span>
-                            </div>
-                          )}
-                          {lesson.location && (
-                            <div className="meta-item">
-                              <FaMapMarkerAlt className="me-1" />
-                              <span>{lesson.location}</span>
-                            </div>
-                          )}
-                        </div>
+      <HeroCard
+        heroLesson={heroLesson}
+        getGradient={getGradient}
+        formatDate={formatDate}
+        formatTime={formatTime}
+      />
 
-                        {lesson.topic && (
-                          <div className="lesson-topic">
-                            <Badge bg="info" className="me-1">Topic</Badge>
-                            <span className="small">{lesson.topic}</span>
-                          </div>
-                        )}
+      <QuestGrid
+        quests={quests}
+        getGradient={getGradient}
+        formatDate={formatDate}
+        formatTime={formatTime}
+        calculateXP={calculateXP}
+        navigate={navigate}
+      />
 
-                        {lesson.description && (
-                          <p className="lesson-description">
-                            {lesson.description.length > 150
-                              ? `${lesson.description.substring(0, 150)}...`
-                              : lesson.description}
-                          </p>
-                        )}
-
-                        {lesson.homework_description && (
-                          <div className="lesson-homework">
-                            <Badge bg="warning">Homework Assigned</Badge>
-                            {lesson.homework_due_date && (
-                              <small className="text-muted ms-2">
-                                Due: {formatDate(lesson.homework_due_date)}
-                              </small>
-                            )}
-                          </div>
-                        )}
-
-                        {/* 3D Model Preview */}
-                        {lessonContentMap[lesson.lesson_id] && lessonContentMap[lesson.lesson_id].length > 0 && (
-                          <div className="lesson-3d-preview mt-3 mb-3">
-                            <div className="d-flex align-items-center gap-2 mb-2">
-                              <FaCube className="text-primary" />
-                              <Badge bg="primary">3D Model Available</Badge>
-                            </div>
-                            <div 
-                              style={{ 
-                                width: '100%', 
-                                height: '200px', 
-                                borderRadius: '8px', 
-                                overflow: 'hidden',
-                                border: '1px solid #dee2e6',
-                                backgroundColor: '#1a1a1a',
-                                position: 'relative',
-                                cursor: 'pointer'
-                              }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigate(`/student/lessons/${lesson.lesson_id}`);
-                              }}
-                            >
-                              <ViewerErrorBoundary>
-                                <ModelViewerComponent
-                                  contentUrl={lessonContentMap[lesson.lesson_id][0].url}
-                                  modelFormat="GLTF"
-                                  modelProperties={{
-                                    autoRotate: true,
-                                    cameraControls: true,
-                                    exposure: 1,
-                                    shadowIntensity: 1,
-                                    height: '200px'
-                                  }}
-                                  annotations={[]}
-                                  onInteraction={() => {}}
-                                  onStateChange={() => {}}
-                                />
-                              </ViewerErrorBoundary>
-                              <div 
-                                style={{
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                  right: 0,
-                                  bottom: 0,
-                                  background: 'linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.5) 100%)',
-                                  pointerEvents: 'none',
-                                  display: 'flex',
-                                  alignItems: 'flex-end',
-                                  padding: '8px'
-                                }}
-                              >
-                                <small className="text-white" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
-                                  Click to view full lesson
-                                </small>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="lesson-action">
-                          <Button
-                            variant={isPast ? "outline-secondary" : "primary"}
-                            size="sm"
-                            onClick={() => navigate(`/student/lessons/${lesson.lesson_id}`)}
-                            className="lesson-action-btn"
-                          >
-                            {isPast ? 'Review' : 'View'}
-                            <FaChevronRight className="ms-1" style={{ fontSize: '0.75rem' }} />
-                          </Button>
-                        </div>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
+      <ArchiveList
+        archives={archives}
+        formatDate={formatDate}
+        calculateXP={calculateXP}
+        navigate={navigate}
+      />
     </div>
   );
 }

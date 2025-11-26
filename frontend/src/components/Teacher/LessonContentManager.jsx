@@ -143,7 +143,7 @@ function LessonContentManager() {
         .from('arvr_content')
         .select('*, subjects:subject_id (subject_name)')
         .order('created_at', { ascending: false });
-      
+
       if (error) {
         console.error('Error fetching 3D models:', error);
         if (error.code === '42P01') {
@@ -1230,13 +1230,16 @@ function LessonContentManager() {
   };
 
   const handleDelete = async (contentId) => {
+    console.log('Attempting to delete content with ID:', contentId);
     if (!window.confirm('Are you sure you want to delete this content?')) {
+      console.log('Deletion cancelled by user');
       return;
     }
 
     try {
       // Get content to check if we need to delete file from storage
       const contentItem = content.find(c => c.content_id === contentId);
+      console.log('Found content item for deletion:', contentItem);
 
       // Delete from database
       const { error } = await supabase
@@ -1244,7 +1247,10 @@ function LessonContentManager() {
         .delete()
         .eq('content_id', contentId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw error;
+      }
 
       // Delete file from storage if it exists
       if (contentItem?.file_path) {
@@ -1252,6 +1258,7 @@ function LessonContentManager() {
           await supabase.storage
             .from('course-content')
             .remove([contentItem.file_path]);
+          console.log('Deleted file from storage:', contentItem.file_path);
         } catch (storageError) {
           console.warn('Error deleting file from storage:', storageError);
           // Continue even if storage deletion fails
@@ -1259,6 +1266,7 @@ function LessonContentManager() {
       }
 
       setSuccess('Content deleted successfully');
+      console.log('Deletion successful, refreshing content list');
       fetchContent();
     } catch (err) {
       console.error('Error deleting content:', err);
@@ -2392,7 +2400,7 @@ function LessonContentManager() {
                       </div>
                     )}
                     <Form.Text className="text-muted">
-                      {contentType === 'AR_OVERLAY' 
+                      {contentType === 'AR_OVERLAY'
                         ? 'Select AR content from your library. Students will be able to superimpose this 3D object into their real-world view using Web AR.'
                         : 'Select a 3D model from your library. Students will be able to view and interact with it in the lesson.'}
                     </Form.Text>

@@ -499,6 +499,9 @@ interface ImagePageContentProps {
 }
 
 function ImagePageContent({ imageData }: ImagePageContentProps) {
+  // Debug: Log the image data to console
+  console.log('ImagePageContent received imageData:', imageData);
+
   return (
     <div className="image-page-content">
       {imageData.instructions && (
@@ -509,22 +512,57 @@ function ImagePageContent({ imageData }: ImagePageContentProps) {
       {imageData.imageUrl ? (
         <img
           src={imageData.imageUrl}
-          alt={imageData.imageDescription || "Page content"}
+          alt={imageData.imageDescription || imageData.caption || "Page content"}
           className="img-fluid"
           style={{ maxHeight: '600px', width: 'auto', margin: '0 auto', display: 'block' }}
           onError={(e) => {
-            // If image fails to load, show placeholder
-            (e.target as HTMLImageElement).style.display = 'none';
+            console.error('Image failed to load:', imageData.imageUrl);
+            // If image fails to load, show error message
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.innerHTML = `<strong>Image failed to load</strong><br/>URL: ${imageData.imageUrl}`;
+            target.parentElement?.appendChild(errorDiv);
+          }}
+          onLoad={() => {
+            console.log('Image loaded successfully:', imageData.imageUrl);
           }}
         />
-      ) : imageData.imageDescription ? (
+      ) : imageData.url ? (
+        // Fallback: try 'url' field instead of 'imageUrl'
+        <img
+          src={imageData.url}
+          alt={imageData.imageDescription || imageData.caption || "Page content"}
+          className="img-fluid"
+          style={{ maxHeight: '600px', width: 'auto', margin: '0 auto', display: 'block' }}
+          onError={(e) => {
+            console.error('Image failed to load:', imageData.url);
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'alert alert-danger';
+            errorDiv.innerHTML = `<strong>Image failed to load</strong><br/>URL: ${imageData.url}`;
+            target.parentElement?.appendChild(errorDiv);
+          }}
+        />
+      ) : imageData.imageDescription || imageData.caption ? (
         <Alert variant="warning">
-          <strong>Image Description:</strong> {imageData.imageDescription}
+          <strong>Image Description:</strong> {imageData.imageDescription || imageData.caption}
           <br />
-          <small>Image generation is pending or failed. Please contact your teacher.</small>
+          <small>Image URL is missing. Please contact your teacher.</small>
+          <br />
+          <small className="text-muted">Debug: {JSON.stringify(imageData)}</small>
         </Alert>
       ) : (
-        <Alert variant="warning">No image available for this page.</Alert>
+        <Alert variant="warning">
+          No image available for this page.
+          <br />
+          <small className="text-muted">Debug: {JSON.stringify(imageData)}</small>
+        </Alert>
+      )}
+      {imageData.caption && (
+        <p className="text-center text-muted mt-2">{imageData.caption}</p>
       )}
     </div>
   );
@@ -556,11 +594,11 @@ function EmbeddedContentRenderer({ contentId, page }: EmbeddedContentRendererPro
   // Determine which data to use
   const shouldUseFetched = contentId && embeddedContent;
   const shouldFallbackToLegacy = !shouldUseFetched && page.embeddedContent;
-  
+
   const effectiveEmbeddedData = shouldUseFetched
     ? embeddedContent?.content_data
     : (shouldFallbackToLegacy ? page.embeddedContent!.data : null);
-  
+
   const effectiveEmbeddedType = shouldUseFetched
     ? embeddedContent?.content_type
     : (shouldFallbackToLegacy ? page.embeddedContent!.type : null);

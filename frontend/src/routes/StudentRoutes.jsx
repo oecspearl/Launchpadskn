@@ -5,7 +5,7 @@ import PrivateRoute from '../components/Auth/PrivateRoute';
 // Lazy load student components
 const StudentDashboard = lazy(() => import('../components/Student/StudentDashboard'));
 const SubjectView = lazy(() => import('../components/Student/SubjectView'));
-const LessonView = lazy(() => import('../components/Student/LessonView'));
+const LessonViewStream = lazy(() => import('../components/Student/LessonViewStream'));
 const StudentQuizView = lazy(() => import('../components/Student/StudentQuizView'));
 const AssignmentSubmission = lazy(() => import('../components/Student/AssignmentSubmission'));
 const CourseRegistration = lazy(() => import('../components/Student/CourseRegistration'));
@@ -40,7 +40,7 @@ const StudentRoutes = () => (
             path="/student/lessons/:lessonId"
             element={
                 <PrivateRoute allowedRoles={['student']}>
-                    <LessonView />
+                    <LessonViewStream />
                 </PrivateRoute>
             }
         />
