@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Spinner, Alert, 
+import {
+  Container, Row, Col, Card, Button, Spinner, Alert,
   Form, Badge, ListGroup
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
+import {
   FaUpload, FaFileAlt, FaCheckCircle, FaClock, FaCalendarAlt,
   FaArrowLeft, FaDownload
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { supabase } from '../../config/supabase';
+import { createNotification } from '../../services/notificationService';
 
 function AssignmentSubmission() {
   const { assessmentId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -24,18 +25,18 @@ function AssignmentSubmission() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [submissionText, setSubmissionText] = useState('');
-  
+
   useEffect(() => {
     if (assessmentId) {
       fetchData();
     }
   }, [assessmentId]);
-  
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       // Get assessment details
       const { data: assessmentData, error: assessmentError } = await supabase
         .from('subject_assessments')
@@ -54,10 +55,10 @@ function AssignmentSubmission() {
         `)
         .eq('assessment_id', assessmentId)
         .single();
-      
+
       if (assessmentError) throw assessmentError;
       setAssessment(assessmentData);
-      
+
       // Check for existing submission
       if (user && user.userId) {
         const { data: submissionData } = await supabase
@@ -66,13 +67,13 @@ function AssignmentSubmission() {
           .eq('assessment_id', assessmentId)
           .eq('student_id', user.userId)
           .maybeSingle();
-        
+
         setSubmission(submissionData);
         if (submissionData?.submission_text) {
           setSubmissionText(submissionData.submission_text);
         }
       }
-      
+
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching data:', err);
@@ -80,7 +81,7 @@ function AssignmentSubmission() {
       setIsLoading(false);
     }
   };
-  
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -93,47 +94,47 @@ function AssignmentSubmission() {
       setError(null);
     }
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!selectedFile && !submissionText.trim()) {
       setError('Please provide either a file or text submission');
       return;
     }
-    
+
     try {
       setError(null);
       setSuccess(null);
       setUploading(true);
-      
+
       let fileUrl = null;
       let filePath = null;
-      
+
       // Upload file if provided
       if (selectedFile) {
         const bucketName = 'assignments';
         const timestamp = Date.now();
         const sanitizedFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         filePath = `submissions/${assessmentId}/${user.userId}/${timestamp}-${sanitizedFileName}`;
-        
+
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from(bucketName)
           .upload(filePath, selectedFile, {
             cacheControl: '3600',
             upsert: false
           });
-        
+
         if (uploadError) throw uploadError;
-        
+
         // Get public URL (or signed URL for private buckets)
         const { data: urlData } = supabase.storage
           .from(bucketName)
           .getPublicUrl(filePath);
-        
+
         fileUrl = urlData.publicUrl;
       }
-      
+
       // Create or update submission
       const submissionData = {
         assessment_id: parseInt(assessmentId),
@@ -144,14 +145,14 @@ function AssignmentSubmission() {
         file_name: selectedFile ? selectedFile.name : null,
         submitted_at: new Date().toISOString()
       };
-      
+
       if (submission) {
         // Update existing submission
         const { error: updateError } = await supabase
           .from('student_submissions')
           .update(submissionData)
           .eq('submission_id', submission.submission_id);
-        
+
         if (updateError) throw updateError;
         setSuccess('Submission updated successfully');
       } else {
@@ -159,11 +160,27 @@ function AssignmentSubmission() {
         const { error: insertError } = await supabase
           .from('student_submissions')
           .insert(submissionData);
-        
+
         if (insertError) throw insertError;
         setSuccess('Assignment submitted successfully');
       }
-      
+
+      // Send confirmation notification
+      try {
+        await createNotification({
+          userId: user.userId,
+          type: 'system',
+          title: 'Assignment Submitted',
+          message: `You have successfully submitted ${assessment.assessment_name}.`,
+          link_url: `/student/assignments/${assessmentId}/submit`,
+          related_id: parseInt(assessmentId),
+          related_type: 'assessment'
+        });
+      } catch (notifyError) {
+        console.error('Failed to send notification:', notifyError);
+        // Don't block success state if notification fails
+      }
+
       setSelectedFile(null);
       fetchData();
     } catch (err) {
@@ -173,24 +190,24 @@ function AssignmentSubmission() {
       setUploading(false);
     }
   };
-  
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
-  
+
   const formatFileSize = (bytes) => {
     if (!bytes) return '';
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
-  
+
   const getDaysUntilDue = () => {
     if (!assessment?.due_date) return null;
     const dueDate = new Date(assessment.due_date);
@@ -201,7 +218,7 @@ function AssignmentSubmission() {
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
   };
-  
+
   if (isLoading) {
     return (
       <Container className="mt-4">
@@ -213,7 +230,7 @@ function AssignmentSubmission() {
       </Container>
     );
   }
-  
+
   if (error && !assessment) {
     return (
       <Container className="mt-4">
@@ -224,7 +241,7 @@ function AssignmentSubmission() {
       </Container>
     );
   }
-  
+
   if (!assessment) {
     return (
       <Container className="mt-4">
@@ -235,18 +252,18 @@ function AssignmentSubmission() {
       </Container>
     );
   }
-  
+
   const daysUntilDue = getDaysUntilDue();
   const isOverdue = daysUntilDue !== null && daysUntilDue < 0;
   const isDueSoon = daysUntilDue !== null && daysUntilDue >= 0 && daysUntilDue <= 3;
-  
+
   return (
     <Container className="mt-4">
       {/* Header */}
       <Row className="mb-4 pt-5">
         <Col>
-          <Button 
-            variant="link" 
+          <Button
+            variant="link"
             className="p-0 mb-2"
             onClick={() => navigate('/student/dashboard')}
           >
@@ -255,12 +272,12 @@ function AssignmentSubmission() {
           </Button>
           <h2>{assessment.assessment_name}</h2>
           <p className="text-muted mb-0">
-            {assessment.class_subject?.subject_offering?.subject?.subject_name} • 
+            {assessment.class_subject?.subject_offering?.subject?.subject_name} •
             {assessment.class_subject?.class?.form?.form_name} - {assessment.class_subject?.class?.class_name}
           </p>
         </Col>
       </Row>
-      
+
       <Row className="g-4">
         {/* Main Content */}
         <Col md={8}>
@@ -281,7 +298,7 @@ function AssignmentSubmission() {
                   <p className="mb-0">{assessment.description}</p>
                 </div>
               )}
-              
+
               <Row className="mb-3">
                 <Col md={6}>
                   <div>
@@ -297,7 +314,7 @@ function AssignmentSubmission() {
                   </Col>
                 )}
               </Row>
-              
+
               {assessment.assessment_type && (
                 <div className="mb-2">
                   <Badge bg="secondary">{assessment.assessment_type}</Badge>
@@ -305,7 +322,7 @@ function AssignmentSubmission() {
               )}
             </Card.Body>
           </Card>
-          
+
           {/* Submission Form */}
           <Card className="border-0 shadow-sm">
             <Card.Header className="bg-white border-0 py-3">
@@ -316,7 +333,7 @@ function AssignmentSubmission() {
             <Card.Body>
               {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
               {success && <Alert variant="success" dismissible onClose={() => setSuccess(null)}>{success}</Alert>}
-              
+
               {submission && (
                 <Alert variant="info" className="mb-3">
                   <FaCheckCircle className="me-2" />
@@ -328,7 +345,7 @@ function AssignmentSubmission() {
                   )}
                 </Alert>
               )}
-              
+
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3">
                   <Form.Label>Submission Text (Optional)</Form.Label>
@@ -340,7 +357,7 @@ function AssignmentSubmission() {
                     placeholder="Enter your submission text here..."
                   />
                 </Form.Group>
-                
+
                 <Form.Group className="mb-3">
                   <Form.Label>
                     Upload File {submission && '(Optional - will replace existing file)'}
@@ -370,10 +387,10 @@ function AssignmentSubmission() {
                     </div>
                   )}
                 </Form.Group>
-                
+
                 <div className="d-flex gap-2">
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     type="submit"
                     disabled={uploading || (!selectedFile && !submissionText.trim() && !submission)}
                   >
@@ -390,7 +407,7 @@ function AssignmentSubmission() {
                     )}
                   </Button>
                   {submission?.file_url && (
-                    <Button 
+                    <Button
                       variant="outline-primary"
                       href={submission.file_url}
                       target="_blank"
@@ -404,7 +421,7 @@ function AssignmentSubmission() {
             </Card.Body>
           </Card>
         </Col>
-        
+
         {/* Sidebar */}
         <Col md={4}>
           <Card className="border-0 shadow-sm mb-4">
@@ -433,7 +450,7 @@ function AssignmentSubmission() {
               )}
             </Card.Body>
           </Card>
-          
+
           <Card className="border-0 shadow-sm">
             <Card.Header className="bg-white border-0 py-3">
               <h6 className="mb-0">Assignment Information</h6>

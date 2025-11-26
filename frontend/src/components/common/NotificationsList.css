@@ -1,0 +1,75 @@
+/* Notifications List Styles */
+.notifications-page {
+    max-width: 1000px;
+}
+
+.notification-row {
+    transition: background-color 0.2s;
+    padding: 16px 20px;
+}
+
+.notification-row:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-row.unread {
+    background-color: #f0f9ff;
+}
+
+.notification-row.unread:hover {
+    background-color: #e0f2fe;
+}
+
+.notification-icon-large {
+    font-size: 24px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f3f4f6;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.notification-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    gap: 4px;
+}
+
+.notification-row:hover .notification-actions {
+    opacity: 1;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .notification-row:hover {
+        background-color: #374151;
+    }
+
+    .notification-row.unread {
+        background-color: #1e3a5f;
+    }
+
+    .notification-row.unread:hover {
+        background-color: #1e40af;
+    }
+
+    .notification-icon-large {
+        background: #374151;
+    }
+}

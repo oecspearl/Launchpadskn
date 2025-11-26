@@ -1,22 +1,32 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Container, Row, Col, Card, Button, Spinner, Alert,
+  Container, Row, Col, Card, Button, Alert,
   Badge, Tab, Tabs, ListGroup
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import {
   FaBook, FaClipboardList, FaCalendarAlt, FaClock,
-  FaMapMarkerAlt
+  FaMapMarkerAlt, FaGraduationCap, FaTasks, FaChartBar,
+  FaEye, FaBolt
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import { useStudentData } from '../../hooks/useStudentData';
 import Timetable from '../common/Timetable';
+import SkeletonLoader from '../common/SkeletonLoader';
+import EmptyState from '../common/EmptyState';
+import KeyboardShortcutsModal from '../common/KeyboardShortcutsModal';
+import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
+import { addRecentlyViewed, getRecentlyViewedByType } from '../../services/recentlyViewedService';
 import './StudentDashboard.css';
 
 function StudentDashboard() {
-  const { user } = useAuth();
+  const { user, lastLoginTime } = useAuth();
+  const { showSuccess } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   const {
     myClass,
@@ -56,14 +66,52 @@ function StudentDashboard() {
     }
   };
 
+  // Load recently viewed items
+  useEffect(() => {
+    const recent = getRecentlyViewedByType('lesson', 3);
+    setRecentlyViewed(recent);
+  }, []);
+
+  // Register keyboard shortcuts
+  useEffect(() => {
+    registerShortcutHandler('dashboard', () => {
+      navigate('/student');
+      showSuccess('Navigated to Dashboard');
+    });
+
+    registerShortcutHandler('lessons', () => {
+      setActiveTab('timetable');
+      showSuccess('Viewing Timetable');
+    });
+
+    registerShortcutHandler('help', () => {
+      setShowShortcutsModal(true);
+    });
+
+    return () => {
+      unregisterShortcutHandler('dashboard');
+      unregisterShortcutHandler('lessons');
+      unregisterShortcutHandler('help');
+    };
+  }, [navigate, showSuccess]);
+
+  // Format last login time
+  const formatLastLogin = () => {
+    if (!lastLoginTime) return null;
+    const date = new Date(lastLoginTime);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
   if (isLoading) {
     return (
-      <div className="student-dashboard dashboard-loading">
-        <Spinner animation="border" variant="primary" role="status">
-          <span className="visually-hidden">Loading...</span>
-        </Spinner>
-        <p className="mt-3 text-muted">Loading your dashboard...</p>
-      </div>
+      <Container className="mt-4">
+        <SkeletonLoader variant="dashboard" />
+      </Container>
     );
   }
 
@@ -87,6 +135,12 @@ function StudentDashboard() {
                 <p className="mb-0 opacity-75">
                   {myClass.form?.form_name || 'Form'} - {myClass.class_name || 'Class'}
                   {myClass.form_tutor && ` • Form Tutor: ${myClass.form_tutor.name} `}
+                </p>
+              )}
+              {formatLastLogin() && (
+                <p className="mb-0 opacity-50 small">
+                  <FaClock className="me-1" />
+                  Last login: {formatLastLogin()}
                 </p>
               )}
             </Col>
@@ -116,17 +170,18 @@ function StudentDashboard() {
                   </Card.Header>
                   <Card.Body>
                     {todayLessons.length === 0 ? (
-                      <div className="empty-state">
-                        <FaCalendarAlt size={48} className="mb-3 opacity-25" />
-                        <p className="text-muted mb-0">No lessons scheduled for today</p>
-                      </div>
+                      <EmptyState
+                        variant="no-lessons"
+                        title="No Lessons Today"
+                        message="Enjoy your free day! Check your timetable for upcoming classes."
+                      />
                     ) : (
                       <div className="todays-lessons-section mb-0">
                         {todayLessons.map((lesson, index) => {
                           const subjectName = lesson.class_subject?.subject_offering?.subject?.subject_name || 'Lesson';
                           return (
-                            <div 
-                              key={index} 
+                            <div
+                              key={index}
                               className="lesson-item clickable-lesson"
                               onClick={() => handleLessonClick(lesson)}
                               style={{ cursor: 'pointer' }}
@@ -309,8 +364,8 @@ function StudentDashboard() {
 
           <Tab eventKey="timetable" title="Timetable">
             <Card className="glass-card border-0 p-3">
-              <Timetable 
-                lessons={weekLessons} 
+              <Timetable
+                lessons={weekLessons}
                 onLessonClick={handleLessonClick}
                 showAllUpcoming={true}
               />
@@ -353,6 +408,12 @@ function StudentDashboard() {
           </Tab>
         </Tabs>
       </Container>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        show={showShortcutsModal}
+        onHide={() => setShowShortcutsModal(false)}
+      />
     </div>
   );
 }

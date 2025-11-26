@@ -1,0 +1,146 @@
+/* Subject Progress Card Styles */
+.subject-progress-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.subject-progress-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12) !important;
+}
+
+.subject-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.subject-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+}
+
+.subject-info {
+    flex: 1;
+}
+
+.subject-name {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 2px;
+}
+
+.subject-code {
+    font-size: 12px;
+    color: #6b7280;
+    background: #f3f4f6;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.subject-teacher {
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.progress-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.grade-circle {
+    width: 120px;
+    text-align: center;
+}
+
+.grade-label {
+    font-size: 12px;
+    color: #6b7280;
+    margin-top: 8px;
+    font-weight: 600;
+}
+
+.completion-stats {
+    width: 100%;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.stat-label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.stat-value {
+    color: #111827;
+    font-weight: 700;
+}
+
+.completion-rate {
+    text-align: center;
+}
+
+/* Subject Insights */
+.subject-insight {
+    padding: 8px 12px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.subject-insight.success {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.subject-insight.warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.subject-insight small {
+    font-weight: 600;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .subject-name {
+        color: #f3f4f6;
+    }
+
+    .subject-code {
+        background: #374151;
+        color: #9ca3af;
+    }
+
+    .subject-teacher {
+        border-bottom-color: #374151;
+    }
+
+    .stat-value {
+        color: #f3f4f6;
+    }
+
+    .subject-insight.success {
+        background: #064e3b;
+        color: #d1fae5;
+    }
+
+    .subject-insight.warning {
+        background: #78350f;
+        color: #fef3c7;
+    }
+}

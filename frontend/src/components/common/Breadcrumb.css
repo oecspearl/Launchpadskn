@@ -1,0 +1,126 @@
+/* Breadcrumb Navigation Styles */
+.breadcrumb-nav {
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.breadcrumb-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 8px;
+}
+
+.breadcrumb-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.breadcrumb-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #6b7280;
+    text-decoration: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-weight: 500;
+}
+
+.breadcrumb-link:hover {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.08);
+}
+
+.breadcrumb-link:active {
+    transform: scale(0.98);
+}
+
+.breadcrumb-home-icon {
+    font-size: 16px;
+}
+
+.breadcrumb-home-text {
+    display: inline;
+}
+
+.breadcrumb-separator {
+    color: #d1d5db;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.breadcrumb-current {
+    color: #111827;
+    font-weight: 600;
+    padding: 4px 8px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .breadcrumb-nav {
+        padding: 10px 16px;
+    }
+
+    .breadcrumb-list {
+        gap: 6px;
+    }
+
+    .breadcrumb-item {
+        font-size: 13px;
+    }
+
+    .breadcrumb-home-text {
+        display: none;
+    }
+
+    .breadcrumb-link,
+    .breadcrumb-current {
+        padding: 4px 6px;
+    }
+
+    /* Show ellipsis for long breadcrumb chains on mobile */
+    .breadcrumb-item:not(:first-child):not(:last-child):nth-child(n + 3) {
+        display: none;
+    }
+
+    .breadcrumb-item:nth-child(2)::after {
+        content: '...';
+        color: #9ca3af;
+        margin-left: 8px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .breadcrumb-nav {
+        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    .breadcrumb-link {
+        color: #9ca3af;
+    }
+
+    .breadcrumb-link:hover {
+        color: #60a5fa;
+        background: rgba(96, 165, 250, 0.1);
+    }
+
+    .breadcrumb-separator {
+        color: #4b5563;
+    }
+
+    .breadcrumb-current {
+        color: #f3f4f6;
+    }
+}

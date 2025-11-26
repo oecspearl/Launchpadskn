@@ -1,0 +1,117 @@
+/* Quick Search Styles */
+.quick-search-wrapper {
+    position: relative;
+    width: 300px;
+}
+
+.quick-search-form {
+    width: 100%;
+}
+
+.quick-search-input-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.quick-search-icon {
+    position: absolute;
+    left: 12px;
+    color: #9ca3af;
+    font-size: 14px;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.quick-search-input {
+    padding-left: 36px !important;
+    height: 38px;
+    font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    transition: all 0.2s;
+}
+
+.quick-search-input:focus {
+    background: white;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.quick-search-input::placeholder {
+    color: #9ca3af;
+    font-size: 14px;
+}
+
+/* Suggestions Dropdown */
+.quick-search-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1050;
+}
+
+.quick-search-dropdown .dropdown-item {
+    font-size: 14px;
+    padding: 10px 16px;
+    cursor: pointer;
+}
+
+.quick-search-dropdown .dropdown-item:hover {
+    background-color: #f3f4f6;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 992px) {
+    .quick-search-wrapper {
+        width: 200px;
+    }
+
+    .quick-search-input {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 768px) {
+    .quick-search-wrapper {
+        width: 100%;
+        max-width: 250px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .quick-search-input {
+        background: #374151;
+        border-color: #4b5563;
+        color: #f3f4f6;
+    }
+
+    .quick-search-input:focus {
+        background: #1f2937;
+        border-color: #60a5fa;
+    }
+
+    .quick-search-input::placeholder {
+        color: #9ca3af;
+    }
+
+    .quick-search-dropdown {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .quick-search-dropdown .dropdown-item {
+        color: #f3f4f6;
+    }
+
+    .quick-search-dropdown .dropdown-item:hover {
+        background-color: #374151;
+    }
+}

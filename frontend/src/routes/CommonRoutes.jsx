@@ -6,6 +6,8 @@ import PrivateRoute from '../components/Auth/PrivateRoute';
 const ChangePassword = lazy(() => import('../components/Auth/ChangePassword'));
 const Profile = lazy(() => import('../components/common/Profile'));
 const CourseDetails = lazy(() => import('../components/common/CourseDetails'));
+const NotificationPreferences = lazy(() => import('../components/common/NotificationPreferences'));
+const NotificationsList = lazy(() => import('../components/common/NotificationsList'));
 
 const CommonRoutes = () => (
     <>
@@ -30,6 +32,22 @@ const CommonRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
                     <CourseDetails />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/notification-preferences"
+            element={
+                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                    <NotificationPreferences />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/notifications"
+            element={
+                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                    <NotificationsList />
                 </PrivateRoute>
             }
         />

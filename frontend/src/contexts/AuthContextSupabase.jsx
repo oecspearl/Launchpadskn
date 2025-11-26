@@ -15,6 +15,15 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [lastLoginTime, setLastLoginTime] = useState(null);
+
+  // Initialize last login time from localStorage
+  useEffect(() => {
+    const storedLastLogin = localStorage.getItem('lastLoginTime');
+    if (storedLastLogin) {
+      setLastLoginTime(storedLastLogin);
+    }
+  }, []);
 
   // Initialize auth state and listen for changes
   useEffect(() => {
@@ -50,7 +59,7 @@ export function AuthProvider({ children }) {
           // Check localStorage as fallback
           const storedUser = localStorage.getItem('user');
           const storedToken = localStorage.getItem('token');
-          
+
           if (storedUser && storedToken) {
             try {
               const parsedUser = JSON.parse(storedUser);
@@ -117,6 +126,16 @@ export function AuthProvider({ children }) {
             else tempRole = 'STUDENT';
           }
 
+          // Store previous login time before updating
+          const previousLoginTime = localStorage.getItem('currentLoginTime');
+          if (previousLoginTime) {
+            localStorage.setItem('lastLoginTime', previousLoginTime);
+            setLastLoginTime(previousLoginTime);
+          }
+
+          const currentLoginTime = new Date().toISOString();
+          localStorage.setItem('currentLoginTime', currentLoginTime);
+
           const tempUser = {
             userId: session.user.id,
             id: session.user.id, // Also include id for consistency
@@ -149,7 +168,7 @@ export function AuthProvider({ children }) {
             // No Supabase session found - check if we have stored user data in localStorage
             const storedUser = localStorage.getItem('user');
             const storedToken = localStorage.getItem('token');
-            
+
             if (storedUser && storedToken) {
               console.log('[AuthContext] No Supabase session but localStorage has user data. Restoring user from localStorage...');
               try {
@@ -158,7 +177,7 @@ export function AuthProvider({ children }) {
                 setUser(parsedUser);
                 setIsAuthenticated(true);
                 setIsLoading(false);
-                
+
                 // Try to restore Supabase session in background (non-blocking)
                 // Check if there's a refresh token we can use
                 if (parsedUser.refreshToken) {
@@ -497,6 +516,7 @@ export function AuthProvider({ children }) {
     user,
     isAuthenticated,
     isLoading,
+    lastLoginTime,
     login,
     loginWithAD: login, // Fallback for AD login (can implement later)
     logout,

@@ -1,0 +1,48 @@
+/* Notification Preferences Styles */
+.notification-preferences {
+    max-width: 1000px;
+}
+
+.preferences-header h2 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 8px;
+}
+
+.preference-group .form-check {
+    padding-left: 3em;
+    margin-bottom: 1.5rem;
+}
+
+.preference-group .form-check-input {
+    width: 2.5em;
+    height: 1.25em;
+    margin-left: -3em;
+    cursor: pointer;
+}
+
+.preference-group .form-check-label {
+    cursor: pointer;
+    width: 100%;
+}
+
+.preference-group .form-check-input:checked {
+    background-color: #3b82f6;
+    border-color: #3b82f6;
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .preferences-header h2 {
+        color: #f3f4f6;
+    }
+
+    .preference-group .form-check-label .fw-bold {
+        color: #f3f4f6;
+    }
+
+    .preference-group .form-check-label .text-muted {
+        color: #9ca3af !important;
+    }
+}

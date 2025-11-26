@@ -1,0 +1,197 @@
+/* Empty State Styles */
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    padding: 40px 20px;
+    text-align: center;
+}
+
+.empty-state-content {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.empty-state-icon {
+    font-size: 80px;
+    margin-bottom: 24px;
+    opacity: 0.3;
+    color: #6b7280;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.empty-state-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #111827;
+    margin-bottom: 12px;
+}
+
+.empty-state-message {
+    font-size: 16px;
+    color: #6b7280;
+    line-height: 1.6;
+    margin-bottom: 0;
+}
+
+.empty-state-action {
+    min-width: 160px;
+    font-weight: 600;
+    padding: 10px 24px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.empty-state-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Variant-specific styles */
+.empty-state-no-results .empty-state-icon {
+    color: #3b82f6;
+}
+
+.empty-state-error .empty-state-icon {
+    color: #ef4444;
+}
+
+.empty-state-success .empty-state-icon {
+    color: #10b981;
+}
+
+.empty-state-no-assignments .empty-state-icon {
+    color: #f59e0b;
+}
+
+.empty-state-no-lessons .empty-state-icon {
+    color: #8b5cf6;
+}
+
+/* Compact variant for smaller spaces */
+.empty-state-compact {
+    min-height: 200px;
+    padding: 30px 20px;
+}
+
+.empty-state-compact .empty-state-icon {
+    font-size: 60px;
+    margin-bottom: 16px;
+}
+
+.empty-state-compact .empty-state-title {
+    font-size: 20px;
+    margin-bottom: 8px;
+}
+
+.empty-state-compact .empty-state-message {
+    font-size: 14px;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .empty-state {
+        min-height: 250px;
+        padding: 30px 16px;
+    }
+
+    .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 20px;
+    }
+
+    .empty-state-title {
+        font-size: 20px;
+        margin-bottom: 10px;
+    }
+
+    .empty-state-message {
+        font-size: 14px;
+    }
+
+    .empty-state-action {
+        font-size: 14px;
+        padding: 8px 20px;
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .empty-state-title {
+        color: #f3f4f6;
+    }
+
+    .empty-state-message {
+        color: #9ca3af;
+    }
+
+    .empty-state-icon {
+        color: #9ca3af;
+    }
+
+    .empty-state-no-results .empty-state-icon {
+        color: #60a5fa;
+    }
+
+    .empty-state-error .empty-state-icon {
+        color: #f87171;
+    }
+
+    .empty-state-success .empty-state-icon {
+        color: #34d399;
+    }
+
+    .empty-state-no-assignments .empty-state-icon {
+        color: #fbbf24;
+    }
+
+    .empty-state-no-lessons .empty-state-icon {
+        color: #a78bfa;
+    }
+}
+
+/* Animation variants */
+.empty-state-icon-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.empty-state-icon-bounce {
+    animation: bounce 1s infinite;
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-15px);
+    }
+}

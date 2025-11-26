@@ -8,6 +8,10 @@ import {
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import FlagLogo from './FlagLogo';
 import DarkModeToggle from './DarkModeToggle';
+import QuickSearch from './QuickSearch';
+import GlobalSearch from './GlobalSearch';
+import NotificationCenter from './NotificationCenter';
+import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
 import './Navbar.css';
 
 function AppNavbar() {
@@ -15,6 +19,7 @@ function AppNavbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
 
   // Handle scroll effect
   useEffect(() => {
@@ -29,6 +34,19 @@ function AppNavbar() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Register search keyboard shortcut
+  useEffect(() => {
+    if (isAuthenticated) {
+      registerShortcutHandler('search', () => {
+        setShowGlobalSearch(true);
+      });
+
+      return () => {
+        unregisterShortcutHandler('search');
+      };
+    }
+  }, [isAuthenticated]);
 
   // Determine dashboard route based on user role
   const getDashboardRoute = () => {
@@ -144,15 +162,18 @@ function AppNavbar() {
                 </NavDropdown>
               )}
 
+              {/* Search - placed before divider */}
+              {isAuthenticated && (
+                <QuickSearch onOpenGlobalSearch={() => setShowGlobalSearch(true)} />
+              )}
+
               <div className="vr mx-2 d-none d-lg-block opacity-25"></div>
 
               {/* Dark Mode Toggle */}
               <DarkModeToggle className="ms-2" />
 
               {/* Notifications */}
-              <Nav.Link href="#" className="nav-link-custom px-2">
-                <FaBell size={16} />
-              </Nav.Link>
+              <NotificationCenter />
 
               {/* Profile Dropdown */}
               <NavDropdown
@@ -201,6 +222,14 @@ function AppNavbar() {
           )}
         </Navbar.Collapse>
       </Container>
+
+      {/* Global Search Modal */}
+      {isAuthenticated && (
+        <GlobalSearch
+          show={showGlobalSearch}
+          onHide={() => setShowGlobalSearch(false)}
+        />
+      )}
     </Navbar>
   );
 }

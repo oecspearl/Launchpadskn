@@ -1,24 +1,32 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Container, Row, Col, Card, Button, Spinner, Alert,
+  Container, Row, Col, Card, Button, Alert,
   Badge, Tab, Tabs, ListGroup
 } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import {
   FaChalkboardTeacher, FaCalendarAlt, FaClock, FaUsers,
-  FaBook, FaClipboardList, FaMapMarkerAlt
+  FaBook, FaClipboardList, FaMapMarkerAlt, FaPlus, FaEdit, FaTasks
 } from 'react-icons/fa';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import { classService } from '../../services/classService';
 import { studentService } from '../../services/studentService';
 import Timetable from '../common/Timetable';
+import SkeletonLoader from '../common/SkeletonLoader';
+import EmptyState from '../common/EmptyState';
+import QuickActions from '../common/QuickActions';
+import KeyboardShortcutsModal from '../common/KeyboardShortcutsModal';
+import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
 import './TeacherDashboard.css';
 
 function TeacherDashboard() {
-  const { user } = useAuth();
+  const { user, lastLoginTime } = useAuth();
+  const { showSuccess } = useToast();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('overview');
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
 
   // Get teacher ID
   const teacherId = user?.user_id || user?.userId || user?.id;
@@ -123,6 +131,69 @@ function TeacherDashboard() {
     return timeStr.substring(0, 5);
   };
 
+  // Format last login time
+  const formatLastLogin = () => {
+    if (!lastLoginTime) return null;
+    const date = new Date(lastLoginTime);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
+  // Register keyboard shortcuts
+  useEffect(() => {
+    registerShortcutHandler('dashboard', () => {
+      navigate('/teacher');
+      showSuccess('Navigated to Dashboard');
+    });
+
+    registerShortcutHandler('lessons', () => {
+      setActiveTab('classes');
+      showSuccess('Viewing Classes');
+    });
+
+    registerShortcutHandler('help', () => {
+      setShowShortcutsModal(true);
+    });
+
+    return () => {
+      unregisterShortcutHandler('dashboard');
+      unregisterShortcutHandler('lessons');
+      unregisterShortcutHandler('help');
+    };
+  }, [navigate, showSuccess]);
+
+  // Quick actions configuration
+  const quickActions = [
+    {
+      icon: <FaPlus />,
+      label: 'Create Lesson',
+      onClick: () => navigate('/teacher/lessons/create'),
+      variant: 'primary'
+    },
+    {
+      icon: <FaEdit />,
+      label: 'Grade Work',
+      onClick: () => navigate('/teacher/grading'),
+      variant: 'success'
+    },
+    {
+      icon: <FaChalkboardTeacher />,
+      label: 'My Classes',
+      onClick: () => setActiveTab('classes'),
+      variant: 'secondary'
+    },
+    {
+      icon: <FaTasks />,
+      label: 'Assignments',
+      onClick: () => navigate('/teacher/assignments'),
+      variant: 'warning'
+    }
+  ];
+
   if (!isValidTeacherId) {
     return (
       <Container className="mt-4">
@@ -136,12 +207,7 @@ function TeacherDashboard() {
   if (isLoading) {
     return (
       <Container className="mt-4">
-        <div className="text-center py-5">
-          <Spinner animation="border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </Spinner>
-          <p className="mt-3 text-muted">Loading your dashboard...</p>
-        </div>
+        <SkeletonLoader variant="dashboard" />
       </Container>
     );
   }
@@ -152,9 +218,15 @@ function TeacherDashboard() {
       <Row className="teacher-dashboard-header mb-4">
         <Col>
           <h2>Welcome, {user?.name || 'Teacher'}!</h2>
-          <p className="text-muted">
+          <p className="text-muted mb-0">
             Manage your classes and lessons
           </p>
+          {formatLastLogin() && (
+            <p className="mb-0 opacity-50 small">
+              <FaClock className="me-1" />
+              Last login: {formatLastLogin()}
+            </p>
+          )}
         </Col>
       </Row>
 
@@ -176,9 +248,11 @@ function TeacherDashboard() {
                 </Card.Header>
                 <Card.Body>
                   {todayLessons.length === 0 ? (
-                    <div className="text-center py-4">
-                      <p className="text-muted mb-0">No lessons scheduled for today</p>
-                    </div>
+                    <EmptyState
+                      variant="no-lessons"
+                      title="No Lessons Today"
+                      message="No classes scheduled for today. Enjoy your break!"
+                    />
                   ) : (
                     <ListGroup variant="flush">
                       {todayLessons.map((lesson, index) => {
@@ -430,6 +504,12 @@ function TeacherDashboard() {
           </Row>
         </Tab>
       </Tabs>
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        show={showShortcutsModal}
+        onHide={() => setShowShortcutsModal(false)}
+      />
     </Container>
   );
 }
