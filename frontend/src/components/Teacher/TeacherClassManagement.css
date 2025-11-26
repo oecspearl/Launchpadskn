@@ -1,40 +1,277 @@
-/* Teacher Class Management Styles */
+/* Teacher Class Management - Professional Styling */
+@import './teacher-common.css';
 
+/* Page Container */
 .teacher-class-management {
-  padding: 20px 0;
+  background: #f8f9fa;
+  min-height: 100vh;
+  padding: 2rem 0;
 }
 
-.teacher-class-management .card {
-  transition: transform 0.2s, box-shadow 0.2s;
+/* Header Section */
+.class-header {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.teacher-class-management .card:hover {
+.class-header h2 {
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+}
+
+.class-header p {
+  opacity: 0.9;
+  margin: 0;
+}
+
+/* Student List */
+.student-list-container {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+}
+
+.student-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.student-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateX(4px);
+}
+
+.student-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.student-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #2563eb 0%, #8b5cf6 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.student-details h6 {
+  margin: 0 0 0.25rem 0;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.student-details small {
+  color: #6b7280;
+}
+
+/* Search and Filter */
+.search-filter-bar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+}
+
+.search-input-wrapper input {
+  padding-left: 2.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  width: 100%;
+  padding: 0.75rem 1rem 0.75rem 2.5rem;
+  transition: all 0.3s ease;
+}
+
+.search-input-wrapper input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+  outline: none;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* Attendance View */
+.attendance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.attendance-day {
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.attendance-day:hover {
+  border-color: #2563eb;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.teacher-class-management .badge {
-  padding: 8px 12px;
-  font-size: 0.9rem;
+.attendance-day.present {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: #10b981;
 }
 
-.teacher-class-management .table {
-  margin-bottom: 0;
+.attendance-day.absent {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: #ef4444;
 }
 
-.teacher-class-management .list-group-item {
-  border-left: none;
-  border-right: none;
-  padding: 1rem 0;
+.attendance-day .date {
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
 }
 
-.teacher-class-management .list-group-item:first-child {
-  border-top: none;
-  padding-top: 0.5rem;
+.attendance-day .status {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
-.teacher-class-management .list-group-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0.5rem;
+/* Action Buttons */
+.class-action-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
+.class-action-buttons .btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+/* Tabs */
+.class-tabs {
+  border-bottom: 2px solid #e5e7eb;
+  margin-bottom: 2rem;
+}
+
+.class-tabs .nav-link {
+  color: #6b7280;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.class-tabs .nav-link:hover {
+  color: #2563eb;
+  border-bottom-color: #93c5fd;
+}
+
+.class-tabs .nav-link.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+/* Stats Cards */
+.class-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card-small {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card-small:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card-small .stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 0.25rem;
+}
+
+.stat-card-small .stat-label {
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .class-header {
+    padding: 1.5rem;
+  }
+
+  .search-filter-bar {
+    flex-direction: column;
+  }
+
+  .search-input-wrapper {
+    width: 100%;
+  }
+
+  .student-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .class-action-buttons {
+    width: 100%;
+  }
+
+  .class-action-buttons .btn {
+    flex: 1;
+  }
+
+  .attendance-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  }
+}

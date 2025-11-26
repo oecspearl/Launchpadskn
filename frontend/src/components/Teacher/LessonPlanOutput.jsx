@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Card, Tab, Tabs, Button, Form, Alert, Badge
 } from 'react-bootstrap';
-import { 
+import {
   FaEye, FaEdit, FaInfoCircle, FaCopy, FaDownload, FaSave
 } from 'react-icons/fa';
+import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
 
 function LessonPlanOutput({ onSaveLesson }) {
   const [activeTab, setActiveTab] = useState('preview');
@@ -21,7 +22,7 @@ function LessonPlanOutput({ onSaveLesson }) {
   // Helper function to format structured lesson plan object into readable text
   const formatStructuredLessonPlan = (planObj) => {
     let formatted = '';
-    
+
     // Format Lesson Header
     if (planObj.lesson_header || planObj.LESSON_HEADER) {
       const header = planObj.lesson_header || planObj.LESSON_HEADER;
@@ -41,7 +42,7 @@ function LessonPlanOutput({ onSaveLesson }) {
       }
       formatted += '\n';
     }
-    
+
     // Format Objectives Table
     if (planObj.objectives_table || planObj.OBJECTIVES_TABLE) {
       const objectives = planObj.objectives_table || planObj.OBJECTIVES_TABLE;
@@ -65,7 +66,7 @@ function LessonPlanOutput({ onSaveLesson }) {
       }
       formatted += '\n';
     }
-    
+
     // Format Lesson Components
     if (planObj.lesson_components || planObj.LESSON_COMPONENTS || planObj['3. LESSON COMPONENTS']) {
       const components = planObj.lesson_components || planObj.LESSON_COMPONENTS || planObj['3. LESSON COMPONENTS'];
@@ -88,7 +89,7 @@ function LessonPlanOutput({ onSaveLesson }) {
           'Closure',
           'closure'
         ];
-        
+
         componentOrder.forEach(key => {
           const component = components[key];
           if (component) {
@@ -98,135 +99,135 @@ function LessonPlanOutput({ onSaveLesson }) {
             } else {
               if (component.timing) formatted += `  ⏱️ Timing: ${component.timing}\n\n`;
               if (component.description) formatted += `  📝 Description: ${component.description}\n\n`;
-              
+
               // Enhanced teacher instructions
               if (component.teacher_instructions) {
                 formatted += `  👨‍🏫 TEACHER INSTRUCTIONS:\n`;
                 formatted += `  ${component.teacher_instructions.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Teacher dialogue/script
               if (component.teacher_dialogue) {
                 formatted += `  💬 TEACHER DIALOGUE/SCRIPT:\n`;
                 formatted += `  "${component.teacher_dialogue}"\n\n`;
               }
-              
+
               // Student-level explanation
               if (component.student_explanation) {
                 formatted += `  📚 STUDENT-LEVEL EXPLANATION:\n`;
                 formatted += `  ${component.student_explanation.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Student actions
               if (component.student_actions) {
                 formatted += `  ✋ STUDENT ACTIONS:\n`;
                 formatted += `  ${component.student_actions.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Expected responses
               if (component.expected_responses) {
                 formatted += `  💭 EXPECTED STUDENT RESPONSES:\n`;
                 formatted += `  ${component.expected_responses.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Connection to prior knowledge
               if (component.connection_to_prior_knowledge) {
                 formatted += `  🔗 CONNECTION TO PRIOR KNOWLEDGE:\n`;
                 formatted += `  ${component.connection_to_prior_knowledge.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Concept Development sub-activities
               if (component.sub_activities && Array.isArray(component.sub_activities)) {
                 formatted += `  📖 SUB-ACTIVITIES:\n\n`;
                 component.sub_activities.forEach((subActivity, idx) => {
                   formatted += `    Activity ${idx + 1}: ${subActivity.name || `Activity ${idx + 1}`}\n`;
                   if (subActivity.timing) formatted += `    ⏱️ Timing: ${subActivity.timing}\n\n`;
-                  
+
                   if (subActivity.teacher_instructions) {
                     formatted += `    👨‍🏫 Teacher Instructions:\n`;
                     formatted += `    ${subActivity.teacher_instructions.split('\n').join('\n    ')}\n\n`;
                   }
-                  
+
                   if (subActivity.teacher_dialogue) {
                     formatted += `    💬 Teacher Dialogue:\n`;
                     formatted += `    "${subActivity.teacher_dialogue}"\n\n`;
                   }
-                  
+
                   if (subActivity.student_explanation) {
                     formatted += `    📚 Student-Level Explanation:\n`;
                     formatted += `    ${subActivity.student_explanation.split('\n').join('\n    ')}\n\n`;
                   }
-                  
+
                   if (subActivity.examples) {
                     formatted += `    📝 Examples:\n`;
                     formatted += `    ${subActivity.examples.split('\n').join('\n    ')}\n\n`;
                   }
-                  
+
                   if (subActivity.student_actions) {
                     formatted += `    ✋ Student Actions:\n`;
                     formatted += `    ${subActivity.student_actions.split('\n').join('\n    ')}\n\n`;
                   }
-                  
+
                   if (subActivity.practice_exercises) {
                     formatted += `    ✏️ Practice Exercises:\n`;
                     formatted += `    ${subActivity.practice_exercises.split('\n').join('\n    ')}\n\n`;
                   }
-                  
+
                   if (subActivity.common_misconceptions) {
                     formatted += `    ⚠️ Common Misconceptions:\n`;
                     formatted += `    ${subActivity.common_misconceptions.split('\n').join('\n    ')}\n\n`;
                   }
-                  
+
                   if (subActivity.formative_checkpoint) {
                     formatted += `    ✅ Formative Checkpoint:\n`;
                     formatted += `    ${subActivity.formative_checkpoint.split('\n').join('\n    ')}\n\n`;
                   }
-                  
+
                   if (subActivity.learning_style_integration) {
                     formatted += `    🎯 Learning Style Integration:\n`;
                     formatted += `    ${subActivity.learning_style_integration.split('\n').join('\n    ')}\n\n`;
                   }
-                  
+
                   formatted += `    ${'─'.repeat(50)}\n\n`;
                 });
               }
-              
+
               // Transitions
               if (component.transitions) {
                 formatted += `  🔄 TRANSITIONS:\n`;
                 formatted += `  ${component.transitions.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Reflection questions
               if (component.reflection_questions) {
                 formatted += `  🤔 REFLECTION QUESTIONS:\n`;
                 formatted += `  ${component.reflection_questions.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Sharing process
               if (component.sharing_process) {
                 formatted += `  💬 SHARING PROCESS:\n`;
                 formatted += `  ${component.sharing_process.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Student language guide
               if (component.student_language_guide) {
                 formatted += `  📝 STUDENT LANGUAGE GUIDE:\n`;
                 formatted += `  ${component.student_language_guide.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Addressing questions
               if (component.addressing_questions) {
                 formatted += `  ❓ ADDRESSING QUESTIONS:\n`;
                 formatted += `  ${component.addressing_questions.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Connection to next lesson
               if (component.connection_to_next_lesson) {
                 formatted += `  🔗 CONNECTION TO NEXT LESSON:\n`;
                 formatted += `  ${component.connection_to_next_lesson.split('\n').join('\n  ')}\n\n`;
               }
-              
+
               // Legacy support for activities array
               if (component.activities) {
                 formatted += `  Activities:\n`;
@@ -241,7 +242,7 @@ function LessonPlanOutput({ onSaveLesson }) {
             }
           }
         });
-        
+
         // If no standard keys found, iterate through all keys
         if (!componentOrder.some(key => components[key])) {
           Object.keys(components).forEach(key => {
@@ -260,7 +261,7 @@ function LessonPlanOutput({ onSaveLesson }) {
       }
       formatted += '\n';
     }
-    
+
     // Format Assessment
     if (planObj.assessment || planObj.ASSESSMENT || planObj['4. ASSESSMENT']) {
       const assessment = planObj.assessment || planObj.ASSESSMENT || planObj['4. ASSESSMENT'];
@@ -277,26 +278,26 @@ function LessonPlanOutput({ onSaveLesson }) {
           const formative = assessment['Formative Assessment'] || assessment.formative_assessment;
           formatted += `📊 FORMATIVE ASSESSMENT:\n${formative}\n\n`;
         }
-        
+
         if (assessment.assessment_activities) {
           formatted += `📝 ASSESSMENT ACTIVITIES:\n${assessment.assessment_activities}\n\n`;
         } else if (assessment['Assessment Activities']) {
           formatted += `📝 ASSESSMENT ACTIVITIES:\n${assessment['Assessment Activities']}\n\n`;
         }
-        
+
         if (assessment.assessment_tools) {
           formatted += `🛠️ ASSESSMENT TOOLS:\n${assessment.assessment_tools}\n\n`;
         } else if (assessment['Assessment Tools']) {
           formatted += `🛠️ ASSESSMENT TOOLS:\n${assessment['Assessment Tools']}\n\n`;
         }
-        
+
         if (assessment.checkpoint_questions) {
           formatted += `✅ CHECKPOINT QUESTIONS:\n${assessment.checkpoint_questions}\n\n`;
         }
         Object.keys(assessment).forEach(key => {
-          if (!['Formative Assessment', 'formative_assessment', 'formative_strategies', 
-                'Assessment Activities', 'assessment_activities',
-                'Assessment Tools', 'assessment_tools'].includes(key)) {
+          if (!['Formative Assessment', 'formative_assessment', 'formative_strategies',
+            'Assessment Activities', 'assessment_activities',
+            'Assessment Tools', 'assessment_tools'].includes(key)) {
             const formattedKey = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
             formatted += `${formattedKey}: ${assessment[key]}\n`;
           }
@@ -304,7 +305,7 @@ function LessonPlanOutput({ onSaveLesson }) {
       }
       formatted += '\n';
     }
-    
+
     // Format Resources
     if (planObj.resources || planObj.RESOURCES || planObj['5. RESOURCES']) {
       const resources = planObj.resources || planObj.RESOURCES || planObj['5. RESOURCES'];
@@ -325,7 +326,7 @@ function LessonPlanOutput({ onSaveLesson }) {
       }
       formatted += '\n';
     }
-    
+
     // Format Student Content (if present)
     if (planObj.student_content) {
       formatted += '═══════════════════════════════════════════════════════\n';
@@ -333,7 +334,7 @@ function LessonPlanOutput({ onSaveLesson }) {
       formatted += '═══════════════════════════════════════════════════════\n';
       formatted += `${planObj.student_content}\n\n`;
     }
-    
+
     return formatted.trim() || JSON.stringify(planObj, null, 2);
   };
 
@@ -351,10 +352,10 @@ function LessonPlanOutput({ onSaveLesson }) {
     // Listen for lesson plan generation event
     const handleLessonPlanGenerated = (event) => {
       const { lessonPlan: content, lessonTitle, subject, form, topic, metadata: meta } = event.detail;
-      
+
       // Convert to string if it's an object
       const contentString = lessonPlanToString(content);
-      
+
       setLessonPlan(contentString);
       setEditedContent(contentString);
       setMetadata({
@@ -493,17 +494,8 @@ function LessonPlanOutput({ onSaveLesson }) {
               Preview
             </span>
           }>
-            <div 
-              className="mt-3 p-3 border rounded"
-              style={{ 
-                maxHeight: '600px', 
-                overflowY: 'auto',
-                whiteSpace: 'pre-wrap',
-                fontFamily: 'monospace',
-                fontSize: '0.9rem'
-              }}
-            >
-              {editedContent || lessonPlan}
+            <div className="mt-3">
+              <StructuredLessonPlanDisplay lessonPlanText={editedContent || lessonPlan} />
             </div>
           </Tab>
 

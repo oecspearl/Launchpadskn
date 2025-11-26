@@ -24,6 +24,7 @@ import InteractiveBookCreator from './InteractiveBookCreator';
 import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
+import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
 
 // Ensure html2pdf is available globally for compatibility
 if (typeof window !== 'undefined' && !window.html2pdf) {
@@ -1774,9 +1775,7 @@ function LessonContentManager() {
             </Card.Header>
             <Card.Body style={{ maxHeight: 'calc(100vh - 280px)', overflowY: 'auto' }}>
               {lessonData?.lesson_plan ? (
-                <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.8' }}>
-                  {lessonData.lesson_plan}
-                </div>
+                <StructuredLessonPlanDisplay lessonPlanText={lessonData.lesson_plan} />
               ) : (
                 <div className="text-center py-4">
                   <p className="text-muted mb-0">No lesson plan available</p>

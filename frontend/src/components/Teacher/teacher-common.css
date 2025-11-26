@@ -1,0 +1,442 @@
+/* ===== Teacher Common Styles - Shared across all teacher pages ===== */
+
+/* Import this in all teacher components for consistent styling */
+
+/* Typography */
+.teacher-page-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: var(--teacher-text, #1f2937);
+    margin-bottom: 0.5rem;
+}
+
+.teacher-page-subtitle {
+    font-size: 1.1rem;
+    color: var(--teacher-text-muted, #6b7280);
+    margin-bottom: 2rem;
+}
+
+.teacher-section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--teacher-text, #1f2937);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.teacher-section-title svg {
+    color: var(--teacher-primary, #2563eb);
+}
+
+/* Professional Buttons */
+.btn-teacher-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+}
+
+.btn-teacher-primary:hover {
+    background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+    color: white;
+}
+
+.btn-teacher-secondary {
+    background: #f3f4f6;
+    border: 1px solid #e5e7eb;
+    color: #1f2937;
+    font-weight: 600;
+    padding: 0.625rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-teacher-secondary:hover {
+    background: #e5e7eb;
+    border-color: #d1d5db;
+    transform: translateY(-1px);
+}
+
+.btn-teacher-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+}
+
+.btn-teacher-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    color: white;
+}
+
+.btn-teacher-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    border: none;
+    color: white;
+    font-weight: 600;
+    padding: 0.625rem 1.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.2);
+}
+
+.btn-teacher-danger:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.3);
+    color: white;
+}
+
+/* Icon Buttons */
+.btn-icon {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.btn-icon:hover {
+    transform: scale(1.1);
+}
+
+/* Form Controls */
+.teacher-form-control {
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.teacher-form-control:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    outline: none;
+}
+
+.teacher-form-label {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Professional Cards */
+.teacher-card {
+    background: white;
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.teacher-card:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: translateY(-2px);
+}
+
+.teacher-card-header {
+    background: white;
+    border-bottom: 2px solid #f3f4f6;
+    padding: 1.5rem;
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+.teacher-card-body {
+    padding: 1.5rem;
+}
+
+/* Content Type Icons */
+.content-type-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    transition: all 0.3s ease;
+}
+
+.content-type-icon.type-file {
+    background: rgba(37, 99, 235, 0.1);
+    color: #2563eb;
+}
+
+.content-type-icon.type-video {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.content-type-icon.type-link {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.content-type-icon.type-image {
+    background: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+}
+
+.content-type-icon.type-quiz {
+    background: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+}
+
+.content-type-icon.type-assignment {
+    background: rgba(6, 182, 212, 0.1);
+    color: #06b6d4;
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.375rem 0.875rem;
+    border-radius: 100px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.status-published {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+.status-badge.status-draft {
+    background: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+}
+
+.status-badge.status-required {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.status-badge.status-optional {
+    background: rgba(37, 99, 235, 0.1);
+    color: #1e40af;
+}
+
+/* Action Button Groups */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.action-buttons .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+}
+
+/* Tables */
+.teacher-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.teacher-table thead th {
+    background: #f9fafb;
+    color: #374151;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    padding: 1rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+.teacher-table tbody td {
+    padding: 1rem;
+    border-bottom: 1px solid #f3f4f6;
+    color: #1f2937;
+}
+
+.teacher-table tbody tr:hover {
+    background: #f9fafb;
+}
+
+/* Modals */
+.teacher-modal .modal-content {
+    border: none;
+    border-radius: 16px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.teacher-modal .modal-header {
+    border-bottom: 2px solid #f3f4f6;
+    padding: 1.5rem;
+}
+
+.teacher-modal .modal-title {
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #1f2937;
+}
+
+.teacher-modal .modal-body {
+    padding: 1.5rem;
+}
+
+.teacher-modal .modal-footer {
+    border-top: 2px solid #f3f4f6;
+    padding: 1.5rem;
+}
+
+/* Loading States */
+.teacher-spinner {
+    color: #2563eb;
+    width: 3rem;
+    height: 3rem;
+}
+
+.teacher-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* Alerts */
+.teacher-alert {
+    border: none;
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.teacher-alert.alert-success {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border-left: 4px solid #10b981;
+}
+
+.teacher-alert.alert-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+    border-left: 4px solid #ef4444;
+}
+
+.teacher-alert.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+    border-left: 4px solid #f59e0b;
+}
+
+.teacher-alert.alert-info {
+    background: rgba(37, 99, 235, 0.1);
+    color: #1e40af;
+    border-left: 4px solid #2563eb;
+}
+
+/* Drag and Drop */
+.drag-handle {
+    cursor: grab;
+    color: #9ca3af;
+    transition: color 0.3s ease;
+}
+
+.drag-handle:hover {
+    color: #2563eb;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.dragging {
+    opacity: 0.5;
+    transform: rotate(2deg);
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-slide-in {
+    animation: slideIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive Utilities */
+@media (max-width: 768px) {
+    .teacher-page-title {
+        font-size: 1.5rem;
+    }
+
+    .teacher-section-title {
+        font-size: 1.25rem;
+    }
+
+    .teacher-card-header,
+    .teacher-card-body {
+        padding: 1rem;
+    }
+
+    .action-buttons {
+        flex-direction: column;
+        width: 100%;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+}

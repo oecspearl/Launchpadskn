@@ -147,9 +147,9 @@ function TeacherDashboard() {
   }
 
   return (
-    <Container className="mt-4">
+    <Container className="teacher-dashboard-container mt-4">
       {/* Header */}
-      <Row className="mb-4 pt-5">
+      <Row className="teacher-dashboard-header mb-4">
         <Col>
           <h2>Welcome, {user?.name || 'Teacher'}!</h2>
           <p className="text-muted">
@@ -185,7 +185,7 @@ function TeacherDashboard() {
                         const subjectName = lesson.class_subject?.subject_offering?.subject?.subject_name || 'Lesson';
                         const className = lesson.class_subject?.class?.class_name || '';
                         return (
-                          <ListGroup.Item key={index} className="border-0 px-0 py-3">
+                          <ListGroup.Item key={index} className="lesson-item border-0 px-0 py-3">
                             <div className="d-flex justify-content-between align-items-start">
                               <div className="flex-grow-1">
                                 <h6 className="mb-1">{subjectName}</h6>
@@ -232,7 +232,7 @@ function TeacherDashboard() {
             <Col md={4}>
               <Row className="g-3">
                 <Col xs={12}>
-                  <Card className="border-0 shadow-sm bg-primary text-white">
+                  <Card className="stat-card stat-primary">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
@@ -246,7 +246,7 @@ function TeacherDashboard() {
                 </Col>
 
                 <Col xs={12}>
-                  <Card className="border-0 shadow-sm bg-success text-white">
+                  <Card className="stat-card stat-success">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
@@ -260,7 +260,7 @@ function TeacherDashboard() {
                 </Col>
 
                 <Col xs={12}>
-                  <Card className="border-0 shadow-sm bg-warning text-white">
+                  <Card className="stat-card stat-warning">
                     <Card.Body>
                       <div className="d-flex justify-content-between align-items-center">
                         <div>
@@ -304,7 +304,7 @@ function TeacherDashboard() {
 
                         return (
                           <Col md={4} key={index}>
-                            <Card className="h-100 border">
+                            <Card className="class-card h-100">
                               <Card.Body>
                                 <h6 className="mb-2">{formName} - {className}</h6>
                                 <small className="text-muted">
@@ -349,7 +349,7 @@ function TeacherDashboard() {
                         const dueDate = new Date(assessment.due_date);
                         const daysLeft = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
                         return (
-                          <ListGroup.Item key={index} className="border-0 px-0 py-3">
+                          <ListGroup.Item key={index} className="assessment-item border-0 px-0 py-3">
                             <div className="d-flex justify-content-between align-items-start">
                               <div>
                                 <h6 className="mb-1">{assessment.assessment_name}</h6>
