@@ -32,7 +32,7 @@ function InteractiveBookPlayer({
   onComplete,
   onClose
 }: InteractiveBookPlayerProps) {
-  const { user } = useAuth();
+  const { user } = useAuth() as any;
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [viewedPages, setViewedPages] = useState<Set<number>>(new Set([0]));
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -288,7 +288,7 @@ function InteractiveBookPlayer({
               <h5 className="mb-0">{currentPage.title}</h5>
               {isMobile && (
                 <Form.Select
-                  value={currentPageIndex}
+                  value={currentPageIndex.toString()}
                   onChange={(e) => goToPage(parseInt(e.target.value))}
                   style={{ maxWidth: '200px' }}
                 >
@@ -325,7 +325,7 @@ function InteractiveBookPlayer({
               {/* Embedded Content */}
               {currentPage.embeddedContentId && (
                 <EmbeddedContentRenderer
-                  contentId={currentPage.embeddedContentId}
+                  contentId={parseInt(currentPage.embeddedContentId)}
                   page={currentPage}
                 />
               )}

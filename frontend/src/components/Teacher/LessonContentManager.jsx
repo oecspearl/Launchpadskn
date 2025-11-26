@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import {
   Container, Row, Col, Card, Button, Spinner, Alert,
   Form, Modal, ListGroup, Badge
@@ -1274,59 +1275,80 @@ function LessonContentManager() {
     }
   };
 
-  const handleMoveUp = async (contentId) => {
-    const currentIndex = content.findIndex(c => c.content_id === contentId);
-    if (currentIndex <= 0) return;
+  const onDragEnd = async (result) => {
+    const { source, destination } = result;
 
-    const currentItem = content[currentIndex];
-    const previousItem = content[currentIndex - 1];
-
-    try {
-      // Swap sequence orders
-      const { error: error1 } = await supabase
-        .from('lesson_content')
-        .update({ sequence_order: previousItem.sequence_order || currentIndex })
-        .eq('content_id', currentItem.content_id);
-
-      const { error: error2 } = await supabase
-        .from('lesson_content')
-        .update({ sequence_order: currentItem.sequence_order || currentIndex + 1 })
-        .eq('content_id', previousItem.content_id);
-
-      if (error1 || error2) throw error1 || error2;
-
-      fetchContent();
-    } catch (err) {
-      console.error('Error moving content:', err);
-      setError('Failed to reorder content');
+    // Dropped outside the list
+    if (!destination) {
+      return;
     }
-  };
 
-  const handleMoveDown = async (contentId) => {
-    const currentIndex = content.findIndex(c => c.content_id === contentId);
-    if (currentIndex >= content.length - 1) return;
+    // Dropped in the same position
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
 
-    const currentItem = content[currentIndex];
-    const nextItem = content[currentIndex + 1];
+    // Create a copy of the current content grouped by section
+    const sections = groupContentBySection();
+    const sourceSectionId = source.droppableId;
+    const destSectionId = destination.droppableId;
+
+    const sourceList = [...(sections[sourceSectionId] || [])];
+    const destList = sourceSectionId === destSectionId
+      ? sourceList
+      : [...(sections[destSectionId] || [])];
+
+    // Remove from source
+    const [removed] = sourceList.splice(source.index, 1);
+
+    // If moving to a different section, update the content_section
+    if (sourceSectionId !== destSectionId) {
+      removed.content_section = destSectionId;
+    }
+
+    // Add to destination
+    destList.splice(destination.index, 0, removed);
+
+    // Update sections object
+    sections[sourceSectionId] = sourceList;
+    if (sourceSectionId !== destSectionId) {
+      sections[destSectionId] = destList;
+    }
+
+    // Flatten to create new content array
+    const newContent = [];
+    Object.entries(sections).forEach(([_, sectionItems]) => {
+      newContent.push(...sectionItems);
+    });
+
+    // Update sequence_order for all items
+    const updatedContent = newContent.map((item, index) => ({
+      ...item,
+      sequence_order: index + 1
+    }));
+
+    // Optimistic update
+    setContent(updatedContent);
 
     try {
-      // Swap sequence orders
-      const { error: error1 } = await supabase
+      // Prepare updates for Supabase
+      const updates = updatedContent.map(item => ({
+        ...item,
+        updated_at: new Date().toISOString()
+      }));
+
+      const { error } = await supabase
         .from('lesson_content')
-        .update({ sequence_order: nextItem.sequence_order || currentIndex + 2 })
-        .eq('content_id', currentItem.content_id);
+        .upsert(updates, { onConflict: 'content_id' });
 
-      const { error: error2 } = await supabase
-        .from('lesson_content')
-        .update({ sequence_order: currentItem.sequence_order || currentIndex + 1 })
-        .eq('content_id', nextItem.content_id);
-
-      if (error1 || error2) throw error1 || error2;
-
-      fetchContent();
+      if (error) throw error;
     } catch (err) {
-      console.error('Error moving content:', err);
-      setError('Failed to reorder content');
+      console.error('Error reordering content:', err);
+      setError('Failed to save new order');
+      fetchContent(); // Revert on error
     }
   };
 
@@ -1780,337 +1802,344 @@ function LessonContentManager() {
             </Card>
           ) : (
             <>
-              {Object.entries(groupContentBySection()).map(([sectionName, sectionContent]) => (
-                <Card key={sectionName} className="border-0 shadow-sm mb-4">
-                  <Card.Header className="bg-light border-0 py-3">
-                    <h5 className="mb-0">
-                      <FaBook className="me-2" />
-                      {sectionName} ({sectionContent.length})
-                    </h5>
-                  </Card.Header>
-                  <Card.Body>
-                    <Row className="g-3">
-                      {sectionContent.map((item, index) => {
-                        const isVideo = item.content_type === 'VIDEO' ||
-                          (item.url && (item.url.includes('youtube.com') || item.url.includes('youtu.be')));
-                        const isImage = item.content_type === 'IMAGE' ||
-                          (item.mime_type && item.mime_type.startsWith('image/'));
+              <DragDropContext onDragEnd={onDragEnd}>
+                {Object.entries(groupContentBySection()).map(([sectionName, sectionContent]) => (
+                  <Card key={sectionName} className="border-0 shadow-sm mb-4">
+                    <Card.Header className="bg-light border-0 py-3">
+                      <h5 className="mb-0">
+                        <FaBook className="me-2" />
+                        {sectionName} ({sectionContent.length})
+                      </h5>
+                    </Card.Header>
+                    <Droppable droppableId={sectionName}>
+                      {(provided) => (
+                        <Card.Body
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                        >
+                          <Row className="g-3">
+                            {sectionContent.map((item, index) => {
+                              const isVideo = item.content_type === 'VIDEO' ||
+                                (item.url && (item.url.includes('youtube.com') || item.url.includes('youtu.be')));
+                              const isImage = item.content_type === 'IMAGE' ||
+                                (item.mime_type && item.mime_type.startsWith('image/'));
 
-                        return (
-                          <Col md={12} key={item.content_id}>
-                            <Card className="h-100 border mb-3">
-                              <Card.Body>
-                                <div className="d-flex align-items-start">
-                                  {/* Sequence Number and Reorder Controls */}
-                                  <div className="d-flex flex-column align-items-center me-3" style={{ minWidth: '60px' }}>
-                                    <Badge bg="primary" className="mb-2" style={{ fontSize: '1rem', padding: '0.5rem' }}>
-                                      {item.sequence_order || index + 1}
-                                    </Badge>
-                                    <div className="d-flex flex-column gap-1">
-                                      <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        onClick={() => handleMoveUp(item.content_id)}
-                                        disabled={index === 0}
-                                        style={{ padding: '0.25rem 0.5rem' }}
-                                      >
-                                        <FaArrowUp />
-                                      </Button>
-                                      <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        onClick={() => handleMoveDown(item.content_id)}
-                                        disabled={index === sectionContent.length - 1}
-                                        style={{ padding: '0.25rem 0.5rem' }}
-                                      >
-                                        <FaArrowDown />
-                                      </Button>
-                                    </div>
-                                  </div>
+                              return (
+                                <Draggable
+                                  key={item.content_id}
+                                  draggableId={String(item.content_id)}
+                                  index={index}
+                                >
+                                  {(provided) => (
+                                    <Col
+                                      md={12}
+                                      ref={provided.innerRef}
+                                      {...provided.draggableProps}
+                                    >
+                                      <Card className="h-100 border mb-3">
+                                        <Card.Body>
+                                          <div className="d-flex align-items-start">
+                                            {/* Drag Handle and Sequence */}
+                                            <div
+                                              className="d-flex flex-column align-items-center me-3 pt-2"
+                                              style={{ minWidth: '40px', cursor: 'grab' }}
+                                              {...provided.dragHandleProps}
+                                            >
+                                              <FaGripVertical size={24} className="text-secondary mb-2" />
+                                              <Badge bg="light" text="dark" className="border" style={{ fontSize: '0.9rem' }}>
+                                                {index + 1}
+                                              </Badge>
+                                            </div>
 
-                                  {/* Content Details */}
-                                  <div className="flex-grow-1">
-                                    <div className="d-flex justify-content-between align-items-start mb-2">
-                                      <div className="flex-grow-1">
-                                        <div className="d-flex align-items-center mb-2 flex-wrap">
-                                          {getContentIcon(item.content_type)}
-                                          <h6 className="mb-0 me-2">{item.title}</h6>
-                                          <Badge bg="secondary" className="me-2">{item.content_type}</Badge>
-                                          {item.is_required === false ? (
-                                            <Badge bg="info" className="me-2">Optional</Badge>
-                                          ) : (
-                                            <Badge bg="success" className="me-2">
-                                              <FaCheckCircle className="me-1" />
-                                              Required
-                                            </Badge>
-                                          )}
-                                        </div>
+                                            {/* Content Details */}
+                                            <div className="flex-grow-1">
+                                              <div className="d-flex justify-content-between align-items-start mb-2">
+                                                <div className="flex-grow-1">
+                                                  <div className="d-flex align-items-center mb-2 flex-wrap">
+                                                    {getContentIcon(item.content_type)}
+                                                    <h6 className="mb-0 me-2">{item.title}</h6>
+                                                    <Badge bg="secondary" className="me-2">{item.content_type}</Badge>
+                                                    {item.is_required === false ? (
+                                                      <Badge bg="info" className="me-2">Optional</Badge>
+                                                    ) : (
+                                                      <Badge bg="success" className="me-2">
+                                                        <FaCheckCircle className="me-1" />
+                                                        Required
+                                                      </Badge>
+                                                    )}
+                                                  </div>
 
-                                        {/* Description */}
-                                        {item.description && (
-                                          <p className="text-muted mb-2">{item.description}</p>
-                                        )}
+                                                  {/* Description */}
+                                                  {item.description && (
+                                                    <p className="text-muted mb-2">{item.description}</p>
+                                                  )}
 
-                                        {/* Instructions */}
-                                        {item.instructions && (
-                                          <div className="alert alert-info py-2 px-3 mb-2" style={{ fontSize: '0.9rem' }}>
-                                            <FaInfoCircle className="me-2" />
-                                            <strong>Instructions:</strong> {item.instructions}
-                                          </div>
-                                        )}
+                                                  {/* Instructions */}
+                                                  {item.instructions && (
+                                                    <div className="alert alert-info py-2 px-3 mb-2" style={{ fontSize: '0.9rem' }}>
+                                                      <FaInfoCircle className="me-2" />
+                                                      <strong>Instructions:</strong> {item.instructions}
+                                                    </div>
+                                                  )}
 
-                                        {/* Content Text for Text-Only Content Types */}
-                                        {['LEARNING_OUTCOMES', 'LEARNING_ACTIVITIES', 'KEY_CONCEPTS',
-                                          'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(item.content_type) && (
-                                            <div className="mb-3 p-3 bg-light rounded border">
-                                              <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
-                                                {item.content_type === 'LEARNING_OUTCOMES' && item.learning_outcomes}
-                                                {item.content_type === 'LEARNING_ACTIVITIES' && item.learning_activities}
-                                                {item.content_type === 'KEY_CONCEPTS' && item.key_concepts}
-                                                {item.content_type === 'REFLECTION_QUESTIONS' && item.reflection_questions}
-                                                {item.content_type === 'DISCUSSION_PROMPTS' && item.discussion_prompts}
-                                                {item.content_type === 'SUMMARY' && item.summary}
+                                                  {/* Content Text for Text-Only Content Types */}
+                                                  {['LEARNING_OUTCOMES', 'LEARNING_ACTIVITIES', 'KEY_CONCEPTS',
+                                                    'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(item.content_type) && (
+                                                      <div className="mb-3 p-3 bg-light rounded border">
+                                                        <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem', lineHeight: '1.6' }}>
+                                                          {item.content_type === 'LEARNING_OUTCOMES' && item.learning_outcomes}
+                                                          {item.content_type === 'LEARNING_ACTIVITIES' && item.learning_activities}
+                                                          {item.content_type === 'KEY_CONCEPTS' && item.key_concepts}
+                                                          {item.content_type === 'REFLECTION_QUESTIONS' && item.reflection_questions}
+                                                          {item.content_type === 'DISCUSSION_PROMPTS' && item.discussion_prompts}
+                                                          {item.content_type === 'SUMMARY' && item.summary}
+                                                        </div>
+                                                      </div>
+                                                    )}
+
+                                                  {/* Learning Outcomes (for non-text-only content types) */}
+                                                  {!['LEARNING_OUTCOMES', 'LEARNING_ACTIVITIES', 'KEY_CONCEPTS',
+                                                    'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(item.content_type) &&
+                                                    item.learning_outcomes && (
+                                                      <div className="mb-3">
+                                                        <h6 className="text-primary mb-2">
+                                                          <FaCheckCircle className="me-2" />
+                                                          Learning Outcomes
+                                                        </h6>
+                                                        <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem' }}>
+                                                          {item.learning_outcomes}
+                                                        </div>
+                                                      </div>
+                                                    )}
+
+                                                  {/* Learning Activities */}
+                                                  {item.learning_activities && (
+                                                    <div className="mb-3">
+                                                      <h6 className="text-success mb-2">
+                                                        <FaBook className="me-2" />
+                                                        Learning Activities
+                                                      </h6>
+                                                      <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem' }}>
+                                                        {item.learning_activities}
+                                                      </div>
+                                                    </div>
+                                                  )}
+
+                                                  {/* Key Concepts */}
+                                                  {item.key_concepts && (
+                                                    <div className="mb-3">
+                                                      <h6 className="text-warning mb-2">
+                                                        <FaBook className="me-2" />
+                                                        Key Concepts
+                                                      </h6>
+                                                      <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem' }}>
+                                                        {item.key_concepts}
+                                                      </div>
+                                                    </div>
+                                                  )}
+
+                                                  {/* Metadata */}
+                                                  <div className="d-flex gap-3 mb-2 flex-wrap">
+                                                    {item.estimated_minutes && (
+                                                      <small className="text-muted">
+                                                        <FaClock className="me-1" />
+                                                        {item.estimated_minutes} min
+                                                      </small>
+                                                    )}
+                                                    {item.file_name && (
+                                                      <small className="text-muted">
+                                                        {item.file_name}
+                                                        {item.file_size && ` (${formatFileSize(item.file_size)})`}
+                                                      </small>
+                                                    )}
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              {/* Embedded Content Preview */}
+                                              {isVideo && item.url && (
+                                                <div className="mb-3">
+                                                  {item.url.includes('youtube.com') || item.url.includes('youtu.be') ? (
+                                                    <div className="ratio ratio-16x9">
+                                                      <iframe
+                                                        src={getYouTubeEmbedUrl(item.url)}
+                                                        title={item.title}
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowFullScreen
+                                                        style={{ border: 0 }}
+                                                      />
+                                                    </div>
+                                                  ) : (
+                                                    <video
+                                                      controls
+                                                      className="w-100"
+                                                      style={{ maxHeight: '300px', cursor: 'pointer' }}
+                                                      onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        window.open(item.url, '_blank');
+                                                      }}
+                                                    >
+                                                      <source src={item.url} type={item.mime_type || 'video/mp4'} />
+                                                      Your browser does not support the video tag.
+                                                    </video>
+                                                  )}
+                                                </div>
+                                              )}
+
+                                              {isImage && (item.url || item.file_path) && (
+                                                <div className="mb-3">
+                                                  <a
+                                                    href={item.url || signedUrls[item.content_id] || '#'}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    onClick={async (e) => {
+                                                      if (item.file_path && !item.url && !signedUrls[item.content_id]) {
+                                                        e.preventDefault();
+                                                        const url = await getContentUrl(item);
+                                                        if (url) {
+                                                          window.open(url, '_blank');
+                                                        }
+                                                      }
+                                                    }}
+                                                    style={{ display: 'block', cursor: 'pointer' }}
+                                                  >
+                                                    <img
+                                                      key={`img-${item.content_id}-${signedUrls[item.content_id] ? 'loaded' : 'pending'}`}
+                                                      src={item.url || signedUrls[item.content_id] || ''}
+                                                      alt={item.title}
+                                                      className="img-fluid rounded"
+                                                      style={{ maxHeight: '200px', width: 'auto', pointerEvents: 'none' }}
+                                                      onError={async (e) => {
+                                                        // If image fails to load, try to get signed URL
+                                                        if (item.file_path && !signedUrls[item.content_id]) {
+                                                          const url = await getContentUrl(item);
+                                                          if (url) {
+                                                            e.target.src = url;
+                                                          }
+                                                        }
+                                                      }}
+                                                    />
+                                                  </a>
+                                                </div>
+                                              )}
+
+                                              {/* URL Display for non-media content */}
+                                              {!isVideo && !isImage && (item.url || item.file_path) && (
+                                                <div className="mb-3">
+                                                  <small className="text-muted d-block">
+                                                    <a
+                                                      href={item.url || '#'}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      className="text-decoration-none"
+                                                      onClick={async (e) => {
+                                                        if (item.file_path && !item.url) {
+                                                          e.preventDefault();
+                                                          const url = await getContentUrl(item);
+                                                          if (url) {
+                                                            window.open(url, '_blank');
+                                                          }
+                                                        }
+                                                      }}
+                                                    >
+                                                      {item.url ? (
+                                                        item.url.length > 60 ? item.url.substring(0, 60) + '...' : item.url
+                                                      ) : (
+                                                        item.file_name || 'Click to open file'
+                                                      )}
+                                                    </a>
+                                                  </small>
+                                                </div>
+                                              )}
+
+                                              {/* Action Buttons */}
+                                              <div className="d-flex gap-2 flex-wrap">
+                                                <Button
+                                                  variant="primary"
+                                                  size="sm"
+                                                  onClick={() => handlePreview(item)}
+                                                  className="d-flex align-items-center"
+                                                >
+                                                  <FaEye className="me-2" />
+                                                  Preview
+                                                </Button>
+                                                {(item.url || item.file_path) && (
+                                                  <Button
+                                                    variant="outline-primary"
+                                                    size="sm"
+                                                    onClick={async () => {
+                                                      const url = await getContentUrl(item);
+                                                      if (url) {
+                                                        window.open(url, '_blank');
+                                                      } else {
+                                                        alert('Unable to open content. Please try again.');
+                                                      }
+                                                    }}
+                                                    className="d-flex align-items-center"
+                                                  >
+                                                    {isVideo ? (
+                                                      <>
+                                                        <FaExternalLinkAlt className="me-2" />
+                                                        Open Video
+                                                      </>
+                                                    ) : isImage ? (
+                                                      <>
+                                                        <FaExternalLinkAlt className="me-2" />
+                                                        Open Image
+                                                      </>
+                                                    ) : (
+                                                      <>
+                                                        <FaDownload className="me-2" />
+                                                        Download
+                                                      </>
+                                                    )}
+                                                  </Button>
+                                                )}
+                                                {item.content_type === 'QUIZ' && (
+                                                  <Button
+                                                    variant="outline-success"
+                                                    size="sm"
+                                                    className="me-2"
+                                                    onClick={() => handleOpenQuizBuilder(item)}
+                                                  >
+                                                    <FaClipboardCheck className="me-1" />
+                                                    Create/Edit Quiz
+                                                  </Button>
+                                                )}
+                                                <Button
+                                                  variant="outline-secondary"
+                                                  size="sm"
+                                                  className="me-2"
+                                                  onClick={() => handleOpenModal(item)}
+                                                >
+                                                  <FaEdit className="me-1" />
+                                                  Edit
+                                                </Button>
+                                                <Button
+                                                  variant="outline-danger"
+                                                  size="sm"
+                                                  onClick={() => handleDelete(item.content_id)}
+                                                >
+                                                  <FaTrash />
+                                                </Button>
                                               </div>
                                             </div>
-                                          )}
-
-                                        {/* Learning Outcomes (for non-text-only content types) */}
-                                        {!['LEARNING_OUTCOMES', 'LEARNING_ACTIVITIES', 'KEY_CONCEPTS',
-                                          'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(item.content_type) &&
-                                          item.learning_outcomes && (
-                                            <div className="mb-3">
-                                              <h6 className="text-primary mb-2">
-                                                <FaCheckCircle className="me-2" />
-                                                Learning Outcomes
-                                              </h6>
-                                              <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem' }}>
-                                                {item.learning_outcomes}
-                                              </div>
-                                            </div>
-                                          )}
-
-                                        {/* Learning Activities */}
-                                        {item.learning_activities && (
-                                          <div className="mb-3">
-                                            <h6 className="text-success mb-2">
-                                              <FaBook className="me-2" />
-                                              Learning Activities
-                                            </h6>
-                                            <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem' }}>
-                                              {item.learning_activities}
-                                            </div>
                                           </div>
-                                        )}
-
-                                        {/* Key Concepts */}
-                                        {item.key_concepts && (
-                                          <div className="mb-3">
-                                            <h6 className="text-warning mb-2">
-                                              <FaBook className="me-2" />
-                                              Key Concepts
-                                            </h6>
-                                            <div className="white-space-pre-wrap" style={{ fontSize: '0.95rem' }}>
-                                              {item.key_concepts}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {/* Metadata */}
-                                        <div className="d-flex gap-3 mb-2 flex-wrap">
-                                          {item.estimated_minutes && (
-                                            <small className="text-muted">
-                                              <FaClock className="me-1" />
-                                              {item.estimated_minutes} min
-                                            </small>
-                                          )}
-                                          {item.file_name && (
-                                            <small className="text-muted">
-                                              {item.file_name}
-                                              {item.file_size && ` (${formatFileSize(item.file_size)})`}
-                                            </small>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    {/* Embedded Content Preview */}
-                                    {isVideo && item.url && (
-                                      <div className="mb-3">
-                                        {item.url.includes('youtube.com') || item.url.includes('youtu.be') ? (
-                                          <div className="ratio ratio-16x9">
-                                            <iframe
-                                              src={getYouTubeEmbedUrl(item.url)}
-                                              title={item.title}
-                                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                              allowFullScreen
-                                              style={{ border: 0 }}
-                                            />
-                                          </div>
-                                        ) : (
-                                          <video
-                                            controls
-                                            className="w-100"
-                                            style={{ maxHeight: '300px', cursor: 'pointer' }}
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              window.open(item.url, '_blank');
-                                            }}
-                                          >
-                                            <source src={item.url} type={item.mime_type || 'video/mp4'} />
-                                            Your browser does not support the video tag.
-                                          </video>
-                                        )}
-                                      </div>
-                                    )}
-
-                                    {isImage && (item.url || item.file_path) && (
-                                      <div className="mb-3">
-                                        <a
-                                          href={item.url || signedUrls[item.content_id] || '#'}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          onClick={async (e) => {
-                                            if (item.file_path && !item.url && !signedUrls[item.content_id]) {
-                                              e.preventDefault();
-                                              const url = await getContentUrl(item);
-                                              if (url) {
-                                                window.open(url, '_blank');
-                                              }
-                                            }
-                                          }}
-                                          style={{ display: 'block', cursor: 'pointer' }}
-                                        >
-                                          <img
-                                            key={`img-${item.content_id}-${signedUrls[item.content_id] ? 'loaded' : 'pending'}`}
-                                            src={item.url || signedUrls[item.content_id] || ''}
-                                            alt={item.title}
-                                            className="img-fluid rounded"
-                                            style={{ maxHeight: '200px', width: 'auto', pointerEvents: 'none' }}
-                                            onError={async (e) => {
-                                              // If image fails to load, try to get signed URL
-                                              if (item.file_path && !signedUrls[item.content_id]) {
-                                                const url = await getContentUrl(item);
-                                                if (url) {
-                                                  e.target.src = url;
-                                                }
-                                              }
-                                            }}
-                                          />
-                                        </a>
-                                      </div>
-                                    )}
-
-                                    {/* URL Display for non-media content */}
-                                    {!isVideo && !isImage && (item.url || item.file_path) && (
-                                      <div className="mb-3">
-                                        <small className="text-muted d-block">
-                                          <a
-                                            href={item.url || '#'}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-decoration-none"
-                                            onClick={async (e) => {
-                                              if (item.file_path && !item.url) {
-                                                e.preventDefault();
-                                                const url = await getContentUrl(item);
-                                                if (url) {
-                                                  window.open(url, '_blank');
-                                                }
-                                              }
-                                            }}
-                                          >
-                                            {item.url ? (
-                                              item.url.length > 60 ? item.url.substring(0, 60) + '...' : item.url
-                                            ) : (
-                                              item.file_name || 'Click to open file'
-                                            )}
-                                          </a>
-                                        </small>
-                                      </div>
-                                    )}
-
-                                    {/* Action Buttons */}
-                                    <div className="d-flex gap-2 flex-wrap">
-                                      <Button
-                                        variant="primary"
-                                        size="sm"
-                                        onClick={() => handlePreview(item)}
-                                        className="d-flex align-items-center"
-                                      >
-                                        <FaEye className="me-2" />
-                                        Preview
-                                      </Button>
-                                      {(item.url || item.file_path) && (
-                                        <Button
-                                          variant="outline-primary"
-                                          size="sm"
-                                          onClick={async () => {
-                                            const url = await getContentUrl(item);
-                                            if (url) {
-                                              window.open(url, '_blank');
-                                            } else {
-                                              alert('Unable to open content. Please try again.');
-                                            }
-                                          }}
-                                          className="d-flex align-items-center"
-                                        >
-                                          {isVideo ? (
-                                            <>
-                                              <FaExternalLinkAlt className="me-2" />
-                                              Open Video
-                                            </>
-                                          ) : isImage ? (
-                                            <>
-                                              <FaExternalLinkAlt className="me-2" />
-                                              Open Image
-                                            </>
-                                          ) : (
-                                            <>
-                                              <FaDownload className="me-2" />
-                                              Download
-                                            </>
-                                          )}
-                                        </Button>
-                                      )}
-                                      {item.content_type === 'QUIZ' && (
-                                        <Button
-                                          variant="outline-success"
-                                          size="sm"
-                                          className="me-2"
-                                          onClick={() => handleOpenQuizBuilder(item)}
-                                        >
-                                          <FaClipboardCheck className="me-1" />
-                                          Create/Edit Quiz
-                                        </Button>
-                                      )}
-                                      <Button
-                                        variant="outline-secondary"
-                                        size="sm"
-                                        className="me-2"
-                                        onClick={() => handleOpenModal(item)}
-                                      >
-                                        <FaEdit className="me-1" />
-                                        Edit
-                                      </Button>
-                                      <Button
-                                        variant="outline-danger"
-                                        size="sm"
-                                        onClick={() => handleDelete(item.content_id)}
-                                      >
-                                        <FaTrash />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </Card.Body>
-                            </Card>
-                          </Col>
-                        );
-                      })}
-                    </Row>
-                  </Card.Body>
-                </Card>
-              ))}
+                                        </Card.Body>
+                                      </Card>
+                                    </Col>
+                                  )}
+                                </Draggable>
+                              );
+                            })}
+                            {provided.placeholder}
+                          </Row>
+                        </Card.Body>
+                      )}
+                    </Droppable>
+                  </Card>
+                ))}
+              </DragDropContext>
             </>
           )}
         </Col>

@@ -6,6 +6,7 @@ import StreamHeader from './StreamComponents/StreamHeader';
 import HeroCard from './StreamComponents/HeroCard';
 import QuestGrid from './StreamComponents/QuestGrid';
 import ArchiveList from './StreamComponents/ArchiveList';
+import ThemeSelector from './ThemeSelector';
 import './LessonsStream.css';
 
 function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
@@ -13,6 +14,15 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
   const [heroLesson, setHeroLesson] = useState(null);
   const [quests, setQuests] = useState([]);
   const [archives, setArchives] = useState([]);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('lessons-stream-theme') || 'cool-dark';
+  });
+
+  // Handle theme changes
+  const handleThemeChange = (newTheme) => {
+    setTheme(newTheme);
+    localStorage.setItem('lessons-stream-theme', newTheme);
+  };
 
   // Process lessons into Hero, Quests (Upcoming), and Archives (Past)
   useEffect(() => {
@@ -88,7 +98,7 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
 
   if (loading) {
     return (
-      <div className="lessons-stream-container">
+      <div className={`lessons-stream-container theme-${theme}`}>
         <div className="skeleton-hero" />
         <div className="skeleton-grid">
           {[1, 2, 3].map(i => <div key={i} className="skeleton-card" />)}
@@ -100,7 +110,7 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
   if (!lessons || lessons.length === 0) {
     return (
       <div className="lessons-stream-container">
-        <StreamHeader greeting={getGreeting()} />
+        <StreamHeader greeting={getGreeting()} theme={theme} onThemeChange={handleThemeChange} />
         <div className="hero-card" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="text-center">
             <FaGamepad style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.2)', marginBottom: '1rem' }} />
@@ -113,8 +123,8 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
   }
 
   return (
-    <div className="lessons-stream-container">
-      <StreamHeader greeting={getGreeting()} />
+    <div className={`lessons-stream-container theme-${theme}`}>
+      <StreamHeader greeting={getGreeting()} theme={theme} onThemeChange={handleThemeChange} />
 
       <HeroCard
         heroLesson={heroLesson}
