@@ -469,7 +469,7 @@ function TeacherClassManagement() {
                             <Button
                               variant="outline-primary"
                               size="sm"
-                              onClick={() => navigate(`/admin/students?search=${studentData?.email}`)}
+                              onClick={() => navigate(`/teacher/students/${studentData?.user_id}`)}
                             >
                               View Profile
                             </Button>
