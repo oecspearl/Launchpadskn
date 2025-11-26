@@ -37,12 +37,30 @@
     align-items: center;
     justify-content: center;
     font-size: 1.25rem;
+    color: white; /* Light icon on dark background */
+}
+
+.section-icon-wrapper svg {
+    color: white;
 }
 
 .section-title {
     font-weight: 700;
     font-size: 1.25rem;
     letter-spacing: 0.5px;
+    color: white; /* Light text on dark background */
+}
+
+/* Ensure chevron icons in header are white */
+.lesson-section-header svg {
+    color: white;
+}
+
+/* Ensure badge in header has good contrast */
+.lesson-section-header .badge {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: white !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .lesson-section-body {
@@ -157,48 +175,76 @@
     font-size: 0.9375rem;
 }
 
-/* Timing Badge */
-.detail-item:has(.detail-label:contains("Timing")) {
-    background: rgba(245, 158, 11, 0.05);
+/* Timing Badge - Orange theme with dark text on light background */
+.detail-item-timing {
+    background: rgba(245, 158, 11, 0.1);
     border-left-color: #f59e0b;
 }
 
-.detail-item:has(.detail-label:contains("Timing")) .detail-icon {
-    color: #f59e0b;
+.detail-item-timing .detail-label {
+    color: #92400e; /* Dark text on light orange background */
 }
 
-/* Teacher Instructions */
-.detail-item:has(.detail-label:contains("TEACHER INSTRUCTIONS")),
-.detail-item:has(.detail-label:contains("TEACHER DIALOGUE")) {
-    background: rgba(16, 185, 129, 0.05);
+.detail-item-timing .detail-icon {
+    color: #d97706; /* Darker orange for better contrast */
+}
+
+.detail-item-timing .detail-content {
+    color: #78350f; /* Dark text on light background */
+}
+
+/* Teacher Instructions - Green theme with dark text on light background */
+.detail-item-teacher {
+    background: rgba(16, 185, 129, 0.1);
     border-left-color: #10b981;
 }
 
-.detail-item:has(.detail-label:contains("TEACHER INSTRUCTIONS")) .detail-icon,
-.detail-item:has(.detail-label:contains("TEACHER DIALOGUE")) .detail-icon {
-    color: #10b981;
+.detail-item-teacher .detail-label {
+    color: #065f46; /* Dark text on light green background */
 }
 
-/* Student Content */
-.detail-item:has(.detail-label:contains("STUDENT")) {
-    background: rgba(139, 92, 246, 0.05);
+.detail-item-teacher .detail-icon {
+    color: #047857; /* Darker green for better contrast */
+}
+
+.detail-item-teacher .detail-content {
+    color: #064e3b; /* Dark text on light background */
+}
+
+/* Student Content - Purple theme with dark text on light background */
+.detail-item-student {
+    background: rgba(139, 92, 246, 0.1);
     border-left-color: #8b5cf6;
 }
 
-.detail-item:has(.detail-label:contains("STUDENT")) .detail-icon {
-    color: #8b5cf6;
+.detail-item-student .detail-label {
+    color: #5b21b6; /* Dark text on light purple background */
 }
 
-/* Assessment/Checkpoint */
-.detail-item:has(.detail-label:contains("ASSESSMENT")),
-.detail-item:has(.detail-label:contains("CHECKPOINT")) {
-    background: rgba(239, 68, 68, 0.05);
+.detail-item-student .detail-icon {
+    color: #6d28d9; /* Darker purple for better contrast */
+}
+
+.detail-item-student .detail-content {
+    color: #4c1d95; /* Dark text on light background */
+}
+
+/* Assessment/Checkpoint - Red theme with dark text on light background */
+.detail-item-assessment {
+    background: rgba(239, 68, 68, 0.1);
     border-left-color: #ef4444;
 }
 
-.detail-item:has(.detail-label:contains("ASSESSMENT")) .detail-icon,
-.detail-item:has(.detail-label:contains("CHECKPOINT")) .detail-icon {
-    color: #ef4444;
+.detail-item-assessment .detail-label {
+    color: #991b1b; /* Dark text on light red background */
+}
+
+.detail-item-assessment .detail-icon {
+    color: #dc2626; /* Darker red for better contrast */
+}
+
+.detail-item-assessment .detail-content {
+    color: #7f1d1d; /* Dark text on light background */
 }
 
 /* Responsive */

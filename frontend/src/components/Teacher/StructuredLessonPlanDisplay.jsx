@@ -196,8 +196,21 @@ function StructuredLessonPlanDisplay({ lessonPlanText }) {
                                                     const DetailIcon = getDetailIcon(detail);
 
                                                     if (label) {
+                                                        // Determine color theme based on label type
+                                                        const labelUpper = label.toUpperCase();
+                                                        let themeClass = '';
+                                                        if (labelUpper.includes('TIMING')) {
+                                                            themeClass = 'detail-item-timing';
+                                                        } else if (labelUpper.includes('TEACHER INSTRUCTIONS') || labelUpper.includes('TEACHER DIALOGUE')) {
+                                                            themeClass = 'detail-item-teacher';
+                                                        } else if (labelUpper.includes('STUDENT')) {
+                                                            themeClass = 'detail-item-student';
+                                                        } else if (labelUpper.includes('ASSESSMENT') || labelUpper.includes('CHECKPOINT')) {
+                                                            themeClass = 'detail-item-assessment';
+                                                        }
+
                                                         return (
-                                                            <div key={detailIndex} className="detail-item">
+                                                            <div key={detailIndex} className={`detail-item ${themeClass}`}>
                                                                 <div className="detail-label">
                                                                     {DetailIcon && <DetailIcon className="detail-icon" />}
                                                                     <strong>{label}:</strong>
