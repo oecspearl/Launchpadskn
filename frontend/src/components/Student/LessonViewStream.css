@@ -296,6 +296,8 @@
     padding: 2rem;
     flex: 1;
     color: var(--theme-text);
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .viewer-actions {
