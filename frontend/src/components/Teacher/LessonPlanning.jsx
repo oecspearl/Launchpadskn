@@ -691,6 +691,29 @@ function LessonPlanning() {
                           <FaEdit className="me-1" />
                           Edit
                         </Button>
+                        <Button 
+                          variant="outline-success" 
+                          size="sm"
+                          onClick={async () => {
+                            const templateName = prompt('Enter a name for this template:');
+                            if (!templateName) return;
+                            
+                            try {
+                              await lessonTemplateService.saveLessonAsTemplate(lesson.lesson_id, {
+                                template_name: templateName,
+                                created_by: user?.user_id,
+                                is_public: true
+                              });
+                              alert('Lesson saved as template successfully!');
+                            } catch (err) {
+                              console.error('Error saving template:', err);
+                              alert('Failed to save template');
+                            }
+                          }}
+                          title="Save as Template"
+                        >
+                          <FaCopy />
+                        </Button>
                       </div>
                     </Card.Body>
                   </Card>
