@@ -51,8 +51,20 @@ function ModelViewerComponent({
         });
       };
 
+      const handleError = (e) => {
+        console.error('Model viewer error:', e);
+        setLoadError(e.detail?.message || 'Failed to load 3D model');
+        if (onStateChange) {
+          onStateChange({
+            error: true,
+            errorMessage: e.detail?.message || 'Failed to load 3D model'
+          });
+        }
+      };
+
       viewer.addEventListener('load', handleLoad);
       viewer.addEventListener('progress', handleProgress);
+      viewer.addEventListener('error', handleError);
 
       return () => {
         viewer.removeEventListener('load', handleLoad);
