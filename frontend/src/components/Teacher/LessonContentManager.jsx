@@ -113,6 +113,31 @@ function LessonContentManager() {
     }
   }, [contentType]);
 
+  // Load selected 3D model when editing existing content with metadata
+  useEffect(() => {
+    if (contentType === '3D_MODEL' || contentType === 'AR_OVERLAY') {
+      if (editingContent && editingContent.metadata && editingContent.metadata.arvr_content_id && available3DModels.length > 0) {
+        const arvrContentId = editingContent.metadata.arvr_content_id;
+        // Convert to number if it's a string, handle empty strings
+        let id = null;
+        if (arvrContentId !== '' && arvrContentId !== null && arvrContentId !== undefined) {
+          id = typeof arvrContentId === 'string' ? parseInt(arvrContentId) : arvrContentId;
+          if (isNaN(id)) id = null;
+        }
+        
+        if (id) {
+          const model = available3DModels.find(m => m.content_id === id);
+          if (model && !selected3DModel) {
+            setSelected3DModel(model);
+          }
+        }
+      } else if (!editingContent && selected3DModel) {
+        // Clear selection when not editing
+        setSelected3DModel(null);
+      }
+    }
+  }, [available3DModels, editingContent, contentType]);
+
   const fetchLessonData = async () => {
     try {
       const { data, error } = await supabase
@@ -1108,14 +1133,21 @@ function LessonContentManager() {
 
       // Add metadata for 3D_MODEL and AR_OVERLAY content types
       if ((contentType === '3D_MODEL' || contentType === 'AR_OVERLAY') && selected3DModel) {
-        contentData.metadata = {
-          arvr_content_id: selected3DModel.content_id,
-          content_type: selected3DModel.content_type
-        };
-        // For AR_OVERLAY, also store the content URL from the AR/VR content
-        if (contentType === 'AR_OVERLAY' && selected3DModel.content_url) {
-          contentData.url = selected3DModel.content_url;
+        // Ensure content_id is a valid number, not empty string
+        const arvrContentId = selected3DModel.content_id;
+        if (arvrContentId && arvrContentId !== '') {
+          contentData.metadata = {
+            arvr_content_id: typeof arvrContentId === 'string' ? parseInt(arvrContentId) : arvrContentId,
+            content_type: selected3DModel.content_type
+          };
+          // For AR_OVERLAY, also store the content URL from the AR/VR content
+          if (contentType === 'AR_OVERLAY' && selected3DModel.content_url) {
+            contentData.url = selected3DModel.content_url;
+          }
         }
+      } else if ((contentType === '3D_MODEL' || contentType === 'AR_OVERLAY') && !selected3DModel) {
+        // If switching away from 3D model or clearing selection, remove metadata
+        contentData.metadata = null;
       }
 
       if (editingContent) {
@@ -1145,8 +1177,26 @@ function LessonContentManager() {
         };
 
         // Include metadata if it exists (for 3D_MODEL)
+        // Clean metadata to ensure no empty strings in BIGINT fields
         if (updateFields.metadata) {
-          updateData.metadata = updateFields.metadata;
+          const cleanedMetadata = { ...updateFields.metadata };
+          // Convert empty strings to null for BIGINT fields
+          if (cleanedMetadata.arvr_content_id === '' || cleanedMetadata.arvr_content_id === null) {
+            cleanedMetadata.arvr_content_id = null;
+          } else if (typeof cleanedMetadata.arvr_content_id === 'string') {
+            const parsed = parseInt(cleanedMetadata.arvr_content_id);
+            cleanedMetadata.arvr_content_id = isNaN(parsed) ? null : parsed;
+          }
+          // Only include metadata if it has valid data
+          if (cleanedMetadata.arvr_content_id !== null && cleanedMetadata.arvr_content_id !== undefined) {
+            updateData.metadata = cleanedMetadata;
+          } else {
+            // Remove metadata if arvr_content_id is invalid
+            updateData.metadata = null;
+          }
+        } else if ((contentType === '3D_MODEL' || contentType === 'AR_OVERLAY') && !selected3DModel) {
+          // If no 3D model selected, remove metadata
+          updateData.metadata = null;
         }
 
         // Only include file fields if content type is FILE
