@@ -1,22 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Modal, Button, Card, Row, Col, Form, Badge, Alert,
-  Tabs, Tab, InputGroup, Dropdown, Spinner, Tooltip, OverlayTrigger,
-  ListGroup
-} from 'react-bootstrap';
-import {
-  FaGripVertical, FaPlus, FaEdit, FaTrash, FaSave, FaCopy,
-  FaLink, FaLightbulb, FaUsers, FaBook, FaHistory, FaMagic,
-  FaSearch, FaFilter, FaTimes, FaCheck, FaExclamationTriangle
-} from 'react-icons/fa';
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
-import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
-import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import ResourceLibrary from './ResourceLibrary';
 import CurriculumTemplateManager from './CurriculumTemplateManager';
 import AISuggestionPanel from './AISuggestionPanel';
+import exportCurriculumToPDF from '../../services/CurriculumExporter';
 import './InteractiveCurriculumBuilder.css';
 
 function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
@@ -34,7 +22,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
     },
     topics: []
   });
-  
+
   const [activeTab, setActiveTab] = useState('builder');
   const [editingTopicIndex, setEditingTopicIndex] = useState(null);
   const [showResourceLibrary, setShowResourceLibrary] = useState(false);
@@ -117,7 +105,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
             })
             .select()
             .single();
-          
+
           if (insertError) {
             console.warn('Could not create editing session (table may not exist):', insertError.message);
             return;
@@ -273,7 +261,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
           new_value: newValue,
           change_description: description
         });
-      
+
       if (error) {
         // Table might not exist yet - silently fail
         console.warn('Could not log curriculum change (table may not exist):', error.message);
@@ -336,7 +324,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
 
       setLastSaved(new Date());
       if (onSave) onSave(curriculumData);
-      
+
       // Broadcast update to other editors (if channel exists)
       try {
         await supabase
@@ -378,10 +366,10 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
       }
 
       // Update resource usage count
-      const { error: rpcError } = await supabase.rpc('increment_resource_usage', { 
-        resource_id: resource.resource_id 
+      const { error: rpcError } = await supabase.rpc('increment_resource_usage', {
+        resource_id: resource.resource_id
       });
-      
+
       if (rpcError) {
         console.warn('Could not increment resource usage (function may not exist):', rpcError.message);
       }
@@ -702,9 +690,9 @@ function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete
         topic={topic}
         index={index}
         onUpdate={onUpdate}
-                        onCancel={() => {
-                          setEditingTopicIndex(null);
-                        }}
+        onCancel={() => {
+          setEditingTopicIndex(null);
+        }}
         onLinkResource={onLinkResource}
         onRequestAISuggestions={onRequestAISuggestions}
       />
@@ -720,11 +708,11 @@ function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete
       <Card.Header className="d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center gap-2">
           <div
-                {...attributes}
-                {...listeners}
-                className="drag-handle"
-                style={{ cursor: 'grab' }}
-              >
+            {...attributes}
+            {...listeners}
+            className="drag-handle"
+            style={{ cursor: 'grab' }}
+          >
             <FaGripVertical />
           </div>
           <Badge bg="secondary">Topic {topic.topicNumber}</Badge>
@@ -754,7 +742,7 @@ function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete
 // Topic Editor Component (Full Implementation)
 function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onRequestAISuggestions }) {
   const initialData = useRef(topic);
-  
+
   const [formData, setFormData] = useState({
     ...topic,
     essentialLearningOutcomes: topic.essentialLearningOutcomes || [],
@@ -817,7 +805,7 @@ function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onReque
       alert('Please enter a topic title');
       return;
     }
-    
+
     // Ensure all arrays are properly initialized
     const updatedData = {
       ...formData,
@@ -842,7 +830,7 @@ function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onReque
         itemsOfInspiration: []
       }
     };
-    
+
     onUpdate(updatedData);
     onCancel();
   };
@@ -991,8 +979,8 @@ function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onReque
               <Form.Control
                 as="textarea"
                 rows={4}
-                value={Array.isArray(formData.gradeLevelGuidelines) 
-                  ? formData.gradeLevelGuidelines.join('\n') 
+                value={Array.isArray(formData.gradeLevelGuidelines)
+                  ? formData.gradeLevelGuidelines.join('\n')
                   : formData.gradeLevelGuidelines || ''}
                 onChange={(e) => setFormData({
                   ...formData,
@@ -1218,7 +1206,7 @@ function SortableUnitItem({ unit, index, topicNumber, isEditing, onEdit, onUpdat
 // Unit Editor Component
 function UnitEditor({ unit, topicNumber, onUpdate, onCancel, onAddActivity }) {
   const initialData = useRef(unit);
-  
+
   const [formData, setFormData] = useState({
     ...unit,
     activities: unit.activities || []
@@ -1241,13 +1229,13 @@ function UnitEditor({ unit, topicNumber, onUpdate, onCancel, onAddActivity }) {
       alert('Please enter Specific Curriculum Outcomes (SCOs)');
       return;
     }
-    
+
     // Ensure activities array is properly initialized
     const updatedData = {
       ...formData,
       activities: formData.activities || []
     };
-    
+
     onUpdate(updatedData);
     onCancel(); // Close editor after saving
   };
@@ -1663,7 +1651,7 @@ function FrontMatterEditor({ frontMatter, offering, onUpdate }) {
         english: ''
       }
     };
-    
+
     onUpdate(updatedData);
     // Show success feedback
     alert('Closing framework saved successfully!');
@@ -1771,8 +1759,8 @@ function ChangeHistoryView({ history }) {
               <div>
                 <Badge bg={
                   change.change_type === 'CREATE' ? 'success' :
-                  change.change_type === 'UPDATE' ? 'info' :
-                  change.change_type === 'DELETE' ? 'danger' : 'secondary'
+                    change.change_type === 'UPDATE' ? 'info' :
+                      change.change_type === 'DELETE' ? 'danger' : 'secondary'
                 }>
                   {change.change_type}
                 </Badge>

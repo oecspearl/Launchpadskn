@@ -7,6 +7,7 @@ import {
 } from 'react-icons/fa';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import curriculumAIService from '../../services/curriculumAIService';
 
 function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion }) {
   const { user } = useAuth();
@@ -80,104 +81,72 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
   };
 
   const fetchAISuggestions = async (context, offering) => {
-    // This is a placeholder for AI integration
-    // In production, this would call an AI service (OpenAI, Claude, etc.)
-    // For now, we'll use rule-based suggestions
-
     const suggestions = [];
+    const subject = offering.subject?.subject_name || 'General';
+    const gradeLevel = offering.form?.form_number || 'Secondary';
 
-    // Rule-based suggestions based on context
-    if (context.type === 'TOPIC' && context.topic) {
-      const topic = context.topic;
+    try {
+      // 1. TOPIC CONTEXT -> Generate Units & Resources
+      if (context.type === 'TOPIC' && context.topic) {
+        const topic = context.topic;
 
-      // Suggest activities based on topic title
-      if (topic.title) {
-        const titleLower = topic.title.toLowerCase();
+        // Generate Units
+        if (!topic.instructionalUnits || topic.instructionalUnits.length === 0) {
+          const unitsData = await curriculumAIService.generateUnits(
+            topic.title,
+            subject,
+            gradeLevel,
+            topic.usefulContentKnowledge
+          );
 
-        // Math topics
-        if (titleLower.includes('number') || titleLower.includes('math')) {
-          suggestions.push({
-            type: 'ACTIVITY',
-            data: {
-              title: 'Number Line Activity',
-              description: 'Interactive number line exercise for understanding number relationships',
-              duration: '30 minutes',
-              materials: ['Number line chart', 'Counters'],
-              learningObjectives: ['Understand number relationships', 'Practice counting']
-            },
-            confidence: 0.9
-          });
+          if (unitsData && unitsData.units) {
+            unitsData.units.forEach(unit => {
+              suggestions.push({
+                type: 'UNIT_GENERATION', // Special type for bulk unit creation
+                data: unit,
+                confidence: 0.95
+              });
+            });
+          }
+        }
 
-          suggestions.push({
-            type: 'RESOURCE',
-            data: {
-              title: 'Khan Academy - Number Operations',
-              url: 'https://www.khanacademy.org/math/arithmetic',
-              type: 'VIDEO',
-              description: 'Comprehensive video series on number operations'
-            },
-            confidence: 0.85
+        // Find Resources
+        const resources = await curriculumAIService.findResources(topic.title, subject, gradeLevel);
+        suggestions.push(...resources);
+      }
+
+      // 2. UNIT/SCO CONTEXT -> Generate Activities & Differentiation
+      if (context.type === 'UNIT' || context.type === 'SCO') {
+        const outcomes = context.unit?.specificCurriculumOutcomes || context.sco || '';
+
+        // Generate Activities
+        const activitiesData = await curriculumAIService.generateActivities(outcomes, gradeLevel, subject);
+        if (activitiesData && activitiesData.activities) {
+          activitiesData.activities.forEach(activity => {
+            suggestions.push({
+              type: 'ACTIVITY',
+              data: activity,
+              confidence: 0.9
+            });
           });
         }
 
-        // Science topics
-        if (titleLower.includes('science') || titleLower.includes('experiment')) {
-          suggestions.push({
-            type: 'ACTIVITY',
-            data: {
-              title: 'Hands-on Experiment',
-              description: 'Practical experiment to reinforce scientific concepts',
-              duration: '45 minutes',
-              materials: ['Lab equipment', 'Safety materials'],
-              learningObjectives: ['Apply scientific method', 'Observe and record data']
-            },
-            confidence: 0.9
-          });
-        }
-
-        // Language topics
-        if (titleLower.includes('language') || titleLower.includes('reading') || titleLower.includes('writing')) {
-          suggestions.push({
-            type: 'ACTIVITY',
-            data: {
-              title: 'Reading Comprehension Exercise',
-              description: 'Engage students with reading and comprehension activities',
-              duration: '40 minutes',
-              materials: ['Reading materials', 'Question sheets'],
-              learningObjectives: ['Improve reading comprehension', 'Develop critical thinking']
-            },
-            confidence: 0.85
+        // Generate Differentiation
+        const diffData = await curriculumAIService.generateDifferentiation(outcomes, 'Visual, Auditory, Kinesthetic');
+        if (diffData && diffData.strategies) {
+          diffData.strategies.forEach(strategy => {
+            suggestions.push({
+              type: 'DIFFERENTIATION',
+              data: strategy,
+              confidence: 0.85
+            });
           });
         }
       }
 
-      // Suggest resources based on learning outcomes
-      if (topic.essentialLearningOutcomes && topic.essentialLearningOutcomes.length > 0) {
-        suggestions.push({
-          type: 'RESOURCE',
-          data: {
-            title: 'Interactive Learning Games',
-            url: 'https://www.education.com/games',
-            type: 'GAME',
-            description: 'Educational games aligned with learning outcomes'
-          },
-          confidence: 0.75
-        });
-      }
-    }
-
-    // Suggest assessment strategies
-    if (context.type === 'UNIT' || context.type === 'SCO') {
-      suggestions.push({
-        type: 'ASSESSMENT',
-        data: {
-          title: 'Formative Assessment Quiz',
-          description: 'Quick quiz to check understanding',
-          questionCount: 5,
-          timeLimit: 15
-        },
-        confidence: 0.8
-      });
+    } catch (error) {
+      console.error('Error fetching AI suggestions:', error);
+      // Fallback or error handling could go here
     }
 
     return suggestions;
@@ -207,6 +176,8 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
       case 'ACTIVITY': return <FaLightbulb />;
       case 'RESOURCE': return <FaLink />;
       case 'ASSESSMENT': return <FaFileAlt />;
+      case 'UNIT_GENERATION': return <FaMagic />;
+      case 'DIFFERENTIATION': return <FaUsers />; // Using FaUsers for differentiation
       default: return <FaMagic />;
     }
   };
@@ -286,7 +257,7 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
                       {suggestion.confidence_score && (
                         <Badge bg={
                           suggestion.confidence_score > 0.8 ? 'success' :
-                          suggestion.confidence_score > 0.6 ? 'warning' : 'secondary'
+                            suggestion.confidence_score > 0.6 ? 'warning' : 'secondary'
                         }>
                           {Math.round(suggestion.confidence_score * 100)}% match
                         </Badge>
@@ -333,6 +304,11 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
                       </a>
                     </div>
                   )}
+                  {suggestion.suggestion_type === 'DIFFERENTIATION' && (
+                    <div className="mt-2">
+                      <Badge bg="secondary" className="me-2">{suggestion.suggestion_data.targetGroup}</Badge>
+                    </div>
+                  )}
                 </Card.Body>
               </Card>
             ))}
@@ -347,4 +323,3 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
 }
 
 export default AISuggestionPanel;
-
