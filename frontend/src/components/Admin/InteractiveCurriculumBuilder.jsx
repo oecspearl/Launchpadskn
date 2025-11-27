@@ -570,6 +570,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
                         key={`topic-${topic.topicNumber}`}
                         topic={topic}
                         index={index}
+                        offering={offering}
                         isEditing={editingTopicIndex === index}
                         onEdit={() => setEditingTopicIndex(index)}
                         onUpdate={(updates) => {
@@ -680,7 +681,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
 }
 
 // Sortable Topic Item Component
-function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete, onLinkResource, onRequestAISuggestions }) {
+function SortableTopicItem({ topic, index, offering, isEditing, onEdit, onUpdate, onDelete, onLinkResource, onRequestAISuggestions }) {
   const {
     attributes,
     listeners,
@@ -701,10 +702,9 @@ function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete
       <TopicEditor
         topic={topic}
         index={index}
+        offering={offering}
         onUpdate={onUpdate}
-        onCancel={() => {
-          setEditingTopicIndex(null);
-        }}
+        onCancel={onEdit}
         onLinkResource={onLinkResource}
         onRequestAISuggestions={onRequestAISuggestions}
       />
@@ -752,7 +752,7 @@ function SortableTopicItem({ topic, index, isEditing, onEdit, onUpdate, onDelete
 }
 
 // Topic Editor Component (Full Implementation)
-function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onRequestAISuggestions }) {
+function TopicEditor({ topic, index, offering, onUpdate, onCancel, onLinkResource, onRequestAISuggestions }) {
   const initialData = useRef(topic);
 
   const [formData, setFormData] = useState({
