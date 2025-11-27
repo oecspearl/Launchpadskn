@@ -11,10 +11,11 @@ import {
   FaArrowUp, FaArrowDown, FaGripVertical, FaClock, FaCheckCircle, FaInfoCircle,
   FaGraduationCap, FaLightbulb, FaQuestionCircle, FaComments, FaClipboardCheck,
   FaClipboardList, FaTasks, FaFileSignature, FaPoll, FaProjectDiagram,
-  FaFilePdf, FaMagic
+  FaFilePdf, FaMagic, FaShare, FaDatabase
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
+import contentLibraryService from '../../services/contentLibraryService';
 import { supabase } from '../../config/supabase';
 import QuizBuilder from './QuizBuilder';
 import FlashcardCreator from './FlashcardCreator';
@@ -1735,6 +1736,16 @@ function LessonContentManager() {
             <h4>Lesson Content Management</h4>
             <div className="d-flex gap-2">
               <Button
+                variant="info"
+                onClick={() => {
+                  // Navigate to content library with lesson context
+                  navigate(`/teacher/content-library?lessonId=${lessonId}`);
+                }}
+              >
+                <FaDatabase className="me-2" />
+                Add from Library
+              </Button>
+              <Button
                 variant="success"
                 onClick={() => handleGenerateAIContent('complete')}
                 disabled={isGeneratingContent || !lessonData}
@@ -2105,6 +2116,79 @@ function LessonContentManager() {
                                                     Create/Edit Quiz
                                                   </Button>
                                                 )}
+                                                <Button
+                                                  variant="outline-info"
+                                                  size="sm"
+                                                  className="me-2"
+                                                  onClick={async () => {
+                                                    try {
+                                                      // Get lesson data for subject/form
+                                                      const { data: lessonData } = await supabase
+                                                        .from('lessons')
+                                                        .select(`
+                                                          *,
+                                                          class_subject:class_subjects(
+                                                            subject_offering:subject_form_offerings(
+                                                              subject:subjects(subject_id),
+                                                              form:forms(form_id)
+                                                            )
+                                                          )
+                                                        `)
+                                                        .eq('lesson_id', lessonId)
+                                                        .single();
+
+                                                      const subjectId = lessonData?.class_subject?.subject_offering?.subject?.subject_id;
+                                                      const formId = lessonData?.class_subject?.subject_offering?.form?.form_id;
+
+                                                      // Prepare library content data
+                                                      const libraryData = {
+                                                        content_type: item.content_type,
+                                                        title: item.title,
+                                                        description: item.description,
+                                                        url: item.url,
+                                                        file_path: item.file_path,
+                                                        file_name: item.file_name,
+                                                        file_size: item.file_size,
+                                                        mime_type: item.mime_type,
+                                                        instructions: item.instructions,
+                                                        learning_outcomes: item.learning_outcomes,
+                                                        learning_activities: item.learning_activities,
+                                                        key_concepts: item.key_concepts,
+                                                        reflection_questions: item.reflection_questions,
+                                                        discussion_prompts: item.discussion_prompts,
+                                                        summary: item.summary,
+                                                        content_section: item.content_section,
+                                                        is_required: item.is_required,
+                                                        estimated_minutes: item.estimated_minutes,
+                                                        content_data: item.content_data,
+                                                        metadata: item.metadata,
+                                                        assignment_details_file_path: item.assignment_details_file_path,
+                                                        assignment_details_file_name: item.assignment_details_file_name,
+                                                        assignment_details_file_size: item.assignment_details_file_size,
+                                                        assignment_details_mime_type: item.assignment_details_mime_type,
+                                                        assignment_rubric_file_path: item.assignment_rubric_file_path,
+                                                        assignment_rubric_file_name: item.assignment_rubric_file_name,
+                                                        assignment_rubric_file_size: item.assignment_rubric_file_size,
+                                                        assignment_rubric_mime_type: item.assignment_rubric_mime_type,
+                                                        original_content_id: item.content_id,
+                                                        shared_by: user?.user_id,
+                                                        subject_id: subjectId,
+                                                        form_id: formId,
+                                                        tags: [], // Can be enhanced later
+                                                        is_public: true
+                                                      };
+
+                                                      await contentLibraryService.shareContentToLibrary(libraryData);
+                                                      alert('Content shared to library successfully!');
+                                                    } catch (err) {
+                                                      console.error('Error sharing to library:', err);
+                                                      alert('Failed to share content to library');
+                                                    }
+                                                  }}
+                                                >
+                                                  <FaShare className="me-1" />
+                                                  Share
+                                                </Button>
                                                 <Button
                                                   variant="outline-secondary"
                                                   size="sm"

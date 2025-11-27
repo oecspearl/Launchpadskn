@@ -1,0 +1,18 @@
+.content-library-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.content-library-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.content-library-card .card-title {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.content-library-card .badge {
+  font-size: 0.75rem;
+}
+
