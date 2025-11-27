@@ -1,10 +1,22 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
+  Modal, Button, Card, Row, Col, Form, Badge, Alert,
+  Tabs, Tab, InputGroup, Dropdown, Spinner, Tooltip, OverlayTrigger,
+  ListGroup
+} from 'react-bootstrap';
+import {
+  FaGripVertical, FaPlus, FaEdit, FaTrash, FaSave, FaCopy,
+  FaLink, FaLightbulb, FaUsers, FaBook, FaHistory, FaMagic,
+  FaSearch, FaFilter, FaTimes, FaCheck, FaExclamationTriangle
+} from 'react-icons/fa';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragOverlay } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import ResourceLibrary from './ResourceLibrary';
 import CurriculumTemplateManager from './CurriculumTemplateManager';
 import AISuggestionPanel from './AISuggestionPanel';
-import exportCurriculumToPDF from '../../services/CurriculumExporter';
 import './InteractiveCurriculumBuilder.css';
 
 function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
