@@ -6,11 +6,12 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FaCalendarAlt, FaClock, FaMapMarkerAlt, FaBook, FaSave, FaPlus, FaMagic,
-  FaList, FaTh, FaTable, FaEye, FaEdit
+  FaList, FaTh, FaTable, FaEye, FaEdit, FaVideo
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import collaborationService from '../../services/collaborationService';
 import AILessonPlanner from './AILessonPlanner';
 import EnhancedLessonPlannerForm from './EnhancedLessonPlannerForm';
 import LessonPlanOutput from './LessonPlanOutput';
@@ -28,7 +29,15 @@ function LessonPlanning() {
   // Data
   const [classSubject, setClassSubject] = useState(null);
   const [lessons, setLessons] = useState([]);
+  const [virtualClassrooms, setVirtualClassrooms] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showCreateClassroomModal, setShowCreateClassroomModal] = useState(false);
+  const [newClassroomData, setNewClassroomData] = useState({
+    title: '',
+    description: '',
+    recording_enabled: false,
+    breakout_rooms_enabled: false
+  });
   
   // Debug: Log modal state changes
   useEffect(() => {
@@ -49,14 +58,26 @@ function LessonPlanning() {
     location: '',
     homework_description: '',
     homework_due_date: '',
-    status: 'SCHEDULED'
+    status: 'SCHEDULED',
+    session_id: null
   });
   
   useEffect(() => {
     if (classSubjectId) {
       fetchData();
+      fetchVirtualClassrooms();
     }
   }, [classSubjectId]);
+
+  const fetchVirtualClassrooms = async () => {
+    try {
+      const sessions = await collaborationService.getActiveSessions(classSubjectId, 'CLASSROOM');
+      setVirtualClassrooms(sessions || []);
+    } catch (error) {
+      console.error('Error fetching virtual classrooms:', error);
+      setVirtualClassrooms([]);
+    }
+  };
   
   const fetchData = async () => {
     try {
@@ -111,7 +132,8 @@ function LessonPlanning() {
         location: lesson.location || '',
         homework_description: lesson.homework_description || '',
         homework_due_date: lesson.homework_due_date?.split('T')[0] || '',
-        status: lesson.status || 'SCHEDULED'
+        status: lesson.status || 'SCHEDULED',
+        session_id: lesson.session_id || null
       });
     } else {
       setEditingLesson(null);
@@ -128,7 +150,8 @@ function LessonPlanning() {
         location: '',
         homework_description: '',
         homework_due_date: '',
-        status: 'SCHEDULED'
+        status: 'SCHEDULED',
+        session_id: null
       };
       console.log('[LessonPlanning] Setting lesson data for new lesson:', newLessonData);
       setLessonData(newLessonData);
@@ -248,7 +271,8 @@ function LessonPlanning() {
         location: lessonData.location || null,
         homework_description: lessonData.homework_description || null,
         homework_due_date: lessonData.homework_due_date ? validateAndFormatDate(lessonData.homework_due_date) : null,
-        status: lessonData.status || 'SCHEDULED'
+        status: lessonData.status || 'SCHEDULED',
+        session_id: lessonData.session_id || null
       };
       
       console.log('[LessonPlanning] Final lesson payload:', JSON.stringify(lessonPayload, null, 2));
@@ -617,6 +641,14 @@ function LessonPlanning() {
                           {lesson.location}
                         </div>
                       )}
+                      {lesson.session_id && (
+                        <div className="mb-2">
+                          <Badge bg="info" className="me-1">
+                            <FaVideo className="me-1" />
+                            Virtual Classroom
+                          </Badge>
+                        </div>
+                      )}
                       {lesson.topic && (
                         <div className="mb-2">
                           <strong>Topic:</strong> {lesson.topic}
@@ -690,6 +722,12 @@ function LessonPlanning() {
                               <FaMapMarkerAlt className="me-1" />
                               {lesson.location}
                             </div>
+                          )}
+                          {lesson.session_id && (
+                            <Badge bg="info" className="mt-1">
+                              <FaVideo className="me-1" />
+                              Virtual
+                            </Badge>
                           )}
                         </Col>
                         <Col md={3} className="text-end">
@@ -919,6 +957,40 @@ function LessonPlanning() {
                 placeholder="e.g., Room 101, Lab 2"
               />
             </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>
+                <FaVideo className="me-2" />
+                Virtual Classroom (Optional)
+              </Form.Label>
+              <div className="d-flex gap-2 mb-2">
+                <Form.Select
+                  value={lessonData.session_id || ''}
+                  onChange={(e) => setLessonData({ ...lessonData, session_id: e.target.value ? parseInt(e.target.value) : null })}
+                >
+                  <option value="">No virtual classroom</option>
+                  {virtualClassrooms.map((classroom) => (
+                    <option key={classroom.session_id} value={classroom.session_id}>
+                      {classroom.title}
+                    </option>
+                  ))}
+                </Form.Select>
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowCreateClassroomModal(true);
+                  }}
+                >
+                  <FaPlus className="me-1" />
+                  New
+                </Button>
+              </div>
+              <Form.Text className="text-muted">
+                Link this lesson to a virtual classroom for online teaching
+              </Form.Text>
+            </Form.Group>
             
             <Row>
               <Col md={6}>
@@ -1035,6 +1107,126 @@ function LessonPlanning() {
             Use in Lesson Form
           </Button>
         </Modal.Footer>
+      </Modal>
+
+      {/* Create Virtual Classroom Modal */}
+      <Modal 
+        show={showCreateClassroomModal} 
+        onHide={() => {
+          setShowCreateClassroomModal(false);
+          setNewClassroomData({
+            title: '',
+            description: '',
+            recording_enabled: false,
+            breakout_rooms_enabled: false
+          });
+        }}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaVideo className="me-2" />
+            Create Virtual Classroom
+          </Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={async (e) => {
+          e.preventDefault();
+          try {
+            // Create session first
+            const session = await collaborationService.createSession({
+              session_type: 'CLASSROOM',
+              title: newClassroomData.title,
+              description: newClassroomData.description,
+              class_subject_id: parseInt(classSubjectId),
+              created_by: user?.user_id
+            });
+
+            // Generate Jitsi meeting URL
+            const meetingId = `launchpad-${session.session_id}-${Date.now()}`;
+            const meetingUrl = `https://meet.jit.si/${meetingId}`;
+
+            // Create virtual classroom
+            await collaborationService.createVirtualClassroom({
+              session_id: session.session_id,
+              meeting_url: meetingUrl,
+              meeting_id: meetingId,
+              recording_enabled: newClassroomData.recording_enabled,
+              breakout_rooms_enabled: newClassroomData.breakout_rooms_enabled
+            });
+
+            // Refresh virtual classrooms list
+            await fetchVirtualClassrooms();
+            
+            // Set the newly created classroom as selected
+            setLessonData({ ...lessonData, session_id: session.session_id });
+            
+            setShowCreateClassroomModal(false);
+            setNewClassroomData({
+              title: '',
+              description: '',
+              recording_enabled: false,
+              breakout_rooms_enabled: false
+            });
+            setSuccess('Virtual classroom created and linked to lesson!');
+          } catch (err) {
+            console.error('Error creating virtual classroom:', err);
+            setError('Failed to create virtual classroom. Please try again.');
+          }
+        }}>
+          <Modal.Body>
+            <Form.Group className="mb-3">
+              <Form.Label>Title *</Form.Label>
+              <Form.Control
+                type="text"
+                value={newClassroomData.title}
+                onChange={(e) => setNewClassroomData({ ...newClassroomData, title: e.target.value })}
+                placeholder="e.g., Math Lesson - Algebra Basics"
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Description</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={newClassroomData.description}
+                onChange={(e) => setNewClassroomData({ ...newClassroomData, description: e.target.value })}
+                placeholder="Optional description for the virtual classroom"
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                label="Enable Recording"
+                checked={newClassroomData.recording_enabled}
+                onChange={(e) => setNewClassroomData({ ...newClassroomData, recording_enabled: e.target.checked })}
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="checkbox"
+                label="Enable Breakout Rooms"
+                checked={newClassroomData.breakout_rooms_enabled}
+                onChange={(e) => setNewClassroomData({ ...newClassroomData, breakout_rooms_enabled: e.target.checked })}
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => {
+              setShowCreateClassroomModal(false);
+              setNewClassroomData({
+                title: '',
+                description: '',
+                recording_enabled: false,
+                breakout_rooms_enabled: false
+              });
+            }}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit">
+              Create Classroom
+            </Button>
+          </Modal.Footer>
+        </Form>
       </Modal>
     </Container>
   );

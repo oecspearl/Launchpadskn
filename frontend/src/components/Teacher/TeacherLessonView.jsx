@@ -7,10 +7,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
   FaBook, FaClipboardList, FaUsers, FaUserCheck,
-  FaBullseye, FaListOl, FaLightbulb, FaCheckCircle
+  FaBullseye, FaListOl, FaLightbulb, FaCheckCircle, FaVideo, FaDoorOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { supabase } from '../../config/supabase';
+import collaborationService from '../../services/collaborationService';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
 import './TeacherLessonView.css';
 
@@ -22,6 +23,7 @@ function TeacherLessonView() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lesson, setLesson] = useState(null);
+  const [virtualClassroom, setVirtualClassroom] = useState(null);
 
   useEffect(() => {
     if (lessonId) {
@@ -53,6 +55,18 @@ function TeacherLessonView() {
         .single();
 
       setLesson(lessonData);
+
+      // Fetch virtual classroom if session_id exists
+      if (lessonData?.session_id) {
+        try {
+          const classroom = await collaborationService.getVirtualClassroom(lessonData.session_id);
+          setVirtualClassroom(classroom);
+        } catch (err) {
+          console.error('Error fetching virtual classroom:', err);
+          // Virtual classroom might not exist yet, that's okay
+        }
+      }
+
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching lesson:', err);
@@ -221,6 +235,33 @@ function TeacherLessonView() {
                 </div>
               )}
 
+              {virtualClassroom && (
+                <div className="mb-3">
+                  <div className="d-flex align-items-center justify-content-between p-3 bg-light rounded">
+                    <div>
+                      <FaVideo className="me-2 text-primary" />
+                      <strong>Virtual Classroom:</strong> {virtualClassroom.meeting_id || 'Available'}
+                    </div>
+                    <Button
+                      variant="success"
+                      size="sm"
+                      onClick={() => {
+                        if (virtualClassroom.meeting_url) {
+                          window.open(virtualClassroom.meeting_url, '_blank', 'width=1200,height=800');
+                          // Join the session
+                          if (lesson.session_id && user?.user_id) {
+                            collaborationService.joinSession(lesson.session_id, user.user_id);
+                          }
+                        }
+                      }}
+                    >
+                      <FaDoorOpen className="me-1" />
+                      Join Classroom
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               {lesson.topic && (
                 <div className="mb-3">
                   <h6>Topic</h6>
@@ -290,11 +331,28 @@ function TeacherLessonView() {
               </Button>
               <Button
                 variant="outline-secondary"
-                className="w-100"
+                className="w-100 mb-2"
                 onClick={() => navigate(`/teacher/class-subjects/${lesson.class_subject_id}/lessons`)}
               >
                 Lesson Planning
               </Button>
+              {virtualClassroom && (
+                <Button
+                  variant="success"
+                  className="w-100"
+                  onClick={() => {
+                    if (virtualClassroom.meeting_url) {
+                      window.open(virtualClassroom.meeting_url, '_blank', 'width=1200,height=800');
+                      if (lesson.session_id && user?.user_id) {
+                        collaborationService.joinSession(lesson.session_id, user.user_id);
+                      }
+                    }
+                  }}
+                >
+                  <FaVideo className="me-2" />
+                  Join Virtual Classroom
+                </Button>
+              )}
             </Card.Body>
           </Card>
 
