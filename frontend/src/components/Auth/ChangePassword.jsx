@@ -1,153 +1,82 @@
 import React, { useState } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert } from 'react-bootstrap';
-import { FaLock } from 'react-icons/fa';
-import { useAuth } from '../../contexts/AuthContextSupabase';
+import { Container, Form, Button, Alert, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../../config/supabase';
-import { userService } from '../../services/userService';
+import { authService } from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContextSupabase';
 
-function ChangePassword() {
-  const { user, updateUser } = useAuth();
-
-  // Debug logging
-  console.log('ChangePassword - user:', user);
-  console.log('ChangePassword - user.isFirstLogin:', user?.isFirstLogin, 'type:', typeof user?.isFirstLogin);
-  const navigate = useNavigate();
-  const [formData, setFormData] = useState({
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [loading, setLoading] = useState(false);
+const ChangePassword = () => {
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
-    if (formData.newPassword !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
+    if (password !== confirmPassword) {
+      return setError('Passwords do not match');
     }
 
-    if (formData.newPassword.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
+    if (password.length < 6) {
+      return setError('Password must be at least 6 characters');
     }
 
-    setLoading(true);
     try {
-      // Update password in Supabase Auth
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: formData.newPassword
-      });
-
-      if (updateError) throw updateError;
-
-      // Update user profile to mark first login as complete using userService
-      if (user.userId || user.id) {
-        try {
-          await userService.updateUserProfile(user.userId || user.id, {
-            is_first_login: false,
-            updated_at: new Date().toISOString()
-          });
-        } catch (profileError) {
-          console.warn('Failed to update is_first_login:', profileError);
-        }
-      }
-
-      // Update local user state
-      console.log('ChangePassword - updating user isFirstLogin to false');
-      updateUser({ ...user, isFirstLogin: false, is_first_login: false });
-
-      // Navigate to appropriate dashboard
-      const role = user.role.toLowerCase();
-      switch (role) {
-        case 'admin':
-          navigate('/admin/dashboard');
-          break;
-        case 'instructor':
-          navigate('/teacher/dashboard');
-          break;
-        case 'student':
-          navigate('/student/dashboard');
-          break;
-        default:
-          navigate('/');
-      }
-    } catch (error) {
-      console.error('Change password error:', error);
-      setError(error.message || 'Failed to change password');
+      setError('');
+      setLoading(true);
+      await authService.updatePassword(password);
+      alert('Password changed successfully!');
+      navigate('/'); // Redirect to dashboard
+    } catch (err) {
+      setError('Failed to update password: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Container className="py-5">
-      <Row className="justify-content-center">
-        <Col md={6} lg={4}>
-          <Card>
-            <Card.Header className="text-center bg-warning">
-              <h4 className="mb-0">
-                <FaLock className="me-2" />
-                Change Password Required
-              </h4>
-            </Card.Header>
-            <Card.Body>
-              <Alert variant="info">
-                This is your first time logging in. Please change your password to continue.
-              </Alert>
-
-              {error && <Alert variant="danger">{error}</Alert>}
-
-              <Form onSubmit={handleSubmit}>
-                <Form.Group className="mb-3">
-                  <Form.Label>New Password</Form.Label>
-                  <Form.Control
-                    type="password"
-                    name="newPassword"
-                    value={formData.newPassword}
-                    onChange={handleInputChange}
-                    required
-                    minLength="6"
-                  />
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                  <Form.Label>Confirm New Password</Form.Label>
-                  <Form.Control
-                    type="password"
-                    name="confirmPassword"
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    required
-                    minLength="6"
-                  />
-                </Form.Group>
-
-                <Button
-                  variant="primary"
-                  type="submit"
-                  className="w-100"
-                  disabled={loading}
-                >
-                  {loading ? 'Changing Password...' : 'Change Password'}
-                </Button>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+    <Container className="d-flex align-items-center justify-content-center" style={{ minHeight: "100vh" }}>
+      <div className="w-100" style={{ maxWidth: "400px" }}>
+        <Card>
+          <Card.Body>
+            <h2 className="text-center mb-4">Change Password</h2>
+            <Alert variant="warning">
+              Your administrator requires you to change your password before proceeding.
+            </Alert>
+            {error && <Alert variant="danger">{error}</Alert>}
+            <Form onSubmit={handleSubmit}>
+              <Form.Group id="password">
+                <Form.Label>New Password</Form.Label>
+                <Form.Control
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </Form.Group>
+              <Form.Group id="password-confirm" className="mt-3">
+                <Form.Label>Password Confirmation</Form.Label>
+                <Form.Control
+                  type="password"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+              </Form.Group>
+              <Button disabled={loading} className="w-100 mt-4" type="submit">
+                Update Password
+              </Button>
+            </Form>
+            <div className="w-100 text-center mt-3">
+              <Button variant="link" onClick={logout}>Log Out</Button>
+            </div>
+          </Card.Body>
+        </Card>
+      </div>
     </Container>
   );
-}
+};
 
 export default ChangePassword;

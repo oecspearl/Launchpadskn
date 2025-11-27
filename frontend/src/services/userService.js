@@ -200,6 +200,66 @@ export const userService = {
     },
 
     /**
+     * Set force_password_change flag for a user
+     */
+    async setForcePasswordChange(userId, forceChange) {
+        // Try by UUID first
+        let { error } = await supabase
+            .from('users')
+            .update({ force_password_change: forceChange })
+            .eq('id', userId);
+
+        if (error) {
+            // If failed (maybe not found by id), try user_id
+            const { error: error2 } = await supabase
+                .from('users')
+                .update({ force_password_change: forceChange })
+                .eq('user_id', userId);
+
+            if (error2) throw error2;
+        }
+        return true;
+    },
+
+    /**
+     * Bulk create users
+     * Returns object with successes and failures
+     */
+    async bulkCreateUsers(users) {
+        const results = {
+            success: [],
+            failed: []
+        };
+
+        for (const user of users) {
+            try {
+                // Validate required fields
+                if (!user.email || !user.password) {
+                    throw new Error('Email and password are required');
+                }
+
+                // Create user
+                const createdUser = await this.createUser({
+                    email: user.email,
+                    password: user.password,
+                    role: user.role || ROLES.STUDENT,
+                    institution_id: user.institution_id
+                });
+
+                results.success.push({ email: user.email, id: createdUser.id });
+            } catch (err) {
+                console.error(`Failed to create user ${user.email}:`, err);
+                results.failed.push({
+                    email: user.email,
+                    reason: err.message || 'Unknown error'
+                });
+            }
+        }
+
+        return results;
+    },
+
+    /**
      * Get institution-scoped users
      */
     async getUsersByInstitution(institutionId, userRole = null) {

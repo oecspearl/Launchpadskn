@@ -22,6 +22,7 @@
     "date-fns": "^4.1.0",
     "fuse.js": "^7.1.0",
     "html2pdf.js": "^0.10.1",
+    "papaparse": "^5.5.3",
     "pdfjs-dist": "^5.4.394",
     "react": "^19.0.0",
     "react-bootstrap": "^2.10.9",
@@ -34,8 +35,8 @@
     "serve": "^14.2.1",
     "three": "^0.170.0",
     "vite": "^7.2.4",
-    "web-vitals": "^2.1.4",
-    "vite-plugin-pwa": "^0.21.1"
+    "vite-plugin-pwa": "^0.21.1",
+    "web-vitals": "^2.1.4"
   },
   "scripts": {
     "start": "vite",
@@ -65,6 +66,5 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  },
-  "devDependencies": {}
+  }
 }

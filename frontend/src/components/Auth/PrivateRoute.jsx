@@ -55,6 +55,17 @@ function PrivateRoute({ children, allowedRoles }) {
     return <Navigate to="/login" replace />;
   }
 
+  // Force Password Change Check
+  // If user is forced to change password, redirect them to /change-password
+  // unless they are already there.
+  if (actualUser.force_password_change) {
+    const currentPath = window.location.pathname;
+    if (currentPath !== '/change-password') {
+      console.log('[PrivateRoute] Force password change required. Redirecting...');
+      return <Navigate to="/change-password" replace />;
+    }
+  }
+
   // User is authenticated - now check role permissions
   if (allowedRoles && actualUser && actualUser.role) {
     const userRole = actualUser.role.toLowerCase();

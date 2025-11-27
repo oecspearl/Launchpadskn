@@ -74,10 +74,18 @@ export const authService = {
      * Update password (authenticated user)
      */
     async updatePassword(newPassword) {
-        const { error } = await supabase.auth.updateUser({
+        const { data: { user }, error } = await supabase.auth.updateUser({
             password: newPassword
         });
         if (error) throw error;
+
+        // Also reset the force_password_change flag in the users table
+        if (user) {
+            await supabase
+                .from('users')
+                .update({ force_password_change: false })
+                .eq('id', user.id);
+        }
     },
 
     /**

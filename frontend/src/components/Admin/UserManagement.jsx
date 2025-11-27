@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Container, Table, Button, Modal, Form, Alert, Spinner, Badge } from 'react-bootstrap';
-import { FaUserPlus, FaTrash, FaKey, FaEdit } from 'react-icons/fa';
+import { FaUserPlus, FaTrash, FaKey, FaEdit, FaFileUpload, FaExclamationTriangle } from 'react-icons/fa';
+import Papa from 'papaparse';
 import supabaseService from '../../services/supabaseService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 
@@ -13,12 +14,19 @@ function UserManagement() {
     const [showAdd, setShowAdd] = useState(false);
     const [newUser, setNewUser] = useState({ email: '', password: '', role: 'STUDENT', institution_id: '' });
     const [showReset, setShowReset] = useState(false);
-    const [resetInfo, setResetInfo] = useState({ 
-        userEmail: null, 
-        userId: null, 
-        password: '', 
+    const [resetInfo, setResetInfo] = useState({
+        userEmail: null,
+        userId: null,
+        password: '',
         resetMethod: 'email' // 'email' or 'direct'
     });
+
+    // Bulk Upload State
+    const [showBulk, setShowBulk] = useState(false);
+    const [bulkFile, setBulkFile] = useState(null);
+    const [bulkPreview, setBulkPreview] = useState([]);
+    const [bulkResults, setBulkResults] = useState(null);
+    const [bulkLoading, setBulkLoading] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -48,7 +56,7 @@ function UserManagement() {
                 setError('Institution is required for School Admin role.');
                 return;
             }
-            
+
             await supabaseService.createUser(newUser);
             setShowAdd(false);
             setNewUser({ email: '', password: '', role: 'STUDENT', institution_id: '' });
@@ -63,7 +71,7 @@ function UserManagement() {
         try {
             setError(null);
             let result;
-            
+
             if (resetInfo.resetMethod === 'direct') {
                 // Direct password change
                 if (!resetInfo.password || resetInfo.password.length < 6) {
@@ -85,7 +93,7 @@ function UserManagement() {
                 result = await supabaseService.resetUserPassword(resetInfo.userEmail);
                 alert(result.message || 'Password reset email sent successfully!');
             }
-            
+
             setShowReset(false);
             setResetInfo({ userEmail: null, userId: null, password: '', resetMethod: 'email' });
             fetchData();
@@ -120,6 +128,60 @@ function UserManagement() {
         }
     };
 
+    const handleForcePasswordChange = async (userId, currentStatus) => {
+        try {
+            await supabaseService.setForcePasswordChange(userId, !currentStatus);
+            fetchData(); // Refresh to show updated status
+            alert(`User will ${!currentStatus ? 'be forced' : 'no longer be forced'} to change password on next login.`);
+        } catch (err) {
+            console.error(err);
+            setError(err.message || 'Failed to update force password change status');
+        }
+    };
+
+    const handleRoleChange = async (userId, newRole) => {
+        try {
+            await supabaseService.updateUserProfile(userId, { role: newRole });
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            setError(err.message || 'Failed to update user role');
+        }
+    };
+
+    const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        setBulkFile(file);
+        if (file) {
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    setBulkPreview(results.data);
+                },
+                error: (err) => {
+                    setError('Failed to parse CSV: ' + err.message);
+                }
+            });
+        }
+    };
+
+    const processBulkUpload = async () => {
+        if (!bulkPreview.length) return;
+
+        setBulkLoading(true);
+        try {
+            const results = await supabaseService.bulkCreateUsers(bulkPreview);
+            setBulkResults(results);
+            fetchData();
+        } catch (err) {
+            console.error(err);
+            setError(err.message || 'Failed to process bulk upload');
+        } finally {
+            setBulkLoading(false);
+        }
+    };
+
     if (loading) {
         return (
             <Container className="mt-4 text-center">
@@ -132,8 +194,11 @@ function UserManagement() {
         <Container className="mt-4">
             <h2>User Management</h2>
             {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
-            <Button variant="primary" className="mb-3" onClick={() => setShowAdd(true)}>
+            <Button variant="primary" className="mb-3 me-2" onClick={() => setShowAdd(true)}>
                 <FaUserPlus className="me-2" /> Add User
+            </Button>
+            <Button variant="success" className="mb-3" onClick={() => setShowBulk(true)}>
+                <FaFileUpload className="me-2" /> Bulk Upload (CSV)
             </Button>
             <Table striped bordered hover responsive>
                 <thead>
@@ -150,7 +215,19 @@ function UserManagement() {
                         <tr key={u.user_id}>
                             <td>{u.name || '—'}</td>
                             <td>{u.email}</td>
-                            <td>{u.role}</td>
+                            <td>
+                                <Form.Select
+                                    size="sm"
+                                    value={u.role}
+                                    onChange={(e) => handleRoleChange(u.user_id || u.id, e.target.value)}
+                                    style={{ width: '130px' }}
+                                >
+                                    <option value="ADMIN">ADMIN</option>
+                                    <option value="SCHOOL_ADMIN">SCHOOL_ADMIN</option>
+                                    <option value="INSTRUCTOR">INSTRUCTOR</option>
+                                    <option value="STUDENT">STUDENT</option>
+                                </Form.Select>
+                            </td>
                             <td>{u.institution?.institution_name || '—'}</td>
                             <td>
                                 <Button variant="outline-primary" size="sm" className="me-2" onClick={() => {
@@ -158,8 +235,8 @@ function UserManagement() {
                                         setError('User does not have required information for password reset.');
                                         return;
                                     }
-                                    setResetInfo({ 
-                                        userEmail: u.email || null, 
+                                    setResetInfo({
+                                        userEmail: u.email || null,
                                         userId: u.id || null,
                                         password: '',
                                         resetMethod: 'email'
@@ -181,6 +258,15 @@ function UserManagement() {
                                 </Form.Select>
                                 <Button variant="outline-danger" size="sm" onClick={() => handleDeleteUser(u.user_id)}>
                                     <FaTrash />
+                                </Button>
+                                <Button
+                                    variant={u.force_password_change ? "warning" : "outline-secondary"}
+                                    size="sm"
+                                    className="ms-2"
+                                    title={u.force_password_change ? "Cancel Force Password Change" : "Force Password Change"}
+                                    onClick={() => handleForcePasswordChange(u.user_id || u.id, u.force_password_change)}
+                                >
+                                    <FaExclamationTriangle />
                                 </Button>
                             </td>
                         </tr>
@@ -219,8 +305,8 @@ function UserManagement() {
                         </Form.Group>
                         <Form.Group className="mb-3" controlId="institution">
                             <Form.Label>Institution {newUser.role === 'SCHOOL_ADMIN' && <span className="text-danger">*</span>}</Form.Label>
-                            <Form.Select 
-                                value={newUser.institution_id} 
+                            <Form.Select
+                                value={newUser.institution_id}
                                 onChange={e => setNewUser({ ...newUser, institution_id: e.target.value })}
                                 required={newUser.role === 'SCHOOL_ADMIN'}
                             >
@@ -252,8 +338,8 @@ function UserManagement() {
                     <Form>
                         <Form.Group className="mb-3">
                             <Form.Label>Reset Method</Form.Label>
-                            <Form.Select 
-                                value={resetInfo.resetMethod} 
+                            <Form.Select
+                                value={resetInfo.resetMethod}
                                 onChange={e => setResetInfo({ ...resetInfo, resetMethod: e.target.value, password: '' })}
                             >
                                 <option value="email">Send Reset Email (Recommended)</option>
@@ -266,7 +352,7 @@ function UserManagement() {
                                 <p>This will send a password reset email to:</p>
                                 <p><strong>{resetInfo.userEmail}</strong></p>
                                 <p className="text-muted small">
-                                    The user will receive an email with a link to reset their password. 
+                                    The user will receive an email with a link to reset their password.
                                     They can then set a new password themselves.
                                 </p>
                             </>
@@ -274,10 +360,10 @@ function UserManagement() {
                             <>
                                 <Form.Group className="mb-3" controlId="newPassword">
                                     <Form.Label>New Password</Form.Label>
-                                    <Form.Control 
-                                        type="password" 
-                                        value={resetInfo.password} 
-                                        onChange={e => setResetInfo({ ...resetInfo, password: e.target.value })} 
+                                    <Form.Control
+                                        type="password"
+                                        value={resetInfo.password}
+                                        onChange={e => setResetInfo({ ...resetInfo, password: e.target.value })}
                                         placeholder="Enter new password (min 6 characters)"
                                     />
                                     <Form.Text className="text-muted">
@@ -285,7 +371,7 @@ function UserManagement() {
                                     </Form.Text>
                                 </Form.Group>
                                 <div className="alert alert-warning small">
-                                    <strong>Note:</strong> Direct password change requires service role key configuration. 
+                                    <strong>Note:</strong> Direct password change requires service role key configuration.
                                     If you see an error, use the email reset method instead.
                                 </div>
                             </>
@@ -299,7 +385,90 @@ function UserManagement() {
                     </Button>
                 </Modal.Footer>
             </Modal>
-        </Container>
+
+            {/* Bulk Upload Modal */}
+            <Modal show={showBulk} onHide={() => { setShowBulk(false); setBulkResults(null); setBulkFile(null); setBulkPreview([]); }} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>Bulk User Upload</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {!bulkResults ? (
+                        <>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Upload CSV File</Form.Label>
+                                <Form.Control type="file" accept=".csv" onChange={handleFileUpload} />
+                                <Form.Text className="text-muted">
+                                    CSV should have headers: <strong>email, password, role, institution_id</strong> (optional)
+                                </Form.Text>
+                            </Form.Group>
+
+                            {bulkPreview.length > 0 && (
+                                <div className="mt-3">
+                                    <h5>Preview ({bulkPreview.length} users)</h5>
+                                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                        <Table size="sm" striped bordered>
+                                            <thead>
+                                                <tr>
+                                                    <th>Email</th>
+                                                    <th>Role</th>
+                                                    <th>Inst. ID</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {bulkPreview.slice(0, 10).map((row, i) => (
+                                                    <tr key={i}>
+                                                        <td>{row.email}</td>
+                                                        <td>{row.role || 'STUDENT'}</td>
+                                                        <td>{row.institution_id || '-'}</td>
+                                                    </tr>
+                                                ))}
+                                                {bulkPreview.length > 10 && (
+                                                    <tr>
+                                                        <td colSpan="3" className="text-center text-muted">
+                                                            ...and {bulkPreview.length - 10} more
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            )}
+                        </>
+                    ) : (
+                        <div>
+                            <Alert variant="success">
+                                Successfully created {bulkResults.success.length} users.
+                            </Alert>
+                            {bulkResults.failed.length > 0 && (
+                                <Alert variant="danger">
+                                    Failed to create {bulkResults.failed.length} users:
+                                    <ul>
+                                        {bulkResults.failed.map((fail, i) => (
+                                            <li key={i}>{fail.email}: {fail.reason}</li>
+                                        ))}
+                                    </ul>
+                                </Alert>
+                            )}
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => { setShowBulk(false); setBulkResults(null); setBulkFile(null); setBulkPreview([]); }}>
+                        Close
+                    </Button>
+                    {!bulkResults && (
+                        <Button
+                            variant="primary"
+                            onClick={processBulkUpload}
+                            disabled={!bulkPreview.length || bulkLoading}
+                        >
+                            {bulkLoading ? <Spinner size="sm" animation="border" /> : 'Upload & Create'}
+                        </Button>
+                    )}
+                </Modal.Footer>
+            </Modal>
+        </Container >
     );
 }
 
