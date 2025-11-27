@@ -948,18 +948,124 @@ function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onReque
               />
             </Form.Group>
 
+
             <Form.Group className="mb-3">
               <Form.Label>Strand Identification</Form.Label>
-              <Form.Control
-                type="text"
+              <Form.Select
                 value={formData.strandIdentification || ''}
                 onChange={(e) => setFormData({ ...formData, strandIdentification: e.target.value })}
-                placeholder="Strand or domain identification"
-              />
+              >
+                <option value="">Select a strand...</option>
+                {(() => {
+                  // Extract strands from curriculum framework
+                  const framework = offering?.curriculum_framework || '';
+                  const strands = [];
+
+                  // Common patterns for strand identification in curriculum documents
+                  const strandPatterns = [
+                    /Strand[:\s]+([^\n.]+)/gi,
+                    /Domain[:\s]+([^\n.]+)/gi,
+                    /Content Area[:\s]+([^\n.]+)/gi,
+                  ];
+
+                  strandPatterns.forEach(pattern => {
+                    let match;
+                    while ((match = pattern.exec(framework)) !== null) {
+                      const strand = match[1].trim();
+                      if (strand && !strands.includes(strand)) {
+                        strands.push(strand);
+                      }
+                    }
+                  });
+
+                  // Common curriculum strands if none found
+                  if (strands.length === 0) {
+                    const commonStrands = [
+                      'Number and Operations',
+                      'Algebra',
+                      'Geometry',
+                      'Measurement',
+                      'Data Analysis and Probability',
+                      'Reading',
+                      'Writing',
+                      'Speaking and Listening',
+                      'Language',
+                      'Physical Science',
+                      'Life Science',
+                      'Earth and Space Science',
+                      'Engineering and Technology'
+                    ];
+                    strands.push(...commonStrands);
+                  }
+
+                  return strands.map((strand, idx) => (
+                    <option key={idx} value={strand}>{strand}</option>
+                  ));
+                })()}
+              </Form.Select>
+              <Form.Text className="text-muted">
+                Or type custom:
+                <Form.Control
+                  type="text"
+                  size="sm"
+                  className="mt-1"
+                  placeholder="Enter custom strand..."
+                  value={formData.strandIdentification && !offering?.curriculum_framework?.includes(formData.strandIdentification) ? formData.strandIdentification : ''}
+                  onChange={(e) => setFormData({ ...formData, strandIdentification: e.target.value })}
+                />
+              </Form.Text>
             </Form.Group>
+
 
             <Form.Group className="mb-3">
               <Form.Label>Essential Learning Outcomes</Form.Label>
+
+              {/* Dropdown to select from curriculum framework outcomes */}
+              <Form.Select
+                className="mb-2"
+                onChange={(e) => {
+                  if (e.target.value && !formData.essentialLearningOutcomes.includes(e.target.value)) {
+                    setFormData({
+                      ...formData,
+                      essentialLearningOutcomes: [...formData.essentialLearningOutcomes, e.target.value]
+                    });
+                    e.target.value = ''; // Reset dropdown
+                  }
+                }}
+              >
+                <option value="">+ Add outcome from curriculum...</option>
+                {(() => {
+                  // Extract learning outcomes from curriculum framework
+                  const framework = offering?.curriculum_framework || '';
+                  const outcomes = [];
+
+                  // Common patterns for learning outcomes in curriculum documents
+                  const outcomePatterns = [
+                    /(?:Students will|Learners will|By the end[^,]*,?\s+students will)\s+([^.!?]+[.!?])/gi,
+                    /(?:Learning Outcome|Outcome|Objective)[:\s]+([^.\n]+)/gi,
+                    /(?:Students should be able to|Students can)\s+([^.!?]+[.!?])/gi,
+                  ];
+
+                  outcomePatterns.forEach(pattern => {
+                    let match;
+                    while ((match = pattern.exec(framework)) !== null) {
+                      const outcome = match[1].trim();
+                      if (outcome && outcome.length > 10 && outcome.length < 200 && !outcomes.includes(outcome)) {
+                        outcomes.push(outcome);
+                      }
+                    }
+                  });
+
+                  // Remove duplicates and sort
+                  const uniqueOutcomes = [...new Set(outcomes)].sort();
+
+                  return uniqueOutcomes.map((outcome, idx) => (
+                    <option key={idx} value={outcome}>{outcome.substring(0, 100)}{outcome.length > 100 ? '...' : ''}</option>
+                  ));
+                })()}
+              </Form.Select>
+
+              {/* Manual input fields for outcomes */}
               {formData.essentialLearningOutcomes.map((outcome, idx) => (
                 <InputGroup key={idx} className="mb-2">
                   <Form.Control
@@ -982,7 +1088,7 @@ function TopicEditor({ topic, index, onUpdate, onCancel, onLinkResource, onReque
               ))}
               <Button variant="outline-primary" size="sm" onClick={handleAddOutcome}>
                 <FaPlus className="me-1" />
-                Add Outcome
+                Add Custom Outcome
               </Button>
             </Form.Group>
 
