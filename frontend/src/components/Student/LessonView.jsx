@@ -10,10 +10,11 @@ import {
   FaClipboardCheck, FaTasks, FaFilePdf, FaDownload, FaExternalLinkAlt,
   FaPlay, FaImage, FaFileAlt, FaLightbulb, FaQuestionCircle, FaComments,
   FaGraduationCap, FaRocket, FaStar, FaChevronDown, FaChevronUp,
-  FaSearch, FaFilter, FaLock, FaArrowRight, FaHashtag, FaCube
+  FaSearch, FaFilter, FaLock, FaArrowRight, FaHashtag, FaCube, FaVideo, FaDoorOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
+import collaborationService from '../../services/collaborationService';
 import { supabase } from '../../config/supabase';
 import FlashcardViewer from './FlashcardViewer';
 import InteractiveVideoViewer from './InteractiveVideoViewer';
@@ -31,6 +32,7 @@ function LessonView() {
   const [error, setError] = useState(null);
   const [lesson, setLesson] = useState(null);
   const [attendance, setAttendance] = useState(null);
+  const [virtualClassroom, setVirtualClassroom] = useState(null);
   const [quizStatuses, setQuizStatuses] = useState({});
   const [completedContent, setCompletedContent] = useState(new Set());
   const [expandedSections, setExpandedSections] = useState({});
@@ -208,6 +210,17 @@ function LessonView() {
             .maybeSingle();
           
           setAttendance(attendanceData);
+        }
+
+        // Fetch virtual classroom if session_id exists
+        if (lessonData?.session_id) {
+          try {
+            const classroom = await collaborationService.getVirtualClassroom(lessonData.session_id);
+            setVirtualClassroom(classroom);
+          } catch (err) {
+            console.error('Error fetching virtual classroom:', err);
+            // Virtual classroom might not exist yet, that's okay
+          }
         }
       }
       
@@ -1576,6 +1589,36 @@ function LessonView() {
                   <FaClock className="me-2" />
                   Estimated Time: {totalEstimatedTime} {totalEstimatedTime === 1 ? 'minute' : 'minutes'}
                 </Badge>
+              </div>
+            )}
+
+            {/* Virtual Classroom */}
+            {virtualClassroom && (
+              <div className="mt-3 mb-3">
+                <Button
+                  variant="success"
+                  size="lg"
+                  className="px-4 py-2"
+                  onClick={() => {
+                    if (virtualClassroom.meeting_url) {
+                      window.open(virtualClassroom.meeting_url, '_blank', 'width=1200,height=800');
+                      // Join the session
+                      if (lesson.session_id && user?.user_id) {
+                        collaborationService.joinSession(lesson.session_id, user.user_id);
+                      }
+                    }
+                  }}
+                  style={{
+                    backgroundColor: '#28a745',
+                    borderColor: '#28a745',
+                    fontWeight: '600',
+                    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                  }}
+                >
+                  <FaVideo className="me-2" />
+                  Join Virtual Classroom
+                  <FaDoorOpen className="ms-2" />
+                </Button>
               </div>
             )}
             

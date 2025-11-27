@@ -77,17 +77,27 @@ Displays:
 
 ### Components Updated
 
-1. **LessonPlanning.jsx**
+1. **LessonPlanning.jsx** (Teacher)
    - Added virtual classroom state management
    - Fetches available virtual classrooms on load
    - Includes virtual classroom selection in form
    - Modal for creating new virtual classrooms
    - Visual indicators in lesson cards/list
 
-2. **TeacherLessonView.jsx**
+2. **TeacherLessonView.jsx** (Teacher)
    - Fetches virtual classroom data when lesson has `session_id`
    - Displays virtual classroom information
    - Provides join functionality
+
+3. **LessonView.jsx** (Student)
+   - Fetches virtual classroom data when lesson has `session_id`
+   - Displays prominent "Join Virtual Classroom" button
+   - Integrates with collaboration service for session joining
+
+4. **LessonViewStream.jsx** (Student)
+   - Fetches virtual classroom data when lesson has `session_id`
+   - Displays styled "Join Virtual Classroom" button
+   - Matches gamified interface theme
 
 ### Services Used
 
@@ -114,7 +124,9 @@ Displays:
    - Clicks "Join Classroom" to start/join the video session
 
 3. **Students:**
-   - Can access the virtual classroom through the lesson (when student view is implemented)
+   - Can access the virtual classroom directly from the lesson view
+   - See a prominent "Join Virtual Classroom" button in the lesson header
+   - Available in both standard lesson view (`/student/lessons/:lessonId`) and stream view
 
 ## Database Schema
 
@@ -127,14 +139,33 @@ The relationship:
 - `lessons.session_id` → `collaboration_sessions.session_id`
 - `collaboration_sessions` → `virtual_classrooms` (via session_id)
 
+## Student Access
+
+Students can access virtual classrooms from:
+
+1. **Standard Lesson View** (`/student/lessons/:lessonId`)
+   - Prominent green "Join Virtual Classroom" button in the hero section
+   - Appears below the estimated time badge
+   - Opens Jitsi meeting in a new window
+
+2. **Stream Lesson View** (`/student/lessons/:lessonId/stream`)
+   - "Join Virtual Classroom" button in the mission header
+   - Styled to match the gamified interface
+   - Same functionality as standard view
+
+Both views automatically:
+- Fetch virtual classroom data when a lesson has `session_id`
+- Join the collaboration session when clicking the button
+- Open the Jitsi meeting in a new window
+
 ## Future Enhancements
 
 Potential improvements:
 - Auto-create virtual classroom when lesson is scheduled
 - Schedule virtual classrooms for future lessons
 - Integration with calendar/notifications
-- Student view of virtual classroom links
 - Recording playback from lesson view
+- Notifications when virtual classroom is about to start
 
 ## Notes
 

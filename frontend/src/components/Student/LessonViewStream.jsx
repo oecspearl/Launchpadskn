@@ -4,10 +4,11 @@ import {
     FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
     FaBook, FaClipboardList, FaCheckCircle, FaPlay, FaImage,
     FaFileAlt, FaRocket, FaGraduationCap, FaLightbulb,
-    FaQuestionCircle, FaComments, FaCube, FaLock, FaTrophy
+    FaQuestionCircle, FaComments, FaCube, FaLock, FaTrophy, FaVideo, FaDoorOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
+import collaborationService from '../../services/collaborationService';
 import { supabase } from '../../config/supabase';
 import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
 import ViewerErrorBoundary from '../InteractiveContent/Viewers/ViewerErrorBoundary';
@@ -26,6 +27,7 @@ function LessonViewStream() {
     const [lesson, setLesson] = useState(null);
     const [completedContent, setCompletedContent] = useState(new Set());
     const [activeContent, setActiveContent] = useState(null);
+    const [virtualClassroom, setVirtualClassroom] = useState(null);
     const [theme, setTheme] = useState(() => {
         // Load theme from localStorage or default to 'cool-dark'
         return localStorage.getItem('lesson-viewer-theme') || 'cool-dark';
@@ -79,6 +81,17 @@ function LessonViewStream() {
             }
 
             setLesson(lessonData);
+
+            // Fetch virtual classroom if session_id exists
+            if (lessonData?.session_id) {
+                try {
+                    const classroom = await collaborationService.getVirtualClassroom(lessonData.session_id);
+                    setVirtualClassroom(classroom);
+                } catch (err) {
+                    console.error('Error fetching virtual classroom:', err);
+                    // Virtual classroom might not exist yet, that's okay
+                }
+            }
         } catch (err) {
             console.error('Error fetching lesson:', err);
         } finally {
@@ -178,6 +191,51 @@ function LessonViewStream() {
                             <span><FaClock className="me-2" />{lesson.start_time?.substring(0, 5)} - {lesson.end_time?.substring(0, 5)}</span>
                             <span><FaMapMarkerAlt className="me-2" />{lesson.location || 'Virtual Classroom'}</span>
                         </div>
+                        {virtualClassroom && (
+                            <div style={{ marginTop: '1rem' }}>
+                                <button
+                                    className="btn-join-classroom"
+                                    onClick={() => {
+                                        if (virtualClassroom.meeting_url) {
+                                            window.open(virtualClassroom.meeting_url, '_blank', 'width=1200,height=800');
+                                            // Join the session
+                                            if (lesson.session_id && user?.user_id) {
+                                                collaborationService.joinSession(lesson.session_id, user.user_id);
+                                            }
+                                        }
+                                    }}
+                                    style={{
+                                        backgroundColor: '#28a745',
+                                        color: 'white',
+                                        border: 'none',
+                                        padding: '0.75rem 1.5rem',
+                                        borderRadius: '8px',
+                                        fontSize: '1rem',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.backgroundColor = '#218838';
+                                        e.target.style.transform = 'translateY(-2px)';
+                                        e.target.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.backgroundColor = '#28a745';
+                                        e.target.style.transform = 'translateY(0)';
+                                        e.target.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                                    }}
+                                >
+                                    <FaVideo />
+                                    Join Virtual Classroom
+                                    <FaDoorOpen />
+                                </button>
+                            </div>
+                        )}
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                         <ThemeSelector currentTheme={theme} onThemeChange={handleThemeChange} />
