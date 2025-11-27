@@ -11,8 +11,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'Launchpad LMS',
-        short_name: 'Launchpad',
+        name: 'Launchpad SKN',
+        short_name: 'Launchpad SKN',
         description: 'Learning Management System for SKN',
         theme_color: '#ffffff',
         background_color: '#ffffff',
