@@ -4,7 +4,7 @@ import {
   Container, Row, Col, Card, Button, Spinner, Alert,
   Form, Modal, ListGroup, Badge
 } from 'react-bootstrap';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import {
   FaUpload, FaFileAlt, FaLink, FaVideo, FaImage,
   FaTrash, FaEdit, FaPlus, FaDownload, FaExternalLinkAlt, FaBook, FaEye,
@@ -34,6 +34,7 @@ if (typeof window !== 'undefined' && !window.html2pdf) {
 
 function LessonContentManager() {
   const { lessonId } = useParams();
+  const navigate = useNavigate();
   const { user } = useAuth();
 
   const [isLoading, setIsLoading] = useState(true);
