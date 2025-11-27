@@ -7,7 +7,7 @@ import {
   FaSearch, FaFilter, FaStar, FaStarHalfAlt, FaBook, FaVideo,
   FaFileAlt, FaImage, FaLink, FaPlus, FaHeart, FaHeartBroken,
   FaUsers, FaEye, FaDownload, FaTag, FaGraduationCap, FaClock,
-  FaCheckCircle, FaTimesCircle, FaThumbsUp, FaComments
+  FaCheckCircle, FaTimesCircle, FaThumbsUp, FaComments, FaExternalLinkAlt
 } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
@@ -49,6 +49,8 @@ function ContentLibrary() {
   // Modals
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewContent, setPreviewContent] = useState(null);
   const [selectedContent, setSelectedContent] = useState(null);
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState('');
@@ -436,6 +438,19 @@ function ContentLibrary() {
                       </Card.Body>
                       <Card.Footer className="d-flex gap-2">
                         <Button
+                          variant="info"
+                          size="sm"
+                          onClick={async () => {
+                            // Fetch full content details
+                            const fullContent = await contentLibraryService.getLibraryContentById(item.library_id);
+                            setPreviewContent(fullContent);
+                            setShowPreviewModal(true);
+                          }}
+                        >
+                          <FaEye className="me-1" />
+                          Preview
+                        </Button>
+                        <Button
                           variant="primary"
                           size="sm"
                           className="flex-grow-1"
@@ -511,13 +526,29 @@ function ContentLibrary() {
                       <Card.Body>
                         <h6>{item.title}</h6>
                         <p className="text-muted small">{item.description?.substring(0, 100)}...</p>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          onClick={() => handleAddToLesson(item)}
-                        >
-                          Add to Lesson
-                        </Button>
+                        <div className="d-flex gap-2">
+                          <Button
+                            variant="info"
+                            size="sm"
+                            onClick={async () => {
+                              const fullContent = await contentLibraryService.getLibraryContentById(item.library_id);
+                              setPreviewContent(fullContent);
+                              setShowPreviewModal(true);
+                            }}
+                          >
+                            <FaEye className="me-1" />
+                            Preview
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            className="flex-grow-1"
+                            onClick={() => handleAddToLesson(item)}
+                          >
+                            <FaPlus className="me-1" />
+                            Add to Lesson
+                          </Button>
+                        </div>
                       </Card.Body>
                     </Card>
                   </Col>
@@ -567,6 +598,299 @@ function ContentLibrary() {
           <Button variant="primary" onClick={handleRateContent}>
             Submit Rating
           </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Preview Modal */}
+      <Modal 
+        show={showPreviewModal} 
+        onHide={() => {
+          setShowPreviewModal(false);
+          setPreviewContent(null);
+        }}
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {getContentTypeIcon(previewContent?.content_type)}
+            <span className="ms-2">Preview: {previewContent?.title}</span>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {previewContent && (
+            <>
+              {/* Basic Info */}
+              <Row className="mb-3">
+                <Col md={6}>
+                  <strong>Content Type:</strong> {previewContent.content_type}
+                </Col>
+                <Col md={6}>
+                  <strong>Shared By:</strong> {previewContent.shared_by_user?.name || 'Unknown'}
+                </Col>
+              </Row>
+
+              {previewContent.subject && (
+                <Row className="mb-3">
+                  <Col md={6}>
+                    <strong>Subject:</strong> {previewContent.subject.subject_name}
+                  </Col>
+                  {previewContent.form && (
+                    <Col md={6}>
+                      <strong>Form:</strong> {previewContent.form.form_name}
+                    </Col>
+                  )}
+                </Row>
+              )}
+
+              {/* Rating and Stats */}
+              <Row className="mb-3">
+                <Col>
+                  <div className="d-flex align-items-center gap-3">
+                    <span>
+                      <FaStar className="text-warning" /> 
+                      {previewContent.rating_average?.toFixed(1) || '0.0'} 
+                      ({previewContent.rating_count || 0} ratings)
+                    </span>
+                    <span>
+                      <FaUsers /> {previewContent.use_count || 0} uses
+                    </span>
+                    <span>
+                      <FaEye /> {previewContent.view_count || 0} views
+                    </span>
+                    {previewContent.estimated_minutes && (
+                      <span>
+                        <FaClock /> {previewContent.estimated_minutes} minutes
+                      </span>
+                    )}
+                  </div>
+                </Col>
+              </Row>
+
+              {/* Description */}
+              {previewContent.description && (
+                <div className="mb-3">
+                  <strong>Description:</strong>
+                  <p className="mt-1">{previewContent.description}</p>
+                </div>
+              )}
+
+              {/* Instructions */}
+              {previewContent.instructions && (
+                <div className="mb-3">
+                  <strong>Instructions:</strong>
+                  <div className="alert alert-info mt-1 mb-0">
+                    {previewContent.instructions}
+                  </div>
+                </div>
+              )}
+
+              {/* Learning Outcomes */}
+              {previewContent.learning_outcomes && (
+                <div className="mb-3">
+                  <strong>Learning Outcomes:</strong>
+                  <div className="mt-1" style={{ whiteSpace: 'pre-wrap' }}>
+                    {previewContent.learning_outcomes}
+                  </div>
+                </div>
+              )}
+
+              {/* Key Concepts */}
+              {previewContent.key_concepts && (
+                <div className="mb-3">
+                  <strong>Key Concepts:</strong>
+                  <div className="mt-1" style={{ whiteSpace: 'pre-wrap' }}>
+                    {previewContent.key_concepts}
+                  </div>
+                </div>
+              )}
+
+              {/* Learning Activities */}
+              {previewContent.learning_activities && (
+                <div className="mb-3">
+                  <strong>Learning Activities:</strong>
+                  <div className="mt-1" style={{ whiteSpace: 'pre-wrap' }}>
+                    {previewContent.learning_activities}
+                  </div>
+                </div>
+              )}
+
+              {/* Reflection Questions */}
+              {previewContent.reflection_questions && (
+                <div className="mb-3">
+                  <strong>Reflection Questions:</strong>
+                  <div className="mt-1" style={{ whiteSpace: 'pre-wrap' }}>
+                    {previewContent.reflection_questions}
+                  </div>
+                </div>
+              )}
+
+              {/* Discussion Prompts */}
+              {previewContent.discussion_prompts && (
+                <div className="mb-3">
+                  <strong>Discussion Prompts:</strong>
+                  <div className="mt-1" style={{ whiteSpace: 'pre-wrap' }}>
+                    {previewContent.discussion_prompts}
+                  </div>
+                </div>
+              )}
+
+              {/* Summary */}
+              {previewContent.summary && (
+                <div className="mb-3">
+                  <strong>Summary:</strong>
+                  <div className="mt-1" style={{ whiteSpace: 'pre-wrap' }}>
+                    {previewContent.summary}
+                  </div>
+                </div>
+              )}
+
+              {/* URL/Link Preview */}
+              {previewContent.url && (
+                <div className="mb-3">
+                  <strong>Link/URL:</strong>
+                  <div className="mt-1">
+                    <a 
+                      href={previewContent.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="d-inline-flex align-items-center gap-1"
+                    >
+                      {previewContent.url}
+                      <FaExternalLinkAlt size={12} />
+                    </a>
+                  </div>
+                  {/* Video Preview */}
+                  {previewContent.content_type === 'VIDEO' && (
+                    <div className="mt-2">
+                      {(previewContent.url.includes('youtube.com') || previewContent.url.includes('youtu.be')) ? (
+                        <iframe
+                          width="100%"
+                          height="315"
+                          src={previewContent.url.includes('youtube.com/watch') 
+                            ? previewContent.url.replace('watch?v=', 'embed/')
+                            : previewContent.url.replace('youtu.be/', 'youtube.com/embed/')}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          title="Video preview"
+                        />
+                      ) : (
+                        <video controls width="100%" style={{ maxHeight: '400px' }}>
+                          <source src={previewContent.url} />
+                          Your browser does not support the video tag.
+                        </video>
+                      )}
+                    </div>
+                  )}
+                  {/* Image Preview */}
+                  {previewContent.content_type === 'IMAGE' && (
+                    <div className="mt-2">
+                      <img 
+                        src={previewContent.url} 
+                        alt={previewContent.title}
+                        style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain' }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* File Info */}
+              {previewContent.file_name && (
+                <div className="mb-3">
+                  <strong>File:</strong> {previewContent.file_name}
+                  {previewContent.file_size && (
+                    <span className="text-muted ms-2">
+                      ({(previewContent.file_size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Tags */}
+              {previewContent.tags && previewContent.tags.length > 0 && (
+                <div className="mb-3">
+                  <strong>Tags:</strong>
+                  <div className="mt-1">
+                    {previewContent.tags.map((tag, idx) => (
+                      <Badge key={idx} bg="light" text="dark" className="me-1">
+                        <FaTag className="me-1" />
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Content Section */}
+              {previewContent.content_section && (
+                <div className="mb-3">
+                  <strong>Content Section:</strong> {previewContent.content_section}
+                </div>
+              )}
+
+              {/* Required/Optional */}
+              <div className="mb-3">
+                <strong>Status:</strong>{' '}
+                {previewContent.is_required ? (
+                  <Badge bg="success">Required</Badge>
+                ) : (
+                  <Badge bg="info">Optional</Badge>
+                )}
+              </div>
+
+              {/* Reviews */}
+              {previewContent.ratings && previewContent.ratings.length > 0 && (
+                <div className="mb-3">
+                  <strong>Reviews:</strong>
+                  <div className="mt-2">
+                    {previewContent.ratings.slice(0, 3).map((ratingItem) => (
+                      <Card key={ratingItem.rating_id} className="mb-2">
+                        <Card.Body className="py-2">
+                          <div className="d-flex justify-content-between align-items-start">
+                            <div>
+                              <div className="d-flex align-items-center gap-1 mb-1">
+                                {renderStars(ratingItem.rating)}
+                                <span className="ms-2 small">
+                                  {ratingItem.user?.name || 'Anonymous'}
+                                </span>
+                              </div>
+                              {ratingItem.review && (
+                                <p className="mb-0 small">{ratingItem.review}</p>
+                              )}
+                            </div>
+                          </div>
+                        </Card.Body>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              setShowPreviewModal(false);
+              setPreviewContent(null);
+            }}
+          >
+            Close
+          </Button>
+          {previewContent && (
+            <Button 
+              variant="primary" 
+              onClick={() => {
+                handleAddToLesson(previewContent);
+                setShowPreviewModal(false);
+              }}
+            >
+              <FaPlus className="me-1" />
+              Add to Lesson
+            </Button>
+          )}
         </Modal.Footer>
       </Modal>
     </Container>
