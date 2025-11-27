@@ -13,6 +13,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import contentLibraryService from '../../services/contentLibraryService';
 import { supabase } from '../../config/supabase';
+import InteractiveVideoViewer from '../Student/InteractiveVideoViewer';
+import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
+import ViewerErrorBoundary from '../InteractiveContent/Viewers/ViewerErrorBoundary';
 import './ContentLibrary.css';
 
 function ContentLibrary() {
@@ -608,7 +611,10 @@ function ContentLibrary() {
           setShowPreviewModal(false);
           setPreviewContent(null);
         }}
-        size="lg"
+        size={previewContent?.content_type === 'INTERACTIVE_VIDEO' || 
+              previewContent?.content_type === '3D_MODEL' || 
+              previewContent?.content_type === 'AR_OVERLAY' ? 'xl' : 'lg'}
+        fullscreen={previewContent?.content_type === 'INTERACTIVE_VIDEO' ? 'lg-down' : false}
       >
         <Modal.Header closeButton>
           <Modal.Title>
@@ -616,9 +622,35 @@ function ContentLibrary() {
             <span className="ms-2">Preview: {previewContent?.title}</span>
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+        <Modal.Body 
+          style={{ 
+            maxHeight: previewContent?.content_type === 'INTERACTIVE_VIDEO' ? '90vh' : '70vh', 
+            overflowY: previewContent?.content_type === 'INTERACTIVE_VIDEO' ? 'hidden' : 'auto',
+            padding: previewContent?.content_type === 'INTERACTIVE_VIDEO' ? 0 : undefined
+          }}
+        >
           {previewContent && (
             <>
+              {/* Interactive Video - Full Screen Preview */}
+              {previewContent.content_type === 'INTERACTIVE_VIDEO' && previewContent.content_data && (
+                <div style={{ height: '90vh' }}>
+                  <InteractiveVideoViewer
+                    contentData={typeof previewContent.content_data === 'string' 
+                      ? JSON.parse(previewContent.content_data) 
+                      : previewContent.content_data}
+                    title={previewContent.title}
+                    description={previewContent.description}
+                    onClose={() => {
+                      setShowPreviewModal(false);
+                      setPreviewContent(null);
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Regular Preview Content */}
+              {previewContent.content_type !== 'INTERACTIVE_VIDEO' && (
+                <>
               {/* Basic Info */}
               <Row className="mb-3">
                 <Col md={6}>
@@ -744,8 +776,46 @@ function ContentLibrary() {
                 </div>
               )}
 
+              {/* 3D Model Preview */}
+              {(previewContent.content_type === '3D_MODEL' || previewContent.content_type === 'AR_OVERLAY') && previewContent.url && (
+                <div className="mb-3">
+                  <strong>3D Model Preview:</strong>
+                  <div className="mt-2" style={{ 
+                    width: '100%', 
+                    height: '500px', 
+                    borderRadius: '8px', 
+                    overflow: 'hidden',
+                    border: '1px solid #dee2e6',
+                    backgroundColor: '#1a1a1a'
+                  }}>
+                    <ViewerErrorBoundary>
+                      <ModelViewerComponent
+                        contentUrl={previewContent.url}
+                        modelFormat="GLTF"
+                        modelProperties={{
+                          autoRotate: true,
+                          cameraControls: true,
+                          exposure: 1,
+                          shadowIntensity: 1
+                        }}
+                        annotations={[]}
+                        onInteraction={(interaction) => {
+                          console.log('3D Model interaction:', interaction);
+                        }}
+                        onStateChange={(state) => {
+                          console.log('3D Model state:', state);
+                        }}
+                      />
+                    </ViewerErrorBoundary>
+                  </div>
+                </div>
+              )}
+
               {/* URL/Link Preview */}
-              {previewContent.url && (
+              {previewContent.url && 
+               previewContent.content_type !== 'INTERACTIVE_VIDEO' && 
+               previewContent.content_type !== '3D_MODEL' && 
+               previewContent.content_type !== 'AR_OVERLAY' && (
                 <div className="mb-3">
                   <strong>Link/URL:</strong>
                   <div className="mt-1">
@@ -759,7 +829,7 @@ function ContentLibrary() {
                       <FaExternalLinkAlt size={12} />
                     </a>
                   </div>
-                  {/* Video Preview */}
+                  {/* Regular Video Preview */}
                   {previewContent.content_type === 'VIDEO' && (
                     <div className="mt-2">
                       {(previewContent.url.includes('youtube.com') || previewContent.url.includes('youtu.be')) ? (
@@ -866,32 +936,36 @@ function ContentLibrary() {
                   </div>
                 </div>
               )}
+                </>
+              )}
             </>
           )}
         </Modal.Body>
-        <Modal.Footer>
-          <Button 
-            variant="secondary" 
-            onClick={() => {
-              setShowPreviewModal(false);
-              setPreviewContent(null);
-            }}
-          >
-            Close
-          </Button>
-          {previewContent && (
+        {previewContent?.content_type !== 'INTERACTIVE_VIDEO' && (
+          <Modal.Footer>
             <Button 
-              variant="primary" 
+              variant="secondary" 
               onClick={() => {
-                handleAddToLesson(previewContent);
                 setShowPreviewModal(false);
+                setPreviewContent(null);
               }}
             >
-              <FaPlus className="me-1" />
-              Add to Lesson
+              Close
             </Button>
-          )}
-        </Modal.Footer>
+            {previewContent && (
+              <Button 
+                variant="primary" 
+                onClick={() => {
+                  handleAddToLesson(previewContent);
+                  setShowPreviewModal(false);
+                }}
+              >
+                <FaPlus className="me-1" />
+                Add to Lesson
+              </Button>
+            )}
+          </Modal.Footer>
+        )}
       </Modal>
     </Container>
   );
