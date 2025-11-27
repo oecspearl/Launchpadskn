@@ -7,11 +7,13 @@ import {
   FaSearch, FaFilter, FaStar, FaStarHalfAlt, FaBook, FaVideo,
   FaFileAlt, FaImage, FaLink, FaPlus, FaHeart, FaHeartBroken,
   FaUsers, FaEye, FaDownload, FaTag, FaGraduationCap, FaClock,
-  FaCheckCircle, FaTimesCircle, FaThumbsUp, FaComments, FaExternalLinkAlt
+  FaCheckCircle, FaTimesCircle, FaThumbsUp, FaComments, FaExternalLinkAlt,
+  FaUserPlus, FaBell, FaLightbulb
 } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import contentLibraryService from '../../services/contentLibraryService';
+import teacherCollaborationService from '../../services/teacherCollaborationService';
 import { supabase } from '../../config/supabase';
 import InteractiveVideoViewer from '../Student/InteractiveVideoViewer';
 import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
@@ -53,10 +55,19 @@ function ContentLibrary() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [showRequestModal, setShowRequestModal] = useState(false);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
   const [previewContent, setPreviewContent] = useState(null);
   const [selectedContent, setSelectedContent] = useState(null);
   const [rating, setRating] = useState(5);
   const [review, setReview] = useState('');
+  const [comments, setComments] = useState([]);
+  const [newComment, setNewComment] = useState('');
+  const [requestTitle, setRequestTitle] = useState('');
+  const [requestDescription, setRequestDescription] = useState('');
+  const [suggestionText, setSuggestionText] = useState('');
+  const [suggestionType, setSuggestionType] = useState('IMPROVEMENT');
 
   useEffect(() => {
     fetchSubjects();
@@ -282,6 +293,16 @@ function ContentLibrary() {
 
       <Tabs activeKey={activeTab} onSelect={setActiveTab} className="mb-4">
         <Tab eventKey="browse" title="Browse Library">
+          <div className="d-flex justify-content-end mb-3">
+            <Button
+              variant="outline-primary"
+              className="me-2"
+              onClick={() => setShowRequestModal(true)}
+            >
+              <FaBell className="me-1" />
+              Request Content
+            </Button>
+          </div>
           {/* Search and Filters */}
           <Card className="mb-4">
             <Card.Body>
@@ -471,6 +492,28 @@ function ContentLibrary() {
                           }}
                         >
                           <FaStar />
+                        </Button>
+                        <Button
+                          variant="outline-info"
+                          size="sm"
+                          onClick={async () => {
+                            setSelectedContent(item);
+                            const commentsData = await teacherCollaborationService.getComments(item.library_id);
+                            setComments(commentsData);
+                            setShowCommentsModal(true);
+                          }}
+                        >
+                          <FaComments />
+                        </Button>
+                        <Button
+                          variant="outline-warning"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedContent(item);
+                            setShowSuggestionModal(true);
+                          }}
+                        >
+                          <FaLightbulb />
                         </Button>
                       </Card.Footer>
                     </Card>
@@ -963,9 +1006,285 @@ function ContentLibrary() {
                 <FaPlus className="me-1" />
                 Add to Lesson
               </Button>
-            )}
-          </Modal.Footer>
+          )}
+        </Modal.Footer>
         )}
+      </Modal>
+
+      {/* Comments Modal */}
+      <Modal 
+        show={showCommentsModal} 
+        onHide={() => {
+          setShowCommentsModal(false);
+          setComments([]);
+          setNewComment('');
+        }}
+        size="lg"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaComments className="me-2" />
+            Comments & Discussion
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '60vh', overflowY: 'auto' }}>
+          {comments.length === 0 ? (
+            <Alert variant="info">No comments yet. Be the first to comment!</Alert>
+          ) : (
+            <div>
+              {comments.map((comment) => (
+                <Card key={comment.comment_id} className="mb-3">
+                  <Card.Body>
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div>
+                        <strong>{comment.user?.name || 'Unknown'}</strong>
+                        <small className="text-muted ms-2">
+                          {new Date(comment.created_at).toLocaleDateString()}
+                        </small>
+                      </div>
+                    </div>
+                    <p className="mb-0">{comment.comment_text}</p>
+                    {comment.parent_comment && (
+                      <div className="mt-2 p-2 bg-light rounded">
+                        <small>
+                          <strong>Replying to {comment.parent_comment.user?.name}:</strong>{' '}
+                          {comment.parent_comment.comment_text}
+                        </small>
+                      </div>
+                    )}
+                  </Card.Body>
+                </Card>
+              ))}
+            </div>
+          )}
+          <Form className="mt-3">
+            <Form.Group>
+              <Form.Label>Add Comment</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Share your thoughts or ask a question..."
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              setShowCommentsModal(false);
+              setComments([]);
+              setNewComment('');
+            }}
+          >
+            Close
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={async () => {
+              if (!newComment.trim() || !selectedContent) return;
+              try {
+                await teacherCollaborationService.addComment({
+                  library_id: selectedContent.library_id,
+                  user_id: user?.user_id,
+                  comment_text: newComment
+                });
+                const updatedComments = await teacherCollaborationService.getComments(selectedContent.library_id);
+                setComments(updatedComments);
+                setNewComment('');
+              } catch (err) {
+                console.error('Error adding comment:', err);
+                alert('Failed to add comment');
+              }
+            }}
+            disabled={!newComment.trim()}
+          >
+            Post Comment
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Content Request Modal */}
+      <Modal 
+        show={showRequestModal} 
+        onHide={() => {
+          setShowRequestModal(false);
+          setRequestTitle('');
+          setRequestDescription('');
+        }}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaBell className="me-2" />
+            Request Content
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Request Title *</Form.Label>
+              <Form.Control
+                type="text"
+                value={requestTitle}
+                onChange={(e) => setRequestTitle(e.target.value)}
+                placeholder="e.g., Interactive video on photosynthesis"
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Description *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                value={requestDescription}
+                onChange={(e) => setRequestDescription(e.target.value)}
+                placeholder="Describe what content you need and how you plan to use it..."
+                required
+              />
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Subject</Form.Label>
+              <Form.Select
+                value={filters.subjectId}
+                onChange={(e) => setFilters({ ...filters, subjectId: e.target.value })}
+              >
+                <option value="">Select Subject</option>
+                {subjects.map(subject => (
+                  <option key={subject.subject_id} value={subject.subject_id}>
+                    {subject.subject_name}
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              setShowRequestModal(false);
+              setRequestTitle('');
+              setRequestDescription('');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={async () => {
+              if (!requestTitle.trim() || !requestDescription.trim()) return;
+              try {
+                await teacherCollaborationService.createContentRequest({
+                  requested_by: user?.user_id,
+                  request_title: requestTitle,
+                  request_description: requestDescription,
+                  subject_id: filters.subjectId || null,
+                  form_id: filters.formId || null,
+                  status: 'OPEN'
+                });
+                alert('Content request submitted! Other teachers will be notified.');
+                setShowRequestModal(false);
+                setRequestTitle('');
+                setRequestDescription('');
+              } catch (err) {
+                console.error('Error creating request:', err);
+                alert('Failed to submit request');
+              }
+            }}
+            disabled={!requestTitle.trim() || !requestDescription.trim()}
+          >
+            Submit Request
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Suggestion Modal */}
+      <Modal 
+        show={showSuggestionModal} 
+        onHide={() => {
+          setShowSuggestionModal(false);
+          setSuggestionText('');
+          setSuggestionType('IMPROVEMENT');
+        }}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaLightbulb className="me-2" />
+            Suggest Improvement
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {selectedContent && (
+            <Alert variant="info" className="mb-3">
+              Suggesting improvements for: <strong>{selectedContent.title}</strong>
+            </Alert>
+          )}
+          <Form>
+            <Form.Group className="mb-3">
+              <Form.Label>Suggestion Type</Form.Label>
+              <Form.Select
+                value={suggestionType}
+                onChange={(e) => setSuggestionType(e.target.value)}
+              >
+                <option value="IMPROVEMENT">General Improvement</option>
+                <option value="CORRECTION">Correction</option>
+                <option value="ENHANCEMENT">Enhancement</option>
+                <option value="TAG">Tag Suggestion</option>
+                <option value="OTHER">Other</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Suggestion *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={4}
+                value={suggestionText}
+                onChange={(e) => setSuggestionText(e.target.value)}
+                placeholder="Describe your suggestion..."
+                required
+              />
+            </Form.Group>
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button 
+            variant="secondary" 
+            onClick={() => {
+              setShowSuggestionModal(false);
+              setSuggestionText('');
+              setSuggestionType('IMPROVEMENT');
+            }}
+          >
+            Cancel
+          </Button>
+          <Button 
+            variant="primary" 
+            onClick={async () => {
+              if (!suggestionText.trim() || !selectedContent) return;
+              try {
+                await teacherCollaborationService.createSuggestion({
+                  library_id: selectedContent.library_id,
+                  suggested_by: user?.user_id,
+                  suggestion_type: suggestionType,
+                  suggestion_text: suggestionText,
+                  status: 'PENDING'
+                });
+                alert('Suggestion submitted! The content creator will be notified.');
+                setShowSuggestionModal(false);
+                setSuggestionText('');
+                setSuggestionType('IMPROVEMENT');
+              } catch (err) {
+                console.error('Error creating suggestion:', err);
+                alert('Failed to submit suggestion');
+              }
+            }}
+            disabled={!suggestionText.trim()}
+          >
+            Submit Suggestion
+          </Button>
+        </Modal.Footer>
       </Modal>
     </Container>
   );

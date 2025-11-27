@@ -6,12 +6,13 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FaCalendarAlt, FaClock, FaMapMarkerAlt, FaBook, FaSave, FaPlus, FaMagic,
-  FaList, FaTh, FaTable, FaEye, FaEdit, FaVideo
+  FaList, FaTh, FaTable, FaEye, FaEdit, FaVideo, FaCopy, FaFolderOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import collaborationService from '../../services/collaborationService';
+import lessonTemplateService from '../../services/lessonTemplateService';
 import AILessonPlanner from './AILessonPlanner';
 import EnhancedLessonPlannerForm from './EnhancedLessonPlannerForm';
 import LessonPlanOutput from './LessonPlanOutput';
@@ -525,6 +526,14 @@ function LessonPlanning() {
               </p>
             </div>
             <div>
+              <Button 
+                variant="outline-info" 
+                className="me-2" 
+                onClick={() => navigate(`/teacher/lesson-templates?classSubjectId=${classSubjectId}`)}
+              >
+                <FaFolderOpen className="me-2" />
+                Templates
+              </Button>
               <Button variant="outline-primary" className="me-2" onClick={() => setShowEnhancedPlanner(true)}>
                 <FaMagic className="me-2" />
                 AI Lesson Planner
@@ -754,6 +763,29 @@ function LessonPlanning() {
                             >
                               <FaEdit className="me-1" />
                               Edit
+                            </Button>
+                            <Button 
+                              variant="outline-success" 
+                              size="sm"
+                              onClick={async () => {
+                                const templateName = prompt('Enter a name for this template:');
+                                if (!templateName) return;
+                                
+                                try {
+                                  await lessonTemplateService.saveLessonAsTemplate(lesson.lesson_id, {
+                                    template_name: templateName,
+                                    created_by: user?.user_id,
+                                    is_public: true
+                                  });
+                                  alert('Lesson saved as template successfully!');
+                                } catch (err) {
+                                  console.error('Error saving template:', err);
+                                  alert('Failed to save template');
+                                }
+                              }}
+                              title="Save as Template"
+                            >
+                              <FaCopy />
                             </Button>
                           </div>
                         </Col>

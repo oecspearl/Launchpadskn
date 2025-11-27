@@ -16,6 +16,7 @@ import {
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import contentLibraryService from '../../services/contentLibraryService';
+import autoTaggingService from '../../services/autoTaggingService';
 import { supabase } from '../../config/supabase';
 import QuizBuilder from './QuizBuilder';
 import FlashcardCreator from './FlashcardCreator';
@@ -2141,6 +2142,20 @@ function LessonContentManager() {
                                                       const subjectId = lessonData?.class_subject?.subject_offering?.subject?.subject_id;
                                                       const formId = lessonData?.class_subject?.subject_offering?.form?.form_id;
 
+                                                      // Generate auto-tags
+                                                      const suggestedTags = await autoTaggingService.getSuggestedTags({
+                                                        content_type: item.content_type,
+                                                        title: item.title,
+                                                        description: item.description,
+                                                        url: item.url,
+                                                        learning_objectives: item.learning_outcomes,
+                                                        key_concepts: item.key_concepts,
+                                                        topic: item.topic,
+                                                        content_section: item.content_section,
+                                                        subject_id: subjectId,
+                                                        form_id: formId
+                                                      });
+
                                                       // Prepare library content data
                                                       const libraryData = {
                                                         content_type: item.content_type,
@@ -2175,12 +2190,12 @@ function LessonContentManager() {
                                                         shared_by: user?.user_id,
                                                         subject_id: subjectId,
                                                         form_id: formId,
-                                                        tags: [], // Can be enhanced later
+                                                        tags: suggestedTags, // Auto-generated tags
                                                         is_public: true
                                                       };
 
                                                       await contentLibraryService.shareContentToLibrary(libraryData);
-                                                      alert('Content shared to library successfully!');
+                                                      alert(`Content shared to library successfully! ${suggestedTags.length > 0 ? `Auto-tagged with: ${suggestedTags.slice(0, 5).join(', ')}` : ''}`);
                                                     } catch (err) {
                                                       console.error('Error sharing to library:', err);
                                                       alert('Failed to share content to library');

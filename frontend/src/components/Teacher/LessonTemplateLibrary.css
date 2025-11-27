@@ -1,0 +1,14 @@
+.template-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.template-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.template-card .card-title {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
