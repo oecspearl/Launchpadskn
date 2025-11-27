@@ -6,6 +6,7 @@ const Login = lazy(() => import('../components/Auth/Login'));
 const Register = lazy(() => import('../components/Auth/Register'));
 const ForgotPassword = lazy(() => import('../components/Auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('../components/Auth/ResetPassword'));
+const Homepage = lazy(() => import('../pages/Homepage'));
 
 const PublicRoutes = () => (
     <>
@@ -13,7 +14,7 @@ const PublicRoutes = () => (
         <Route path="/register" element={<Register />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Homepage />} />
     </>
 );
 
