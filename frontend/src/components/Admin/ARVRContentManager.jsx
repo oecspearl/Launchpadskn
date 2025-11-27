@@ -128,16 +128,34 @@ function ARVRContentManager() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
+      // Clean up data: convert empty strings to null for optional fields (same as create)
+      const cleanedData = {
+        content_name: data.content_name,
+        description: data.description || null,
+        content_type: data.content_type,
+        content_url: data.content_url || null,
+        model_format: data.model_format || null,
+        ar_marker_url: data.ar_marker_url && data.ar_marker_url !== '' ? data.ar_marker_url : null,
+        platform: data.platform || null,
+        subject_id: data.subject_id && data.subject_id !== '' ? parseInt(data.subject_id) : null,
+        class_subject_id: data.class_subject_id && data.class_subject_id !== '' ? parseInt(data.class_subject_id) : null,
+        difficulty_level: data.difficulty_level || null,
+        estimated_duration_minutes: data.estimated_duration_minutes || null,
+        model_properties: data.model_properties || {},
+        annotations: data.annotations || [],
+        updated_at: new Date().toISOString()
+      };
+
       const { data: result, error } = await supabase
         .from('arvr_content')
-        .update({
-          ...data,
-          updated_at: new Date().toISOString()
-        })
+        .update(cleanedData)
         .eq('content_id', id)
         .select()
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error('Update error details:', error);
+        throw error;
+      }
       return result;
     },
     onSuccess: () => {
