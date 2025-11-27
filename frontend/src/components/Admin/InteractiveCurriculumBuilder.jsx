@@ -957,11 +957,10 @@ function TopicEditor({ topic, index, offering, onUpdate, onCancel, onLinkResourc
               >
                 <option value="">Select a strand...</option>
                 {(() => {
-                  // Extract strands from curriculum framework
                   const framework = offering?.curriculum_framework || '';
                   const strands = [];
 
-                  // Common patterns for strand identification in curriculum documents
+                  // Try to extract from framework first
                   const strandPatterns = [
                     /Strand[:\s]+([^\n.]+)/gi,
                     /Domain[:\s]+([^\n.]+)/gi,
@@ -978,24 +977,21 @@ function TopicEditor({ topic, index, offering, onUpdate, onCancel, onLinkResourc
                     }
                   });
 
-                  // Common curriculum strands if none found
+                  // Subject-specific strands if none found
                   if (strands.length === 0) {
-                    const commonStrands = [
-                      'Number and Operations',
-                      'Algebra',
-                      'Geometry',
-                      'Measurement',
-                      'Data Analysis and Probability',
-                      'Reading',
-                      'Writing',
-                      'Speaking and Listening',
-                      'Language',
-                      'Physical Science',
-                      'Life Science',
-                      'Earth and Space Science',
-                      'Engineering and Technology'
-                    ];
-                    strands.push(...commonStrands);
+                    const subjectName = offering?.subject?.subject_name?.toLowerCase() || '';
+
+                    if (subjectName.includes('math')) {
+                      strands.push('Number and Operations', 'Algebra', 'Geometry', 'Measurement', 'Data Analysis and Probability', 'Statistics', 'Functions', 'Trigonometry');
+                    } else if (subjectName.includes('english') || subjectName.includes('language')) {
+                      strands.push('Reading', 'Writing', 'Speaking and Listening', 'Language', 'Literature', 'Comprehension', 'Vocabulary', 'Grammar and Mechanics');
+                    } else if (subjectName.includes('science') || subjectName.includes('biology') || subjectName.includes('chemistry') || subjectName.includes('physics')) {
+                      strands.push('Physical Science', 'Life Science', 'Earth and Space Science', 'Engineering and Technology', 'Scientific Inquiry', 'Matter and Energy');
+                    } else if (subjectName.includes('social') || subjectName.includes('history') || subjectName.includes('geography')) {
+                      strands.push('History', 'Geography', 'Civics and Government', 'Economics', 'Culture and Society', 'Historical Thinking');
+                    } else {
+                      strands.push('Knowledge and Understanding', 'Skills and Application', 'Critical Thinking', 'Communication', 'Inquiry and Research');
+                    }
                   }
 
                   return strands.map((strand, idx) => (
@@ -1015,6 +1011,7 @@ function TopicEditor({ topic, index, offering, onUpdate, onCancel, onLinkResourc
                 />
               </Form.Text>
             </Form.Group>
+
 
 
             <Form.Group className="mb-3">
