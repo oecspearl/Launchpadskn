@@ -48,10 +48,17 @@ function LessonTemplateLibrary() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  const [templateData, setTemplateData] = useState(null); // Full template data for editing
   const [lessonDate, setLessonDate] = useState('');
   const [startTime, setStartTime] = useState('08:00');
   const [endTime, setEndTime] = useState('08:45');
   const [location, setLocation] = useState('');
+  const [editedLessonTitle, setEditedLessonTitle] = useState('');
+  const [editedTopic, setEditedTopic] = useState('');
+  const [editedLearningObjectives, setEditedLearningObjectives] = useState('');
+  const [editedLessonPlan, setEditedLessonPlan] = useState('');
+  const [editedHomework, setEditedHomework] = useState('');
+  const [editedContent, setEditedContent] = useState([]);
 
   useEffect(() => {
     fetchSubjects();
@@ -131,6 +138,25 @@ function LessonTemplateLibrary() {
     }
   };
 
+  const handleOpenCreateModal = async (template) => {
+    setSelectedTemplate(template);
+    // Fetch full template data for editing
+    try {
+      const fullTemplate = await lessonTemplateService.getTemplateById(template.template_id);
+      setTemplateData(fullTemplate);
+      setEditedLessonTitle(fullTemplate.lesson_title || fullTemplate.template_name);
+      setEditedTopic(fullTemplate.topic || '');
+      setEditedLearningObjectives(fullTemplate.learning_objectives || '');
+      setEditedLessonPlan(fullTemplate.lesson_plan || '');
+      setEditedHomework(fullTemplate.homework_description || '');
+      setEditedContent(fullTemplate.content || []);
+      setShowCreateModal(true);
+    } catch (err) {
+      console.error('Error loading template:', err);
+      alert('Failed to load template');
+    }
+  };
+
   const handleCreateFromTemplate = async () => {
     if (!classSubjectId) {
       alert('Please select a class-subject first');
@@ -142,26 +168,92 @@ function LessonTemplateLibrary() {
       return;
     }
 
+    if (!editedLessonTitle.trim()) {
+      alert('Please enter a lesson title');
+      return;
+    }
+
     try {
-      const lesson = await lessonTemplateService.createLessonFromTemplate(
-        selectedTemplate.template_id,
-        parseInt(classSubjectId),
-        {
-          lesson_date: lessonDate,
-          start_time: startTime,
-          end_time: endTime,
-          location: location || null,
-          created_by: user?.user_id
-        }
-      );
+      // Create lesson with edited data
+      const lessonPayload = {
+        class_subject_id: parseInt(classSubjectId),
+        lesson_title: editedLessonTitle,
+        lesson_date: lessonDate,
+        start_time: startTime,
+        end_time: endTime,
+        topic: editedTopic,
+        learning_objectives: editedLearningObjectives,
+        lesson_plan: editedLessonPlan,
+        homework_description: editedHomework,
+        location: location || null,
+        status: 'SCHEDULED',
+        created_by: user?.user_id
+      };
+
+      const { data: lesson, error: lessonError } = await supabase
+        .from('lessons')
+        .insert(lessonPayload)
+        .select()
+        .single();
+
+      if (lessonError) throw lessonError;
+
+      // Create lesson content from edited template content
+      if (editedContent && editedContent.length > 0) {
+        const lessonContentItems = editedContent.map((templateContent) => ({
+          lesson_id: lesson.lesson_id,
+          content_type: templateContent.content_type,
+          title: templateContent.title,
+          description: templateContent.description,
+          url: templateContent.url,
+          instructions: templateContent.instructions,
+          learning_outcomes: templateContent.learning_outcomes,
+          learning_activities: templateContent.learning_activities,
+          key_concepts: templateContent.key_concepts,
+          reflection_questions: templateContent.reflection_questions,
+          discussion_prompts: templateContent.discussion_prompts,
+          summary: templateContent.summary,
+          content_section: templateContent.content_section,
+          is_required: templateContent.is_required,
+          estimated_minutes: templateContent.estimated_minutes,
+          sequence_order: templateContent.sequence_order,
+          content_data: templateContent.content_data,
+          metadata: templateContent.metadata,
+          uploaded_by: user?.user_id,
+          is_published: true,
+          published_at: new Date().toISOString()
+        }));
+
+        const { error: contentInsertError } = await supabase
+          .from('lesson_content')
+          .insert(lessonContentItems);
+
+        if (contentInsertError) throw contentInsertError;
+      }
+
+      // Record template usage
+      if (selectedTemplate) {
+        await supabase
+          .from('lesson_template_usage')
+          .insert({
+            template_id: selectedTemplate.template_id,
+            lesson_id: lesson.lesson_id,
+            used_by: user?.user_id
+          });
+      }
 
       alert('Lesson created from template successfully!');
       setShowCreateModal(false);
+      setTemplateData(null);
       navigate(`/teacher/class-subjects/${classSubjectId}/lessons`);
     } catch (err) {
       console.error('Error creating lesson from template:', err);
       alert('Failed to create lesson from template');
     }
+  };
+
+  const handleRemoveContent = (index) => {
+    setEditedContent(editedContent.filter((_, i) => i !== index));
   };
 
   const handleToggleFavorite = async (templateId, isFavorite) => {
@@ -411,10 +503,7 @@ function LessonTemplateLibrary() {
                           variant="primary"
                           size="sm"
                           className="flex-grow-1"
-                          onClick={() => {
-                            setSelectedTemplate(template);
-                            setShowCreateModal(true);
-                          }}
+                          onClick={() => handleOpenCreateModal(template)}
                           disabled={!classSubjectId}
                         >
                           <FaPlus className="me-1" />
@@ -480,10 +569,7 @@ function LessonTemplateLibrary() {
                         <Button
                           variant="primary"
                           size="sm"
-                          onClick={() => {
-                            setSelectedTemplate(template);
-                            setShowCreateModal(true);
-                          }}
+                          onClick={() => handleOpenCreateModal(template)}
                           disabled={!classSubjectId}
                         >
                           Use Template
@@ -643,8 +729,7 @@ function LessonTemplateLibrary() {
               variant="primary" 
               onClick={() => {
                 setShowPreviewModal(false);
-                setSelectedTemplate(previewTemplate);
-                setShowCreateModal(true);
+                handleOpenCreateModal(previewTemplate);
               }}
             >
               <FaPlus className="me-1" />
@@ -660,34 +745,59 @@ function LessonTemplateLibrary() {
         onHide={() => {
           setShowCreateModal(false);
           setSelectedTemplate(null);
+          setTemplateData(null);
         }}
+        size="lg"
       >
         <Modal.Header closeButton>
-          <Modal.Title>Create Lesson from Template</Modal.Title>
+          <Modal.Title>Edit & Create Lesson from Template</Modal.Title>
         </Modal.Header>
-        <Modal.Body>
-          {selectedTemplate && (
+        <Modal.Body style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+          {selectedTemplate && templateData && (
             <>
               <Alert variant="info" className="mb-3">
-                Creating lesson from: <strong>{selectedTemplate.template_name}</strong>
+                Editing template: <strong>{selectedTemplate.template_name}</strong>
                 <br />
-                <small>This will create a new lesson with {selectedTemplate.content_count || 0} content items.</small>
+                <small>You can modify the lesson details and content before creating the lesson.</small>
               </Alert>
 
               <Form>
+                {/* Basic Lesson Info */}
+                <h6 className="mb-3">Lesson Details</h6>
                 <Form.Group className="mb-3">
-                  <Form.Label>Lesson Date *</Form.Label>
+                  <Form.Label>Lesson Title *</Form.Label>
                   <Form.Control
-                    type="date"
-                    value={lessonDate}
-                    onChange={(e) => setLessonDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    type="text"
+                    value={editedLessonTitle}
+                    onChange={(e) => setEditedLessonTitle(e.target.value)}
                     required
+                  />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>Topic</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={editedTopic}
+                    onChange={(e) => setEditedTopic(e.target.value)}
+                    placeholder="e.g., Introduction to Photosynthesis"
                   />
                 </Form.Group>
 
                 <Row>
                   <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Lesson Date *</Form.Label>
+                      <Form.Control
+                        type="date"
+                        value={lessonDate}
+                        onChange={(e) => setLessonDate(e.target.value)}
+                        min={new Date().toISOString().split('T')[0]}
+                        required
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={3}>
                     <Form.Group className="mb-3">
                       <Form.Label>Start Time *</Form.Label>
                       <Form.Control
@@ -698,7 +808,7 @@ function LessonTemplateLibrary() {
                       />
                     </Form.Group>
                   </Col>
-                  <Col md={6}>
+                  <Col md={3}>
                     <Form.Group className="mb-3">
                       <Form.Label>End Time *</Form.Label>
                       <Form.Control
@@ -720,6 +830,75 @@ function LessonTemplateLibrary() {
                     placeholder="e.g., Room 101"
                   />
                 </Form.Group>
+
+                {/* Learning Objectives */}
+                <h6 className="mb-3 mt-4">Learning Objectives</h6>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    as="textarea"
+                    rows={4}
+                    value={editedLearningObjectives}
+                    onChange={(e) => setEditedLearningObjectives(e.target.value)}
+                    placeholder="Enter learning objectives..."
+                  />
+                </Form.Group>
+
+                {/* Lesson Plan */}
+                <h6 className="mb-3 mt-4">Lesson Plan</h6>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    as="textarea"
+                    rows={6}
+                    value={editedLessonPlan}
+                    onChange={(e) => setEditedLessonPlan(e.target.value)}
+                    placeholder="Enter lesson plan details..."
+                  />
+                </Form.Group>
+
+                {/* Homework */}
+                <h6 className="mb-3 mt-4">Homework</h6>
+                <Form.Group className="mb-3">
+                  <Form.Control
+                    as="textarea"
+                    rows={3}
+                    value={editedHomework}
+                    onChange={(e) => setEditedHomework(e.target.value)}
+                    placeholder="Enter homework description..."
+                  />
+                </Form.Group>
+
+                {/* Content Items */}
+                <h6 className="mb-3 mt-4">Content Items ({editedContent.length})</h6>
+                {editedContent.length > 0 ? (
+                  <ListGroup className="mb-3">
+                    {editedContent.map((item, index) => (
+                      <ListGroup.Item key={index} className="d-flex justify-content-between align-items-start">
+                        <div className="flex-grow-1">
+                          <div className="d-flex align-items-center gap-2 mb-1">
+                            <Badge bg="secondary">{item.content_type}</Badge>
+                            <strong>{item.title}</strong>
+                            {item.is_required && (
+                              <Badge bg="success">Required</Badge>
+                            )}
+                          </div>
+                          {item.description && (
+                            <small className="text-muted d-block">{item.description.substring(0, 100)}...</small>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleRemoveContent(index)}
+                          className="ms-2"
+                        >
+                          Remove
+                        </Button>
+                      </ListGroup.Item>
+                    ))}
+                  </ListGroup>
+                ) : (
+                  <Alert variant="warning">No content items. The lesson will be created without content.</Alert>
+                )}
               </Form>
             </>
           )}
@@ -730,6 +909,7 @@ function LessonTemplateLibrary() {
             onClick={() => {
               setShowCreateModal(false);
               setSelectedTemplate(null);
+              setTemplateData(null);
             }}
           >
             Cancel
@@ -737,7 +917,7 @@ function LessonTemplateLibrary() {
           <Button 
             variant="primary" 
             onClick={handleCreateFromTemplate}
-            disabled={!lessonDate || !classSubjectId}
+            disabled={!lessonDate || !classSubjectId || !editedLessonTitle.trim()}
           >
             <FaPlus className="me-1" />
             Create Lesson
