@@ -671,14 +671,98 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
         }}
         context={selectedContext}
         offering={offering}
-        onApplySuggestion={(suggestion) => {
-          // Apply suggestion to curriculum
-          // Implementation depends on suggestion type
-        }}
+        onApplySuggestion={handleApplySuggestion}
       />
     </Modal>
   );
 }
+
+// Handle applying AI suggestions
+const handleApplySuggestion = (suggestion) => {
+  if (!selectedContext) return;
+
+  const { type, path } = selectedContext;
+  const newCurriculumData = { ...curriculumData };
+  const newTopics = [...newCurriculumData.topics];
+
+  // Parse path to find topic index
+  // Path format: "topics[0]" or "topics[0].instructionalUnits[1]"
+  const topicMatch = path.match(/topics\[(\d+)\]/);
+  if (!topicMatch) return;
+
+  const topicIndex = parseInt(topicMatch[1]);
+  const topic = newTopics[topicIndex];
+
+  if (suggestion.type === 'UNIT_GENERATION') {
+    // Add generated units to topic
+    const currentUnits = topic.instructionalUnits || [];
+    const nextUnitNum = currentUnits.length + 1;
+
+    const newUnits = suggestion.content.map((unit, idx) => ({
+      ...unit,
+      unitNumber: nextUnitNum + idx,
+      scoNumber: `${topic.topicNumber}.${nextUnitNum + idx}`,
+      activities: unit.activities || []
+    }));
+
+    topic.instructionalUnits = [...currentUnits, ...newUnits];
+
+    logChange('AI_GENERATE', path, topic, { addedUnits: newUnits.length }, 'AI generated units');
+  }
+  else if (suggestion.type === 'ACTIVITY') {
+    // Add activity to specific unit
+    const unitMatch = path.match(/instructionalUnits\[(\d+)\]/);
+    if (unitMatch) {
+      const unitIndex = parseInt(unitMatch[1]);
+      const unit = topic.instructionalUnits[unitIndex];
+
+      const newActivity = {
+        id: Date.now(),
+        ...suggestion.content
+      };
+
+      unit.activities = [...(unit.activities || []), newActivity];
+      logChange('AI_ADD', path, unit, { addedActivity: newActivity.description }, 'AI added activity');
+    }
+  }
+  else if (suggestion.type === 'RESOURCE') {
+    // Add resource to topic
+    const resourceType = suggestion.content.type === 'video' ? 'videos' :
+      suggestion.content.type === 'game' ? 'games' : 'webLinks';
+
+    const newResource = {
+      id: Date.now(),
+      title: suggestion.content.title,
+      url: suggestion.content.url,
+      description: suggestion.content.description,
+      type: suggestion.content.type
+    };
+
+    topic.resources = topic.resources || { webLinks: [], videos: [], games: [], worksheets: [] };
+    topic.resources[resourceType] = [...(topic.resources[resourceType] || []), newResource];
+
+    logChange('AI_ADD', path, topic, { addedResource: newResource.title }, 'AI added resource');
+  }
+  else if (suggestion.type === 'DIFFERENTIATION') {
+    // Add differentiation strategy to unit
+    const unitMatch = path.match(/instructionalUnits\[(\d+)\]/);
+    if (unitMatch) {
+      const unitIndex = parseInt(unitMatch[1]);
+      const unit = topic.instructionalUnits[unitIndex];
+
+      const strategyText = `\n- ${suggestion.content.strategy} (${suggestion.content.targetGroup})`;
+      unit.inclusiveLearningStrategies = (unit.inclusiveLearningStrategies || '') + strategyText;
+
+      logChange('AI_UPDATE', path, unit, { addedStrategy: suggestion.content.strategy }, 'AI added differentiation');
+    }
+  }
+
+  // Update state
+  newCurriculumData.topics = newTopics;
+  setCurriculumData(newCurriculumData);
+  setShowAISuggestions(false);
+  alert('Suggestion applied successfully!');
+};
 
 // Sortable Topic Item Component
 function SortableTopicItem({ topic, index, offering, isEditing, onEdit, onUpdate, onDelete, onLinkResource, onRequestAISuggestions }) {
