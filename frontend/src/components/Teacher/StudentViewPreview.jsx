@@ -103,7 +103,7 @@ function StudentViewPreview() {
     if (!lessonData) return <div>Lesson not found</div>;
 
     return (
-        <div className={`lesson-view-container theme-${theme}`} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1050, overflowY: 'auto' }}>
+        <div className={`lesson-view-container theme-${theme}`} style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '1600px', height: '100%', zIndex: 1050, overflowY: 'auto' }}>
             {/* Header */}
             <div className="mission-header">
                 <div className="mission-breadcrumbs">
