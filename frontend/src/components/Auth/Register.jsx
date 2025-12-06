@@ -137,24 +137,21 @@ function Register() {
   };
 
   return (
-    <Container className="py-5 register-container min-vh-100 d-flex align-items-center" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
+    <Container className="py-5 register-container bg-light min-vh-100 d-flex align-items-center">
       <Row className="justify-content-center w-100">
         <Col md={10} lg={8} xl={6}>
-          <Card className="shadow-lg border-0 rounded-lg overflow-hidden" style={{ borderRadius: '16px' }}>
-            <Card.Header className="text-white text-center py-4" style={{
-              backgroundColor: 'var(--theme-primary)',
-              borderBottom: '4px solid var(--theme-secondary)'
-            }}>
-              <h2 className="fw-bold mb-0 h3">
+          <Card className="shadow border-0 rounded-lg overflow-hidden">
+            <Card.Header className="bg-success text-white text-center py-4">
+              <h2 className="fw-bold mb-0">
                 <FaUserGraduate className="me-2" />
                 Student Registration
               </h2>
-              <p className="text-white-50 mt-2 mb-0 small">Create your student account to access courses</p>
+              <p className="text-white-50 mt-2 mb-0">Create your student account to access courses</p>
             </Card.Header>
 
-            <Card.Body className="p-4 bg-white">
+            <Card.Body className="p-4">
               {apiError && (
-                <Alert variant="danger" className="animate__animated animate__shakeX shadow-sm border-0 bg-danger-subtle text-danger">
+                <Alert variant="danger" className="animate__animated animate__shakeX">
                   {apiError}
                 </Alert>
               )}
@@ -163,9 +160,9 @@ function Register() {
                 <Row>
                   <Col md={12} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-semibold text-secondary small text-uppercase">Full Name</Form.Label>
+                      <Form.Label>Full Name</Form.Label>
                       <InputGroup>
-                        <InputGroup.Text className="bg-light border-end-0 text-muted">
+                        <InputGroup.Text>
                           <FaUser />
                         </InputGroup.Text>
                         <Form.Control
@@ -175,7 +172,6 @@ function Register() {
                           value={formData.name}
                           onChange={handleChange}
                           isInvalid={!!errors.name}
-                          className="border-start-0 bg-light"
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors.name}
@@ -186,9 +182,9 @@ function Register() {
 
                   <Col md={12} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-semibold text-secondary small text-uppercase">Email Address</Form.Label>
+                      <Form.Label>Email Address</Form.Label>
                       <InputGroup>
-                        <InputGroup.Text className="bg-light border-end-0 text-muted">
+                        <InputGroup.Text>
                           <FaEnvelope />
                         </InputGroup.Text>
                         <Form.Control
@@ -198,7 +194,6 @@ function Register() {
                           value={formData.email}
                           onChange={handleChange}
                           isInvalid={!!errors.email}
-                          className="border-start-0 bg-light"
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors.email}
@@ -209,9 +204,9 @@ function Register() {
 
                   <Col md={6} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-semibold text-secondary small text-uppercase">Password</Form.Label>
+                      <Form.Label>Password</Form.Label>
                       <InputGroup>
-                        <InputGroup.Text className="bg-light border-end-0 text-muted">
+                        <InputGroup.Text>
                           <FaLock />
                         </InputGroup.Text>
                         <Form.Control
@@ -221,23 +216,22 @@ function Register() {
                           value={formData.password}
                           onChange={handleChange}
                           isInvalid={!!errors.password}
-                          className="border-start-0 bg-light"
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors.password}
                         </Form.Control.Feedback>
                       </InputGroup>
-                      <Form.Text className="text-muted small">
-                        At least 8 characters
+                      <Form.Text className="text-muted">
+                        Password must be at least 8 characters long
                       </Form.Text>
                     </Form.Group>
                   </Col>
 
                   <Col md={6} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-semibold text-secondary small text-uppercase">Confirm Password</Form.Label>
+                      <Form.Label>Confirm Password</Form.Label>
                       <InputGroup>
-                        <InputGroup.Text className="bg-light border-end-0 text-muted">
+                        <InputGroup.Text>
                           <FaLock />
                         </InputGroup.Text>
                         <Form.Control
@@ -247,7 +241,6 @@ function Register() {
                           value={formData.confirmPassword}
                           onChange={handleChange}
                           isInvalid={!!errors.confirmPassword}
-                          className="border-start-0 bg-light"
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors.confirmPassword}
@@ -258,34 +251,32 @@ function Register() {
 
                   <Col md={6} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-semibold text-secondary small text-uppercase">Phone Number</Form.Label>
+                      <Form.Label>Phone Number</Form.Label>
                       <Form.Control
                         type="tel"
                         placeholder="Enter your phone number"
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
-                        className="bg-light"
                       />
                     </Form.Group>
                   </Col>
 
                   <Col md={6} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-semibold text-secondary small text-uppercase">Date of Birth</Form.Label>
+                      <Form.Label>Date of Birth</Form.Label>
                       <Form.Control
                         type="date"
                         name="dateOfBirth"
                         value={formData.dateOfBirth}
                         onChange={handleChange}
-                        className="bg-light"
                       />
                     </Form.Group>
                   </Col>
 
                   <Col md={12} className="mb-3">
                     <Form.Group>
-                      <Form.Label className="fw-semibold text-secondary small text-uppercase">Address</Form.Label>
+                      <Form.Label>Address</Form.Label>
                       <Form.Control
                         as="textarea"
                         rows={2}
@@ -293,23 +284,21 @@ function Register() {
                         name="address"
                         value={formData.address}
                         onChange={handleChange}
-                        className="bg-light"
                       />
                     </Form.Group>
                   </Col>
 
                   <Col md={12} className="mb-4">
                     <Form.Group>
-                      <Form.Label className="fw-semibold text-secondary small text-uppercase">Emergency Contact</Form.Label>
+                      <Form.Label>Emergency Contact</Form.Label>
                       <Form.Control
                         type="text"
                         placeholder="Emergency contact name and phone"
                         name="emergencyContact"
                         value={formData.emergencyContact}
                         onChange={handleChange}
-                        className="bg-light"
                       />
-                      <Form.Text className="text-muted small">
+                      <Form.Text className="text-muted">
                         e.g., "John Doe - (555) 123-4567"
                       </Form.Text>
                     </Form.Group>
@@ -317,16 +306,10 @@ function Register() {
                 </Row>
 
                 <Button
+                  variant="primary"
                   type="submit"
                   disabled={isLoading}
-                  className="w-100 py-3 mt-2 fw-bold shadow-sm border-0"
-                  style={{
-                    backgroundColor: 'var(--theme-primary)',
-                    fontSize: '1rem',
-                    letterSpacing: '0.5px'
-                  }}
-                  onMouseOver={(e) => e.target.style.backgroundColor = 'var(--theme-primary-dark)'}
-                  onMouseOut={(e) => e.target.style.backgroundColor = 'var(--theme-primary)'}
+                  className="w-100 py-2 mt-2 fw-bold"
                 >
                   {isLoading ? (
                     <>
@@ -340,9 +323,9 @@ function Register() {
               </Form>
             </Card.Body>
 
-            <Card.Footer className="text-center py-3 bg-light border-top-0">
+            <Card.Footer className="text-center py-3 bg-light">
               <div>
-                Already have an account? <Link to="/login" className="fw-bold text-decoration-none" style={{ color: 'var(--theme-primary)' }}>Login here</Link>
+                Already have an account? <Link to="/login" className="text-primary fw-bold text-decoration-none">Login here</Link>
               </div>
             </Card.Footer>
           </Card>

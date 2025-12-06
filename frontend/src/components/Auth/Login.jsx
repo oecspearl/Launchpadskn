@@ -172,19 +172,19 @@ function Login() {
   };
 
   return (
-    <Container className="py-5 login-container min-vh-100 d-flex align-items-center" style={{ backgroundColor: 'var(--theme-bg-light)' }}>
+    <Container className="py-5 login-container min-vh-100 d-flex align-items-center">
       <Row className="justify-content-center w-100">
         <Col md={8} lg={6} xl={5}>
-          <Card className="shadow-lg border-0 rounded-lg overflow-hidden" style={{ borderRadius: '16px' }}>
+          <Card className="shadow border-0 rounded-lg overflow-hidden">
             <Card.Header className="text-white text-center py-4" style={{
-              backgroundColor: 'var(--theme-primary)',
-              borderBottom: '4px solid var(--theme-secondary)'
+              background: 'linear-gradient(135deg, #009639 0%, #CE1126 100%)',
+              borderBottom: '3px solid #FCD116'
             }}>
-              <h2 className="fw-bold mb-0 h3">
+              <h2 className="fw-bold mb-0">
                 <FaSignInAlt className="me-2" />
-                Welcome Back
+                Login to LaunchPad SKN
               </h2>
-              <p className="text-white-50 mt-2 mb-0 small">Sign in to LaunchPad SKN</p>
+              <p className="text-white-50 mt-2 mb-0">Access your learning dashboard</p>
 
               {/* Login Type Toggle */}
               <div className="mt-3 login-type-toggle">
@@ -192,17 +192,15 @@ function Login() {
                   <Button
                     variant={loginType === 'database' ? 'light' : 'outline-light'}
                     onClick={() => setLoginType('database')}
-                    className="px-3 fw-medium"
-                    style={{ fontSize: '0.85rem' }}
+                    className="px-3"
                   >
                     <FaDatabase className="me-1" />
-                    Database
+                    Database Login
                   </Button>
                   <Button
                     variant={loginType === 'ad' ? 'light' : 'outline-light'}
                     onClick={() => setLoginType('ad')}
-                    className="px-3 fw-medium"
-                    style={{ fontSize: '0.85rem' }}
+                    className="px-3"
                   >
                     <FaBuilding className="me-1" />
                     Active Directory
@@ -211,15 +209,15 @@ function Login() {
               </div>
             </Card.Header>
 
-            <Card.Body className="px-4 py-5 bg-white">
+            <Card.Body className="px-4 py-5">
               {message && (
-                <Alert variant="success" className="animate__animated animate__fadeIn shadow-sm border-0 bg-success-subtle text-success">
+                <Alert variant="success" className="animate__animated animate__fadeIn">
                   {message}
                 </Alert>
               )}
 
               {error && (
-                <Alert variant="danger" className="animate__animated animate__shakeX shadow-sm border-0 bg-danger-subtle text-danger">
+                <Alert variant="danger" className="animate__animated animate__shakeX">
                   {error}
                 </Alert>
               )}
@@ -227,18 +225,18 @@ function Login() {
               {/* Login Type Info */}
               <Alert
                 variant={loginType === 'ad' ? 'info' : 'success'}
-                className={`mb-4 border-0 shadow-sm ${loginType === 'ad' ? 'bg-info-subtle text-info-emphasis' : 'bg-success-subtle text-success-emphasis'}`}
+                className={`mb-4 ${loginType === 'ad' ? 'ad-login-info' : 'database-login-info'}`}
               >
                 <div className="d-flex align-items-center">
                   {loginType === 'ad' ? <FaBuilding className="me-2" /> : <FaDatabase className="me-2" />}
                   <div>
-                    <strong className="d-block" style={{ fontSize: '0.9rem' }}>
+                    <strong>
                       {loginType === 'ad' ? 'Active Directory Login' : 'Database Login'}
                     </strong>
-                    <div className="small opacity-75">
+                    <div className="small mt-1">
                       {loginType === 'ad'
-                        ? 'Use your domain credentials'
-                        : 'Use your LaunchPad SKN account'
+                        ? 'Use your domain credentials (e.g., jadmin@mylab.local)'
+                        : 'Use your LaunchPad SKN account credentials'
                       }
                     </div>
                   </div>
@@ -247,39 +245,38 @@ function Login() {
 
               <Form onSubmit={handleSubmit} className={`login-form-transition ${loginType === 'ad' ? 'ad-login' : 'database-login'}`}>
                 <Form.Group className="mb-4">
-                  <Form.Label className="fw-semibold text-secondary small text-uppercase">
+                  <Form.Label>
                     {loginType === 'ad' ? 'Domain Email' : 'Email address'}
                   </Form.Label>
-                  <InputGroup className="input-group-lg">
-                    <InputGroup.Text className="bg-light border-end-0 text-muted">
+                  <InputGroup>
+                    <InputGroup.Text>
                       <FaEnvelope />
                     </InputGroup.Text>
                     <Form.Control
                       type="email"
                       placeholder={loginType === 'ad'
-                        ? 'e.g., jadmin@mylab.local'
-                        : 'name@example.com'
+                        ? 'Enter your domain email (e.g., jadmin@mylab.local)'
+                        : 'Enter your email'
                       }
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="border-start-0 bg-light"
-                      style={{ fontSize: '0.95rem' }}
+                      className="py-2"
                     />
                   </InputGroup>
                 </Form.Group>
 
                 <Form.Group className="mb-4">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <Form.Label className="fw-semibold text-secondary small text-uppercase mb-0">Password</Form.Label>
+                  <div className="d-flex justify-content-between">
+                    <Form.Label>Password</Form.Label>
                     {loginType === 'database' && (
-                      <Link to="/forgot-password" style={{ color: 'var(--theme-primary)', fontSize: '0.85rem', fontWeight: '500' }} className="text-decoration-none">
+                      <Link to="/forgot-password" className="text-decoration-none small">
                         Forgot password?
                       </Link>
                     )}
                   </div>
-                  <InputGroup className="input-group-lg">
-                    <InputGroup.Text className="bg-light border-end-0 text-muted">
+                  <InputGroup>
+                    <InputGroup.Text>
                       <FaLock />
                     </InputGroup.Text>
                     <Form.Control
@@ -288,45 +285,46 @@ function Login() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      className="border-start-0 bg-light"
-                      style={{ fontSize: '0.95rem' }}
+                      className="py-2"
                     />
                   </InputGroup>
                 </Form.Group>
 
                 <Button
+                  variant="primary"
                   type="submit"
                   disabled={isLoading}
-                  className="w-100 py-3 mt-2 fw-bold shadow-sm border-0"
-                  style={{
-                    backgroundColor: 'var(--theme-primary)',
-                    fontSize: '1rem',
-                    letterSpacing: '0.5px'
-                  }}
-                  onMouseOver={(e) => e.target.style.backgroundColor = 'var(--theme-primary-dark)'}
-                  onMouseOut={(e) => e.target.style.backgroundColor = 'var(--theme-primary)'}
+                  className="w-100 py-2 mt-3 fw-bold"
                 >
                   {isLoading ? (
                     <>
                       <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      {loginType === 'ad' ? 'Authenticating...' : 'Logging in...'}
+                      {loginType === 'ad' ? 'Authenticating with AD...' : 'Logging in...'}
                     </>
                   ) : (
                     <>
                       {loginType === 'ad' ? <FaBuilding className="me-2" /> : <FaDatabase className="me-2" />}
-                      {loginType === 'ad' ? 'Login with AD' : 'Sign In'}
+                      {loginType === 'ad' ? 'Login with AD' : 'Login'}
                     </>
                   )}
                 </Button>
               </Form>
             </Card.Body>
 
-            <Card.Footer className="text-center py-4 bg-light border-top-0">
+            <Card.Footer className="text-center py-4 bg-light">
               {loginType === 'database' && (
                 <>
+                  <div className="border-bottom pb-3 mb-3">
+                    <small className="text-muted">Admin or Instructor?</small>
+                    <div className="mt-1">
+                      <small>Contact your institution administrator for account setup</small>
+                    </div>
+                  </div>
+
                   <div className="d-flex align-items-center justify-content-center">
-                    <span className="text-muted me-2 small">Don't have an account?</span>
-                    <Link to="/register" className="fw-bold text-decoration-none" style={{ color: 'var(--theme-primary)' }}>
+                    <span className="text-muted me-2">🎓</span>
+                    <span className="me-2">New Student?</span>
+                    <Link to="/register" className="btn btn-outline-primary btn-sm fw-bold">
                       Create Student Account
                     </Link>
                   </div>
@@ -334,9 +332,16 @@ function Login() {
               )}
 
               {loginType === 'ad' && (
-                <div className="text-muted small">
-                  <FaBuilding className="me-1" />
-                  Managed by your system administrator
+                <div className="text-muted">
+                  <small>
+                    <FaBuilding className="me-1" />
+                    Active Directory users are managed by your system administrator
+                  </small>
+                  <div className="mt-2">
+                    <small className="text-info">
+                      Test Users: jadmin@mylab.local, sinstructor@mylab.local, mstudent@mylab.local
+                    </small>
+                  </div>
                 </div>
               )}
             </Card.Footer>

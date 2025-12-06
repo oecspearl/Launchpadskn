@@ -1,21 +1,21 @@
 /* ============================================
-   Student Dashboard - Clean & Professional Design
+   Student Dashboard - Modern Responsive Design
    ============================================ */
 
 .student-dashboard {
   min-height: 100vh;
-  background: var(--theme-bg-light);
-  padding-bottom: 3rem;
+  background: var(--bg-light);
+  padding-bottom: var(--spacing-8);
 }
 
 /* Welcome Section */
 .dashboard-header-section {
-  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-primary-dark) 100%);
-  color: white;
-  padding: 2rem;
-  border-radius: 16px;
-  margin-bottom: 2rem;
-  box-shadow: var(--theme-shadow-lg);
+  background: var(--primary-gradient);
+  color: var(--skn-white);
+  padding: var(--spacing-6) var(--spacing-4);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-6);
+  box-shadow: var(--shadow-lg);
   position: relative;
   overflow: hidden;
 }
@@ -27,70 +27,70 @@
   right: -10%;
   width: 300px;
   height: 300px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%);
   border-radius: 50%;
   pointer-events: none;
 }
 
 .dashboard-header-section h2 {
-  color: white;
-  margin-bottom: 0.5rem;
-  font-size: 2rem;
+  color: var(--skn-white);
+  margin-bottom: var(--spacing-2);
+  font-size: var(--font-size-2xl);
   font-weight: 700;
 }
 
 @media (min-width: 768px) {
   .dashboard-header-section h2 {
-    font-size: 2.5rem;
+    font-size: var(--font-size-3xl);
   }
 }
 
 /* Glassmorphism Card */
 .glass-card {
-  background: white;
-  border: 1px solid #e2e8f0;
-  box-shadow: var(--theme-shadow-sm);
-  border-radius: 16px;
-  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
 }
 
 .glass-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--theme-shadow-md);
-  border-color: var(--theme-primary);
+  box-shadow: var(--shadow-lg);
 }
 
 /* Class Info Card */
 .class-info-card {
-  background: white;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--theme-shadow-sm);
-  border-left: 4px solid var(--theme-primary);
+  background: var(--bg-white);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  margin-bottom: var(--spacing-6);
+  box-shadow: var(--shadow-md);
+  border-left: 4px solid var(--primary-color);
 }
 
 .class-info-title {
-  font-size: 0.875rem;
-  color: var(--theme-text-muted);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
+  margin-bottom: var(--spacing-2);
 }
 
 .class-info-value {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--theme-text-dark);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-dark);
 }
 
 /* Subjects Grid */
 .subjects-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1.5rem;
-  margin-bottom: 2rem;
+  gap: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
 }
 
 @media (min-width: 640px) {
