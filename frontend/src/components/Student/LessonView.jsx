@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Spinner, Alert, 
+import {
+  Container, Row, Col, Card, Button, Spinner, Alert,
   Badge, ListGroup, ProgressBar, Accordion, Modal
 } from 'react-bootstrap';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { 
+import {
   FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
   FaBook, FaClipboardList, FaUser, FaCheckCircle, FaInfoCircle, FaClock as FaClockIcon,
   FaClipboardCheck, FaTasks, FaFilePdf, FaDownload, FaExternalLinkAlt,
@@ -21,13 +21,14 @@ import InteractiveVideoViewer from './InteractiveVideoViewer';
 import InteractiveBookPlayer from './InteractiveBookPlayer';
 import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
 import ViewerErrorBoundary from '../InteractiveContent/Viewers/ViewerErrorBoundary';
+import DiscussionBoard from './DiscussionBoard';
 import './LessonView.css';
 
 function LessonView() {
   const { lessonId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
-  
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lesson, setLesson] = useState(null);
@@ -49,7 +50,8 @@ function LessonView() {
   const [currentInteractiveBookContent, setCurrentInteractiveBookContent] = useState(null);
   const [show3DModelViewer, setShow3DModelViewer] = useState(false);
   const [current3DModelContent, setCurrent3DModelContent] = useState(null);
-  
+  const [showDiscussionSidebar, setShowDiscussionSidebar] = useState(false);
+
   useEffect(() => {
     if (lessonId) {
       fetchLessonData();
@@ -64,12 +66,12 @@ function LessonView() {
       fetchAllLessons();
     }
   }, [lessonId, user]);
-  
+
   const fetchAllLessons = async () => {
     try {
       // Use numeric user_id, not UUID
       let studentId = user.user_id;
-      
+
       // If user_id is not available or is a UUID, convert it
       if (!studentId || (typeof studentId === 'string' && studentId.includes('-'))) {
         const userIdToLookup = user.userId || user.id || studentId;
@@ -79,7 +81,7 @@ function LessonView() {
             .select('user_id')
             .eq('id', userIdToLookup)
             .maybeSingle();
-          
+
           if (userProfile && userProfile.user_id) {
             studentId = userProfile.user_id;
           } else {
@@ -88,37 +90,37 @@ function LessonView() {
           }
         }
       }
-      
+
       if (!studentId) return;
-      
+
       // Get all lessons for the student (no date filter to get all)
       const lessons = await supabaseService.getLessonsByStudent(studentId, null, null);
-      
+
       // Sort by date descending (most recent first)
       const sortedLessons = (lessons || []).sort((a, b) => {
         const dateA = new Date(a.lesson_date + 'T' + (a.start_time || '00:00:00'));
         const dateB = new Date(b.lesson_date + 'T' + (b.start_time || '00:00:00'));
         return dateB - dateA;
       });
-      
+
       setAllLessons(sortedLessons);
     } catch (err) {
       console.error('Error fetching all lessons:', err);
     }
   };
-  
+
   useEffect(() => {
     // Save completed content to localStorage
     if (lessonId && completedContent.size > 0) {
       localStorage.setItem(`lesson_${lessonId}_completed`, JSON.stringify([...completedContent]));
     }
   }, [completedContent, lessonId]);
-  
+
   const fetchLessonData = async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       // Get lesson details
       const { data: lessonData, error: lessonError } = await supabase
         .from('lessons')
@@ -139,9 +141,9 @@ function LessonView() {
         `)
         .eq('lesson_id', lessonId)
         .single();
-      
+
       if (lessonError) throw lessonError;
-      
+
       if (lessonData) {
         // Sort content by sequence_order and filter published content
         if (lessonData.content) {
@@ -149,9 +151,9 @@ function LessonView() {
             .filter(item => item.is_published !== false)
             .sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
         }
-        
+
         setLesson(lessonData);
-        
+
         // Check for in-app quizzes for QUIZ content types
         if (lessonData.content) {
           const quizContentItems = lessonData.content.filter(item => item.content_type === 'QUIZ');
@@ -175,12 +177,12 @@ function LessonView() {
             setQuizStatuses(quizStatusMap);
           }
         }
-        
+
         // Get student's attendance for this lesson
         if (user && user.role?.toLowerCase() === 'student') {
           // Use numeric user_id, not UUID
           let studentId = user.user_id;
-          
+
           // If user_id is not available or is a UUID, convert it
           if (!studentId || (typeof studentId === 'string' && studentId.includes('-'))) {
             // It's a UUID, need to get the numeric user_id
@@ -191,7 +193,7 @@ function LessonView() {
                 .select('user_id')
                 .eq('id', userIdToLookup)
                 .maybeSingle();
-              
+
               if (userProfile && userProfile.user_id) {
                 studentId = userProfile.user_id;
               } else {
@@ -201,14 +203,14 @@ function LessonView() {
               }
             }
           }
-          
+
           const { data: attendanceData } = await supabase
             .from('lesson_attendance')
             .select('*')
             .eq('lesson_id', lessonId)
             .eq('student_id', studentId)
             .maybeSingle();
-          
+
           setAttendance(attendanceData);
         }
 
@@ -223,7 +225,7 @@ function LessonView() {
           }
         }
       }
-      
+
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching lesson data:', err);
@@ -231,46 +233,46 @@ function LessonView() {
       setIsLoading(false);
     }
   };
-  
+
   const getSubjectName = () => {
     return lesson?.class_subject?.subject_offering?.subject?.subject_name || 'Subject';
   };
-  
+
   const getClassName = () => {
     return lesson?.class_subject?.class?.class_name || '';
   };
-  
+
   const getFormName = () => {
     return lesson?.class_subject?.class?.form?.form_name || '';
   };
-  
+
   const getTeacherName = () => {
     return lesson?.class_subject?.teacher?.name || 'TBD';
   };
-  
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
     const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
-  
+
   const formatTime = (timeStr) => {
     if (!timeStr) return '';
     return timeStr.substring(0, 5);
   };
-  
+
   const formatFileSize = (bytes) => {
     if (!bytes) return '';
     if (bytes < 1024) return bytes + ' B';
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
-  
+
   const getYouTubeEmbedUrl = (url) => {
     if (!url) return '';
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -278,7 +280,7 @@ function LessonView() {
     const videoId = (match && match[2].length === 11) ? match[2] : null;
     return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
-  
+
   const toggleContentComplete = (contentId) => {
     setCompletedContent(prev => {
       const newSet = new Set(prev);
@@ -290,21 +292,21 @@ function LessonView() {
       return newSet;
     });
   };
-  
+
   const toggleSection = (sectionName) => {
     setExpandedSections(prev => ({
       ...prev,
       [sectionName]: !prev[sectionName]
     }));
   };
-  
+
   const toggleItem = (contentId) => {
     setExpandedItems(prev => ({
       ...prev,
       [contentId]: !prev[contentId]
     }));
   };
-  
+
   const getContentIconClass = (contentType) => {
     switch (contentType) {
       case 'VIDEO': return 'video';
@@ -325,7 +327,7 @@ function LessonView() {
       default: return '';
     }
   };
-  
+
   const getContentIcon = (contentType) => {
     switch (contentType) {
       case 'VIDEO': return <FaPlay />;
@@ -347,7 +349,7 @@ function LessonView() {
       default: return <FaBook />;
     }
   };
-  
+
   const getContentColor = (contentType) => {
     switch (contentType) {
       case 'VIDEO': return 'danger';
@@ -359,13 +361,13 @@ function LessonView() {
       default: return 'muted';
     }
   };
-  
+
   // Categorize content into Learning, Assessments, Resources, Practice, Homework, and Closure
   const categorizeContent = (content) => {
     if (!content || content.length === 0) {
       return { learning: [], assessments: [], resources: [], practice: [], homework: [], closure: [] };
     }
-    
+
     const categories = {
       learning: [],
       assessments: [],
@@ -374,18 +376,18 @@ function LessonView() {
       homework: [],
       closure: []
     };
-    
+
     content.forEach(item => {
       // Special handling: FLASHCARD, INTERACTIVE_VIDEO, INTERACTIVE_BOOK, and 3D_MODEL content types always go to Learning section
       if (item.content_type === 'FLASHCARD' || item.content_type === 'INTERACTIVE_VIDEO' || item.content_type === 'INTERACTIVE_BOOK' || item.content_type === '3D_MODEL') {
         categories.learning.push(item);
         return;
       }
-      
+
       // First, check if content_section is explicitly set to one of our main categories
       // This takes priority over content_type-based categorization
       const contentSection = item.content_section?.trim()?.toLowerCase() || '';
-      
+
       // Check for exact matches and variations (case-insensitive)
       if (contentSection === 'homework') {
         categories.homework.push(item);
@@ -403,7 +405,7 @@ function LessonView() {
         // Fall back to content_type-based categorization if content_section is not set or doesn't match
         // This ensures backward compatibility with existing content
         const contentType = item.content_type;
-        
+
         // Assessments
         if (['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'].includes(contentType)) {
           categories.assessments.push(item);
@@ -413,9 +415,9 @@ function LessonView() {
           categories.closure.push(item);
         }
         // Learning content (including interactive content like flashcards)
-        else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
-                  'DISCUSSION_PROMPTS', 
-                  'VIDEO', 'IMAGE', 'DOCUMENT', 'FLASHCARD', 'INTERACTIVE_VIDEO', '3D_MODEL'].includes(contentType)) {
+        else if (['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS',
+          'DISCUSSION_PROMPTS',
+          'VIDEO', 'IMAGE', 'DOCUMENT', 'FLASHCARD', 'INTERACTIVE_VIDEO', '3D_MODEL'].includes(contentType)) {
           categories.learning.push(item);
         }
         // Resources (files and links)
@@ -428,23 +430,23 @@ function LessonView() {
         }
       }
     });
-    
+
     return categories;
   };
-  
+
   // Calculate progress
   const calculateProgress = () => {
     if (!lesson?.content || lesson.content.length === 0) return 0;
     return Math.round((completedContent.size / lesson.content.length) * 100);
   };
-  
+
   // Calculate progress per section
   const calculateSectionProgress = (sectionContent) => {
     if (!sectionContent || sectionContent.length === 0) return 0;
     const completed = sectionContent.filter(item => completedContent.has(item.content_id)).length;
     return Math.round((completed / sectionContent.length) * 100);
   };
-  
+
   // Calculate total estimated time for content
   const calculateEstimatedTime = (content) => {
     if (!content || content.length === 0) return 0;
@@ -452,75 +454,75 @@ function LessonView() {
       return total + (item.estimated_minutes || 0);
     }, 0);
   };
-  
+
   // Check if prerequisites are met
   // First checks explicit prerequisites set by teacher, then falls back to sequence_order
   const checkPrerequisites = (item, allContent) => {
     // Check explicit prerequisites first (set by teacher)
     if (item.prerequisite_content_ids && item.prerequisite_content_ids.length > 0) {
-      const prerequisiteItems = allContent.filter(c => 
+      const prerequisiteItems = allContent.filter(c =>
         item.prerequisite_content_ids.includes(c.content_id)
       );
-      
+
       const missing = prerequisiteItems.filter(prereq => !completedContent.has(prereq.content_id));
-      
+
       return {
         met: missing.length === 0,
         missing: missing.map(p => p.title)
       };
     }
-    
+
     // Fall back to sequence_order-based prerequisites (automatic)
     if (!item.sequence_order || item.sequence_order <= 1) return { met: true, missing: [] };
-    
-    const prerequisites = allContent.filter(c => 
-      c.sequence_order < item.sequence_order && 
+
+    const prerequisites = allContent.filter(c =>
+      c.sequence_order < item.sequence_order &&
       c.sequence_order > 0
     );
-    
+
     const missing = prerequisites.filter(prereq => !completedContent.has(prereq.content_id));
-    
+
     return {
       met: missing.length === 0,
       missing: missing.map(p => p.title)
     };
   };
-  
+
   // Filter and search content
   const filterAndSearchContent = (content) => {
     if (!content) return [];
-    
+
     let filtered = [...content];
-    
+
     // Filter by search query
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.title?.toLowerCase().includes(query) ||
         item.description?.toLowerCase().includes(query) ||
         item.content_type?.toLowerCase().includes(query)
       );
     }
-    
+
     // Filter by completion status
     if (filterType === 'completed') {
       filtered = filtered.filter(item => completedContent.has(item.content_id));
     } else if (filterType === 'incomplete') {
       filtered = filtered.filter(item => !completedContent.has(item.content_id));
     }
-    
+
     // Filter by category (will be applied after categorization)
-    
+
     // Sort by sequence_order
     filtered.sort((a, b) => {
       const orderA = a.sequence_order || 999;
       const orderB = b.sequence_order || 999;
       return orderA - orderB;
     });
-    
+
     return filtered;
   };
-  
+
   // Filter categorized content by selected category
   const getFilteredCategorizedContent = (categorized) => {
     // Ensure closure category exists
@@ -528,7 +530,7 @@ function LessonView() {
       categorized.closure = [];
     }
     if (filterCategory === 'all') return categorized;
-    
+
     const filtered = { ...categorized };
     Object.keys(filtered).forEach(key => {
       if (key !== filterCategory) {
@@ -537,7 +539,7 @@ function LessonView() {
     });
     return filtered;
   };
-  
+
   if (isLoading) {
     return (
       <div className="lesson-view-container" style={{ minHeight: '100vh', padding: '3rem 0' }}>
@@ -552,7 +554,7 @@ function LessonView() {
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="lesson-view-container" style={{ minHeight: '100vh', padding: '3rem 0' }}>
@@ -565,7 +567,7 @@ function LessonView() {
       </div>
     );
   }
-  
+
   if (!lesson) {
     return (
       <div className="lesson-view-container" style={{ minHeight: '100vh', padding: '3rem 0' }}>
@@ -578,30 +580,30 @@ function LessonView() {
       </div>
     );
   }
-  
+
   // Render a single content item
   const renderContentItem = (contentItem, index) => {
     const isCompleted = completedContent.has(contentItem.content_id);
     const isExpanded = expandedItems[contentItem.content_id] || false;
-    const isVideo = contentItem.content_type === 'VIDEO' || 
-                   (contentItem.url && (contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be')));
-    const isImage = contentItem.content_type === 'IMAGE' || 
-                   (contentItem.mime_type && contentItem.mime_type.startsWith('image/'));
+    const isVideo = contentItem.content_type === 'VIDEO' ||
+      (contentItem.url && (contentItem.url.includes('youtube.com') || contentItem.url.includes('youtu.be')));
+    const isImage = contentItem.content_type === 'IMAGE' ||
+      (contentItem.mime_type && contentItem.mime_type.startsWith('image/'));
     const iconClass = getContentIconClass(contentItem.content_type);
-    
+
     // Get posted date
     const postedDate = contentItem.created_at || lesson.lesson_date;
     const dateStr = postedDate ? new Date(postedDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-    
+
     // Check prerequisites
     const prerequisites = checkPrerequisites(contentItem, lesson.content || []);
-    
+
     // Get sequence order
     const sequenceOrder = contentItem.sequence_order;
-    
+
     return (
-      <div 
-        key={contentItem.content_id || index} 
+      <div
+        key={contentItem.content_id || index}
         className={`classwork-item ${iconClass} ${isExpanded ? 'expanded' : ''} ${isCompleted ? 'selected' : ''} ${!prerequisites.met ? 'prerequisite-locked' : ''}`}
         onClick={() => toggleItem(contentItem.content_id)}
       >
@@ -643,7 +645,7 @@ function LessonView() {
               </div>
             </div>
           </div>
-          
+
           {/* Prerequisite Warning */}
           {!prerequisites.met && prerequisites.missing.length > 0 && (
             <Alert variant="warning" className="mt-2 mb-2 prerequisite-alert">
@@ -651,7 +653,7 @@ function LessonView() {
               <strong>Prerequisites required:</strong> Please complete the following items first: {prerequisites.missing.join(', ')}
             </Alert>
           )}
-          
+
           {/* Flashcard Preview (Collapsed State) */}
           {!isExpanded && contentItem.content_type === 'FLASHCARD' && contentItem.content_data?.cards && (
             <div className="classwork-preview-info mt-2">
@@ -664,7 +666,7 @@ function LessonView() {
               )}
             </div>
           )}
-          
+
           {/* Interactive Book Preview (Collapsed State) */}
           {!isExpanded && contentItem.content_type === 'INTERACTIVE_BOOK' && contentItem.content_data?.pages && (
             <div className="classwork-preview-info mt-2">
@@ -677,7 +679,7 @@ function LessonView() {
               )}
             </div>
           )}
-          
+
           {isExpanded && (
             <div className="classwork-expanded">
               {/* Video Content */}
@@ -694,9 +696,9 @@ function LessonView() {
                       />
                     </div>
                   ) : (
-                    <video 
-                      controls 
-                      className="w-100" 
+                    <video
+                      controls
+                      className="w-100"
                       style={{ maxHeight: '400px', borderRadius: '8px', marginBottom: '1rem' }}
                       onClick={(e) => e.stopPropagation()}
                     >
@@ -706,12 +708,12 @@ function LessonView() {
                   )}
                 </div>
               )}
-              
+
               {/* Image Content */}
               {isImage && contentItem.url && (
                 <div className="classwork-image-container" onClick={(e) => e.stopPropagation()}>
-                  <img 
-                    src={contentItem.url} 
+                  <img
+                    src={contentItem.url}
                     alt={contentItem.title}
                     className="w-100"
                     style={{ maxHeight: '400px', width: 'auto', borderRadius: '8px', marginBottom: '1rem', cursor: 'pointer' }}
@@ -719,43 +721,43 @@ function LessonView() {
                   />
                 </div>
               )}
-              
+
               {/* Text-only content types (Learning Activities, Learning Outcomes, etc.) */}
-              {['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
+              {['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS',
                 'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) && (
-                <div className="classwork-text-content" style={{ 
-                  marginBottom: '1rem', 
-                  padding: '1rem', 
-                  borderRadius: '8px'
-                }}>
-                  <div style={{ 
-                    whiteSpace: 'pre-wrap', 
-                    fontSize: '0.95rem', 
-                    lineHeight: '1.6'
+                  <div className="classwork-text-content" style={{
+                    marginBottom: '1rem',
+                    padding: '1rem',
+                    borderRadius: '8px'
                   }}>
-                    {contentItem.content_type === 'LEARNING_ACTIVITIES' && contentItem.learning_activities}
-                    {contentItem.content_type === 'LEARNING_OUTCOMES' && contentItem.learning_outcomes}
-                    {contentItem.content_type === 'KEY_CONCEPTS' && contentItem.key_concepts}
-                    {contentItem.content_type === 'REFLECTION_QUESTIONS' && contentItem.reflection_questions}
-                    {contentItem.content_type === 'DISCUSSION_PROMPTS' && contentItem.discussion_prompts}
-                    {contentItem.content_type === 'SUMMARY' && contentItem.summary}
+                    <div style={{
+                      whiteSpace: 'pre-wrap',
+                      fontSize: '0.95rem',
+                      lineHeight: '1.6'
+                    }}>
+                      {contentItem.content_type === 'LEARNING_ACTIVITIES' && contentItem.learning_activities}
+                      {contentItem.content_type === 'LEARNING_OUTCOMES' && contentItem.learning_outcomes}
+                      {contentItem.content_type === 'KEY_CONCEPTS' && contentItem.key_concepts}
+                      {contentItem.content_type === 'REFLECTION_QUESTIONS' && contentItem.reflection_questions}
+                      {contentItem.content_type === 'DISCUSSION_PROMPTS' && contentItem.discussion_prompts}
+                      {contentItem.content_type === 'SUMMARY' && contentItem.summary}
+                    </div>
                   </div>
-                </div>
-              )}
-              
+                )}
+
               {/* Learning Outcomes (for non-text-only content types) */}
-              {!['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 
-                  'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) && 
-               contentItem.learning_outcomes && (
-                <div>
-                  <ul className="classwork-objectives">
-                    {contentItem.learning_outcomes.split('\n').filter(obj => obj.trim()).map((obj, idx) => (
-                      <li key={idx}>{obj.trim()}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-                        
+              {!['LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS',
+                'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(contentItem.content_type) &&
+                contentItem.learning_outcomes && (
+                  <div>
+                    <ul className="classwork-objectives">
+                      {contentItem.learning_outcomes.split('\n').filter(obj => obj.trim()).map((obj, idx) => (
+                        <li key={idx}>{obj.trim()}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
               {/* Flashcard Preview */}
               {contentItem.content_type === 'FLASHCARD' && contentItem.content_data && (
                 <div className="classwork-info-box">
@@ -799,7 +801,7 @@ function LessonView() {
                   )}
                 </div>
               )}
-              
+
               {/* Interactive Book Preview */}
               {contentItem.content_type === 'INTERACTIVE_BOOK' && contentItem.content_data && (
                 <div className="classwork-info-box">
@@ -821,7 +823,7 @@ function LessonView() {
                   )}
                 </div>
               )}
-              
+
               {/* 3D Model - Embedded Viewer */}
               {contentItem.content_type === '3D_MODEL' && (
                 <div className="classwork-3d-model-container" onClick={(e) => e.stopPropagation()}>
@@ -830,18 +832,18 @@ function LessonView() {
                       <Badge bg="primary">3D Model / AR/VR</Badge>
                       {contentItem.metadata && (() => {
                         try {
-                          const metadata = typeof contentItem.metadata === 'string' 
-                            ? JSON.parse(contentItem.metadata) 
+                          const metadata = typeof contentItem.metadata === 'string'
+                            ? JSON.parse(contentItem.metadata)
                             : contentItem.metadata;
                           if (metadata.content_type) {
                             return <Badge bg="secondary">{metadata.content_type.replace('_', ' ')}</Badge>;
                           }
-                        } catch (e) {}
+                        } catch (e) { }
                         return null;
                       })()}
                     </div>
-                    <Button 
-                      variant="outline-primary" 
+                    <Button
+                      variant="outline-primary"
                       size="sm"
                       onClick={() => {
                         setCurrent3DModelContent(contentItem);
@@ -856,10 +858,10 @@ function LessonView() {
                     <div className="mb-3">{contentItem.description}</div>
                   )}
                   {contentItem.url ? (
-                    <div style={{ 
-                      width: '100%', 
-                      height: '500px', 
-                      borderRadius: '8px', 
+                    <div style={{
+                      width: '100%',
+                      height: '500px',
+                      borderRadius: '8px',
                       overflow: 'hidden',
                       border: '1px solid #dee2e6',
                       backgroundColor: '#1a1a1a'
@@ -900,7 +902,7 @@ function LessonView() {
                   {contentItem.description}
                 </div>
               )}
-              
+
               {/* Assignment Rubric (from instructions field) */}
               {contentItem.content_type === 'ASSIGNMENT' && contentItem.instructions && (
                 <div className="mt-3">
@@ -908,21 +910,21 @@ function LessonView() {
                     // Check if instructions contain rubric (separated by "--- RUBRIC ---")
                     const instructions = contentItem.instructions;
                     const rubricIndex = instructions.indexOf('--- RUBRIC ---');
-                    
+
                     if (rubricIndex !== -1) {
                       // Extract rubric text
                       const rubricText = instructions.substring(rubricIndex + '--- RUBRIC ---'.length).trim();
                       const assignmentDesc = instructions.substring(0, rubricIndex).trim();
-                      
+
                       // Parse rubric text into structured data for table display
                       const parseRubric = (text) => {
                         const lines = text.split('\n').filter(line => line.trim());
-                        
+
                         // Check if this is a matrix-style rubric (performance levels as columns)
                         // Look for header patterns like "Excellent (10)" or "Criteria | Excellent"
                         const hasPerformanceLevels = /Excellent|Good|Satisfactory|Needs Improvement|Incomplete|Outstanding|Proficient|Developing|Beginning/i.test(text);
                         const hasTableStructure = text.includes('|') || /Criteria\s*[|:]?\s*(Excellent|Good|Satisfactory)/i.test(text);
-                        
+
                         if (hasPerformanceLevels && hasTableStructure) {
                           // Parse matrix-style rubric
                           return parseMatrixRubric(text, lines);
@@ -931,7 +933,7 @@ function LessonView() {
                           return parseListRubric(lines);
                         }
                       };
-                      
+
                       // Parse matrix-style rubric with performance levels as columns
                       const parseMatrixRubric = (text, lines) => {
                         const result = {
@@ -939,7 +941,7 @@ function LessonView() {
                           performanceLevels: [],
                           criteria: []
                         };
-                        
+
                         // Find header row with performance levels
                         let headerIndex = -1;
                         for (let i = 0; i < lines.length; i++) {
@@ -949,7 +951,7 @@ function LessonView() {
                             break;
                           }
                         }
-                        
+
                         if (headerIndex === -1) {
                           // Try to find header by looking for performance level keywords
                           for (let i = 0; i < Math.min(5, lines.length); i++) {
@@ -960,14 +962,14 @@ function LessonView() {
                             }
                           }
                         }
-                        
+
                         if (headerIndex === -1) return null;
-                        
+
                         // Parse header row to extract performance levels
                         const headerLine = lines[headerIndex];
                         // Split by | or detect patterns like "Excellent (10)"
                         const headerParts = headerLine.split('|').map(p => p.trim()).filter(p => p);
-                        
+
                         if (headerParts.length === 0) {
                           // Try regex pattern for "Excellent (10)" format
                           const levelPattern = /(Excellent|Good|Satisfactory|Needs Improvement|Incomplete|Outstanding|Proficient|Developing|Beginning)\s*\((\d+)\)/gi;
@@ -996,21 +998,21 @@ function LessonView() {
                             }
                           });
                         }
-                        
+
                         if (result.performanceLevels.length === 0) return null;
-                        
+
                         // Parse criteria rows
                         for (let i = headerIndex + 1; i < lines.length; i++) {
                           const line = lines[i].trim();
                           if (!line || line.toLowerCase().includes('total points')) continue;
-                          
+
                           // Split by | or detect criterion name followed by descriptions
                           const parts = line.split('|').map(p => p.trim()).filter(p => p);
-                          
+
                           if (parts.length >= 2) {
                             const criterionName = parts[0];
                             const descriptions = parts.slice(1);
-                            
+
                             if (criterionName && descriptions.length > 0) {
                               result.criteria.push({
                                 name: criterionName,
@@ -1023,7 +1025,7 @@ function LessonView() {
                             if (criterionMatch) {
                               const criterionName = criterionMatch[1].trim();
                               const rest = criterionMatch[2];
-                              
+
                               // Try to extract descriptions for each level
                               const descriptions = [];
                               result.performanceLevels.forEach((level, idx) => {
@@ -1035,7 +1037,7 @@ function LessonView() {
                                   descriptions.push('');
                                 }
                               });
-                              
+
                               if (descriptions.some(d => d)) {
                                 result.criteria.push({
                                   name: criterionName,
@@ -1045,23 +1047,23 @@ function LessonView() {
                             }
                           }
                         }
-                        
+
                         // If we found criteria, return the matrix format
                         if (result.criteria.length > 0) {
                           return result;
                         }
-                        
+
                         return null;
                       };
-                      
+
                       // Parse simple list-style rubric
                       const parseListRubric = (lines) => {
                         const criteria = [];
-                        
+
                         lines.forEach((line, index) => {
                           line = line.trim();
                           if (!line) return;
-                          
+
                           // Pattern 1: "Criterion Name (X points): Description"
                           const pattern1 = /^(.+?)\s*\((\d+)\s*points?\)\s*:?\s*(.+)$/i;
                           const match1 = line.match(pattern1);
@@ -1073,7 +1075,7 @@ function LessonView() {
                             });
                             return;
                           }
-                          
+
                           // Pattern 2: "X. Criterion Name - X points - Description"
                           const pattern2 = /^\d+\.\s*(.+?)\s*-\s*(\d+)\s*points?\s*-\s*(.+)$/i;
                           const match2 = line.match(pattern2);
@@ -1085,7 +1087,7 @@ function LessonView() {
                             });
                             return;
                           }
-                          
+
                           // Pattern 3: "Criterion Name: X points" (description on next line)
                           const pattern3 = /^(.+?):\s*(\d+)\s*points?$/i;
                           const match3 = line.match(pattern3);
@@ -1098,17 +1100,17 @@ function LessonView() {
                             return;
                           }
                         });
-                        
+
                         // If no structured criteria found, return null to show as text
                         if (criteria.length === 0) {
                           return null;
                         }
-                        
+
                         return { type: 'list', criteria };
                       };
-                      
+
                       const rubricCriteria = parseRubric(rubricText);
-                      
+
                       return (
                         <>
                           {assignmentDesc && (
@@ -1119,14 +1121,14 @@ function LessonView() {
                               </div>
                             </div>
                           )}
-                          <div className="classwork-info-box" style={{ 
-                            backgroundColor: '#fff3cd', 
+                          <div className="classwork-info-box" style={{
+                            backgroundColor: '#fff3cd',
                             border: '1px solid #ffc107',
                             borderRadius: '8px',
                             padding: '1rem'
                           }}>
                             <strong style={{ color: '#856404', marginBottom: '1rem', display: 'block' }}>📋 Grading Rubric:</strong>
-                            
+
                             {rubricCriteria ? (
                               rubricCriteria.type === 'matrix' ? (
                                 // Matrix-style rubric with performance levels as columns
@@ -1286,8 +1288,8 @@ function LessonView() {
                                 </div>
                               )
                             ) : (
-                              <div style={{ 
-                                whiteSpace: 'pre-wrap', 
+                              <div style={{
+                                whiteSpace: 'pre-wrap',
                                 color: '#856404',
                                 fontSize: '0.95rem',
                                 lineHeight: '1.6'
@@ -1312,7 +1314,7 @@ function LessonView() {
                   })()}
                 </div>
               )}
-                      
+
               {/* Attachments */}
               {((contentItem.url && !isVideo && !isImage) || contentItem.file_path || contentItem.content_type === 'ASSIGNMENT') && (
                 <div className="classwork-attachments">
@@ -1323,13 +1325,13 @@ function LessonView() {
                         const bucketName = 'course-content';
                         const filePath = contentItem.assignment_details_file_path;
                         const cleanPath = filePath?.replace(/^course-content\//, '').replace(/^course-bucket\//, '') || filePath;
-                        
+
                         console.log('Accessing assignment details:', { bucketName, originalPath: filePath, cleanPath });
-                        
+
                         const { data, error } = await supabase.storage
                           .from(bucketName)
                           .createSignedUrl(cleanPath, 3600);
-                        
+
                         if (error) {
                           console.error('Storage error details:', { error, bucketName, filePath: cleanPath });
                           throw error;
@@ -1356,7 +1358,7 @@ function LessonView() {
                       </div>
                     </div>
                   )}
-                  
+
                   {contentItem.content_type === 'ASSIGNMENT' && contentItem.assignment_rubric_file_name && (
                     <div className="attachment-card" onClick={async (e) => {
                       e.stopPropagation();
@@ -1364,13 +1366,13 @@ function LessonView() {
                         const bucketName = 'course-content';
                         const filePath = contentItem.assignment_rubric_file_path;
                         const cleanPath = filePath?.replace(/^course-content\//, '').replace(/^course-bucket\//, '') || filePath;
-                        
+
                         console.log('Accessing assignment rubric:', { bucketName, originalPath: filePath, cleanPath });
-                        
+
                         const { data, error } = await supabase.storage
                           .from(bucketName)
                           .createSignedUrl(cleanPath, 3600);
-                        
+
                         if (error) {
                           console.error('Storage error details:', { error, bucketName, filePath: cleanPath });
                           throw error;
@@ -1404,16 +1406,16 @@ function LessonView() {
                       try {
                         const bucketName = 'course-content';
                         const filePath = contentItem.file_path;
-                        
+
                         // Remove bucket name from path if it's included
                         const cleanPath = filePath.replace(/^course-content\//, '').replace(/^course-bucket\//, '');
-                        
+
                         console.log('Accessing file:', { bucketName, originalPath: filePath, cleanPath });
-                        
+
                         const { data, error } = await supabase.storage
                           .from(bucketName)
                           .createSignedUrl(cleanPath, 3600);
-                        
+
                         if (error) {
                           console.error('Storage error details:', {
                             error,
@@ -1430,7 +1432,7 @@ function LessonView() {
                         }
                       } catch (err) {
                         console.error('Error generating signed URL:', err);
-                        const errorMsg = err.message?.includes('Bucket not found') 
+                        const errorMsg = err.message?.includes('Bucket not found')
                           ? `Storage bucket 'course-content' not found or inaccessible. File path: ${contentItem.file_path}`
                           : `Unable to open file: ${err.message || 'Unknown error'}`;
                         alert(errorMsg);
@@ -1445,7 +1447,7 @@ function LessonView() {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Only show URL as link if it's not a FILE type (FILE types should use file_path with signed URLs) */}
                   {contentItem.url && !isVideo && !isImage && contentItem.content_type !== 'FILE' && (
                     <div className="attachment-card" onClick={(e) => {
@@ -1463,11 +1465,11 @@ function LessonView() {
                   )}
                 </div>
               )}
-              
+
               {/* Action Buttons */}
               <div className="classwork-actions" onClick={(e) => e.stopPropagation()}>
                 {contentItem.content_type === 'FLASHCARD' && contentItem.content_data && (
-                  <button 
+                  <button
                     className="classwork-action-btn primary"
                     onClick={() => {
                       setCurrentFlashcardContent(contentItem);
@@ -1478,7 +1480,7 @@ function LessonView() {
                   </button>
                 )}
                 {contentItem.content_type === 'INTERACTIVE_VIDEO' && contentItem.content_data && (
-                  <button 
+                  <button
                     className="classwork-action-btn primary"
                     onClick={() => {
                       setCurrentInteractiveVideoContent(contentItem);
@@ -1489,7 +1491,7 @@ function LessonView() {
                   </button>
                 )}
                 {contentItem.content_type === 'INTERACTIVE_BOOK' && contentItem.content_data && (
-                  <button 
+                  <button
                     className="classwork-action-btn primary"
                     onClick={() => {
                       setCurrentInteractiveBookContent(contentItem);
@@ -1500,7 +1502,7 @@ function LessonView() {
                   </button>
                 )}
                 {contentItem.content_type === 'QUIZ' && quizStatuses[contentItem.content_id] && (
-                  <button 
+                  <button
                     className="classwork-action-btn primary"
                     onClick={() => navigate(`/student/quizzes/${contentItem.content_id}`)}
                   >
@@ -1508,14 +1510,14 @@ function LessonView() {
                   </button>
                 )}
                 {contentItem.content_type === 'ASSIGNMENT' && contentItem.url && (
-                  <button 
+                  <button
                     className="classwork-action-btn primary"
                     onClick={() => window.open(contentItem.url, '_blank')}
                   >
                     Open Assignment
                   </button>
                 )}
-                <button 
+                <button
                   className={`classwork-action-btn ${isCompleted ? 'primary' : ''}`}
                   onClick={() => toggleContentComplete(contentItem.content_id)}
                 >
@@ -1534,30 +1536,30 @@ function LessonView() {
       </div>
     );
   };
-  
+
   const progress = calculateProgress();
   const contentCount = lesson.content?.length || 0;
   const completedCount = completedContent.size;
-  
+
   // Filter and search content first
   const filteredContent = filterAndSearchContent(lesson.content);
-  
+
   // Then categorize the filtered content
   let categorizedContent = categorizeContent(filteredContent);
-  
+
   // Apply category filter if needed
   categorizedContent = getFilteredCategorizedContent(categorizedContent);
-  
+
   // Calculate total estimated time for the lesson
   const totalEstimatedTime = calculateEstimatedTime(lesson.content);
-  
+
   return (
     <div className="lesson-view-container" style={{ background: 'transparent', minHeight: '100vh', width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)', marginTop: '-1.5rem', marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}>
       {/* Hero Header */}
       <div className="lesson-hero-header" style={{ marginTop: 0, marginBottom: 0 }}>
         <Container>
-          <Button 
-            variant="light" 
+          <Button
+            variant="light"
             className="mb-3 back-button"
             onClick={() => {
               if (lesson.class_subject?.class_subject_id) {
@@ -1570,7 +1572,7 @@ function LessonView() {
             <FaArrowLeft className="me-2" />
             Back to Subject
           </Button>
-          
+
           <div className="hero-content">
             <div className="hero-badge mb-2">
               <Badge bg="light" text="dark" className="px-3 py-2" style={{ color: 'white', backgroundColor: 'rgba(255, 255, 255, 0.2)', border: '1px solid rgba(255, 255, 255, 0.3)' }}>
@@ -1581,7 +1583,7 @@ function LessonView() {
             <p className="lesson-subtitle">
               {getFormName()} • {getClassName()} • {formatDate(lesson.lesson_date)}
             </p>
-            
+
             {/* Estimated Time */}
             {totalEstimatedTime > 0 && (
               <div className="estimated-time-badge mt-2 mb-3">
@@ -1621,7 +1623,7 @@ function LessonView() {
                 </Button>
               </div>
             )}
-            
+
             {/* Progress Bar */}
             {contentCount > 0 && (
               <div className="progress-section mt-4">
@@ -1634,9 +1636,9 @@ function LessonView() {
                     {completedCount} of {contentCount} completed
                   </span>
                 </div>
-                <ProgressBar 
-                  now={progress} 
-                  variant="success" 
+                <ProgressBar
+                  now={progress}
+                  variant="success"
                   className="progress-bar-custom"
                   style={{ height: '10px', borderRadius: '10px' }}
                 />
@@ -1653,7 +1655,7 @@ function LessonView() {
           </div>
         </Container>
       </div>
-      
+
       <Container className="lesson-content-container" style={{ background: 'transparent', position: 'relative', zIndex: 2, paddingBottom: '3rem' }}>
         <div className="lesson-content-wrapper">
           {/* Left Sidebar */}
@@ -1685,8 +1687,8 @@ function LessonView() {
                     );
                   })}
                 </select>
-                <FaChevronDown style={{ 
-                  fontSize: '0.75rem', 
+                <FaChevronDown style={{
+                  fontSize: '0.75rem',
                   color: '#5f6368',
                   position: 'absolute',
                   right: '0.75rem',
@@ -1697,7 +1699,7 @@ function LessonView() {
               </div>
             </div>
           </div>
-          
+
           {/* Main Content Area */}
           <div className="lesson-main-content">
             {/* Search and Filter Bar */}
@@ -1766,7 +1768,7 @@ function LessonView() {
                 </div>
               )}
             </div>
-            
+
             {/* Learning Content Section */}
             {categorizedContent.learning.length > 0 && (
               <div className="content-section">
@@ -1790,12 +1792,12 @@ function LessonView() {
                     )}
                   </div>
                 </div>
-                {categorizedContent.learning.map((contentItem, index) => 
+                {categorizedContent.learning.map((contentItem, index) =>
                   renderContentItem(contentItem, index)
                 )}
               </div>
             )}
-            
+
             {/* Practice Section */}
             {categorizedContent.practice.length > 0 && (
               <div className="content-section">
@@ -1819,12 +1821,12 @@ function LessonView() {
                     )}
                   </div>
                 </div>
-                {categorizedContent.practice.map((contentItem, index) => 
+                {categorizedContent.practice.map((contentItem, index) =>
                   renderContentItem(contentItem, index)
                 )}
               </div>
             )}
-            
+
             {/* Assessments Section */}
             {categorizedContent.assessments.length > 0 && (
               <div className="content-section">
@@ -1848,12 +1850,12 @@ function LessonView() {
                     )}
                   </div>
                 </div>
-                {categorizedContent.assessments.map((contentItem, index) => 
+                {categorizedContent.assessments.map((contentItem, index) =>
                   renderContentItem(contentItem, index)
                 )}
               </div>
             )}
-            
+
             {/* Resources Section */}
             {categorizedContent.resources.length > 0 && (
               <div className="content-section">
@@ -1877,12 +1879,12 @@ function LessonView() {
                     )}
                   </div>
                 </div>
-                {categorizedContent.resources.map((contentItem, index) => 
+                {categorizedContent.resources.map((contentItem, index) =>
                   renderContentItem(contentItem, index)
                 )}
               </div>
             )}
-            
+
             {/* Homework Section */}
             {categorizedContent.homework.length > 0 && (
               <div className="content-section">
@@ -1906,12 +1908,12 @@ function LessonView() {
                     )}
                   </div>
                 </div>
-                {categorizedContent.homework.map((contentItem, index) => 
+                {categorizedContent.homework.map((contentItem, index) =>
                   renderContentItem(contentItem, index)
                 )}
               </div>
             )}
-            
+
             {/* Closure Section */}
             {categorizedContent.closure.length > 0 && (
               <div className="content-section">
@@ -1935,20 +1937,20 @@ function LessonView() {
                     )}
                   </div>
                 </div>
-                {categorizedContent.closure.map((contentItem, index) => 
+                {categorizedContent.closure.map((contentItem, index) =>
                   renderContentItem(contentItem, index)
                 )}
               </div>
             )}
-            
+
             {/* Empty State */}
             {lesson.content && lesson.content.length === 0 && (
               <div className="text-center py-5">
                 <p className="text-muted">No content available for this lesson yet.</p>
               </div>
             )}
-            
-            
+
+
           </div>
         </div>
       </Container>
@@ -2063,9 +2065,9 @@ function LessonView() {
         <Modal.Body style={{ padding: 0 }}>
           {current3DModelContent && current3DModelContent.url ? (
             <>
-              <div style={{ 
-                width: '100%', 
-                height: '70vh', 
+              <div style={{
+                width: '100%',
+                height: '70vh',
                 minHeight: '500px',
                 backgroundColor: '#1a1a1a'
               }}>
@@ -2102,8 +2104,47 @@ function LessonView() {
           )}
         </Modal.Body>
       </Modal>
+      {/* Floating Discussion Button */}
+      <button
+        className="floating-discussion-btn"
+        onClick={() => setShowDiscussionSidebar(!showDiscussionSidebar)}
+        title="Class Discussion"
+        aria-label="Toggle class discussion"
+      >
+        <FaComments />
+      </button>
+
+      {/* Discussion Sidebar */}
+      {showDiscussionSidebar && (
+        <>
+          <div 
+            className="discussion-sidebar-overlay"
+            onClick={() => setShowDiscussionSidebar(false)}
+          />
+          <div className="discussion-sidebar">
+            <div className="discussion-sidebar-header">
+              <h5 className="mb-0">
+                <FaComments className="me-2" />
+                Class Discussion
+              </h5>
+              <Button
+                variant="link"
+                className="text-muted p-0"
+                onClick={() => setShowDiscussionSidebar(false)}
+                aria-label="Close discussion"
+              >
+                
+              </Button>
+            </div>
+            <div className="discussion-sidebar-body">
+              <DiscussionBoard lessonId={lessonId} user={user} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 export default LessonView;
+
