@@ -9,6 +9,7 @@ import '../Student/LessonViewStream.css';
 import FlashcardViewer from '../Student/FlashcardViewer';
 import InteractiveVideoViewer from '../Student/InteractiveVideoViewer';
 import InteractiveBookPlayer from '../Student/InteractiveBookPlayer';
+import QuizViewer from '../Student/QuizViewer';
 import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
 
 function StudentViewPreview({ lessonData, content, onClose }) {
@@ -203,10 +204,17 @@ function StudentViewPreview({ lessonData, content, onClose }) {
                                     />
                                 )}
 
+                                {activeContent.content_type === 'QUIZ' && (
+                                    <QuizViewer
+                                        contentData={activeContent.content_data}
+                                        title={activeContent.title}
+                                    />
+                                )}
+
                                 {activeContent.content_type === '3D_MODEL' && (
                                     <div style={{ height: '500px', width: '100%' }}>
                                         <ModelViewerComponent
-                                            modelUrl={activeContent.url}
+                                            contentUrl={activeContent.url}
                                             poster={activeContent.thumbnail_url}
                                             alt={activeContent.title}
                                         />
