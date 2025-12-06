@@ -16,6 +16,7 @@ const ContentLibrary = lazy(() => import('../components/Teacher/ContentLibrary')
 const LessonTemplateLibrary = lazy(() => import('../components/Teacher/LessonTemplateLibrary'));
 const Curriculum = lazy(() => import('../components/Teacher/Curriculum'));
 const StudentProfileView = lazy(() => import('../components/Teacher/StudentProfileView'));
+const StudentViewPreview = lazy(() => import('../components/Teacher/StudentViewPreview'));
 
 const InstructorRoutes = () => (
     <>
@@ -122,6 +123,14 @@ const InstructorRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['instructor']}>
                     <LessonTemplateLibrary />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/teacher/lesson/:lessonId/preview"
+            element={
+                <PrivateRoute allowedRoles={['instructor']}>
+                    <StudentViewPreview />
                 </PrivateRoute>
             }
         />

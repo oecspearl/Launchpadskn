@@ -4622,14 +4622,7 @@ function LessonContentManager() {
           </Modal.Body>
         </Modal>
       )}
-      {/* Student View Preview Overlay */}
-      {showStudentView && (
-        <StudentViewPreview
-          lessonData={lessonData}
-          content={content}
-          onClose={() => setShowStudentView(false)}
-        />
-      )}
+
     </Container>
   );
 }

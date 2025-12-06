@@ -12,15 +12,47 @@ import InteractiveBookPlayer from '../Student/InteractiveBookPlayer';
 import QuizViewer from '../Student/QuizViewer';
 import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
 
-function StudentViewPreview({ lessonData, content, onClose }) {
+import { useParams, useNavigate } from 'react-router-dom';
+import supabaseService from '../../services/supabaseService';
+
+function StudentViewPreview() {
+    const { lessonId } = useParams();
+    const navigate = useNavigate();
+    const [lessonData, setLessonData] = useState(null);
+    const [content, setContent] = useState([]);
     const [activeContent, setActiveContent] = useState(null);
     const [theme, setTheme] = useState('cool-dark');
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (content && content.length > 0) {
-            setActiveContent(content[0]);
-        }
-    }, [content]);
+        const fetchLessonData = async () => {
+            if (!lessonId) return;
+            try {
+                setLoading(true);
+                // Fetch lesson details
+                const lesson = await supabaseService.getLessonById(lessonId);
+                setLessonData(lesson);
+
+                // Fetch lesson content
+                const contentData = await supabaseService.getLessonContent(lessonId);
+                setContent(contentData);
+
+                if (contentData && contentData.length > 0) {
+                    setActiveContent(contentData[0]);
+                }
+            } catch (error) {
+                console.error('Error fetching lesson preview data:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLessonData();
+    }, [lessonId]);
+
+    const handleExit = () => {
+        navigate(`/teacher/lesson/${lessonId}/content`);
+    };
 
     const getContentIcon = (type) => {
         switch (type) {
@@ -58,14 +90,24 @@ function StudentViewPreview({ lessonData, content, onClose }) {
         );
     };
 
-    if (!lessonData) return <div>Loading Preview...</div>;
+    if (loading) {
+        return (
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', background: '#0f172a', color: 'white' }}>
+                <div className="spinner-border text-primary" role="status">
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+            </div>
+        );
+    }
+
+    if (!lessonData) return <div>Lesson not found</div>;
 
     return (
-        <div className={`lesson-view-container theme-${theme}`} style={{ position: 'fixed', top: 0, left: 0, zIndex: 1050, overflowY: 'auto' }}>
+        <div className={`lesson-view-container theme-${theme}`} style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1050, overflowY: 'auto' }}>
             {/* Header */}
             <div className="mission-header">
                 <div className="mission-breadcrumbs">
-                    <button className="mission-back-btn" onClick={onClose}>
+                    <button className="mission-back-btn" onClick={handleExit}>
                         <FaArrowLeft /> Exit Preview
                     </button>
                     <span>/</span>
