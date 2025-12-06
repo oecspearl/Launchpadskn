@@ -23,7 +23,6 @@ import FlashcardCreator from './FlashcardCreator';
 import FlashcardViewer from '../Student/FlashcardViewer';
 import InteractiveVideoCreator from './InteractiveVideoCreator';
 import InteractiveBookCreator from './InteractiveBookCreator';
-import StudentViewPreview from './StudentViewPreview';
 import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
@@ -1942,7 +1941,7 @@ function LessonContentManager() {
               </Button>
               <Button
                 variant="outline-info"
-                onClick={() => setShowStudentView(true)}
+                onClick={() => navigate(`/teacher/lesson/${lessonId}/preview`)}
               >
                 <FaEye className="me-2" />
                 Student View
