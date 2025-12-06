@@ -241,48 +241,48 @@ function TeacherDashboard() {
             {/* Actionable Insights & Today's Lessons */}
             <Col md={8}>
               {/* Actionable Insights */}
-              <Card className="border-0 shadow-sm mb-4 bg-primary text-white">
+              <Card className="suggested-actions-card shadow-sm mb-4">
                 <Card.Body className="p-4">
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <h5 className="mb-0 fw-bold">
                       <FaLightbulb className="me-2" />
                       Suggested Actions
                     </h5>
-                    <Badge bg="light" text="primary" className="rounded-pill">3 New</Badge>
+                    <Badge bg="light" text="dark" className="rounded-pill px-3 py-2">3 New</Badge>
                   </div>
                   <Row className="g-3">
                     <Col md={4}>
-                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
+                      <div className="suggested-action-item">
                         <div className="d-flex align-items-center mb-2">
                           <FaClipboardList className="me-2" />
                           <span className="fw-bold">Grading</span>
                         </div>
-                        <p className="small mb-2 opacity-75">5 assignments pending review</p>
-                        <Button variant="light" size="sm" className="w-100 text-primary" onClick={() => navigate('/teacher/grading')}>
+                        <p className="small mb-3 opacity-75">5 assignments pending review</p>
+                        <Button className="suggested-action-btn w-100" size="sm" onClick={() => navigate('/teacher/grading')}>
                           Review Now
                         </Button>
                       </div>
                     </Col>
                     <Col md={4}>
-                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
+                      <div className="suggested-action-item">
                         <div className="d-flex align-items-center mb-2">
                           <FaCalendarAlt className="me-2" />
                           <span className="fw-bold">Planning</span>
                         </div>
-                        <p className="small mb-2 opacity-75">Next week's schedule is empty</p>
-                        <Button variant="light" size="sm" className="w-100 text-primary" onClick={() => navigate('/teacher/lessons/create')}>
+                        <p className="small mb-3 opacity-75">Next week's schedule is empty</p>
+                        <Button className="suggested-action-btn w-100" size="sm" onClick={() => navigate('/teacher/lessons/create')}>
                           Plan Lessons
                         </Button>
                       </div>
                     </Col>
                     <Col md={4}>
-                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
+                      <div className="suggested-action-item">
                         <div className="d-flex align-items-center mb-2">
                           <FaUsers className="me-2" />
                           <span className="fw-bold">Attendance</span>
                         </div>
-                        <p className="small mb-2 opacity-75">Mark attendance for today</p>
-                        <Button variant="light" size="sm" className="w-100 text-primary" onClick={() => setActiveTab('classes')}>
+                        <p className="small mb-3 opacity-75">Mark attendance for today</p>
+                        <Button className="suggested-action-btn w-100" size="sm" onClick={() => setActiveTab('classes')}>
                           View Classes
                         </Button>
                       </div>
