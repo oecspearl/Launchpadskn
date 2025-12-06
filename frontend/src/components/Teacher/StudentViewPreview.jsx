@@ -206,6 +206,7 @@ function StudentViewPreview({ lessonData, content, onClose }) {
 
                                 {activeContent.content_type === 'QUIZ' && (
                                     <QuizViewer
+                                        contentId={activeContent.content_id}
                                         contentData={activeContent.content_data}
                                         title={activeContent.title}
                                     />
@@ -222,7 +223,7 @@ function StudentViewPreview({ lessonData, content, onClose }) {
                                 )}
 
                                 {/* Fallback for other types */}
-                                {!['VIDEO', 'IMAGE', 'FLASHCARD', 'INTERACTIVE_VIDEO', 'INTERACTIVE_BOOK', '3D_MODEL',
+                                {!['VIDEO', 'IMAGE', 'FLASHCARD', 'INTERACTIVE_VIDEO', 'INTERACTIVE_BOOK', '3D_MODEL', 'QUIZ',
                                     'LEARNING_OUTCOMES', 'LEARNING_ACTIVITIES', 'KEY_CONCEPTS',
                                     'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(activeContent.content_type) && (
                                         <div className="text-center py-5">

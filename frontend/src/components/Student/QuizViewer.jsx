@@ -1,18 +1,60 @@
-import React, { useState } from 'react';
-import { Card, Button, Alert, ProgressBar, Form, Badge } from 'react-bootstrap';
+import React, { useState, useEffect } from 'react';
+import { Card, Button, Alert, ProgressBar, Form, Badge, Spinner } from 'react-bootstrap';
 import { FaCheckCircle, FaTimesCircle, FaTrophy, FaClipboardCheck } from 'react-icons/fa';
+import supabaseService from '../../services/supabaseService';
 
-function QuizViewer({ contentData, title }) {
+function QuizViewer({ contentId, contentData, title }) {
     const [responses, setResponses] = useState({});
     const [submitted, setSubmitted] = useState(false);
     const [score, setScore] = useState(null);
+    const [quizData, setQuizData] = useState(contentData);
+    const [loading, setLoading] = useState(!contentData);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        if (!contentData && contentId) {
+            const fetchQuiz = async () => {
+                try {
+                    setLoading(true);
+                    const data = await supabaseService.getQuizByContentId(contentId);
+                    if (data) {
+                        setQuizData(data);
+                    } else {
+                        setError('Quiz data not found.');
+                    }
+                } catch (err) {
+                    console.error('Error fetching quiz:', err);
+                    setError('Failed to load quiz data.');
+                } finally {
+                    setLoading(false);
+                }
+            };
+            fetchQuiz();
+        } else if (contentData) {
+            setQuizData(contentData);
+            setLoading(false);
+        }
+    }, [contentId, contentData]);
+
+    if (loading) {
+        return (
+            <div className="text-center py-5">
+                <Spinner animation="border" />
+                <p className="mt-3">Loading quiz...</p>
+            </div>
+        );
+    }
+
+    if (error) {
+        return <Alert variant="danger">{error}</Alert>;
+    }
 
     // Guard clause
-    if (!contentData) {
+    if (!quizData) {
         return <Alert variant="danger">Quiz data is missing.</Alert>;
     }
 
-    const quiz = contentData;
+    const quiz = quizData;
     const questions = quiz.questions || [];
 
     const handleResponseChange = (questionId, value, type) => {
