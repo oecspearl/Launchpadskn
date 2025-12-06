@@ -180,15 +180,27 @@ function StudentViewPreview({ lessonData, content, onClose }) {
                                 }
 
                                 {activeContent.content_type === 'FLASHCARD' && (
-                                    <FlashcardViewer contentId={activeContent.content_id} />
+                                    <FlashcardViewer
+                                        contentId={activeContent.content_id}
+                                        contentData={activeContent.content_data}
+                                        title={activeContent.title}
+                                    />
                                 )}
 
                                 {activeContent.content_type === 'INTERACTIVE_VIDEO' && (
-                                    <InteractiveVideoViewer contentId={activeContent.content_id} />
+                                    <InteractiveVideoViewer
+                                        contentId={activeContent.content_id}
+                                        contentData={activeContent.content_data}
+                                        title={activeContent.title}
+                                    />
                                 )}
 
                                 {activeContent.content_type === 'INTERACTIVE_BOOK' && (
-                                    <InteractiveBookPlayer contentId={activeContent.content_id} />
+                                    <InteractiveBookPlayer
+                                        contentId={activeContent.content_id}
+                                        contentData={activeContent.content_data}
+                                        title={activeContent.title}
+                                    />
                                 )}
 
                                 {activeContent.content_type === '3D_MODEL' && (
