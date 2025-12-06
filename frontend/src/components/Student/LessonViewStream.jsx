@@ -17,6 +17,9 @@ import FlashcardViewer from './FlashcardViewer';
 import InteractiveVideoViewer from './InteractiveVideoViewer';
 import InteractiveBookPlayer from './InteractiveBookPlayer';
 import ThemeSelector from './ThemeSelector';
+import NotesPanel from './NotesPanel';
+import DiscussionBoard from './DiscussionBoard';
+import CheckpointRenderer from './CheckpointRenderer';
 
 function LessonViewStream() {
     const { lessonId } = useParams();
@@ -422,6 +425,19 @@ function LessonViewStream() {
                                             )}
                                         </div>
                                     )}
+
+                                {/* Interactive Checkpoint Demo */}
+                                {activeContent.content_type === 'CHECKPOINT' && (
+                                    <CheckpointRenderer
+                                        checkpoint={activeContent.data}
+                                        onComplete={() => toggleContentComplete(activeContent.content_id)}
+                                    />
+                                )}
+
+                                {/* Discussion Board for the active content */}
+                                <div className="mt-5 pt-4 border-top border-secondary">
+                                    <DiscussionBoard lessonId={lessonId} user={user} />
+                                </div>
                             </div>
 
                             <div className="viewer-actions">
@@ -449,6 +465,8 @@ function LessonViewStream() {
                     )}
                 </div>
             </div>
+
+            <NotesPanel lessonId={lessonId} />
         </div>
     );
 }

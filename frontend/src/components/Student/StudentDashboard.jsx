@@ -18,6 +18,9 @@ import EmptyState from '../common/EmptyState';
 import KeyboardShortcutsModal from '../common/KeyboardShortcutsModal';
 import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
 import { addRecentlyViewed, getRecentlyViewedByType } from '../../services/recentlyViewedService';
+import Gamification from '../InteractiveContent/Gamification';
+import PersonalizedRecommendations from './PersonalizedRecommendations';
+import GoalSetting from './GoalSetting';
 import './StudentDashboard.css';
 
 function StudentDashboard() {
@@ -269,6 +272,16 @@ function StudentDashboard() {
               </Col>
             </Row>
 
+            {/* Recommendations and Goals */}
+            <Row className="mt-4 g-4">
+              <Col md={6}>
+                <PersonalizedRecommendations />
+              </Col>
+              <Col md={6}>
+                <GoalSetting />
+              </Col>
+            </Row>
+
             {/* My Subjects Preview */}
             <Row className="mt-4">
               <Col>
@@ -405,6 +418,10 @@ function StudentDashboard() {
                 <p className="mb-0">No subjects assigned to your class</p>
               </div>
             )}
+          </Tab>
+
+          <Tab eventKey="gamification" title="Gamification">
+            <Gamification studentId={user?.user_id} />
           </Tab>
         </Tabs>
       </Container>

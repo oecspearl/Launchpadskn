@@ -23,6 +23,7 @@ import FlashcardCreator from './FlashcardCreator';
 import FlashcardViewer from '../Student/FlashcardViewer';
 import InteractiveVideoCreator from './InteractiveVideoCreator';
 import InteractiveBookCreator from './InteractiveBookCreator';
+import StudentViewPreview from './StudentViewPreview';
 import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
@@ -92,6 +93,9 @@ function LessonContentManager() {
   const [generatedContentItems, setGeneratedContentItems] = useState([]);
   const [showAIContentModal, setShowAIContentModal] = useState(false);
   const [aiGenerationMode, setAiGenerationMode] = useState('complete'); // 'complete' or 'student'
+  const [showWizard, setShowWizard] = useState(false);
+  const [showStudentView, setShowStudentView] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
 
   useEffect(() => {
     if (lessonId) {
@@ -124,7 +128,7 @@ function LessonContentManager() {
           id = typeof arvrContentId === 'string' ? parseInt(arvrContentId) : arvrContentId;
           if (isNaN(id)) id = null;
         }
-        
+
         if (id) {
           const model = available3DModels.find(m => m.content_id === id);
           if (model && !selected3DModel) {
@@ -528,6 +532,145 @@ function LessonContentManager() {
     } catch (err) {
       console.error('Error generating AI content:', err);
       setError(err.message || 'Failed to generate content. Please check your API key and try again.');
+    } finally {
+      setIsGeneratingContent(false);
+    }
+  };
+
+  const handleApplyTemplate = async (template) => {
+    setIsGeneratingContent(true);
+    setShowWizard(false);
+
+    try {
+      let contentItems = [];
+
+      if (template === 'standard') {
+        contentItems = [
+          {
+            content_type: 'LEARNING_OUTCOMES',
+            title: 'Learning Outcomes',
+            content_text: 'By the end of this lesson, students will be able to...',
+            content_section: 'Introduction',
+            sequence_order: 1,
+            is_required: true,
+            estimated_minutes: 5
+          },
+          {
+            content_type: 'VIDEO',
+            title: 'Introduction Video',
+            url: '', // User needs to fill this
+            description: 'Watch this video to understand the core concepts.',
+            content_section: 'Learning',
+            sequence_order: 2,
+            is_required: true,
+            estimated_minutes: 15
+          },
+          {
+            content_type: 'KEY_CONCEPTS',
+            title: 'Key Concepts',
+            content_text: '- Concept 1\n- Concept 2\n- Concept 3',
+            content_section: 'Learning',
+            sequence_order: 3,
+            is_required: true,
+            estimated_minutes: 10
+          },
+          {
+            content_type: 'QUIZ',
+            title: 'Check for Understanding',
+            content_text: 'Short quiz to verify learning.',
+            content_section: 'Assessment',
+            sequence_order: 4,
+            is_required: true,
+            estimated_minutes: 10
+          },
+          {
+            content_type: 'SUMMARY',
+            title: 'Lesson Summary',
+            content_text: 'In this lesson, we covered...',
+            content_section: 'Closure',
+            sequence_order: 5,
+            is_required: true,
+            estimated_minutes: 5
+          }
+        ];
+      } else if (template === 'interactive') {
+        contentItems = [
+          {
+            content_type: 'INTERACTIVE_BOOK',
+            title: 'Interactive Lesson Book',
+            description: 'Read through the interactive book and complete the embedded activities.',
+            content_section: 'Learning',
+            sequence_order: 1,
+            is_required: true,
+            estimated_minutes: 30
+          },
+          {
+            content_type: 'FLASHCARD',
+            title: 'Vocabulary Flashcards',
+            description: 'Review these terms before the quiz.',
+            content_section: 'Review',
+            sequence_order: 2,
+            is_required: false,
+            estimated_minutes: 10
+          },
+          {
+            content_type: 'QUIZ',
+            title: 'Final Quiz',
+            content_text: 'Assessment of the interactive lesson.',
+            content_section: 'Assessment',
+            sequence_order: 3,
+            is_required: true,
+            estimated_minutes: 15
+          }
+        ];
+      } else if (template === 'video_lecture') {
+        contentItems = [
+          {
+            content_type: 'VIDEO',
+            title: 'Lecture Part 1',
+            url: '',
+            description: 'Introduction to the topic.',
+            content_section: 'Lecture',
+            sequence_order: 1,
+            is_required: true,
+            estimated_minutes: 15
+          },
+          {
+            content_type: 'DISCUSSION_PROMPTS',
+            title: 'Discussion: Part 1',
+            content_text: 'What are your thoughts on...',
+            content_section: 'Lecture',
+            sequence_order: 2,
+            is_required: true,
+            estimated_minutes: 10
+          },
+          {
+            content_type: 'VIDEO',
+            title: 'Lecture Part 2',
+            url: '',
+            description: 'Deep dive into the topic.',
+            content_section: 'Lecture',
+            sequence_order: 3,
+            is_required: true,
+            estimated_minutes: 20
+          },
+          {
+            content_type: 'ASSIGNMENT',
+            title: 'Lecture Reflection',
+            content_text: 'Write a brief reflection on the lecture.',
+            content_section: 'Assessment',
+            sequence_order: 4,
+            is_required: true,
+            estimated_minutes: 20
+          }
+        ];
+      }
+
+      setGeneratedContentItems(contentItems);
+      setShowAIContentModal(true); // Reuse the AI content modal to review/save items
+    } catch (err) {
+      console.error('Error applying template:', err);
+      setError('Failed to apply template');
     } finally {
       setIsGeneratingContent(false);
     }
@@ -1798,6 +1941,20 @@ function LessonContentManager() {
                 Add from Library
               </Button>
               <Button
+                variant="outline-info"
+                onClick={() => setShowStudentView(true)}
+              >
+                <FaEye className="me-2" />
+                Student View
+              </Button>
+              <Button
+                variant="outline-primary"
+                onClick={() => setShowWizard(true)}
+              >
+                <FaMagic className="me-2" />
+                Wizard
+              </Button>
+              <Button
                 variant="success"
                 onClick={() => handleGenerateAIContent('complete')}
                 disabled={isGeneratingContent || !lessonData}
@@ -1857,9 +2014,15 @@ function LessonContentManager() {
             <Card className="border-0 shadow-sm">
               <Card.Body className="text-center py-5">
                 <p className="text-muted mb-0">No content added yet</p>
-                <Button variant="primary" className="mt-3" onClick={() => handleOpenModal()}>
-                  Add First Content
-                </Button>
+                <div className="d-flex justify-content-center gap-2 mt-3">
+                  <Button variant="outline-primary" onClick={() => setShowWizard(true)}>
+                    <FaMagic className="me-2" />
+                    Use Wizard
+                  </Button>
+                  <Button variant="primary" onClick={() => handleOpenModal()}>
+                    Add First Content
+                  </Button>
+                </div>
               </Card.Body>
             </Card>
           ) : (
@@ -3580,7 +3743,63 @@ function LessonContentManager() {
         onSave={handleQuizSaved}
       />
 
-      {/* Rubric Generation Modal */}
+      {/* Wizard Modal */}
+      <Modal show={showWizard} onHide={() => setShowWizard(false)} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaMagic className="me-2 text-primary" />
+            Content Wizard
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p className="text-muted mb-4">
+            Select a template to quickly structure your lesson content. You can customize the content after selecting a template.
+          </p>
+          <Row className="g-4">
+            <Col md={4}>
+              <Card className="h-100 border-0 shadow-sm hover-card" onClick={() => handleApplyTemplate('standard')} style={{ cursor: 'pointer' }}>
+                <Card.Body className="text-center p-4">
+                  <div className="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                    <FaBook className="text-primary" size={32} />
+                  </div>
+                  <h5>Standard Lesson</h5>
+                  <p className="small text-muted mb-0">
+                    Classic structure with outcomes, video, key concepts, quiz, and summary.
+                  </p>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={4}>
+              <Card className="h-100 border-0 shadow-sm hover-card" onClick={() => handleApplyTemplate('interactive')} style={{ cursor: 'pointer' }}>
+                <Card.Body className="text-center p-4">
+                  <div className="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                    <FaProjectDiagram className="text-success" size={32} />
+                  </div>
+                  <h5>Interactive</h5>
+                  <p className="small text-muted mb-0">
+                    Engaging flow with interactive book, flashcards, and gamified quiz.
+                  </p>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={4}>
+              <Card className="h-100 border-0 shadow-sm hover-card" onClick={() => handleApplyTemplate('video_lecture')} style={{ cursor: 'pointer' }}>
+                <Card.Body className="text-center p-4">
+                  <div className="bg-danger bg-opacity-10 rounded-circle p-3 d-inline-block mb-3">
+                    <FaVideo className="text-danger" size={32} />
+                  </div>
+                  <h5>Video Lecture</h5>
+                  <p className="small text-muted mb-0">
+                    Video-centric lesson with discussion prompts and reflection assignment.
+                  </p>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        </Modal.Body>
+      </Modal>
+
+      {/* AI Content Generation Modal */}
       <Modal show={showRubricModal} onHide={() => setShowRubricModal(false)} size="xl">
         <Modal.Header closeButton>
           <Modal.Title>
@@ -4402,6 +4621,14 @@ function LessonContentManager() {
             />
           </Modal.Body>
         </Modal>
+      )}
+      {/* Student View Preview Overlay */}
+      {showStudentView && (
+        <StudentViewPreview
+          lessonData={lessonData}
+          content={content}
+          onClose={() => setShowStudentView(false)}
+        />
       )}
     </Container>
   );

@@ -6,7 +6,8 @@ import {
 import { useNavigate } from 'react-router-dom';
 import {
   FaChalkboardTeacher, FaCalendarAlt, FaClock, FaUsers,
-  FaBook, FaClipboardList, FaMapMarkerAlt, FaPlus, FaEdit, FaTasks
+  FaBook, FaClipboardList, FaMapMarkerAlt, FaPlus, FaEdit, FaTasks,
+  FaLightbulb, FaArrowUp, FaCheckCircle, FaFileAlt, FaComments
 } from 'react-icons/fa';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContextSupabase';
@@ -237,8 +238,59 @@ function TeacherDashboard() {
       >
         <Tab eventKey="overview" title="Overview">
           <Row className="g-4">
-            {/* Today's Lessons */}
+            {/* Actionable Insights & Today's Lessons */}
             <Col md={8}>
+              {/* Actionable Insights */}
+              <Card className="border-0 shadow-sm mb-4 bg-primary text-white">
+                <Card.Body className="p-4">
+                  <div className="d-flex justify-content-between align-items-center mb-3">
+                    <h5 className="mb-0 fw-bold">
+                      <FaLightbulb className="me-2" />
+                      Suggested Actions
+                    </h5>
+                    <Badge bg="light" text="primary" className="rounded-pill">3 New</Badge>
+                  </div>
+                  <Row className="g-3">
+                    <Col md={4}>
+                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
+                        <div className="d-flex align-items-center mb-2">
+                          <FaClipboardList className="me-2" />
+                          <span className="fw-bold">Grading</span>
+                        </div>
+                        <p className="small mb-2 opacity-75">5 assignments pending review</p>
+                        <Button variant="light" size="sm" className="w-100 text-primary" onClick={() => navigate('/teacher/grading')}>
+                          Review Now
+                        </Button>
+                      </div>
+                    </Col>
+                    <Col md={4}>
+                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
+                        <div className="d-flex align-items-center mb-2">
+                          <FaCalendarAlt className="me-2" />
+                          <span className="fw-bold">Planning</span>
+                        </div>
+                        <p className="small mb-2 opacity-75">Next week's schedule is empty</p>
+                        <Button variant="light" size="sm" className="w-100 text-primary" onClick={() => navigate('/teacher/lessons/create')}>
+                          Plan Lessons
+                        </Button>
+                      </div>
+                    </Col>
+                    <Col md={4}>
+                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
+                        <div className="d-flex align-items-center mb-2">
+                          <FaUsers className="me-2" />
+                          <span className="fw-bold">Attendance</span>
+                        </div>
+                        <p className="small mb-2 opacity-75">Mark attendance for today</p>
+                        <Button variant="light" size="sm" className="w-100 text-primary" onClick={() => setActiveTab('classes')}>
+                          View Classes
+                        </Button>
+                      </div>
+                    </Col>
+                  </Row>
+                </Card.Body>
+              </Card>
+
               <Card className="border-0 shadow-sm">
                 <Card.Header className="bg-white border-0 py-3">
                   <h5 className="mb-0">
@@ -312,6 +364,10 @@ function TeacherDashboard() {
                         <div>
                           <h3 className="mb-0">{uniqueClasses.length}</h3>
                           <small>Classes</small>
+                          <div className="mt-2 small text-success">
+                            <FaArrowUp className="me-1" />
+                            Active this term
+                          </div>
                         </div>
                         <FaChalkboardTeacher size={40} opacity={0.5} />
                       </div>
@@ -326,6 +382,10 @@ function TeacherDashboard() {
                         <div>
                           <h3 className="mb-0">{todayLessons.length}</h3>
                           <small>Today's Lessons</small>
+                          <div className="mt-2 small text-muted">
+                            <FaClock className="me-1" />
+                            Next: 10:00 AM
+                          </div>
                         </div>
                         <FaCalendarAlt size={40} opacity={0.5} />
                       </div>
@@ -340,9 +400,50 @@ function TeacherDashboard() {
                         <div>
                           <h3 className="mb-0">{myClasses.length}</h3>
                           <small>Subjects</small>
+                          <div className="mt-2 small text-success">
+                            <FaCheckCircle className="me-1" />
+                            All on track
+                          </div>
                         </div>
                         <FaBook size={40} opacity={0.5} />
                       </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+
+                {/* Recent Activity Feed */}
+                <Col xs={12}>
+                  <Card className="border-0 shadow-sm">
+                    <Card.Header className="bg-white border-0 py-3">
+                      <h6 className="mb-0 fw-bold">Recent Activity</h6>
+                    </Card.Header>
+                    <Card.Body className="p-0">
+                      <ListGroup variant="flush">
+                        <ListGroup.Item className="border-0 px-3 py-2">
+                          <div className="d-flex align-items-center">
+                            <div className="bg-light rounded-circle p-2 me-3">
+                              <FaFileAlt className="text-primary" />
+                            </div>
+                            <div>
+                              <p className="mb-0 small fw-bold">New Assignment Submission</p>
+                              <small className="text-muted">John Doe submitted "History Essay"</small>
+                            </div>
+                            <small className="text-muted ms-auto">2m</small>
+                          </div>
+                        </ListGroup.Item>
+                        <ListGroup.Item className="border-0 px-3 py-2">
+                          <div className="d-flex align-items-center">
+                            <div className="bg-light rounded-circle p-2 me-3">
+                              <FaComments className="text-success" />
+                            </div>
+                            <div>
+                              <p className="mb-0 small fw-bold">New Question</p>
+                              <small className="text-muted">Sarah asked about "Algebra"</small>
+                            </div>
+                            <small className="text-muted ms-auto">1h</small>
+                          </div>
+                        </ListGroup.Item>
+                      </ListGroup>
                     </Card.Body>
                   </Card>
                 </Col>
