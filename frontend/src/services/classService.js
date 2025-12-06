@@ -818,6 +818,56 @@ export const classService = {
         return data || [];
     },
 
+    async getLessonById(lessonId) {
+        const { data, error } = await supabase
+            .from('lessons')
+            .select(`
+                *,
+                class_subject:class_subjects(
+                    *,
+                    subject_offering:subject_form_offerings(
+                        *,
+                        subject:subjects(*)
+                    ),
+                    class:classes(
+                        *,
+                        form:forms(*)
+                    )
+                )
+            `)
+            .eq('lesson_id', lessonId)
+            .single();
+
+        if (error) throw error;
+
+        if (data && data.lesson_date) {
+            let dateStr = String(data.lesson_date);
+            if (dateStr.includes('T')) {
+                dateStr = dateStr.split('T')[0];
+            } else if (dateStr.length > 10) {
+                dateStr = dateStr.substring(0, 10);
+            }
+            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+            if (dateRegex.test(dateStr)) {
+                data.lesson_date = dateStr;
+            }
+        }
+
+        return data;
+    },
+
+    async getLessonContent(lessonId) {
+        const { data, error } = await supabase
+            .from('lesson_content')
+            .select('*')
+            .eq('lesson_id', lessonId)
+            .order('sequence_order', { ascending: true })
+            .order('upload_date', { ascending: true });
+
+        if (error) throw error;
+        return data || [];
+    },
+
     async createLesson(lessonData) {
         const payload = {
             ...lessonData,
