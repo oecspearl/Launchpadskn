@@ -323,6 +323,28 @@ function Curriculum() {
                                     )}
                                   </div>
                                   
+                                  {/* Enhanced SKN Curriculum Link for Mathematics Form 1 */}
+                                  {offering.subject?.subject_name && 
+                                   (offering.subject.subject_name.toLowerCase().includes('math') || 
+                                    offering.subject.subject_name.toLowerCase().includes('mathematics')) &&
+                                   offering.form?.form_number === 1 && (
+                                    <div className="mb-3">
+                                      <Link 
+                                        to="/curriculum/skn-mathematics"
+                                        className="text-decoration-none"
+                                      >
+                                        <Button 
+                                          variant="outline-primary" 
+                                          size="sm" 
+                                          className="w-100"
+                                        >
+                                          <FaBook className="me-2" />
+                                          View Enhanced SKN Mathematics Curriculum
+                                        </Button>
+                                      </Link>
+                                    </div>
+                                  )}
+                                  
                                   {/* Structured Curriculum Indicator */}
                                   {hasStructuredCurriculum(offering) ? (
                                     <div className="mb-3">

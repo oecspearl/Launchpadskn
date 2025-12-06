@@ -9,6 +9,7 @@ const LessonViewStream = lazy(() => import('../components/Student/LessonViewStre
 const StudentQuizView = lazy(() => import('../components/Student/StudentQuizView'));
 const AssignmentSubmission = lazy(() => import('../components/Student/AssignmentSubmission'));
 const CourseRegistration = lazy(() => import('../components/Student/CourseRegistration'));
+const SKNCurriculum = lazy(() => import('../components/Teacher/SKNCurriculum'));
 
 const StudentRoutes = () => (
     <>
@@ -65,6 +66,14 @@ const StudentRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['student']}>
                     <CourseRegistration />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/student/curriculum/skn-mathematics"
+            element={
+                <PrivateRoute allowedRoles={['student']}>
+                    <SKNCurriculum />
                 </PrivateRoute>
             }
         />

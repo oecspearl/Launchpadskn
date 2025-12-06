@@ -15,6 +15,7 @@ const LessonContentManager = lazy(() => import('../components/Teacher/LessonCont
 const ContentLibrary = lazy(() => import('../components/Teacher/ContentLibrary'));
 const LessonTemplateLibrary = lazy(() => import('../components/Teacher/LessonTemplateLibrary'));
 const Curriculum = lazy(() => import('../components/Teacher/Curriculum'));
+const SKNCurriculum = lazy(() => import('../components/Teacher/SKNCurriculum'));
 const StudentProfileView = lazy(() => import('../components/Teacher/StudentProfileView'));
 const StudentViewPreview = lazy(() => import('../components/Teacher/StudentViewPreview'));
 
@@ -99,6 +100,14 @@ const InstructorRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['instructor', 'admin']}>
                     <Curriculum />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/teacher/curriculum/skn-mathematics"
+            element={
+                <PrivateRoute allowedRoles={['instructor', 'admin']}>
+                    <SKNCurriculum />
                 </PrivateRoute>
             }
         />
