@@ -1,36 +1,57 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaRocket, FaBrain, FaChartLine, FaGraduationCap, FaChalkboardTeacher, FaLaptopCode } from 'react-icons/fa';
+import {
+    FaRocket, FaBrain, FaChartLine, FaGraduationCap,
+    FaChalkboardTeacher, FaLaptopCode, FaShoppingCart,
+    FaImages, FaCreditCard, FaBars
+} from 'react-icons/fa';
 import './Homepage.css';
 
 const Homepage = () => {
     return (
         <div className="homepage-container">
-            <div className="homepage-bg-glow"></div>
-            <div className="homepage-bg-glow-2"></div>
+            {/* Floating Menu (Right Side) */}
+            <div className="floating-menu">
+                <div className="floating-menu-item" title="Shop">
+                    <FaShoppingCart />
+                </div>
+                <div className="floating-menu-item" title="Gallery">
+                    <FaImages />
+                </div>
+                <div className="floating-menu-item" title="Pricing">
+                    <FaCreditCard />
+                </div>
+            </div>
 
             <div className="homepage-content">
                 {/* Hero Section */}
                 <section className="hero-section">
-                    <div className="hero-badge">
-                        🚀 The Future of Education is Here
-                    </div>
-                    <h1 className="hero-title">
-                        Empowering Education in <br />
-                        <span>St. Kitts & Nevis</span>
-                    </h1>
-                    <p className="hero-subtitle">
-                        Launchpad SKN is a next-generation learning platform powered by AI.
-                        We provide students, teachers, and administrators with the tools they need
-                        to succeed in the digital age.
-                    </p>
-                    <div className="hero-buttons">
-                        <Link to="/login" className="btn-glow">
-                            Get Started
-                        </Link>
-                        <a href="#features" className="btn-outline-glow">
-                            Learn More
-                        </a>
+                    <div className="row align-items-center w-100">
+                        <div className="col-lg-6">
+                            <h1 className="hero-title">
+                                Launchpad SKN.
+                                <span>Empowering Education in the Federation</span>
+                            </h1>
+                            <p className="hero-subtitle">
+                                Take great courses from the world's best universities and local institutions.
+                                Powered by AI to deliver a personalized learning experience for every student in St. Kitts & Nevis.
+                            </p>
+                            <div className="hero-buttons">
+                                <Link to="/login" className="btn-primary-custom text-decoration-none">
+                                    Get Started
+                                </Link>
+                            </div>
+                        </div>
+                        <div className="col-lg-6">
+                            <div className="laptop-container">
+                                {/* Placeholder for Laptop Image - using a high quality placeholder */}
+                                <img
+                                    src="https://placehold.co/900x600/1e293b/ffffff?text=Launchpad+SKN+Platform"
+                                    alt="Launchpad SKN Platform on Laptop"
+                                    className="laptop-image"
+                                />
+                            </div>
+                        </div>
                     </div>
                 </section>
 
@@ -52,7 +73,7 @@ const Homepage = () => {
 
                 {/* Features Section */}
                 <section id="features" className="features-section">
-                    <h2 className="text-center mb-5" style={{ fontSize: '2.5rem', fontWeight: '700' }}>
+                    <h2 className="text-center mb-5" style={{ fontSize: '2.5rem', fontWeight: '700', color: 'white' }}>
                         Why Choose <span style={{ color: 'var(--hp-primary)' }}>Launchpad SKN</span>?
                     </h2>
                     <div className="features-grid">
