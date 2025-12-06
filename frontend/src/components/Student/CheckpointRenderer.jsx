@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, Button, Form, Alert } from 'react-icons/fa';
+import { Card, Button, Form, Alert } from 'react-bootstrap';
 import { FaCheckCircle, FaQuestionCircle } from 'react-icons/fa';
 
 function CheckpointRenderer({ checkpoint, onComplete }) {
