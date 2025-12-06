@@ -41,6 +41,8 @@
     border-bottom: 1px solid var(--skn-border);
     padding: 2rem 1.5rem;
     text-align: center;
+    max-width: 1400px;
+    margin: 0 auto;
   }
   
   .skn-header-badge {
@@ -108,7 +110,7 @@
   
   /* Main Content */
   .skn-main {
-    max-width: 960px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 2rem 1.5rem;
   }
@@ -523,6 +525,8 @@
     border-top: 1px solid var(--skn-border);
     padding: 2rem 1.5rem;
     text-align: center;
+    max-width: 1400px;
+    margin: 0 auto;
   }
   
   .skn-footer-divider {
