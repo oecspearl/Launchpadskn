@@ -39,6 +39,22 @@ function InteractiveBookPlayer({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
 
+  // Guard clause for missing contentData
+  if (!contentData) {
+    return (
+      <Container className="interactive-book-player">
+        <Alert variant="danger">
+          Error: Book content data is missing.
+        </Alert>
+        {onClose && (
+          <Button variant="secondary" onClick={onClose} className="mt-3">
+            <FaArrowLeft /> Back
+          </Button>
+        )}
+      </Container>
+    );
+  }
+
   const pages = contentData.pages || [];
   const currentPage = pages[currentPageIndex];
   const progress = pages.length > 0 ? ((viewedPages.size / pages.length) * 100) : 0;
@@ -717,4 +733,3 @@ function AudioPlayer({ audioUrl }: AudioPlayerProps) {
 }
 
 export default InteractiveBookPlayer;
-

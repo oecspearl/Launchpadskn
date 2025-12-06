@@ -33,6 +33,22 @@ function FlashcardViewer({
   const [knownCards, setKnownCards] = useState<Set<string>>(new Set());
   const [studyMode, setStudyMode] = useState<'study' | 'review'>('study');
 
+  // Guard clause for missing contentData
+  if (!contentData) {
+    return (
+      <Container className="flashcard-viewer">
+        <Alert variant="danger">
+          Error: Flashcard content data is missing.
+        </Alert>
+        {onClose && (
+          <Button variant="secondary" onClick={onClose} className="mt-3">
+            <FaArrowLeft /> Back
+          </Button>
+        )}
+      </Container>
+    );
+  }
+
   const settings = contentData.settings || {};
   const cards = contentData.cards || [];
 

@@ -43,6 +43,22 @@ function InteractiveVideoViewer({
   const videoRef = useRef<HTMLIFrameElement | HTMLVideoElement>(null);
   const timeUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Guard clause for missing contentData
+  if (!contentData) {
+    return (
+      <Container className="interactive-video-viewer">
+        <Alert variant="danger">
+          Error: Video content data is missing.
+        </Alert>
+        {onClose && (
+          <Button variant="secondary" onClick={onClose} className="mt-3">
+            Close
+          </Button>
+        )}
+      </Container>
+    );
+  }
+
   const settings = contentData.settings || {};
   const checkpoints = contentData.checkpoints || [];
   const sortedCheckpoints = [...checkpoints].sort((a, b) => a.timestamp - b.timestamp);
@@ -86,22 +102,22 @@ function InteractiveVideoViewer({
         // This is a limitation - in production, you'd use YouTube/Vimeo APIs
         setCurrentTime(prev => {
           const newTime = prev + 0.5; // Increment by 0.5 seconds
-          
+
           // Check for checkpoints
           const upcomingCheckpoint = sortedCheckpoints.find(
             cp => !completedCheckpoints.has(cp.id) &&
-            cp.timestamp <= newTime &&
-            cp.timestamp > prev
+              cp.timestamp <= newTime &&
+              cp.timestamp > prev
           );
 
-                      if (upcomingCheckpoint) {
-                        // Stop interval immediately to prevent further time updates
-                        if (timeUpdateIntervalRef.current) {
-                          clearInterval(timeUpdateIntervalRef.current);
-                          timeUpdateIntervalRef.current = null;
-                        }
-                        handleCheckpointReached(upcomingCheckpoint);
-                      }
+          if (upcomingCheckpoint) {
+            // Stop interval immediately to prevent further time updates
+            if (timeUpdateIntervalRef.current) {
+              clearInterval(timeUpdateIntervalRef.current);
+              timeUpdateIntervalRef.current = null;
+            }
+            handleCheckpointReached(upcomingCheckpoint);
+          }
 
           return newTime;
         });
@@ -168,11 +184,11 @@ function InteractiveVideoViewer({
 
     // Always pause when checkpoint appears (unless explicitly disabled)
     const shouldPause = checkpoint.pauseVideo !== false && (settings.autoPause !== false);
-    
+
     if (shouldPause) {
       setIsPlaying(false);
       pauseVideo(); // Pause using appropriate method for video type
-      
+
       // Stop the time tracking interval
       if (timeUpdateIntervalRef.current) {
         clearInterval(timeUpdateIntervalRef.current);
@@ -302,10 +318,10 @@ function InteractiveVideoViewer({
                   {checkpoints.length > 0 && (
                     <div className="checkpoint-overlay">
                       {/* Progress indicator */}
-                      <div 
+                      <div
                         className="checkpoint-progress-indicator"
-                        style={{ 
-                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%` 
+                        style={{
+                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%`
                         }}
                       />
                       {sortedCheckpoints.map((cp) => {
@@ -355,10 +371,10 @@ function InteractiveVideoViewer({
                   {checkpoints.length > 0 && (
                     <div className="checkpoint-overlay">
                       {/* Progress indicator */}
-                      <div 
+                      <div
                         className="checkpoint-progress-indicator"
-                        style={{ 
-                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%` 
+                        style={{
+                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%`
                         }}
                       />
                       {sortedCheckpoints.map((cp) => {
@@ -398,12 +414,12 @@ function InteractiveVideoViewer({
                       const video = e.target as HTMLVideoElement;
                       const newTime = video.currentTime;
                       setCurrentTime(newTime);
-                      
+
                       // Check for checkpoints
                       const upcomingCheckpoint = sortedCheckpoints.find(
                         cp => !completedCheckpoints.has(cp.id) &&
-                        cp.timestamp <= newTime &&
-                        cp.timestamp > newTime - 1
+                          cp.timestamp <= newTime &&
+                          cp.timestamp > newTime - 1
                       );
 
                       if (upcomingCheckpoint) {
@@ -433,10 +449,10 @@ function InteractiveVideoViewer({
                   {checkpoints.length > 0 && (
                     <div className="checkpoint-overlay">
                       {/* Progress indicator */}
-                      <div 
+                      <div
                         className="checkpoint-progress-indicator"
-                        style={{ 
-                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%` 
+                        style={{
+                          left: `${videoDuration > 0 ? Math.min(Math.max((currentTime / videoDuration) * 100, 0), 100) : 0}%`
                         }}
                       />
                       {sortedCheckpoints.map((cp) => {
@@ -488,7 +504,7 @@ function InteractiveVideoViewer({
                 </span>
               </div>
               <ProgressBar now={progress} label={`${Math.round(progress)}%`} />
-              
+
               {/* Checkpoint markers */}
               {settings.showTimestamps && checkpoints.length > 0 && (
                 <div className="checkpoint-markers mt-2">
@@ -521,7 +537,7 @@ function InteractiveVideoViewer({
                         // Manual checkpoint check - useful for YouTube/Vimeo
                         const checkpoint = sortedCheckpoints.find(
                           cp => !completedCheckpoints.has(cp.id) &&
-                          Math.abs(cp.timestamp - currentTime) <= 2
+                            Math.abs(cp.timestamp - currentTime) <= 2
                         );
                         if (checkpoint) {
                           handleCheckpointReached(checkpoint);
@@ -554,7 +570,7 @@ function InteractiveVideoViewer({
                   {sortedCheckpoints.map((checkpoint) => {
                     const isCompleted = completedCheckpoints.has(checkpoint.id);
                     const isActive = activeCheckpoint?.id === checkpoint.id;
-                    
+
                     return (
                       <ListGroup.Item
                         key={checkpoint.id}
