@@ -1,5 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronDown, ChevronRight, BookOpen, Target, Lightbulb, Users, Calculator, Compass, BarChart3, Shapes, Scale, Percent, Hash, Globe, Sparkles, CheckCircle2, PlayCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  ChevronDown, 
+  ChevronRight, 
+  BookOpen, 
+  Target, 
+  Lightbulb, 
+  Users, 
+  Calculator, 
+  Compass, 
+  BarChart3, 
+  Shapes, 
+  Scale, 
+  Hash, 
+  Globe, 
+  CheckCircle2, 
+  PlayCircle,
+  GraduationCap,
+  FileText,
+  Sparkles
+} from 'lucide-react';
+import './SKNCurriculum.css';
 
 const curriculumData = {
   title: "Mathematics Enhanced Curriculum",
@@ -21,8 +41,7 @@ const curriculumData = {
       id: "numbers",
       title: "Numbers and Operations",
       icon: "Calculator",
-      color: "#0EA5E9",
-      gradient: "from-sky-500 to-cyan-400",
+      color: "#0891b2",
       description: "Students will recognize, represent, and compare quantitative information using additive and multiplicative thinking.",
       topics: [
         {
@@ -176,8 +195,7 @@ const curriculumData = {
       id: "ratio",
       title: "Ratio and Proportions",
       icon: "Scale",
-      color: "#8B5CF6",
-      gradient: "from-violet-500 to-purple-400",
+      color: "#7c3aed",
       description: "Students will understand and apply concepts of ratio, proportion, and rates to solve real-world problems.",
       topics: [
         {
@@ -253,8 +271,7 @@ const curriculumData = {
       id: "measurement",
       title: "Measurement",
       icon: "Compass",
-      color: "#10B981",
-      gradient: "from-emerald-500 to-teal-400",
+      color: "#059669",
       description: "Students will use measurement tools, units, and attributes to describe, compare, and solve authentic applied problems.",
       topics: [
         {
@@ -351,8 +368,7 @@ const curriculumData = {
       id: "algebra",
       title: "Algebra",
       icon: "Hash",
-      color: "#F59E0B",
-      gradient: "from-amber-500 to-orange-400",
+      color: "#d97706",
       description: "Students will use structure to represent, analyze, and generalize change or patterns using models and justification.",
       topics: [
         {
@@ -432,8 +448,7 @@ const curriculumData = {
       id: "data",
       title: "Data Analysis",
       icon: "BarChart3",
-      color: "#EC4899",
-      gradient: "from-pink-500 to-rose-400",
+      color: "#db2777",
       description: "Students will gather, represent, and interpret data related to authentic applications.",
       topics: [
         {
@@ -504,14 +519,13 @@ const curriculumData = {
         { term: "Mode", definition: "The value that occurs most frequently" },
         { term: "Median", definition: "The middle value when data is arranged in order" }
       ],
-      quote: "Data is the new currency, and it's the medium of exchange between consumers and marketers. – Lisa Utzschneider"
+      quote: "Data is the new currency, and it's the medium of exchange between consumers and marketers."
     },
     {
       id: "geometry",
       title: "Geometry",
       icon: "Shapes",
-      color: "#6366F1",
-      gradient: "from-indigo-500 to-blue-400",
+      color: "#4f46e5",
       description: "Students will analyze, describe, and construct geometric shapes and understand spatial relationships.",
       topics: [
         {
@@ -600,411 +614,258 @@ const curriculumData = {
 };
 
 const iconComponents = {
-  Calculator, Compass, BarChart3, Shapes, Scale, Percent, Hash
+  Calculator, Compass, BarChart3, Shapes, Scale, Hash
 };
 
-export default function SKNCurriculum() {
-  const [activeStrand, setActiveStrand] = useState(null);
-  const [activeTopic, setActiveTopic] = useState(null);
-  const [activeTab, setActiveTab] = useState('outcomes');
-  const [showVision, setShowVision] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const timer = setTimeout(() => setShowVision(true), 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  const IconComponent = ({ name, className }) => {
-    const Icon = iconComponents[name];
-    return Icon ? <Icon className={className} /> : null;
-  };
-
+// Collapsible Section Component
+const CollapsibleSection = ({ title, icon: Icon, children, defaultOpen = false, accentColor }) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white font-sans">
-      {/* Decorative Background Elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-sky-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-amber-500/5 rounded-full blur-2xl"></div>
-        {/* Caribbean-inspired pattern overlay */}
-        <svg className="absolute inset-0 w-full h-full opacity-5" viewBox="0 0 100 100" preserveAspectRatio="none">
-          <pattern id="waves" patternUnits="userSpaceOnUse" width="20" height="20">
-            <path d="M0 10 Q5 5, 10 10 T20 10" stroke="white" fill="none" strokeWidth="0.5"/>
-          </pattern>
-          <rect width="100" height="100" fill="url(#waves)"/>
-        </svg>
+    <div className="skn-collapsible">
+      <button 
+        className="skn-collapsible-header"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ '--accent': accentColor }}
+      >
+        <div className="skn-collapsible-title">
+          {Icon && <Icon size={18} style={{ color: accentColor }} />}
+          <span>{title}</span>
+        </div>
+        <ChevronDown 
+          size={18} 
+          className={`skn-chevron ${isOpen ? 'skn-chevron-open' : ''}`}
+        />
+      </button>
+      <div className={`skn-collapsible-content ${isOpen ? 'skn-collapsible-open' : ''}`}>
+        {children}
       </div>
+    </div>
+  );
+};
 
-      {/* Header Section */}
-      <header className={`relative z-10 pt-8 pb-16 px-6 transition-all duration-1000 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-10'}`}>
-        <div className="max-w-6xl mx-auto">
-          {/* National Banner */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <div className="h-1 w-16 bg-gradient-to-r from-green-500 via-yellow-400 to-green-500 rounded-full"></div>
-            <span className="text-sm tracking-widest text-slate-400 uppercase">Federation of St. Kitts and Nevis</span>
-            <div className="h-1 w-16 bg-gradient-to-r from-green-500 via-yellow-400 to-green-500 rounded-full"></div>
-          </div>
+// Topic Card Component
+const TopicCard = ({ topic, strandColor }) => {
+  const [activeTab, setActiveTab] = useState('outcomes');
+  
+  const tabs = [
+    { id: 'outcomes', label: 'Learning Outcomes', icon: Target, data: topic.outcomes },
+    { id: 'assessments', label: 'Assessments', icon: PlayCircle, data: topic.assessments },
+    { id: 'strategies', label: 'Strategies', icon: Lightbulb, data: topic.strategies }
+  ];
+  
+  return (
+    <div className="skn-topic-card">
+      <h4 className="skn-topic-title">{topic.title}</h4>
+      
+      <div className="skn-tabs">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            className={`skn-tab ${activeTab === tab.id ? 'skn-tab-active' : ''}`}
+            onClick={() => setActiveTab(tab.id)}
+            style={{ '--accent': strandColor }}
+          >
+            <tab.icon size={14} />
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+      
+      <ul className="skn-content-list">
+        {tabs.find(t => t.id === activeTab)?.data.map((item, idx) => (
+          <li key={idx} className="skn-content-item">
+            <CheckCircle2 size={14} style={{ color: strandColor, flexShrink: 0 }} />
+            <span>{item}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
-          {/* Main Title */}
-          <div className="text-center space-y-4">
-            <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-emerald-400 via-cyan-400 to-sky-400 bg-clip-text text-transparent">
-                Mathematics
-              </span>
-            </h1>
-            <p className="text-2xl text-slate-300 font-light">{curriculumData.title}</p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10">
-              <BookOpen className="w-4 h-4 text-emerald-400" />
-              <span className="text-slate-300">{curriculumData.grade}</span>
-            </div>
-            <p className="text-sm text-slate-500">{curriculumData.institution}</p>
-          </div>
+// Knowledge Grid Component
+const KnowledgeGrid = ({ items, color }) => (
+  <div className="skn-knowledge-grid">
+    {items.map((item, idx) => (
+      <div key={idx} className="skn-knowledge-item">
+        <dt style={{ color }}>{item.term}</dt>
+        <dd>{item.definition}</dd>
+      </div>
+    ))}
+  </div>
+);
+
+// Strand Section Component  
+const StrandSection = ({ strand }) => {
+  const IconComponent = iconComponents[strand.icon];
+  
+  return (
+    <CollapsibleSection 
+      title={strand.title} 
+      icon={IconComponent}
+      accentColor={strand.color}
+    >
+      <div className="skn-strand-content">
+        <p className="skn-strand-description">{strand.description}</p>
+        
+        {strand.quote && (
+          <blockquote className="skn-quote">
+            "{strand.quote}"
+          </blockquote>
+        )}
+        
+        <div className="skn-topics-grid">
+          {strand.topics.map(topic => (
+            <TopicCard key={topic.id} topic={topic} strandColor={strand.color} />
+          ))}
+        </div>
+        
+        {strand.knowledge && strand.knowledge.length > 0 && (
+          <CollapsibleSection 
+            title="Key Concepts & Definitions" 
+            icon={BookOpen}
+            accentColor={strand.color}
+          >
+            <KnowledgeGrid items={strand.knowledge} color={strand.color} />
+          </CollapsibleSection>
+        )}
+      </div>
+    </CollapsibleSection>
+  );
+};
+
+// Main Component
+export default function SKNCurriculum() {
+  return (
+    <div className="skn-container">
+      {/* Header */}
+      <header className="skn-header">
+        <div className="skn-header-badge">
+          <span className="skn-flag-stripe skn-flag-green"></span>
+          <span className="skn-flag-stripe skn-flag-yellow"></span>
+          <span className="skn-flag-stripe skn-flag-black"></span>
+        </div>
+        <p className="skn-header-institution">{curriculumData.institution}</p>
+        
+        <h1 className="skn-main-title">
+          <GraduationCap size={32} />
+          <span>Mathematics Curriculum</span>
+        </h1>
+        
+        <div className="skn-header-meta">
+          <span className="skn-badge">
+            <FileText size={14} />
+            {curriculumData.title}
+          </span>
+          <span className="skn-badge">
+            <BookOpen size={14} />
+            {curriculumData.grade}
+          </span>
         </div>
       </header>
 
-      {/* Vision & Purpose Section */}
-      <section className={`relative z-10 px-6 pb-12 transition-all duration-1000 delay-300 ${showVision ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-gradient-to-br from-white/5 to-white/0 backdrop-blur-sm rounded-2xl border border-white/10 p-8">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-emerald-500/20 rounded-xl shrink-0">
-                <Target className="w-6 h-6 text-emerald-400" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-emerald-400 mb-3">Educational Vision</h2>
-                <p className="text-slate-300 leading-relaxed">{curriculumData.vision}</p>
-              </div>
+      {/* Main Content */}
+      <main className="skn-main">
+        {/* Vision & Purpose */}
+        <section className="skn-intro-section">
+          <div className="skn-intro-card skn-vision">
+            <div className="skn-intro-header">
+              <Target size={20} />
+              <h2>Educational Vision</h2>
             </div>
-            <div className="mt-6 pt-6 border-t border-white/10">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-sky-500/20 rounded-xl shrink-0">
-                  <Lightbulb className="w-6 h-6 text-sky-400" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-sky-400 mb-3">Purpose of Mathematics</h2>
-                  <p className="text-slate-300 leading-relaxed">{curriculumData.purpose}</p>
-                </div>
-              </div>
-            </div>
+            <p>{curriculumData.vision}</p>
           </div>
-
-          {/* Competencies Grid */}
-          <div className="mt-8">
-            <h3 className="text-lg font-semibold text-center text-slate-300 mb-6">Essential Educational Competencies</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {curriculumData.competencies.map((comp, idx) => (
-                <div 
-                  key={idx}
-                  className="flex items-center gap-3 p-3 bg-white/5 rounded-xl border border-white/5 hover:border-emerald-500/30 transition-all duration-300 hover:bg-white/10"
-                  style={{ animationDelay: `${idx * 100}ms` }}
-                >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  <span className="text-sm text-slate-300">{comp}</span>
-                </div>
-              ))}
+          
+          <div className="skn-intro-card skn-purpose">
+            <div className="skn-intro-header">
+              <Lightbulb size={20} />
+              <h2>Purpose of Mathematics</h2>
             </div>
+            <p>{curriculumData.purpose}</p>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Strands Navigation */}
-      <section className="relative z-10 px-6 py-12">
-        <div className="max-w-6xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-8">
-            <span className="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
-              Curriculum Strands
-            </span>
+        {/* Competencies */}
+        <section className="skn-competencies-section">
+          <h2 className="skn-section-title">
+            <Sparkles size={20} />
+            Essential Educational Competencies
           </h2>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {curriculumData.strands.map((strand) => (
-              <button
-                key={strand.id}
-                onClick={() => {
-                  setActiveStrand(activeStrand === strand.id ? null : strand.id);
-                  setActiveTopic(null);
-                }}
-                className={`group relative p-6 rounded-2xl border transition-all duration-500 hover:scale-105 ${
-                  activeStrand === strand.id 
-                    ? `bg-gradient-to-br ${strand.gradient} border-transparent shadow-lg shadow-${strand.color}/20` 
-                    : 'bg-white/5 border-white/10 hover:border-white/20'
-                }`}
-              >
-                <div className={`flex flex-col items-center gap-3 ${activeStrand === strand.id ? 'text-white' : 'text-slate-300'}`}>
-                  <IconComponent 
-                    name={strand.icon} 
-                    className={`w-8 h-8 transition-transform duration-300 group-hover:scale-110 ${
-                      activeStrand === strand.id ? 'text-white' : ''
-                    }`} 
-                    style={{ color: activeStrand !== strand.id ? strand.color : undefined }}
-                  />
-                  <span className="text-sm font-medium text-center leading-tight">{strand.title}</span>
-                </div>
-                {activeStrand === strand.id && (
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-l-transparent border-r-transparent border-t-white/20"></div>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Active Strand Content */}
-      {activeStrand && (
-        <section className="relative z-10 px-6 pb-16 animate-fade-in">
-          <div className="max-w-6xl mx-auto">
-            {curriculumData.strands.filter(s => s.id === activeStrand).map(strand => (
-              <div key={strand.id} className="space-y-8">
-                {/* Strand Header */}
-                <div className={`bg-gradient-to-r ${strand.gradient} rounded-2xl p-8 shadow-xl`}>
-                  <div className="flex items-start gap-6">
-                    <div className="p-4 bg-white/20 rounded-xl backdrop-blur-sm">
-                      <IconComponent name={strand.icon} className="w-10 h-10 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="text-3xl font-bold text-white mb-3">{strand.title}</h3>
-                      <p className="text-white/90 text-lg">{strand.description}</p>
-                      {strand.quote && (
-                        <blockquote className="mt-4 text-white/70 italic border-l-2 border-white/30 pl-4">
-                          "{strand.quote}"
-                        </blockquote>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Topics Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {strand.topics.map((topic, idx) => (
-                    <button
-                      key={topic.id}
-                      onClick={() => setActiveTopic(activeTopic === topic.id ? null : topic.id)}
-                      className={`group p-6 rounded-xl text-left transition-all duration-300 ${
-                        activeTopic === topic.id 
-                          ? 'bg-white/15 border-2 border-white/30 shadow-lg' 
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20'
-                      }`}
-                      style={{ animationDelay: `${idx * 100}ms` }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <h4 className="font-semibold text-slate-200">{topic.title}</h4>
-                        <div className={`transition-transform duration-300 ${activeTopic === topic.id ? 'rotate-90' : ''}`}>
-                          <ChevronRight className="w-5 h-5 text-slate-400" />
-                        </div>
-                      </div>
-                      <p className="mt-2 text-sm text-slate-400">
-                        {topic.outcomes.length} Learning Outcomes
-                      </p>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Active Topic Details */}
-                {activeTopic && strand.topics.filter(t => t.id === activeTopic).map(topic => (
-                  <div key={topic.id} className="bg-slate-800/50 backdrop-blur-sm rounded-2xl border border-white/10 overflow-hidden">
-                    {/* Topic Header */}
-                    <div className="p-6 border-b border-white/10">
-                      <h4 className="text-2xl font-bold text-white">{topic.title}</h4>
-                    </div>
-
-                    {/* Tab Navigation */}
-                    <div className="flex border-b border-white/10">
-                      {[
-                        { id: 'outcomes', label: 'Learning Outcomes', icon: Target },
-                        { id: 'assessments', label: 'Assessments', icon: CheckCircle2 },
-                        { id: 'strategies', label: 'Strategies', icon: Lightbulb }
-                      ].map(tab => (
-                        <button
-                          key={tab.id}
-                          onClick={() => setActiveTab(tab.id)}
-                          className={`flex-1 flex items-center justify-center gap-2 py-4 transition-all duration-300 ${
-                            activeTab === tab.id 
-                              ? `bg-gradient-to-r ${strand.gradient} text-white` 
-                              : 'text-slate-400 hover:text-white hover:bg-white/5'
-                          }`}
-                        >
-                          <tab.icon className="w-4 h-4" />
-                          <span className="text-sm font-medium hidden md:inline">{tab.label}</span>
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Tab Content */}
-                    <div className="p-6">
-                      {activeTab === 'outcomes' && (
-                        <ul className="space-y-3">
-                          {topic.outcomes.map((outcome, idx) => (
-                            <li key={idx} className="flex items-start gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                              <div className="p-1.5 bg-emerald-500/20 rounded-lg shrink-0 mt-0.5">
-                                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                              </div>
-                              <span className="text-slate-300">{outcome}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {activeTab === 'assessments' && (
-                        <ul className="space-y-3">
-                          {topic.assessments.map((assessment, idx) => (
-                            <li key={idx} className="flex items-start gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                              <div className="p-1.5 bg-sky-500/20 rounded-lg shrink-0 mt-0.5">
-                                <PlayCircle className="w-4 h-4 text-sky-400" />
-                              </div>
-                              <span className="text-slate-300">{assessment}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {activeTab === 'strategies' && (
-                        <ul className="space-y-3">
-                          {topic.strategies.map((strategy, idx) => (
-                            <li key={idx} className="flex items-start gap-3 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors">
-                              <div className="p-1.5 bg-amber-500/20 rounded-lg shrink-0 mt-0.5">
-                                <Sparkles className="w-4 h-4 text-amber-400" />
-                              </div>
-                              <span className="text-slate-300">{strategy}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Knowledge Section */}
-                {strand.knowledge && strand.knowledge.length > 0 && (
-                  <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="p-2 bg-violet-500/20 rounded-lg">
-                        <BookOpen className="w-5 h-5 text-violet-400" />
-                      </div>
-                      <h4 className="text-xl font-semibold text-white">Key Concepts & Definitions</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {strand.knowledge.map((item, idx) => (
-                        <div 
-                          key={idx} 
-                          className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors border border-white/5"
-                        >
-                          <h5 className="font-semibold text-emerald-400 mb-2">{item.term}</h5>
-                          <p className="text-sm text-slate-400">{item.definition}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          <div className="skn-competencies-grid">
+            {curriculumData.competencies.map((comp, idx) => (
+              <div key={idx} className="skn-competency-item">
+                <CheckCircle2 size={16} />
+                <span>{comp}</span>
               </div>
             ))}
           </div>
         </section>
-      )}
 
-      {/* Cross-Curricular & Cultural Integration */}
-      <section className="relative z-10 px-6 py-16 bg-gradient-to-b from-transparent via-white/5 to-transparent">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Cross-Curricular Connections */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-indigo-500/20 rounded-lg">
-                  <Users className="w-5 h-5 text-indigo-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">Cross-Curricular Connections</h3>
-              </div>
-              <div className="space-y-4">
+        {/* Curriculum Strands */}
+        <section className="skn-strands-section">
+          <h2 className="skn-section-title">
+            <BookOpen size={20} />
+            Curriculum Strands
+          </h2>
+          
+          <div className="skn-strands-list">
+            {curriculumData.strands.map(strand => (
+              <StrandSection key={strand.id} strand={strand} />
+            ))}
+          </div>
+        </section>
+
+        {/* Cross-Curricular & Cultural */}
+        <section className="skn-connections-section">
+          <div className="skn-connections-grid">
+            <div className="skn-connection-card">
+              <h3>
+                <Users size={18} />
+                Cross-Curricular Connections
+              </h3>
+              <div className="skn-connection-list">
                 {curriculumData.crossCurricular.map((item, idx) => (
-                  <div key={idx} className="p-4 bg-white/5 rounded-xl">
-                    <h4 className="font-semibold text-indigo-400 mb-2">{item.subject}</h4>
-                    <p className="text-sm text-slate-400">{item.connection}</p>
+                  <div key={idx} className="skn-connection-item">
+                    <strong>{item.subject}</strong>
+                    <p>{item.connection}</p>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Cultural Integration */}
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-6">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-rose-500/20 rounded-lg">
-                  <Globe className="w-5 h-5 text-rose-400" />
-                </div>
-                <h3 className="text-xl font-semibold text-white">Local Culture & Environment</h3>
-              </div>
-              <div className="space-y-3">
+            
+            <div className="skn-connection-card">
+              <h3>
+                <Globe size={18} />
+                Local Culture & Environment
+              </h3>
+              <ul className="skn-culture-list">
                 {curriculumData.culturalElements.map((element, idx) => (
-                  <div key={idx} className="flex items-start gap-3 p-3 bg-white/5 rounded-xl">
-                    <div className="p-1 bg-rose-500/20 rounded-lg shrink-0 mt-0.5">
-                      <Sparkles className="w-3 h-3 text-rose-400" />
-                    </div>
-                    <p className="text-sm text-slate-300">{element}</p>
-                  </div>
+                  <li key={idx}>
+                    <CheckCircle2 size={14} />
+                    <span>{element}</span>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="relative z-10 px-6 py-12 border-t border-white/10">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <div className="h-0.5 w-12 bg-gradient-to-r from-green-500 to-yellow-400 rounded-full"></div>
-            <span className="text-slate-500 text-sm">Curriculum Development Unit</span>
-            <div className="h-0.5 w-12 bg-gradient-to-r from-yellow-400 to-green-500 rounded-full"></div>
-          </div>
-          <p className="text-slate-600 text-sm">
-            Teacher Resource Center • Ministry of Education • St. Kitts and Nevis
-          </p>
-          <p className="text-slate-700 text-xs mt-4">
-            Enhanced Curriculum aligned with OECS Learning Standards and International Best Practices
-          </p>
+      <footer className="skn-footer">
+        <div className="skn-footer-divider">
+          <span className="skn-flag-stripe skn-flag-green"></span>
+          <span className="skn-flag-stripe skn-flag-yellow"></span>
+          <span className="skn-flag-stripe skn-flag-black"></span>
         </div>
+        <p className="skn-footer-text">
+          Curriculum Development Unit • Teacher Resource Center
+        </p>
+        <p className="skn-footer-subtext">
+          Enhanced Curriculum aligned with OECS Learning Standards
+        </p>
       </footer>
-
-      {/* Custom Styles */}
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
-        
-        body {
-          font-family: 'Inter', sans-serif;
-        }
-        
-        h1, h2, h3, h4, h5, h6 {
-          font-family: 'Space Grotesk', sans-serif;
-        }
-        
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .animate-fade-in {
-          animation: fade-in 0.6s ease-out forwards;
-        }
-        
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-          width: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.05);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 4px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.3);
-        }
-      `}</style>
     </div>
   );
 }
-
