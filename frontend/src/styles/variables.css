@@ -1,29 +1,35 @@
 :root {
   /* Brand Colors */
-  --primary-hue: 220;
-  --primary-sat: 90%;
-  --primary-light: 56%;
-  --primary-color: hsl(var(--primary-hue), var(--primary-sat), var(--primary-light));
-  --primary-dark: hsl(var(--primary-hue), var(--primary-sat), 45%);
-  --primary-light-bg: hsl(var(--primary-hue), var(--primary-sat), 96%);
+  /* Brand Colors - Mapped to SKN Theme */
+  --primary-hue: 143;
+  /* Green */
+  --primary-sat: 100%;
+  --primary-light: 29%;
 
-  --secondary-hue: 260;
-  --secondary-sat: 80%;
-  --secondary-light: 60%;
-  --secondary-color: hsl(var(--secondary-hue), var(--secondary-sat), var(--secondary-light));
-  
-  --accent-hue: 160;
-  --accent-color: hsl(var(--accent-hue), 70%, 45%);
+  /* Use SKN Variables from colors.css where possible, or fallback to HSL for transparency support */
+  --primary-color: var(--skn-green, #009639);
+  --primary-dark: var(--skn-green-dark, #00702B);
+  --primary-light-bg: var(--bg-green-tint, #E8F5ED);
+
+  --secondary-hue: 353;
+  /* Red */
+  --secondary-sat: 85%;
+  --secondary-light: 44%;
+  --secondary-color: var(--skn-red, #CE1126);
+
+  --accent-hue: 49;
+  /* Yellow */
+  --accent-color: var(--skn-yellow, #FCD116);
 
   /* Neutral Colors */
   --text-main: hsl(220, 20%, 20%);
   --text-secondary: hsl(220, 10%, 45%);
   --text-light: hsl(220, 10%, 60%);
-  
+
   --bg-body: hsl(220, 20%, 97%);
   --bg-surface: #ffffff;
   --bg-surface-hover: hsl(220, 20%, 99%);
-  
+
   --border-color: hsl(220, 15%, 90%);
   --border-color-hover: hsl(220, 15%, 80%);
 
