@@ -2,54 +2,63 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import {
     FaRocket, FaBrain, FaChartLine, FaGraduationCap,
-    FaChalkboardTeacher, FaLaptopCode, FaShoppingCart,
-    FaImages, FaCreditCard, FaBars
+    FaChalkboardTeacher, FaLaptopCode, FaArrowRight,
+    FaBookOpen, FaUsers, FaCertificate
 } from 'react-icons/fa';
 import './Homepage.css';
 
 const Homepage = () => {
     return (
         <div className="homepage-container">
-            {/* Floating Menu (Right Side) */}
+            {/* Floating Menu (Right Side) - Cleaner */}
             <div className="floating-menu">
-                <div className="floating-menu-item" title="Shop">
-                    <FaShoppingCart />
+                <div className="floating-menu-item" title="Courses">
+                    <FaBookOpen />
                 </div>
-                <div className="floating-menu-item" title="Gallery">
-                    <FaImages />
+                <div className="floating-menu-item" title="Community">
+                    <FaUsers />
                 </div>
-                <div className="floating-menu-item" title="Pricing">
-                    <FaCreditCard />
+                <div className="floating-menu-item" title="Certificates">
+                    <FaCertificate />
                 </div>
             </div>
 
             <div className="homepage-content">
                 {/* Hero Section */}
                 <section className="hero-section">
-                    <div className="row align-items-center w-100">
-                        <div className="col-lg-6">
-                            <h1 className="hero-title">
-                                Launchpad SKN.
-                                <span>Empowering Education in the Federation</span>
-                            </h1>
-                            <p className="hero-subtitle">
-                                Take great courses from the world's best universities and local institutions.
-                                Powered by AI to deliver a personalized learning experience for every student in St. Kitts & Nevis.
-                            </p>
-                            <div className="hero-buttons">
-                                <Link to="/login" className="btn-primary-custom text-decoration-none">
-                                    Get Started
-                                </Link>
+                    <div className="container">
+                        <div className="row align-items-center">
+                            <div className="col-lg-6 mb-5 mb-lg-0">
+                                <div className="hero-content-wrapper">
+                                    <span className="hero-badge">
+                                        🚀 The Future of Education in SKN
+                                    </span>
+                                    <h1 className="hero-title">
+                                        Unlock Your Potential with <span>Launchpad SKN</span>
+                                    </h1>
+                                    <p className="hero-subtitle">
+                                        Access world-class education, AI-powered personalized learning, and a supportive community.
+                                        Empowering every student and teacher in the Federation.
+                                    </p>
+                                    <div className="d-flex flex-wrap gap-3">
+                                        <Link to="/login" className="btn-primary-custom text-decoration-none">
+                                            Get Started <FaArrowRight />
+                                        </Link>
+                                        <a href="#features" className="btn-secondary-custom text-decoration-none">
+                                            Learn More
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div className="col-lg-6">
-                            <div className="laptop-container">
-                                {/* Placeholder for Laptop Image - using a high quality placeholder */}
-                                <img
-                                    src="https://placehold.co/900x600/1e293b/ffffff?text=Launchpad+SKN+Platform"
-                                    alt="Launchpad SKN Platform on Laptop"
-                                    className="laptop-image"
-                                />
+                            <div className="col-lg-6">
+                                <div className="laptop-container">
+                                    {/* Placeholder for Laptop Image - Clean, professional placeholder */}
+                                    <img
+                                        src="https://placehold.co/800x500/f1f5f9/1e293b?text=Launchpad+SKN+Platform+Preview"
+                                        alt="Launchpad SKN Platform Interface"
+                                        className="laptop-image"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -57,65 +66,85 @@ const Homepage = () => {
 
                 {/* Stats Section */}
                 <section className="stats-section">
-                    <div className="stat-item">
-                        <span className="stat-number">50+</span>
-                        <span className="stat-label">Schools</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-number">10k+</span>
-                        <span className="stat-label">Students</span>
-                    </div>
-                    <div className="stat-item">
-                        <span className="stat-number">99%</span>
-                        <span className="stat-label">Satisfaction</span>
+                    <div className="container">
+                        <div className="row">
+                            <div className="col-md-4">
+                                <div className="stat-item">
+                                    <span className="stat-number">50+</span>
+                                    <span className="stat-label">Partner Schools</span>
+                                </div>
+                            </div>
+                            <div className="col-md-4">
+                                <div className="stat-item">
+                                    <span className="stat-number">10k+</span>
+                                    <span className="stat-label">Active Students</span>
+                                </div>
+                            </div>
+                            <div className="col-md-4">
+                                <div className="stat-item">
+                                    <span className="stat-number">99%</span>
+                                    <span className="stat-label">Satisfaction Rate</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 {/* Features Section */}
                 <section id="features" className="features-section">
-                    <h2 className="text-center mb-5" style={{ fontSize: '2.5rem', fontWeight: '700', color: 'white' }}>
-                        Why Choose <span style={{ color: 'var(--hp-primary)' }}>Launchpad SKN</span>?
-                    </h2>
-                    <div className="features-grid">
-                        <FeatureCard
-                            icon={<FaBrain />}
-                            title="AI-Powered Curriculum"
-                            description="Generate comprehensive lesson plans and curriculum frameworks instantly with our advanced AI engine."
-                        />
-                        <FeatureCard
-                            icon={<FaChartLine />}
-                            title="Real-time Analytics"
-                            description="Track student progress, attendance, and performance with detailed, actionable insights."
-                        />
-                        <FeatureCard
-                            icon={<FaLaptopCode />}
-                            title="Interactive Learning"
-                            description="Engage students with gamified lessons, virtual labs, and multimedia resources."
-                        />
-                        <FeatureCard
-                            icon={<FaChalkboardTeacher />}
-                            title="Teacher Tools"
-                            description="Streamline grading, assignment management, and communication with parents."
-                        />
-                        <FeatureCard
-                            icon={<FaGraduationCap />}
-                            title="Personalized Paths"
-                            description="Adaptive learning paths that cater to each student's unique pace and learning style."
-                        />
-                        <FeatureCard
-                            icon={<FaRocket />}
-                            title="Future Ready"
-                            description="Preparing the youth of St. Kitts & Nevis for the global digital economy."
-                        />
+                    <div className="container">
+                        <div className="text-center mb-5">
+                            <h2 style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--hp-text-dark)' }}>
+                                Why Choose Launchpad SKN?
+                            </h2>
+                            <p className="text-muted mt-3" style={{ maxWidth: '600px', margin: '0 auto' }}>
+                                We combine cutting-edge technology with local educational needs to create a platform that truly delivers.
+                            </p>
+                        </div>
+
+                        <div className="features-grid">
+                            <FeatureCard
+                                icon={<FaBrain />}
+                                title="AI-Powered Curriculum"
+                                description="Generate comprehensive lesson plans and curriculum frameworks instantly with our advanced AI engine."
+                            />
+                            <FeatureCard
+                                icon={<FaChartLine />}
+                                title="Real-time Analytics"
+                                description="Track student progress, attendance, and performance with detailed, actionable insights."
+                            />
+                            <FeatureCard
+                                icon={<FaLaptopCode />}
+                                title="Interactive Learning"
+                                description="Engage students with gamified lessons, virtual labs, and multimedia resources."
+                            />
+                            <FeatureCard
+                                icon={<FaChalkboardTeacher />}
+                                title="Teacher Tools"
+                                description="Streamline grading, assignment management, and communication with parents."
+                            />
+                            <FeatureCard
+                                icon={<FaGraduationCap />}
+                                title="Personalized Paths"
+                                description="Adaptive learning paths that cater to each student's unique pace and learning style."
+                            />
+                            <FeatureCard
+                                icon={<FaRocket />}
+                                title="Future Ready"
+                                description="Preparing the youth of St. Kitts & Nevis for the global digital economy."
+                            />
+                        </div>
                     </div>
                 </section>
 
                 {/* Footer */}
                 <footer className="homepage-footer">
-                    <p>&copy; {new Date().getFullYear()} Launchpad SKN. All rights reserved.</p>
-                    <p style={{ fontSize: '0.875rem', opacity: 0.7 }}>
-                        Built with ❤️ for the Federation.
-                    </p>
+                    <div className="container">
+                        <p className="mb-2">&copy; {new Date().getFullYear()} Launchpad SKN. All rights reserved.</p>
+                        <p className="small text-muted">
+                            Built with ❤️ for the Federation of St. Kitts & Nevis.
+                        </p>
+                    </div>
                 </footer>
             </div>
         </div>
