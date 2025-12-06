@@ -35,6 +35,7 @@ function LessonViewStream() {
         // Load theme from localStorage or default to 'cool-dark'
         return localStorage.getItem('lesson-viewer-theme') || 'cool-dark';
     });
+    const [showDiscussionSidebar, setShowDiscussionSidebar] = useState(false);
 
     useEffect(() => {
         if (lessonId) {
@@ -434,10 +435,7 @@ function LessonViewStream() {
                                     />
                                 )}
 
-                                {/* Discussion Board for the active content */}
-                                <div className="mt-5 pt-4 border-top border-secondary">
-                                    <DiscussionBoard lessonId={lessonId} user={user} />
-                                </div>
+
                             </div>
 
                             <div className="viewer-actions">
@@ -465,6 +463,44 @@ function LessonViewStream() {
                     )}
                 </div>
             </div>
+            {/* Floating Discussion Button */}
+            <button
+                className="floating-discussion-btn"
+                onClick={() => setShowDiscussionSidebar(!showDiscussionSidebar)}
+                title="Class Discussion"
+                aria-label="Toggle class discussion"
+            >
+                <FaComments />
+            </button>
+
+            {/* Discussion Sidebar */}
+            {showDiscussionSidebar && (
+                <>
+                    <div 
+                        className="discussion-sidebar-overlay"
+                        onClick={() => setShowDiscussionSidebar(false)}
+                    />
+                    <div className="discussion-sidebar">
+                        <div className="discussion-sidebar-header">
+                            <h5 className="mb-0">
+                                <FaComments className="me-2" />
+                                Class Discussion
+                            </h5>
+                            <button
+                                className="btn-link text-muted p-0"
+                                onClick={() => setShowDiscussionSidebar(false)}
+                                aria-label="Close discussion"
+                                style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer' }}
+                            >
+                                
+                            </button>
+                        </div>
+                        <div className="discussion-sidebar-body">
+                            <DiscussionBoard lessonId={lessonId} user={user} />
+                        </div>
+                    </div>
+                </>
+            )}
 
             <NotesPanel lessonId={lessonId} />
         </div>
@@ -472,3 +508,4 @@ function LessonViewStream() {
 }
 
 export default LessonViewStream;
+
