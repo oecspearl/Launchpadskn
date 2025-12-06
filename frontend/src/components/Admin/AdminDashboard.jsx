@@ -196,7 +196,7 @@ function AdminDashboard() {
   return (
     <div className="admin-dashboard">
       {/* Modern Hero Header */}
-      <div className="dashboard-hero fade-in">
+      <div className="dashboard-welcome">
         <div className="dashboard-hero-content">
           <h1>Welcome back, {user?.name || user?.email || 'Admin'}</h1>
           <p>Manage your institutions, students, and educational content</p>
@@ -230,241 +230,204 @@ function AdminDashboard() {
         {activeTab === 'overview' && (
           <div className="dashboard-overview">
             {/* Modern Stats Cards */}
-            <div className="grid-responsive mb-5 slide-up">
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaUsers />
-                </div>
-                <div className="stat-card-title">Total Users</div>
-                <div className="stat-value-large">{stats.totalUsers}</div>
-              </div>
-              <div className="stat-card-modern secondary">
-                <div className="stat-icon-circle" style={{ background: 'var(--secondary-gradient)' }}>
-                  <FaBook />
-                </div>
-                <div className="stat-card-title">Total Subjects</div>
-                <div className="stat-value-large" style={{ background: 'var(--secondary-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  {stats.totalCourses}
-                </div>
-              </div>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaChalkboardTeacher />
-                </div>
-                <div className="stat-card-title">Instructors</div>
-                <div className="stat-value-large">{stats.totalInstructors}</div>
-              </div>
-              <div className="stat-card-modern accent">
-                <div className="stat-icon-circle" style={{ background: 'var(--accent-gradient)', color: 'var(--skn-black)' }}>
-                  <FaUserGraduate />
-                </div>
-                <div className="stat-card-title">Students</div>
-                <div className="stat-value-large" style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
-                  {stats.totalStudents}
-                </div>
-              </div>
-            </div>
-
-            {/* Additional Stats */}
-            <div className="grid-responsive mb-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaCalendarAlt />
-                </div>
-                <div className="stat-card-title">Total Forms</div>
-                <div className="stat-value-large">{stats.totalForms}</div>
-              </div>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaUsers />
-                </div>
-                <div className="stat-card-title">Total Classes</div>
-                <div className="stat-value-large">{stats.totalClasses}</div>
-              </div>
+            <div className="stats-section">
+              <Row className="g-4">
+                <Col md={3}>
+                  <Card className="h-100 border-0 shadow-sm">
+                    <Card.Body className="d-flex align-items-center">
+                      <div className="activity-icon user me-3">
+                        <FaUsers />
+                      </div>
+                      <div>
+                        <h6 className="text-muted mb-1">Total Users</h6>
+                        <h3 className="mb-0 fw-bold">{stats.totalUsers}</h3>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="h-100 border-0 shadow-sm">
+                    <Card.Body className="d-flex align-items-center">
+                      <div className="activity-icon subject me-3" style={{ background: 'rgba(24, 144, 255, 0.1)', color: '#1890FF' }}>
+                        <FaBook />
+                      </div>
+                      <div>
+                        <h6 className="text-muted mb-1">Total Subjects</h6>
+                        <h3 className="mb-0 fw-bold">{stats.totalCourses}</h3>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="h-100 border-0 shadow-sm">
+                    <Card.Body className="d-flex align-items-center">
+                      <div className="activity-icon form me-3" style={{ background: 'rgba(252, 209, 22, 0.1)', color: '#FCD116' }}>
+                        <FaChalkboardTeacher />
+                      </div>
+                      <div>
+                        <h6 className="text-muted mb-1">Instructors</h6>
+                        <h3 className="mb-0 fw-bold">{stats.totalInstructors}</h3>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+                <Col md={3}>
+                  <Card className="h-100 border-0 shadow-sm">
+                    <Card.Body className="d-flex align-items-center">
+                      <div className="activity-icon class me-3" style={{ background: 'rgba(206, 17, 38, 0.1)', color: '#CE1126' }}>
+                        <FaUserGraduate />
+                      </div>
+                      <div>
+                        <h6 className="text-muted mb-1">Students</h6>
+                        <h3 className="mb-0 fw-bold">{stats.totalStudents}</h3>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
             </div>
 
             {/* Quick Access - Modern Cards */}
-            <div className="mb-5">
-              <h4 className="section-title mb-4">Quick Access</h4>
-              <div className="quick-access-grid">
-                <Link to="/admin/forms" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaCalendarAlt />
+            <div className="quick-actions-section">
+              <h4 className="section-title">Quick Access</h4>
+              <Row className="g-4">
+                <Col md={4}>
+                  <Link to="/admin/forms" className="text-decoration-none">
+                    <Card className="h-100 border-0 shadow-sm activity-item">
+                      <Card.Body className="d-flex align-items-start">
+                        <div className="activity-icon me-3" style={{ background: 'rgba(0, 150, 57, 0.1)', color: 'var(--theme-primary)' }}>
+                          <FaCalendarAlt />
+                        </div>
+                        <div>
+                          <h6 className="fw-bold text-dark mb-2">Manage Forms</h6>
+                          <p className="text-muted small mb-0">Create and manage Forms (year groups) for schools.</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Link>
+                </Col>
+                <Col md={4}>
+                  <Link to="/admin/classes" className="text-decoration-none">
+                    <Card className="h-100 border-0 shadow-sm activity-item">
+                      <Card.Body className="d-flex align-items-start">
+                        <div className="activity-icon me-3" style={{ background: 'rgba(24, 144, 255, 0.1)', color: '#1890FF' }}>
+                          <FaUsers />
+                        </div>
+                        <div>
+                          <h6 className="fw-bold text-dark mb-2">Manage Classes</h6>
+                          <p className="text-muted small mb-0">Create classes within Forms and assign tutors.</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Link>
+                </Col>
+                <Col md={4}>
+                  <Link to="/admin/subjects" className="text-decoration-none">
+                    <Card className="h-100 border-0 shadow-sm activity-item">
+                      <Card.Body className="d-flex align-items-start">
+                        <div className="activity-icon me-3" style={{ background: 'rgba(252, 209, 22, 0.1)', color: '#FCD116' }}>
+                          <FaBook />
+                        </div>
+                        <div>
+                          <h6 className="fw-bold text-dark mb-2">Manage Subjects</h6>
+                          <p className="text-muted small mb-0">Create subjects and assign to Forms.</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Link>
+                </Col>
+                <Col md={4}>
+                  <Link to="/admin/student-assignment" className="text-decoration-none">
+                    <Card className="h-100 border-0 shadow-sm activity-item">
+                      <Card.Body className="d-flex align-items-start">
+                        <div className="activity-icon me-3" style={{ background: 'rgba(206, 17, 38, 0.1)', color: '#CE1126' }}>
+                          <FaUserGraduate />
+                        </div>
+                        <div>
+                          <h6 className="fw-bold text-dark mb-2">Assign Students</h6>
+                          <p className="text-muted small mb-0">Assign students to classes.</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Link>
+                </Col>
+                <Col md={4}>
+                  <Link to="/admin/users" className="text-decoration-none">
+                    <Card className="h-100 border-0 shadow-sm activity-item">
+                      <Card.Body className="d-flex align-items-start">
+                        <div className="activity-icon me-3" style={{ background: 'rgba(102, 16, 242, 0.1)', color: '#6610f2' }}>
+                          <FaUserPlus />
+                        </div>
+                        <div>
+                          <h6 className="fw-bold text-dark mb-2">User Management</h6>
+                          <p className="text-muted small mb-0">Add, edit, assign roles, and manage users.</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
+                  </Link>
+                </Col>
+                <Col md={4}>
+                  <div onClick={() => setActiveTab('institutions')} style={{ cursor: 'pointer' }}>
+                    <Card className="h-100 border-0 shadow-sm activity-item">
+                      <Card.Body className="d-flex align-items-start">
+                        <div className="activity-icon me-3" style={{ background: 'rgba(253, 126, 20, 0.1)', color: '#fd7e14' }}>
+                          <FaSchool />
+                        </div>
+                        <div>
+                          <h6 className="fw-bold text-dark mb-2">Manage Institutions</h6>
+                          <p className="text-muted small mb-0">Add, edit, or manage educational institutions.</p>
+                        </div>
+                      </Card.Body>
+                    </Card>
                   </div>
-                  <div className="quick-access-card-title">Manage Forms</div>
-                  <div className="quick-access-card-description">
-                    Create and manage Forms (year groups) for schools.
-                  </div>
-                </Link>
-                <Link to="/admin/classes" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaUsers />
-                  </div>
-                  <div className="quick-access-card-title">Manage Classes</div>
-                  <div className="quick-access-card-description">
-                    Create classes within Forms and assign tutors.
-                  </div>
-                </Link>
-                <Link to="/admin/subjects" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'var(--secondary-gradient)' }}>
-                    <FaBook />
-                  </div>
-                  <div className="quick-access-card-title">Manage Subjects</div>
-                  <div className="quick-access-card-description">
-                    Create subjects and assign to Forms.
-                  </div>
-                </Link>
-                <Link to="/admin/student-assignment" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'var(--accent-gradient)', color: 'var(--skn-black)' }}>
-                    <FaUserGraduate />
-                  </div>
-                  <div className="quick-access-card-title">Assign Students</div>
-                  <div className="quick-access-card-description">
-                    Assign students to classes.
-                  </div>
-                </Link>
-                <Link to="/admin/class-subject-assignment" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaChalkboardTeacher />
-                  </div>
-                  <div className="quick-access-card-title">Assign Subjects</div>
-                  <div className="quick-access-card-description">
-                    Assign subjects to classes and assign teachers.
-                  </div>
-                </Link>
-                <Link to="/teacher/curriculum" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)' }}>
-                    <FaBook />
-                  </div>
-                  <div className="quick-access-card-title">Curriculum</div>
-                  <div className="quick-access-card-description">
-                    View curriculum frameworks and learning outcomes for all subjects.
-                  </div>
-                </Link>
-                <div className="quick-access-card" onClick={() => setActiveTab('institutions')} style={{ cursor: 'pointer' }}>
-                  <div className="quick-access-card-icon" style={{ background: 'var(--secondary-gradient)' }}>
-                    <FaSchool />
-                  </div>
-                  <div className="quick-access-card-title">Manage Institutions</div>
-                  <div className="quick-access-card-description">
-                    Add, edit, or manage educational institutions.
-                  </div>
-                </div>
-
-                <Link to="/admin/users" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'var(--accent-gradient)', color: 'var(--skn-black)' }}>
-                    <FaUserPlus />
-                  </div>
-                  <div className="quick-access-card-title">User Management</div>
-                  <div className="quick-access-card-description">
-                    Add, edit, assign roles, and manage users across institutions.
-                  </div>
-                </Link>
-                <Link to="/admin/arvr-content" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
-                    <FaCube />
-                  </div>
-                  <div className="quick-access-card-title">AR/VR Content</div>
-                  <div className="quick-access-card-description">
-                    Manage 3D models, VR experiences, and AR overlays for interactive learning.
-                  </div>
-                </Link>
-              </div>
+                </Col>
+              </Row>
             </div>
 
-            {/* Recent Activity - Modern Design */}
-            <div className="mb-5">
-          <h4 className="section-title mb-4">Recent Activity</h4>
-          <div className="card-modern">
-            <div className="card-body">
-              {stats.recentActivity && stats.recentActivity.length > 0 ? (
-                <div>
-                  {stats.recentActivity.map((activity, index) => (
-                    <div key={activity.id || index} className="activity-item">
-                      <div className={`activity-icon ${activity.type === 'user' ? 'user' :
-                        activity.type === 'subject' ? 'subject' :
-                          activity.type === 'class' ? 'class' :
-                            activity.type === 'form' ? 'form' :
-                              'user'
-                        }`}>
-                        {activity.type === 'user' ? <FaUserGraduate /> :
-                          activity.type === 'subject' ? <FaBook /> :
-                            activity.type === 'class' ? <FaUsers /> :
-                              activity.type === 'form' ? <FaChalkboardTeacher /> :
-                                <FaBell />}
-                      </div>
-                      <div className="activity-content">
-                        <div className="activity-text">
-                          <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
+            {/* Recent Activity */}
+            <div className="recent-activity-section">
+              <h4 className="section-title">Recent Activity</h4>
+              <Card className="border-0 shadow-sm">
+                <Card.Body className="p-0">
+                  {stats.recentActivity && stats.recentActivity.length > 0 ? (
+                    <div className="p-3">
+                      {stats.recentActivity.map((activity, index) => (
+                        <div key={activity.id || index} className="activity-item mb-2">
+                          <div className={`activity-icon ${activity.type === 'user' ? 'user' : 'subject'}`}>
+                            {activity.type === 'user' ? <FaUserGraduate /> : <FaBell />}
+                          </div>
+                          <div className="activity-content">
+                            <div className="activity-text">
+                              <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
+                            </div>
+                            <div className="activity-time">
+                              <FaCalendarAlt className="me-1" />
+                              {activity.time}
+                            </div>
+                          </div>
                         </div>
-                        <div className="activity-time">
-                          <FaCalendarAlt className="me-1" />
-                          {activity.time}
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-state">
-                  <div className="empty-state-icon">
-                    <FaBell />
-                  </div>
-                  <div className="empty-state-text">
-                    <p className="mb-1">No recent activity</p>
-                    <small>Start by creating forms, classes, and subjects</small>
-                  </div>
-                </div>
-              )}
+                  ) : (
+                    <div className="text-center py-5 text-muted">
+                      <FaBell className="mb-3" size={32} opacity={0.5} />
+                      <p className="mb-0">No recent activity</p>
+                    </div>
+                  )}
+                </Card.Body>
+              </Card>
             </div>
           </div>
-        </div>
-          </div>
-        )
-}
+        )}
 
-{
-  activeTab === 'institutions' && (
-    <div className="institutions-tab">
-      <InstitutionManagement />
+        {activeTab === 'institutions' && <InstitutionManagement />}
+        {activeTab === 'students' && <StudentManagement />}
+        {activeTab === 'instructors' && <ManageInstructors />}
+        {activeTab === 'classes' && <ClassesTab />}
+        {activeTab === 'reports' && <ReportsTab />}
+
+      </Container>
     </div>
-  )
-}
-
-{
-  activeTab === 'students' && (
-    <div className="students-tab">
-      <StudentManagement />
-    </div>
-  )
-}
-
-{
-  activeTab === 'instructors' && (
-    <div className="instructors-tab">
-      <ManageInstructors />
-    </div>
-  )
-}
-
-{
-  activeTab === 'classes' && (
-    <div className="classes-tab">
-      <ClassesTab />
-    </div>
-  )
-}
-
-{
-  activeTab === 'reports' && (
-    <div className="reports-tab">
-      <ReportsTab />
-    </div>
-  )
-}
-
-      </Container >
-    </div >
   );
 }
 
