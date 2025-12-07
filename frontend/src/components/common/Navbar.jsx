@@ -211,6 +211,20 @@ function AppNavbar() {
             </Nav>
           ) : (
             <Nav className="ms-auto align-items-center gap-3">
+              <Nav.Link 
+                as={Link} 
+                to="/#curriculum" 
+                className="nav-link-custom"
+                onClick={(e) => {
+                  if (location.pathname === '/') {
+                    e.preventDefault();
+                    document.getElementById('curriculum')?.scrollIntoView({ behavior: 'smooth' });
+                  }
+                }}
+              >
+                <FaBook size={14} className="me-1" />
+                Curriculum
+              </Nav.Link>
               <DarkModeToggle />
               <Nav.Link as={Link} to="/login" className="nav-link-custom">
                 Login

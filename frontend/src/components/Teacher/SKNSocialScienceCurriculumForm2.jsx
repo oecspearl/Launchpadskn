@@ -17,8 +17,7 @@ import {
   Globe,
   Scale,
   Leaf,
-  Shield,
-  Handshake
+  Shield
 } from 'lucide-react';
 import './SKNSocialScienceCurriculumForm2.css';
 

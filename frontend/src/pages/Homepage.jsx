@@ -5,6 +5,7 @@ import {
     FaChalkboardTeacher, FaLaptopCode, FaArrowRight,
     FaBookOpen, FaUsers, FaCertificate
 } from 'react-icons/fa';
+import CurriculumAccess from '../components/common/CurriculumAccess';
 import './Homepage.css';
 
 const Homepage = () => {
@@ -136,6 +137,9 @@ const Homepage = () => {
                         </div>
                     </div>
                 </section>
+
+                {/* Curriculum Access Section */}
+                <CurriculumAccess />
 
                 {/* Footer */}
                 <footer className="homepage-footer">
