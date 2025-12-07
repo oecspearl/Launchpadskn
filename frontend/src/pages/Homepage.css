@@ -19,6 +19,16 @@
     --hp-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
+/* Dark Mode Variables */
+[data-theme="dark"] {
+    --hp-bg-light: #1a202c;
+    --hp-text-dark: #f7fafc;
+    --hp-text-muted: #cbd5e0;
+    --hp-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --hp-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    --hp-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
 .homepage-container {
     min-height: 100vh;
     background-color: var(--hp-bg-light);
@@ -35,6 +45,11 @@
     border-bottom: 1px solid #e2e8f0 !important;
     padding-top: 1rem !important;
     padding-bottom: 1rem !important;
+}
+
+[data-theme="dark"] .navbar {
+    background: rgba(45, 55, 72, 0.9) !important;
+    border-bottom: 1px solid #4a5568 !important;
 }
 
 .navbar-brand,
@@ -324,6 +339,12 @@
     box-shadow: var(--hp-shadow-md);
 }
 
+[data-theme="dark"] .floating-menu-item {
+    background: #2d3748;
+    border-color: #4a5568;
+    color: #cbd5e0;
+}
+
 .floating-menu-item:hover {
     background: var(--hp-primary);
     color: white;
@@ -373,12 +394,30 @@
     border-color: #cbd5e1;
 }
 
+[data-theme="dark"] .btn-secondary-custom {
+    background-color: #2d3748;
+    color: #f7fafc;
+    border-color: #4a5568;
+}
+
+[data-theme="dark"] .btn-secondary-custom:hover {
+    background-color: #374151;
+    color: #f7fafc;
+    border-color: #718096;
+}
+
 /* Stats Section */
 .stats-section {
     background: var(--hp-white);
     padding: 4rem 0;
     border-top: 1px solid #e2e8f0;
     border-bottom: 1px solid #e2e8f0;
+}
+
+[data-theme="dark"] .stats-section {
+    background: var(--bg-secondary, #2d3748);
+    border-top-color: #4a5568;
+    border-bottom-color: #4a5568;
 }
 
 .stat-item {
@@ -424,10 +463,21 @@
     box-shadow: var(--hp-shadow-sm);
 }
 
+[data-theme="dark"] .feature-card {
+    background: var(--bg-secondary, #2d3748);
+    border-color: #4a5568;
+    color: var(--text-primary, #f7fafc);
+}
+
 .feature-card:hover {
     transform: translateY(-5px);
     box-shadow: var(--hp-shadow-lg);
     border-color: rgba(0, 150, 57, 0.2);
+}
+
+[data-theme="dark"] .feature-card:hover {
+    border-color: rgba(0, 150, 57, 0.4);
+    background: #374151;
 }
 
 .feature-icon {

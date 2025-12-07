@@ -19,6 +19,19 @@
   --skn-ss2-font: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Dark Mode Variables */
+[data-theme="dark"] {
+  --skn-ss2-bg: #1a202c;
+  --skn-ss2-card: #2d3748;
+  --skn-ss2-border: #4a5568;
+  --skn-ss2-text: #f7fafc;
+  --skn-ss2-text-muted: #cbd5e0;
+  --skn-ss2-text-light: #a0aec0;
+  --skn-ss2-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --skn-ss2-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --skn-ss2-shadow-lg: 0 4px 6px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
 /* Container Reset & Base */
 .skn-ss2-container {
   font-family: var(--skn-ss2-font);
