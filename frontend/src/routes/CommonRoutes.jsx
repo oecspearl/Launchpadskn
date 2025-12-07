@@ -9,6 +9,7 @@ const CourseDetails = lazy(() => import('../components/common/CourseDetails'));
 const NotificationPreferences = lazy(() => import('../components/common/NotificationPreferences'));
 const NotificationsList = lazy(() => import('../components/common/NotificationsList'));
 const SKNCurriculum = lazy(() => import('../components/Teacher/SKNCurriculum'));
+const SKNSocialScienceCurriculum = lazy(() => import('../components/Teacher/SKNSocialScienceCurriculum'));
 
 const CommonRoutes = () => (
     <>
@@ -57,6 +58,14 @@ const CommonRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
                     <SKNCurriculum />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/curriculum/skn-social-science"
+            element={
+                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                    <SKNSocialScienceCurriculum />
                 </PrivateRoute>
             }
         />

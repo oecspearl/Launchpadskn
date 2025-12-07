@@ -16,6 +16,7 @@ const ContentLibrary = lazy(() => import('../components/Teacher/ContentLibrary')
 const LessonTemplateLibrary = lazy(() => import('../components/Teacher/LessonTemplateLibrary'));
 const Curriculum = lazy(() => import('../components/Teacher/Curriculum'));
 const SKNCurriculum = lazy(() => import('../components/Teacher/SKNCurriculum'));
+const SKNSocialScienceCurriculum = lazy(() => import('../components/Teacher/SKNSocialScienceCurriculum'));
 const StudentProfileView = lazy(() => import('../components/Teacher/StudentProfileView'));
 const StudentViewPreview = lazy(() => import('../components/Teacher/StudentViewPreview'));
 
@@ -108,6 +109,14 @@ const InstructorRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['instructor', 'admin']}>
                     <SKNCurriculum />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/teacher/curriculum/skn-social-science"
+            element={
+                <PrivateRoute allowedRoles={['instructor', 'admin']}>
+                    <SKNSocialScienceCurriculum />
                 </PrivateRoute>
             }
         />

@@ -345,6 +345,29 @@ function Curriculum() {
                                     </div>
                                   )}
                                   
+                                  {/* Enhanced SKN Curriculum Link for Social Science Form 1 */}
+                                  {offering.subject?.subject_name && 
+                                   (offering.subject.subject_name.toLowerCase().includes('social') || 
+                                    offering.subject.subject_name.toLowerCase().includes('social science') ||
+                                    offering.subject.subject_name.toLowerCase().includes('social studies')) &&
+                                   offering.form?.form_number === 1 && (
+                                    <div className="mb-3">
+                                      <Link 
+                                        to="/curriculum/skn-social-science"
+                                        className="text-decoration-none"
+                                      >
+                                        <Button 
+                                          variant="outline-primary" 
+                                          size="sm" 
+                                          className="w-100"
+                                        >
+                                          <FaBook className="me-2" />
+                                          View Enhanced SKN Social Science Curriculum
+                                        </Button>
+                                      </Link>
+                                    </div>
+                                  )}
+                                  
                                   {/* Structured Curriculum Indicator */}
                                   {hasStructuredCurriculum(offering) ? (
                                     <div className="mb-3">
