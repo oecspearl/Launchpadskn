@@ -76,15 +76,17 @@ function StudentViewPreview() {
             item.content_text; // Fallback
 
         return (
-            <div style={{
-                background: 'var(--theme-glass)',
-                padding: '2rem',
-                borderRadius: '12px',
-                lineHeight: '1.8',
-                fontSize: '1.1rem',
-                color: 'var(--theme-text)',
-                whiteSpace: 'pre-wrap'
-            }}>
+            <div 
+                className="text-content-display"
+                style={{
+                    background: 'var(--theme-glass)',
+                    padding: '2rem',
+                    borderRadius: '12px',
+                    lineHeight: '1.8',
+                    fontSize: '1.1rem',
+                    color: 'var(--theme-text)',
+                    whiteSpace: 'pre-wrap'
+                }}>
                 {text}
             </div>
         );
@@ -100,7 +102,11 @@ function StudentViewPreview() {
         );
     }
 
-    if (!lessonData) return <div>Lesson not found</div>;
+    if (!lessonData) return (
+        <div className="lesson-view-container theme-cool-dark" style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '1600px', height: '100%', zIndex: 1050, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--theme-text)' }}>
+            <div>Lesson not found</div>
+        </div>
+    );
 
     return (
         <div className={`lesson-view-container theme-${theme}`} style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '1600px', height: '100%', zIndex: 1050, overflowY: 'auto' }}>
@@ -153,7 +159,7 @@ function StudentViewPreview() {
                             <FaRocket className="text-primary" />
                             Mission Steps
                         </div>
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--theme-text-muted, #94a3b8)' }}>
                             Preview Mode
                         </span>
                     </div>

@@ -16,6 +16,27 @@
     --theme-glow: 0 0 15px rgba(91, 155, 213, 0.1);
 }
 
+/* Global Dark Mode Override - Ensure lesson preview respects global dark mode */
+[data-theme="dark"] .lesson-view-container {
+    --theme-bg: #1a202c;
+    --theme-card-bg: rgba(45, 55, 72, 0.95);
+    --theme-glass: rgba(255, 255, 255, 0.05);
+    --theme-glass-border: rgba(74, 85, 104, 0.3);
+    --theme-text: #f7fafc;
+    --theme-text-muted: #cbd5e0;
+    background: var(--theme-bg) !important;
+    color: var(--theme-text) !important;
+}
+
+[data-theme="dark"] .lesson-view-container.theme-light {
+    --theme-bg: #1a202c;
+    --theme-card-bg: rgba(45, 55, 72, 0.95);
+    --theme-glass: rgba(255, 255, 255, 0.05);
+    --theme-glass-border: rgba(74, 85, 104, 0.3);
+    --theme-text: #f7fafc;
+    --theme-text-muted: #cbd5e0;
+}
+
 /* Warm Dark Theme */
 .theme-warm-dark {
     --theme-bg: #241e1a;
@@ -99,6 +120,14 @@
     margin-bottom: 1rem;
 }
 
+[data-theme="dark"] .mission-breadcrumbs {
+    color: var(--theme-text-muted, #cbd5e0) !important;
+}
+
+[data-theme="dark"] .mission-breadcrumbs * {
+    color: var(--theme-text-muted, #cbd5e0) !important;
+}
+
 .mission-back-btn {
     background: none;
     border: none;
@@ -141,6 +170,14 @@
     color: var(--theme-text-muted);
     font-size: 0.9rem;
     margin-top: 0.5rem;
+}
+
+[data-theme="dark"] .mission-meta {
+    color: var(--theme-text-muted, #cbd5e0) !important;
+}
+
+[data-theme="dark"] .mission-meta * {
+    color: var(--theme-text-muted, #cbd5e0) !important;
 }
 
 /* ===== Progress Bar ===== */
@@ -192,6 +229,14 @@
     align-items: center;
 }
 
+[data-theme="dark"] .quest-steps-header {
+    border-bottom-color: var(--theme-glass-border, rgba(74, 85, 104, 0.3)) !important;
+}
+
+[data-theme="dark"] .quest-steps-header span {
+    color: var(--theme-text-muted, #cbd5e0) !important;
+}
+
 .quest-steps-title {
     font-size: 1.1rem;
     font-weight: 700;
@@ -231,6 +276,11 @@
     border-color: rgba(91, 155, 213, 0.25);
 }
 
+[data-theme="dark"] .quest-step-item.active {
+    background: rgba(91, 155, 213, 0.2);
+    border-color: rgba(91, 155, 213, 0.4);
+}
+
 .quest-step-item.completed .step-icon {
     color: var(--theme-success);
     background: rgba(82, 183, 136, 0.15);
@@ -264,6 +314,10 @@
     color: var(--theme-text);
 }
 
+[data-theme="dark"] .step-title {
+    color: var(--theme-text, #f7fafc) !important;
+}
+
 .step-meta {
     font-size: 0.75rem;
     color: var(--theme-text-muted);
@@ -293,10 +347,25 @@
     align-items: center;
 }
 
+[data-theme="dark"] .viewer-header {
+    border-bottom-color: var(--theme-glass-border, rgba(74, 85, 104, 0.3)) !important;
+}
+
 .viewer-title {
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--theme-text);
+}
+
+[data-theme="dark"] .viewer-title {
+    color: var(--theme-text, #f7fafc) !important;
+}
+
+[data-theme="dark"] .mission-title {
+    background: linear-gradient(to right, var(--theme-text, #f7fafc), var(--theme-text-muted, #cbd5e0)) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
 }
 
 .viewer-content {
@@ -305,6 +374,38 @@
     color: var(--theme-text);
     overflow-y: auto;
     overflow-x: hidden;
+}
+
+/* Ensure all text in viewer content is visible */
+.viewer-content * {
+    color: var(--theme-text) !important;
+}
+
+.viewer-content p,
+.viewer-content div,
+.viewer-content span,
+.viewer-content li,
+.viewer-content ul,
+.viewer-content ol {
+    color: var(--theme-text) !important;
+}
+
+.viewer-content .text-muted {
+    color: var(--theme-text-muted) !important;
+}
+
+/* Ensure text content areas are visible */
+.viewer-content [style*="color"],
+.viewer-content [style*="background"] {
+    color: var(--theme-text) !important;
+}
+
+[data-theme="dark"] .viewer-content * {
+    color: var(--theme-text, #f7fafc) !important;
+}
+
+[data-theme="dark"] .viewer-content .text-muted {
+    color: var(--theme-text-muted, #cbd5e0) !important;
 }
 
 .viewer-actions {
@@ -349,6 +450,68 @@
     border-radius: 8px;
     border: 1px solid var(--theme-glass-border);
     transition: background-color 0.3s ease;
+}
+
+/* Text Content Display - Ensure visibility */
+.text-content-display {
+    color: var(--theme-text) !important;
+    background: var(--theme-glass) !important;
+}
+
+.text-content-display * {
+    color: var(--theme-text) !important;
+}
+
+[data-theme="dark"] .text-content-display {
+    color: var(--theme-text, #f7fafc) !important;
+    background: var(--theme-glass, rgba(255, 255, 255, 0.05)) !important;
+}
+
+[data-theme="dark"] .text-content-display * {
+    color: var(--theme-text, #f7fafc) !important;
+}
+
+/* Global Dark Mode - Ensure all headings and text are visible */
+[data-theme="dark"] .lesson-view-container h1,
+[data-theme="dark"] .lesson-view-container h2,
+[data-theme="dark"] .lesson-view-container h3,
+[data-theme="dark"] .lesson-view-container h4,
+[data-theme="dark"] .lesson-view-container h5,
+[data-theme="dark"] .lesson-view-container h6 {
+    color: var(--theme-text, #f7fafc) !important;
+}
+
+[data-theme="dark"] .lesson-view-container p,
+[data-theme="dark"] .lesson-view-container span,
+[data-theme="dark"] .lesson-view-container div:not(.btn):not(.badge) {
+    color: var(--theme-text, #f7fafc) !important;
+}
+
+[data-theme="dark"] .lesson-view-container .text-muted {
+    color: var(--theme-text-muted, #cbd5e0) !important;
+}
+
+/* Ensure empty state messages are visible */
+[data-theme="dark"] .lesson-view-container .d-flex.text-muted,
+[data-theme="dark"] .lesson-view-container .d-flex.text-muted * {
+    color: var(--theme-text-muted, #cbd5e0) !important;
+}
+
+[data-theme="dark"] .lesson-view-container .text-center.text-muted,
+[data-theme="dark"] .lesson-view-container .text-center.text-muted * {
+    color: var(--theme-text-muted, #cbd5e0) !important;
+}
+
+/* Ensure select dropdown is visible in dark mode */
+[data-theme="dark"] .lesson-view-container select {
+    background-color: var(--theme-card-bg, rgba(45, 55, 72, 0.95)) !important;
+    color: var(--theme-text, #f7fafc) !important;
+    border-color: var(--theme-glass-border, rgba(74, 85, 104, 0.3)) !important;
+}
+
+[data-theme="dark"] .lesson-view-container select option {
+    background-color: var(--theme-card-bg, rgba(45, 55, 72, 0.95)) !important;
+    color: var(--theme-text, #f7fafc) !important;
 }
 
 /* ===== Responsive ===== */
