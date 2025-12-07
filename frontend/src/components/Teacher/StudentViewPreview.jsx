@@ -51,7 +51,15 @@ function StudentViewPreview() {
     }, [lessonId]);
 
     const handleExit = () => {
-        navigate(`/teacher/lesson/${lessonId}/content`);
+        // Navigate back to lesson content manager (where users typically come from)
+        // Use plural "lessons" to match the route definition: /teacher/lessons/:lessonId/content
+        if (lessonId) {
+            // Try to navigate to content manager first (most common entry point)
+            navigate(`/teacher/lessons/${lessonId}/content`, { replace: true });
+        } else {
+            // Fallback to teacher dashboard if lessonId is missing
+            navigate('/teacher/dashboard', { replace: true });
+        }
     };
 
     const getContentIcon = (type) => {
