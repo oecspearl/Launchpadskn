@@ -12,11 +12,30 @@
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
 }
 
+/* Dark Mode Navbar Glass */
+[data-theme="dark"] .navbar-glass {
+    background: rgba(45, 55, 72, 0.9) !important;
+    border-bottom: 1px solid rgba(74, 85, 104, 0.5);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .navbar-glass.scrolled {
+    background: rgba(45, 55, 72, 0.95) !important;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
 /* Make navbar brand text black */
 .navbar-glass .navbar-brand,
 .navbar-glass .navbar-brand:hover,
 .navbar-glass .navbar-brand:focus {
     color: #000000 !important;
+}
+
+/* Dark Mode Navbar Brand */
+[data-theme="dark"] .navbar-glass .navbar-brand,
+[data-theme="dark"] .navbar-glass .navbar-brand:hover,
+[data-theme="dark"] .navbar-glass .navbar-brand:focus {
+    color: #f7fafc !important;
 }
 
 /* Override all Bootstrap navbar link styles */
@@ -34,6 +53,13 @@
     background-color: transparent !important;
 }
 
+/* Dark Mode Navbar Links */
+[data-theme="dark"] .navbar-glass .nav-link,
+[data-theme="dark"] .navbar-glass .navbar-nav .nav-link,
+[data-theme="dark"] .nav-link-custom {
+    color: #f7fafc !important;
+}
+
 /* Remove all focus, active, and hover background colors */
 .navbar-glass .nav-link:focus,
 .navbar-glass .nav-link:active,
@@ -47,10 +73,34 @@
     box-shadow: none !important;
 }
 
+/* Dark Mode Focus/Active States */
+[data-theme="dark"] .navbar-glass .nav-link:focus,
+[data-theme="dark"] .navbar-glass .nav-link:active,
+[data-theme="dark"] .navbar-glass .navbar-nav .nav-link:focus,
+[data-theme="dark"] .navbar-glass .navbar-nav .nav-link:active,
+[data-theme="dark"] .nav-link-custom:focus,
+[data-theme="dark"] .nav-link-custom:active {
+    color: #f7fafc !important;
+    background-color: transparent !important;
+}
+
 .nav-link-custom:hover,
 .nav-link-custom.active {
     color: var(--primary-color) !important;
     background-color: var(--primary-light-bg) !important;
+}
+
+/* Dark Mode Hover/Active States */
+[data-theme="dark"] .nav-link-custom:hover,
+[data-theme="dark"] .nav-link-custom.active {
+    color: var(--primary-color, #009639) !important;
+    background-color: rgba(0, 150, 57, 0.15) !important;
+}
+
+[data-theme="dark"] .navbar-glass .nav-link:hover,
+[data-theme="dark"] .navbar-glass .navbar-nav .nav-link:hover {
+    color: var(--primary-color, #009639) !important;
+    background-color: rgba(0, 150, 57, 0.1) !important;
 }
 
 .nav-btn-primary {
@@ -104,6 +154,29 @@
     display: inline-block !important;
     visibility: visible !important;
     opacity: 1 !important;
+}
+
+/* Dark Mode Navbar Toggler */
+[data-theme="dark"] .navbar-toggler {
+    border-color: #4a5568 !important;
+    color: #f7fafc !important;
+}
+
+[data-theme="dark"] .navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28247, 250, 252, 1%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") !important;
+}
+
+/* Dark Mode Profile Dropdown */
+[data-theme="dark"] .profile-dropdown-trigger {
+    color: #f7fafc !important;
+}
+
+[data-theme="dark"] .profile-dropdown .dropdown-toggle {
+    color: #f7fafc !important;
+}
+
+[data-theme="dark"] .user-name-display {
+    color: #f7fafc !important;
 }
 
 /* Show name on all screen sizes, but adjust for mobile */
