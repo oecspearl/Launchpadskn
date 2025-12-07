@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
     FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
     FaBook, FaClipboardList, FaCheckCircle, FaPlay, FaImage,
     FaFileAlt, FaRocket, FaGraduationCap, FaLightbulb,
-    FaQuestionCircle, FaComments, FaCube, FaLock, FaTrophy, FaVideo, FaDoorOpen
+    FaQuestionCircle, FaComments, FaCube, FaLock, FaTrophy, FaVideo, FaDoorOpen,
+    FaExpand, FaCompress
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -36,6 +37,8 @@ function LessonViewStream() {
         return localStorage.getItem('lesson-viewer-theme') || 'cool-dark';
     });
     const [showDiscussionSidebar, setShowDiscussionSidebar] = useState(false);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const viewerPanelRef = useRef(null);
 
     useEffect(() => {
         if (lessonId) {
@@ -46,6 +49,30 @@ function LessonViewStream() {
             }
         }
     }, [lessonId]);
+
+    // Handle fullscreen change events
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!(
+                document.fullscreenElement ||
+                document.webkitFullscreenElement ||
+                document.mozFullScreenElement ||
+                document.msFullscreenElement
+            ));
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+
+        return () => {
+            document.removeEventListener('fullscreenchange', handleFullscreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+            document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+        };
+    }, []);
 
     useEffect(() => {
         if (lessonId && completedContent.size > 0) {
@@ -170,6 +197,40 @@ function LessonViewStream() {
         localStorage.setItem('lesson-viewer-theme', newTheme);
     };
 
+    // Fullscreen toggle handler
+    const toggleFullscreen = async () => {
+        const element = viewerPanelRef.current;
+        if (!element) return;
+
+        try {
+            if (!isFullscreen) {
+                // Enter fullscreen
+                if (element.requestFullscreen) {
+                    await element.requestFullscreen();
+                } else if (element.webkitRequestFullscreen) {
+                    await element.webkitRequestFullscreen();
+                } else if (element.mozRequestFullScreen) {
+                    await element.mozRequestFullScreen();
+                } else if (element.msRequestFullscreen) {
+                    await element.msRequestFullscreen();
+                }
+            } else {
+                // Exit fullscreen
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    await document.webkitExitFullscreen();
+                } else if (document.mozCancelFullScreen) {
+                    await document.mozCancelFullScreen();
+                } else if (document.msExitFullscreen) {
+                    await document.msExitFullscreen();
+                }
+            }
+        } catch (error) {
+            console.error('Error toggling fullscreen:', error);
+        }
+    };
+
     if (isLoading) return <div className={`lesson-view-container theme-${theme}`}>Loading Mission Data...</div>;
     if (!lesson) return <div className={`lesson-view-container theme-${theme}`}>Mission Not Found</div>;
 
@@ -292,17 +353,25 @@ function LessonViewStream() {
                 </div>
 
                 {/* Main Viewer */}
-                <div className="mission-viewer-panel">
+                <div className="mission-viewer-panel" ref={viewerPanelRef}>
                     {activeContent ? (
                         <>
                             <div className="viewer-header">
                                 <div className="viewer-title">{activeContent.title}</div>
-                                <div className="d-flex gap-2">
+                                <div className="d-flex gap-2 align-items-center">
                                     {activeContent.estimated_minutes && (
                                         <span className="xp-badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#e2e8f0' }}>
                                             <FaClock className="me-1" /> {activeContent.estimated_minutes} min
                                         </span>
                                     )}
+                                    <button
+                                        className="fullscreen-toggle-btn"
+                                        onClick={toggleFullscreen}
+                                        title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                                        aria-label={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen'}
+                                    >
+                                        {isFullscreen ? <FaCompress /> : <FaExpand />}
+                                    </button>
                                 </div>
                             </div>
 
