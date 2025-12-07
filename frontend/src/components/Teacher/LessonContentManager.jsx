@@ -104,6 +104,7 @@ function LessonContentManager() {
     numQuestions: 5,
     bloomLevel: 'mixed'
   });
+  const [pendingQuizTitle, setPendingQuizTitle] = useState(null); // Store title from Add Content modal
 
   useEffect(() => {
     if (lessonId) {
@@ -485,11 +486,14 @@ function LessonContentManager() {
         ? Math.max(...content.map(c => c.sequence_order || 0))
         : 0;
 
+      // Use pending title if available (from Add Content modal), otherwise use generated title
+      const quizTitle = pendingQuizTitle || generatedQuiz.quiz_title || `Quiz: ${lessonData.topic || 'Lesson Quiz'}`;
+
       // Create quiz content item
       const contentData = {
         lesson_id: parseInt(lessonId),
         content_type: 'QUIZ',
-        title: generatedQuiz.quiz_title || `Quiz: ${lessonData.topic || 'Lesson Quiz'}`,
+        title: quizTitle,
         description: generatedQuiz.quiz_description || '',
         content_section: 'Assessment',
         sequence_order: maxSequence + 1,
@@ -580,9 +584,10 @@ function LessonContentManager() {
         }
       }
 
-      setSuccess(`Quiz "${generatedQuiz.quiz_title}" created successfully with ${generatedQuiz.quiz_questions.length} questions!`);
+      setSuccess(`Quiz "${quizTitle}" created successfully with ${generatedQuiz.quiz_questions.length} questions!`);
       setShowQuizGenerator(false);
       setGeneratedQuiz(null);
+      setPendingQuizTitle(null); // Clear pending title
       fetchContent(); // Refresh content list
     } catch (err) {
       console.error('Error saving quiz:', err);
@@ -2807,10 +2812,39 @@ function LessonContentManager() {
                     <Form.Text className="text-muted">
                       You can either enter an external quiz URL (Google Forms, Kahoot, Quizizz) OR create an in-app quiz.
                     </Form.Text>
-                    <Alert variant="info" className="mt-2 mb-0">
-                      <FaClipboardCheck className="me-2" />
-                      <strong>Create In-App Quiz:</strong> Click the "Save & Create Quiz" button below to save this content and immediately open the quiz builder.
-                    </Alert>
+                    <div className="mt-3">
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          // Store the title if entered, so we can use it in the quiz generator
+                          if (title && title.trim()) {
+                            setPendingQuizTitle(title.trim());
+                          }
+                          setShowModal(false);
+                          setShowQuizGenerator(true);
+                        }}
+                        disabled={isGeneratingQuiz || !lessonData}
+                        className="me-2"
+                      >
+                        {isGeneratingQuiz ? (
+                          <>
+                            <Spinner as="span" animation="border" size="sm" className="me-2" />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <FaMagic className="me-2" />
+                            AI Generate Quiz
+                          </>
+                        )}
+                      </Button>
+                      <Alert variant="info" className="mt-2 mb-0">
+                        <FaClipboardCheck className="me-2" />
+                        <strong>Create In-App Quiz:</strong> Use AI to generate a quiz, or click the "Save & Create Quiz" button below to manually create one.
+                      </Alert>
+                    </div>
                   </>
                 )}
                 {contentType === 'ASSIGNMENT' && (
@@ -4820,6 +4854,7 @@ function LessonContentManager() {
           setShowQuizGenerator(false);
           setGeneratedQuiz(null);
           setQuizParams({ numQuestions: 5, bloomLevel: 'mixed' });
+          setPendingQuizTitle(null);
         }}
         size="xl"
         centered
@@ -4835,6 +4870,11 @@ function LessonContentManager() {
             <>
               <Alert variant="info" className="mb-4">
                 <strong>Generate a high-quality quiz</strong> that aligns with your lesson objectives, uses grade-appropriate language, includes meaningful distractors, and incorporates Bloom's Taxonomy levels.
+                {pendingQuizTitle && (
+                  <div className="mt-2">
+                    <strong>Quiz Title:</strong> {pendingQuizTitle}
+                  </div>
+                )}
               </Alert>
 
               <Form>
