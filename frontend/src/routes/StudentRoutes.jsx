@@ -11,6 +11,8 @@ const AssignmentSubmission = lazy(() => import('../components/Student/Assignment
 const CourseRegistration = lazy(() => import('../components/Student/CourseRegistration'));
 const SKNCurriculum = lazy(() => import('../components/Teacher/SKNCurriculum'));
 const SKNSocialScienceCurriculum = lazy(() => import('../components/Teacher/SKNSocialScienceCurriculum'));
+const SKNMathsCurriculumForm2 = lazy(() => import('../components/Teacher/SKNMathsCurriculumForm2'));
+const SKNSocialScienceCurriculumForm2 = lazy(() => import('../components/Teacher/SKNSocialScienceCurriculumForm2'));
 
 const StudentRoutes = () => (
     <>
@@ -83,6 +85,22 @@ const StudentRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['student']}>
                     <SKNSocialScienceCurriculum />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/student/curriculum/skn-mathematics-form2"
+            element={
+                <PrivateRoute allowedRoles={['student']}>
+                    <SKNMathsCurriculumForm2 />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/student/curriculum/skn-social-science-form2"
+            element={
+                <PrivateRoute allowedRoles={['student']}>
+                    <SKNSocialScienceCurriculumForm2 />
                 </PrivateRoute>
             }
         />

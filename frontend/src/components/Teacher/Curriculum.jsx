@@ -368,6 +368,51 @@ function Curriculum() {
                                     </div>
                                   )}
                                   
+                                  {/* Enhanced SKN Curriculum Link for Mathematics Form 2 */}
+                                  {offering.subject?.subject_name && 
+                                   (offering.subject.subject_name.toLowerCase().includes('math') || 
+                                    offering.subject.subject_name.toLowerCase().includes('mathematics')) &&
+                                   offering.form?.form_number === 2 && (
+                                    <div className="mb-3">
+                                      <Link 
+                                        to="/curriculum/skn-mathematics-form2"
+                                        className="text-decoration-none"
+                                      >
+                                        <Button 
+                                          variant="outline-primary" 
+                                          size="sm" 
+                                          className="w-100"
+                                        >
+                                          <FaBook className="me-2" />
+                                          View Enhanced SKN Mathematics Curriculum (Form 2)
+                                        </Button>
+                                      </Link>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Enhanced SKN Curriculum Link for Social Science Form 2 */}
+                                  {offering.subject?.subject_name && 
+                                   (offering.subject.subject_name.toLowerCase().includes('social') || 
+                                    offering.subject.subject_name.toLowerCase().includes('social science') ||
+                                    offering.subject.subject_name.toLowerCase().includes('social studies')) &&
+                                   offering.form?.form_number === 2 && (
+                                    <div className="mb-3">
+                                      <Link 
+                                        to="/curriculum/skn-social-science-form2"
+                                        className="text-decoration-none"
+                                      >
+                                        <Button 
+                                          variant="outline-primary" 
+                                          size="sm" 
+                                          className="w-100"
+                                        >
+                                          <FaBook className="me-2" />
+                                          View Enhanced SKN Social Science Curriculum (Form 2)
+                                        </Button>
+                                      </Link>
+                                    </div>
+                                  )}
+                                  
                                   {/* Structured Curriculum Indicator */}
                                   {hasStructuredCurriculum(offering) ? (
                                     <div className="mb-3">

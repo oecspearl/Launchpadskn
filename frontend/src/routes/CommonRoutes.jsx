@@ -10,6 +10,8 @@ const NotificationPreferences = lazy(() => import('../components/common/Notifica
 const NotificationsList = lazy(() => import('../components/common/NotificationsList'));
 const SKNCurriculum = lazy(() => import('../components/Teacher/SKNCurriculum'));
 const SKNSocialScienceCurriculum = lazy(() => import('../components/Teacher/SKNSocialScienceCurriculum'));
+const SKNMathsCurriculumForm2 = lazy(() => import('../components/Teacher/SKNMathsCurriculumForm2'));
+const SKNSocialScienceCurriculumForm2 = lazy(() => import('../components/Teacher/SKNSocialScienceCurriculumForm2'));
 
 const CommonRoutes = () => (
     <>
@@ -66,6 +68,22 @@ const CommonRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
                     <SKNSocialScienceCurriculum />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/curriculum/skn-mathematics-form2"
+            element={
+                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                    <SKNMathsCurriculumForm2 />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/curriculum/skn-social-science-form2"
+            element={
+                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                    <SKNSocialScienceCurriculumForm2 />
                 </PrivateRoute>
             }
         />
