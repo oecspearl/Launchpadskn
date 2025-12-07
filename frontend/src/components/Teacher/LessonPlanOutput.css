@@ -1,0 +1,162 @@
+/* LessonPlanOutput - Proper scrolling and height constraints */
+.lesson-plan-output-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.lesson-plan-output-card .card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* Critical for flex children to respect overflow */
+  overflow: hidden;
+  padding: 1rem;
+}
+
+.lesson-plan-output-tabs {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* Critical for flex children to respect overflow */
+  overflow: hidden;
+  height: 100%;
+}
+
+.lesson-plan-output-tabs .nav-tabs {
+  flex-shrink: 0; /* Prevent tabs from shrinking */
+  margin-bottom: 0;
+}
+
+.lesson-plan-output-tabs .tab-content {
+  flex: 1;
+  min-height: 0; /* Critical for flex children to respect overflow */
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: 1rem;
+}
+
+.lesson-plan-output-tabs .tab-pane {
+  height: 100%;
+  display: flex !important; /* Override Bootstrap's display: block for active tab */
+  flex-direction: column;
+  min-height: 0;
+}
+
+.lesson-plan-output-tabs .tab-pane:not(.active) {
+  display: none !important; /* Keep Bootstrap's hidden state for inactive tabs */
+}
+
+/* Preview tab content */
+.lesson-plan-preview-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 0.5rem; /* Space for scrollbar */
+}
+
+/* Edit tab content */
+.lesson-plan-edit-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.lesson-plan-edit-container form {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.lesson-plan-edit-container .form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.lesson-plan-edit-container textarea {
+  flex: 1;
+  resize: none;
+  min-height: 400px;
+  width: 100%;
+}
+
+/* Metadata tab content */
+.lesson-plan-metadata-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Smooth scrolling */
+.lesson-plan-output-tabs .tab-content,
+.lesson-plan-preview-container,
+.lesson-plan-edit-container,
+.lesson-plan-metadata-container {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Custom scrollbar styling for better UX */
+.lesson-plan-output-tabs .tab-content::-webkit-scrollbar,
+.lesson-plan-preview-container::-webkit-scrollbar,
+.lesson-plan-edit-container::-webkit-scrollbar,
+.lesson-plan-metadata-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.lesson-plan-output-tabs .tab-content::-webkit-scrollbar-track,
+.lesson-plan-preview-container::-webkit-scrollbar-track,
+.lesson-plan-edit-container::-webkit-scrollbar-track,
+.lesson-plan-metadata-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.lesson-plan-output-tabs .tab-content::-webkit-scrollbar-thumb,
+.lesson-plan-preview-container::-webkit-scrollbar-thumb,
+.lesson-plan-edit-container::-webkit-scrollbar-thumb,
+.lesson-plan-metadata-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.lesson-plan-output-tabs .tab-content::-webkit-scrollbar-thumb:hover,
+.lesson-plan-preview-container::-webkit-scrollbar-thumb:hover,
+.lesson-plan-edit-container::-webkit-scrollbar-thumb:hover,
+.lesson-plan-metadata-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Dark mode support */
+[data-theme="dark"] .lesson-plan-output-tabs .tab-content::-webkit-scrollbar-track,
+[data-theme="dark"] .lesson-plan-preview-container::-webkit-scrollbar-track,
+[data-theme="dark"] .lesson-plan-edit-container::-webkit-scrollbar-track,
+[data-theme="dark"] .lesson-plan-metadata-container::-webkit-scrollbar-track {
+  background: #2d3748;
+}
+
+[data-theme="dark"] .lesson-plan-output-tabs .tab-content::-webkit-scrollbar-thumb,
+[data-theme="dark"] .lesson-plan-preview-container::-webkit-scrollbar-thumb,
+[data-theme="dark"] .lesson-plan-edit-container::-webkit-scrollbar-thumb,
+[data-theme="dark"] .lesson-plan-metadata-container::-webkit-scrollbar-thumb {
+  background: #4a5568;
+}
+
+[data-theme="dark"] .lesson-plan-output-tabs .tab-content::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .lesson-plan-preview-container::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .lesson-plan-edit-container::-webkit-scrollbar-thumb:hover,
+[data-theme="dark"] .lesson-plan-metadata-container::-webkit-scrollbar-thumb:hover {
+  background: #718096;
+}
+

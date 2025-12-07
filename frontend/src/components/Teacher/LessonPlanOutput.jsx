@@ -6,6 +6,7 @@ import {
   FaEye, FaEdit, FaInfoCircle, FaCopy, FaDownload, FaSave
 } from 'react-icons/fa';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
+import './LessonPlanOutput.css';
 
 function LessonPlanOutput({ onSaveLesson }) {
   const [activeTab, setActiveTab] = useState('preview');
@@ -443,7 +444,7 @@ function LessonPlanOutput({ onSaveLesson }) {
 
   if (!lessonPlan && !editedContent) {
     return (
-      <Card className="h-100">
+      <Card className="h-100 lesson-plan-output-card">
         <Card.Body className="d-flex align-items-center justify-content-center" style={{ minHeight: '400px' }}>
           <div className="text-center text-muted">
             <FaInfoCircle size={48} className="mb-3" />
@@ -456,7 +457,7 @@ function LessonPlanOutput({ onSaveLesson }) {
   }
 
   return (
-    <Card className="h-100">
+    <Card className="h-100 lesson-plan-output-card">
       <Card.Header className="bg-success text-white d-flex justify-content-between align-items-center">
         <strong>Generated Lesson Plan</strong>
         <div>
@@ -478,7 +479,7 @@ function LessonPlanOutput({ onSaveLesson }) {
       </Card.Header>
       <Card.Body>
         {saved && (
-          <Alert variant="success" className="mb-3">
+          <Alert variant="success" className="mb-3" style={{ flexShrink: 0 }}>
             Lesson plan saved successfully!
           </Alert>
         )}
@@ -486,7 +487,7 @@ function LessonPlanOutput({ onSaveLesson }) {
         <Tabs
           activeKey={activeTab}
           onSelect={(k) => setActiveTab(k)}
-          className="mb-3"
+          className="lesson-plan-output-tabs"
         >
           <Tab eventKey="preview" title={
             <span>
@@ -494,7 +495,7 @@ function LessonPlanOutput({ onSaveLesson }) {
               Preview
             </span>
           }>
-            <div className="mt-3">
+            <div className="lesson-plan-preview-container">
               <StructuredLessonPlanDisplay lessonPlanText={editedContent || lessonPlan} />
             </div>
           </Tab>
@@ -505,17 +506,19 @@ function LessonPlanOutput({ onSaveLesson }) {
               Edit
             </span>
           }>
-            <Form className="mt-3">
-              <Form.Group>
-                <Form.Control
-                  as="textarea"
-                  rows={20}
-                  value={editedContent || lessonPlan || ''}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
-                />
-              </Form.Group>
-            </Form>
+            <div className="lesson-plan-edit-container">
+              <Form>
+                <Form.Group>
+                  <Form.Control
+                    as="textarea"
+                    rows={20}
+                    value={editedContent || lessonPlan || ''}
+                    onChange={(e) => setEditedContent(e.target.value)}
+                    style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
+                  />
+                </Form.Group>
+              </Form>
+            </div>
           </Tab>
 
           <Tab eventKey="metadata" title={
@@ -524,40 +527,42 @@ function LessonPlanOutput({ onSaveLesson }) {
               Details
             </span>
           }>
-            <Form className="mt-3">
-              <Form.Group className="mb-3">
-                <Form.Label>Lesson Title</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={metadata.title}
-                  onChange={(e) => setMetadata({ ...metadata, title: e.target.value })}
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Subject</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={metadata.subject}
-                  onChange={(e) => setMetadata({ ...metadata, subject: e.target.value })}
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Form</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={metadata.form}
-                  onChange={(e) => setMetadata({ ...metadata, form: e.target.value })}
-                />
-              </Form.Group>
-              <Form.Group className="mb-3">
-                <Form.Label>Topic</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={metadata.topic}
-                  onChange={(e) => setMetadata({ ...metadata, topic: e.target.value })}
-                />
-              </Form.Group>
-            </Form>
+            <div className="lesson-plan-metadata-container">
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>Lesson Title</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={metadata.title}
+                    onChange={(e) => setMetadata({ ...metadata, title: e.target.value })}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Subject</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={metadata.subject}
+                    onChange={(e) => setMetadata({ ...metadata, subject: e.target.value })}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Form</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={metadata.form}
+                    onChange={(e) => setMetadata({ ...metadata, form: e.target.value })}
+                  />
+                </Form.Group>
+                <Form.Group className="mb-3">
+                  <Form.Label>Topic</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={metadata.topic}
+                    onChange={(e) => setMetadata({ ...metadata, topic: e.target.value })}
+                  />
+                </Form.Group>
+              </Form>
+            </div>
           </Tab>
         </Tabs>
       </Card.Body>
