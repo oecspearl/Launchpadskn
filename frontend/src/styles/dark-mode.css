@@ -102,19 +102,33 @@
 
 /* Cards */
 [data-theme="dark"] .card {
-  background-color: var(--bg-secondary);
-  border-color: var(--border-primary);
-  color: var(--text-primary);
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .card-header {
-  background-color: var(--bg-tertiary);
-  border-bottom-color: var(--border-primary);
-  color: var(--text-primary);
+  background-color: var(--bg-tertiary) !important;
+  border-bottom-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .card-body {
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+/* Override Bootstrap bg-white class in dark mode */
+[data-theme="dark"] .bg-white,
+[data-theme="dark"] .card-header.bg-white {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Override Bootstrap bg-light class in dark mode */
+[data-theme="dark"] .bg-light {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
 }
 
 /* Forms */
@@ -663,5 +677,33 @@
   background-color: var(--bg-secondary, #2d3748) !important;
   border-color: var(--border-primary, #4a5568) !important;
   color: var(--text-primary, #f7fafc) !important;
+}
+
+/* Lesson Plan Components Dark Mode */
+[data-theme="dark"] .white-space-pre-wrap,
+[data-theme="dark"] .white-space-pre-wrap * {
+  color: var(--text-primary, #f7fafc) !important;
+}
+
+[data-theme="dark"] h6,
+[data-theme="dark"] .h6 {
+  color: var(--text-primary, #f7fafc) !important;
+}
+
+[data-theme="dark"] strong {
+  color: var(--text-primary, #f7fafc) !important;
+}
+
+/* Ensure all text in Card.Body is visible in dark mode */
+[data-theme="dark"] .card-body *:not(.btn):not(.badge):not(.alert) {
+  color: var(--text-primary, #f7fafc) !important;
+}
+
+[data-theme="dark"] .card-body .text-muted {
+  color: var(--text-tertiary, #cbd5e0) !important;
+}
+
+[data-theme="dark"] .card-body .text-primary {
+  color: var(--primary-color, #009639) !important;
 }
 

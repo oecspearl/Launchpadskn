@@ -8,6 +8,10 @@
   padding: 2rem 0;
 }
 
+[data-theme="dark"] .teacher-lesson-view {
+  background: var(--bg-primary, #1a202c);
+}
+
 /* Lesson Header */
 .lesson-view-header {
   background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
@@ -36,9 +40,17 @@
   overflow: hidden;
 }
 
+[data-theme="dark"] .lesson-plan-structured {
+  background: var(--bg-secondary, #2d3748);
+}
+
 .lesson-plan-section {
   padding: 1.5rem;
   border-bottom: 2px solid #f3f4f6;
+}
+
+[data-theme="dark"] .lesson-plan-section {
+  border-bottom-color: var(--border-primary, #4a5568);
 }
 
 .lesson-plan-section:last-child {
@@ -97,10 +109,18 @@
   margin: 0;
 }
 
+[data-theme="dark"] .lesson-plan-section-title {
+  color: var(--text-primary, #f7fafc);
+}
+
 .lesson-plan-content {
   color: #374151;
   line-height: 1.7;
   font-size: 0.9375rem;
+}
+
+[data-theme="dark"] .lesson-plan-content {
+  color: var(--text-primary, #f7fafc);
 }
 
 /* Formatted Lists */
@@ -115,6 +135,11 @@
   padding-left: 2rem;
   position: relative;
   border-bottom: 1px solid #f3f4f6;
+}
+
+[data-theme="dark"] .lesson-plan-list li {
+  border-bottom-color: var(--border-primary, #4a5568);
+  color: var(--text-primary, #f7fafc);
 }
 
 .lesson-plan-list li:last-child {
@@ -152,6 +177,11 @@
   position: relative;
   border-bottom: 1px solid #f3f4f6;
   counter-increment: lesson-counter;
+}
+
+[data-theme="dark"] .lesson-plan-numbered li {
+  border-bottom-color: var(--border-primary, #4a5568);
+  color: var(--text-primary, #f7fafc);
 }
 
 .lesson-plan-numbered li:last-child {
@@ -227,16 +257,29 @@
   border-left: 3px solid #2563eb;
 }
 
+[data-theme="dark"] .lesson-timeline-content {
+  background: var(--bg-tertiary, #4a5568);
+  border-left-color: #2563eb;
+}
+
 .lesson-timeline-title {
   font-weight: 700;
   color: #1f2937;
   margin-bottom: 0.5rem;
 }
 
+[data-theme="dark"] .lesson-timeline-title {
+  color: var(--text-primary, #f7fafc);
+}
+
 .lesson-timeline-description {
   color: #6b7280;
   font-size: 0.875rem;
   margin: 0;
+}
+
+[data-theme="dark"] .lesson-timeline-description {
+  color: var(--text-secondary, #e2e8f0);
 }
 
 /* Info Cards */
@@ -267,10 +310,18 @@
   gap: 0.5rem;
 }
 
+[data-theme="dark"] .lesson-info-card h6 {
+  color: var(--text-primary, #f7fafc);
+}
+
 .lesson-info-card p {
   color: #374151;
   margin: 0;
   line-height: 1.6;
+}
+
+[data-theme="dark"] .lesson-info-card p {
+  color: var(--text-primary, #f7fafc);
 }
 
 /* Homework Card */
@@ -298,6 +349,10 @@
   line-height: 1.6;
 }
 
+[data-theme="dark"] .homework-card p {
+  color: var(--text-primary, #f7fafc);
+}
+
 .homework-due {
   background: white;
   padding: 0.5rem 1rem;
@@ -306,6 +361,11 @@
   font-size: 0.875rem;
   font-weight: 600;
   color: #d97706;
+}
+
+[data-theme="dark"] .homework-due {
+  background: var(--bg-tertiary, #4a5568);
+  color: #f59e0b;
 }
 
 /* Details Grid */
@@ -324,6 +384,11 @@
   background: #f9fafb;
   border-radius: 8px;
   border: 1px solid #e5e7eb;
+}
+
+[data-theme="dark"] .lesson-detail-item {
+  background: var(--bg-tertiary, #4a5568);
+  border-color: var(--border-primary, #4a5568);
 }
 
 .lesson-detail-icon {
@@ -350,6 +415,14 @@
 .lesson-detail-content span {
   font-weight: 600;
   color: #1f2937;
+}
+
+[data-theme="dark"] .lesson-detail-content span {
+  color: var(--text-primary, #f7fafc);
+}
+
+[data-theme="dark"] .lesson-detail-content strong {
+  color: var(--text-secondary, #e2e8f0);
 }
 
 /* Status Badge */
