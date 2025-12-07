@@ -23,7 +23,7 @@ import FlashcardCreator from './FlashcardCreator';
 import FlashcardViewer from '../Student/FlashcardViewer';
 import InteractiveVideoCreator from './InteractiveVideoCreator';
 import InteractiveBookCreator from './InteractiveBookCreator';
-import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent } from '../../services/aiLessonService';
+import { generateAssignmentRubric, generateCompleteLessonContent, generateStudentFacingContent, generateQuiz } from '../../services/aiLessonService';
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
@@ -95,6 +95,15 @@ function LessonContentManager() {
   const [showWizard, setShowWizard] = useState(false);
   const [showStudentView, setShowStudentView] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
+  
+  // Quiz Generation state
+  const [showQuizGenerator, setShowQuizGenerator] = useState(false);
+  const [isGeneratingQuiz, setIsGeneratingQuiz] = useState(false);
+  const [generatedQuiz, setGeneratedQuiz] = useState(null);
+  const [quizParams, setQuizParams] = useState({
+    numQuestions: 5,
+    bloomLevel: 'mixed'
+  });
 
   useEffect(() => {
     if (lessonId) {
@@ -418,6 +427,171 @@ function LessonContentManager() {
   };
 
   // AI Content Generation Functions
+  // Handle Quiz Generation
+  const handleGenerateQuiz = async () => {
+    if (!lessonData) {
+      setError('Lesson data not loaded. Please wait...');
+      return;
+    }
+
+    const subjectName = lessonData.class_subject?.subject_offering?.subject?.subject_name || 'General';
+    const formName = lessonData.class_subject?.class?.form?.form_name || '';
+    const topic = lessonData.topic || lessonData.lesson_title || '';
+    const lessonTitle = lessonData.lesson_title || 'Untitled Lesson';
+    const learningObjectives = lessonData.learning_objectives || '';
+    const lessonPlan = lessonData.lesson_plan || '';
+
+    if (!topic || !subjectName || !formName) {
+      setError('Missing lesson information. Please ensure the lesson has a topic, subject, and form assigned.');
+      return;
+    }
+
+    setIsGeneratingQuiz(true);
+    setError(null);
+
+    try {
+      const quiz = await generateQuiz({
+        topic,
+        subject: subjectName,
+        form: formName,
+        lessonTitle,
+        learningObjectives,
+        numQuestions: quizParams.numQuestions,
+        bloomLevel: quizParams.bloomLevel,
+        lessonPlan
+      });
+
+      setGeneratedQuiz(quiz);
+    } catch (err) {
+      console.error('Error generating quiz:', err);
+      setError(err.message || 'Failed to generate quiz. Please check your API key and try again.');
+    } finally {
+      setIsGeneratingQuiz(false);
+    }
+  };
+
+  const handleSaveGeneratedQuiz = async () => {
+    if (!generatedQuiz || !generatedQuiz.quiz_questions || generatedQuiz.quiz_questions.length === 0) {
+      setError('No quiz to save');
+      return;
+    }
+
+    setUploading(true);
+    setError(null);
+
+    try {
+      // Get current max sequence order
+      const maxSequence = content.length > 0
+        ? Math.max(...content.map(c => c.sequence_order || 0))
+        : 0;
+
+      // Create quiz content item
+      const contentData = {
+        lesson_id: parseInt(lessonId),
+        content_type: 'QUIZ',
+        title: generatedQuiz.quiz_title || `Quiz: ${lessonData.topic || 'Lesson Quiz'}`,
+        description: generatedQuiz.quiz_description || '',
+        content_section: 'Assessment',
+        sequence_order: maxSequence + 1,
+        is_required: true,
+        estimated_minutes: quizParams.numQuestions * 2, // Estimate 2 minutes per question
+        is_published: true,
+        uploaded_by: user.user_id || user.userId
+      };
+
+      const { data: contentItem, error: contentError } = await supabase
+        .from('lesson_content')
+        .insert([contentData])
+        .select()
+        .single();
+
+      if (contentError) throw contentError;
+
+      // Create quiz
+      const quizData = {
+        content_id: contentItem.content_id,
+        title: generatedQuiz.quiz_title || `Quiz: ${lessonData.topic || 'Lesson Quiz'}`,
+        description: generatedQuiz.quiz_description || '',
+        instructions: 'Complete all questions. Read each question carefully before answering.',
+        time_limit_minutes: null,
+        passing_score: 70,
+        allow_multiple_attempts: false,
+        max_attempts: 1,
+        show_results_immediately: true,
+        show_correct_answers: true,
+        randomize_questions: false,
+        randomize_answers: false,
+        is_published: true,
+        created_by: user.user_id || user.userId
+      };
+
+      const { data: quiz, error: quizError } = await supabase
+        .from('quizzes')
+        .insert([quizData])
+        .select()
+        .single();
+
+      if (quizError) throw quizError;
+
+      // Create questions
+      for (let qIdx = 0; qIdx < generatedQuiz.quiz_questions.length; qIdx++) {
+        const q = generatedQuiz.quiz_questions[qIdx];
+
+        const questionData = {
+          quiz_id: quiz.quiz_id,
+          question_type: q.question_type || 'MULTIPLE_CHOICE',
+          question_text: q.question_text.trim(),
+          question_order: qIdx + 1,
+          points: q.points || 1,
+          explanation: q.explanation || null,
+          is_required: true
+        };
+
+        const { data: question, error: questionError } = await supabase
+          .from('quiz_questions')
+          .insert([questionData])
+          .select()
+          .single();
+
+        if (questionError) throw questionError;
+
+        // Create options for multiple choice/true-false
+        if (q.options && Array.isArray(q.options) && q.options.length > 0) {
+          const optionsData = q.options.map((opt, optIdx) => ({
+            question_id: question.question_id,
+            option_text: opt.text || String(opt),
+            is_correct: opt.is_correct === true || opt.is_correct === 'true',
+            option_order: optIdx + 1
+          }));
+
+          const { error: optionsError } = await supabase
+            .from('quiz_options')
+            .insert(optionsData);
+
+          if (optionsError) throw optionsError;
+        } else if (q.correct_answer) {
+          // For SHORT_ANSWER or FILL_BLANK, store correct answer
+          const { error: answerError } = await supabase
+            .from('quiz_questions')
+            .update({ correct_answer: q.correct_answer })
+            .eq('question_id', question.question_id);
+
+          if (answerError) throw answerError;
+        }
+      }
+
+      setSuccess(`Quiz "${generatedQuiz.quiz_title}" created successfully with ${generatedQuiz.quiz_questions.length} questions!`);
+      setShowQuizGenerator(false);
+      setGeneratedQuiz(null);
+      fetchContent(); // Refresh content list
+    } catch (err) {
+      console.error('Error saving quiz:', err);
+      setError(err.message || 'Failed to save quiz');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleGenerateAIContent = async (mode = 'complete') => {
     if (!lessonData) {
       setError('Lesson data not loaded. Please wait...');
@@ -1952,6 +2126,23 @@ function LessonContentManager() {
               >
                 <FaMagic className="me-2" />
                 Wizard
+              </Button>
+              <Button
+                variant="outline-success"
+                onClick={() => setShowQuizGenerator(true)}
+                disabled={isGeneratingQuiz || !lessonData}
+              >
+                {isGeneratingQuiz ? (
+                  <>
+                    <Spinner as="span" animation="border" size="sm" className="me-2" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <FaMagic className="me-2" />
+                    AI Generate Quiz
+                  </>
+                )}
               </Button>
               <Button
                 variant="success"
@@ -4621,6 +4812,230 @@ function LessonContentManager() {
           </Modal.Body>
         </Modal>
       )}
+
+      {/* AI Quiz Generator Modal */}
+      <Modal
+        show={showQuizGenerator}
+        onHide={() => {
+          setShowQuizGenerator(false);
+          setGeneratedQuiz(null);
+          setQuizParams({ numQuestions: 5, bloomLevel: 'mixed' });
+        }}
+        size="xl"
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaMagic className="me-2" />
+            AI Quiz Generator
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+          {!generatedQuiz ? (
+            <>
+              <Alert variant="info" className="mb-4">
+                <strong>Generate a high-quality quiz</strong> that aligns with your lesson objectives, uses grade-appropriate language, includes meaningful distractors, and incorporates Bloom's Taxonomy levels.
+              </Alert>
+
+              <Form>
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    <strong>Number of Questions</strong>
+                  </Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={quizParams.numQuestions}
+                    onChange={(e) => setQuizParams({
+                      ...quizParams,
+                      numQuestions: parseInt(e.target.value) || 5
+                    })}
+                  />
+                  <Form.Text className="text-muted">
+                    Choose between 1 and 20 questions (recommended: 5-10)
+                  </Form.Text>
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                  <Form.Label>
+                    <strong>Bloom's Taxonomy Level</strong>
+                  </Form.Label>
+                  <Form.Select
+                    value={quizParams.bloomLevel}
+                    onChange={(e) => setQuizParams({
+                      ...quizParams,
+                      bloomLevel: e.target.value
+                    })}
+                  >
+                    <option value="mixed">Mixed (Recommended - Questions across all levels)</option>
+                    <option value="remember">Remember (Recall facts and basic concepts)</option>
+                    <option value="understand">Understand (Explain ideas or concepts)</option>
+                    <option value="apply">Apply (Use information in new situations)</option>
+                    <option value="analyze">Analyze (Draw connections among ideas)</option>
+                    <option value="evaluate">Evaluate (Justify a stand or decision)</option>
+                    <option value="create">Create (Produce new or original work)</option>
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    Select the cognitive level(s) for your quiz questions
+                  </Form.Text>
+                </Form.Group>
+
+                {lessonData && (
+                  <Alert variant="light" className="mb-3">
+                    <strong>Lesson Context:</strong>
+                    <div className="mt-2">
+                      <div><strong>Subject:</strong> {lessonData.class_subject?.subject_offering?.subject?.subject_name || 'N/A'}</div>
+                      <div><strong>Form:</strong> {lessonData.class_subject?.class?.form?.form_name || 'N/A'}</div>
+                      <div><strong>Topic:</strong> {lessonData.topic || lessonData.lesson_title || 'N/A'}</div>
+                      {lessonData.learning_objectives && (
+                        <div className="mt-2">
+                          <strong>Learning Objectives:</strong>
+                          <ul className="mb-0 mt-1">
+                            {lessonData.learning_objectives.split(/[,\n]/).map((obj, idx) => (
+                              obj.trim() && <li key={idx}>{obj.trim()}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </Alert>
+                )}
+              </Form>
+            </>
+          ) : (
+            <>
+              <Alert variant="success" className="mb-3">
+                <strong>Quiz Generated Successfully!</strong>
+                <p className="mb-0 mt-2">
+                  Review the {generatedQuiz.quiz_questions.length} questions below. Each question:
+                </p>
+                <ul className="mb-0 mt-2">
+                  <li>Aligns with your learning objectives</li>
+                  <li>Uses grade-appropriate language</li>
+                  <li>Includes meaningful distractors</li>
+                  <li>Incorporates Bloom's Taxonomy levels</li>
+                </ul>
+              </Alert>
+
+              <div className="mb-3">
+                <h5>{generatedQuiz.quiz_title}</h5>
+                <p className="text-muted">{generatedQuiz.quiz_description}</p>
+              </div>
+
+              <ListGroup variant="flush" className="mb-3">
+                {generatedQuiz.quiz_questions.map((q, idx) => (
+                  <ListGroup.Item key={idx} className="mb-3 border rounded p-3">
+                    <div className="d-flex justify-content-between align-items-start mb-2">
+                      <div className="flex-grow-1">
+                        <h6 className="mb-1">
+                          Question {idx + 1} ({q.question_type.replace('_', ' ')})
+                          <Badge bg="info" className="ms-2">{q.points} pts</Badge>
+                          {q.bloom_level && (
+                            <Badge bg="secondary" className="ms-2">
+                              {q.bloom_level.charAt(0).toUpperCase() + q.bloom_level.slice(1)}
+                            </Badge>
+                          )}
+                        </h6>
+                        <p className="mb-2">{q.question_text}</p>
+                        {q.aligned_objective && (
+                          <small className="text-muted d-block mb-2">
+                            <strong>Aligned with:</strong> {q.aligned_objective}
+                          </small>
+                        )}
+                        {q.options && q.options.length > 0 && (
+                          <div className="ms-3">
+                            {q.options.map((opt, optIdx) => (
+                              <div
+                                key={optIdx}
+                                className={`p-2 mb-1 rounded ${opt.is_correct ? 'bg-success bg-opacity-10 border border-success' : 'bg-light'}`}
+                              >
+                                {opt.is_correct && <FaCheckCircle className="text-success me-2" />}
+                                {opt.text}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {q.correct_answer && (
+                          <div className="ms-3 p-2 bg-success bg-opacity-10 border border-success rounded">
+                            <strong>Correct Answer:</strong> {q.correct_answer}
+                          </div>
+                        )}
+                        {q.explanation && (
+                          <div className="mt-2 p-2 bg-info bg-opacity-10 rounded">
+                            <small><strong>Explanation:</strong> {q.explanation}</small>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          {!generatedQuiz ? (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setShowQuizGenerator(false);
+                  setQuizParams({ numQuestions: 5, bloomLevel: 'mixed' });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleGenerateQuiz}
+                disabled={isGeneratingQuiz || !lessonData}
+              >
+                {isGeneratingQuiz ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Generating Quiz...
+                  </>
+                ) : (
+                  <>
+                    <FaMagic className="me-2" />
+                    Generate Quiz
+                  </>
+                )}
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setGeneratedQuiz(null);
+                  setQuizParams({ numQuestions: 5, bloomLevel: 'mixed' });
+                }}
+              >
+                Generate New Quiz
+              </Button>
+              <Button
+                variant="success"
+                onClick={handleSaveGeneratedQuiz}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <>
+                    <Spinner animation="border" size="sm" className="me-2" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <FaSave className="me-2" />
+                    Save Quiz to Lesson
+                  </>
+                )}
+              </Button>
+            </>
+          )}
+        </Modal.Footer>
+      </Modal>
 
     </Container>
   );

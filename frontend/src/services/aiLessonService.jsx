@@ -1186,7 +1186,13 @@ STRUCTURE REQUIREMENTS:
 
 TECHNICAL REQUIREMENTS:
 - For VIDEO: Use the actual YouTube URL provided below (not a placeholder)
-- For QUIZ: Create questions appropriate for ${form} level with clear correct answers (questions should use simple language). You MUST include the quiz_questions array with at least 3-5 questions, each with question_text, question_type, points, and either options (for MULTIPLE_CHOICE/TRUE_FALSE) or correct_answer (for SHORT_ANSWER/FILL_BLANK)
+- For QUIZ: Create high-quality quiz questions that:
+  * Directly align with the learning objectives listed above
+  * Use vocabulary and language appropriate for ${form} students (avoid jargon, use clear simple language)
+  * Include meaningful distractors (incorrect options) that represent common misconceptions, not obviously wrong answers
+  * Distribute questions across Bloom's Taxonomy levels (Remember, Understand, Apply, Analyze, Evaluate) to assess different cognitive skills
+  * Each question should include: question_text (clear and grade-appropriate), question_type, points (1-5 based on complexity), options (for MULTIPLE_CHOICE/TRUE_FALSE) or correct_answer (for SHORT_ANSWER/FILL_BLANK), and explanation (brief explanation at ${form} level)
+  * You MUST include the quiz_questions array with 3-5 questions
 - For ASSIGNMENT: Create meaningful assignments with DETAILED instructions written for ${form} students. The assignment_description field MUST contain comprehensive, step-by-step instructions (at least 200 characters). Do NOT use generic text like "Complete this assignment to demonstrate your understanding" - provide actual detailed instructions including: what students need to do, how to do it, what to submit, and any specific requirements. Also include rubric criteria (4-5 criteria, totaling 100 points)
 
 Remember: Respond with ONLY the JSON array, nothing else.`;
@@ -2517,6 +2523,270 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
   }
 };
 
+/**
+ * Generate a quiz with improved AI prompt
+ * @param {Object} params - Quiz generation parameters
+ * @param {string} params.topic - Lesson topic
+ * @param {string} params.subject - Subject name
+ * @param {string} params.form - Form/grade level
+ * @param {string} params.lessonTitle - Lesson title
+ * @param {string} params.learningObjectives - Learning objectives (comma-separated or newline-separated)
+ * @param {number} params.numQuestions - Number of questions to generate (default: 5)
+ * @param {string} params.bloomLevel - Bloom's Taxonomy level: 'remember', 'understand', 'apply', 'analyze', 'evaluate', 'create', or 'mixed' (default: 'mixed')
+ * @param {string} params.lessonPlan - Lesson plan content for context (optional)
+ * @returns {Promise<Object>} Generated quiz with questions array
+ */
+export const generateQuiz = async ({
+  topic,
+  subject,
+  form,
+  lessonTitle,
+  learningObjectives = '',
+  numQuestions = 5,
+  bloomLevel = 'mixed',
+  lessonPlan = ''
+}) => {
+  if (!API_KEY) {
+    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
+  }
+
+  if (!topic || !subject || !form) {
+    throw new Error('Missing required parameters: topic, subject, and form are required.');
+  }
+
+  if (numQuestions < 1 || numQuestions > 20) {
+    throw new Error('Number of questions must be between 1 and 20.');
+  }
+
+  // Map Bloom's Taxonomy levels to descriptions
+  const bloomLevels = {
+    remember: 'Remember (Recall facts and basic concepts)',
+    understand: 'Understand (Explain ideas or concepts)',
+    apply: 'Apply (Use information in new situations)',
+    analyze: 'Analyze (Draw connections among ideas)',
+    evaluate: 'Evaluate (Justify a stand or decision)',
+    create: 'Create (Produce new or original work)',
+    mixed: 'Mixed (Include questions across multiple Bloom\'s Taxonomy levels)'
+  };
+
+  const bloomDescription = bloomLevels[bloomLevel] || bloomLevels.mixed;
+  const bloomInstruction = bloomLevel === 'mixed' 
+    ? 'Distribute questions across multiple Bloom\'s Taxonomy levels (Remember, Understand, Apply, Analyze, Evaluate, Create) to assess different cognitive skills.'
+    : `Focus on ${bloomDescription} level questions.`;
+
+  // Parse learning objectives
+  const objectivesList = learningObjectives
+    ? learningObjectives.split(/[,\n]/).map(obj => obj.trim()).filter(obj => obj.length > 0)
+    : [];
+
+  let prompt = `You are an expert educational assessment creator specializing in creating high-quality quiz questions that align with learning objectives and assess student understanding effectively.
+
+CONTEXT:
+Subject: ${subject}
+Form/Grade Level: ${form}
+Topic: ${topic}
+Lesson Title: ${lessonTitle || topic}
+${objectivesList.length > 0 ? `Learning Objectives:\n${objectivesList.map((obj, idx) => `${idx + 1}. ${obj}`).join('\n')}\n` : ''}
+${lessonPlan ? `Lesson Plan Context:\n${lessonPlan.substring(0, 1500)}\n` : ''}
+
+QUIZ GENERATION REQUIREMENTS:
+
+1. QUESTION ALIGNMENT:
+   - Each question MUST directly assess one or more of the learning objectives listed above
+   - Questions should cover different aspects of the objectives to ensure comprehensive assessment
+   - If no objectives are provided, create questions that assess understanding of the topic "${topic}"
+
+2. GRADE-LEVEL APPROPRIATE LANGUAGE:
+   - Use vocabulary and sentence structure appropriate for ${form} students
+   - Avoid jargon, technical terms, or complex language unless they are part of the curriculum
+   - Write questions in clear, simple language that ${form} students can understand
+   - For younger forms (Form 1-2): Use shorter sentences, simpler words, and concrete examples
+   - For older forms (Form 3+): Can use more sophisticated language but still keep it accessible
+
+3. MEANINGFUL DISTRACTORS:
+   - For multiple choice questions, create 3-4 plausible distractors (incorrect options)
+   - Distractors should:
+     * Represent common misconceptions or mistakes students might make
+     * Be related to the topic but clearly incorrect
+     * Not be obviously wrong (avoid "none of the above" or obviously silly options)
+     * Test whether students truly understand the concept or just memorized facts
+   - Each distractor should be carefully crafted to reveal specific misunderstandings if selected
+
+4. BLOOM'S TAXONOMY LEVELS:
+   ${bloomInstruction}
+   - Remember: Questions that test recall of facts, definitions, or basic concepts
+   - Understand: Questions that test comprehension, explanation, or interpretation
+   - Apply: Questions that test application of knowledge to new situations
+   - Analyze: Questions that test breaking down information into parts and understanding relationships
+   - Evaluate: Questions that test making judgments or critiquing information
+   - Create: Questions that test producing new or original work (use sparingly in quizzes)
+
+5. QUESTION VARIETY:
+   - Mix question types: MULTIPLE_CHOICE (60-70%), TRUE_FALSE (10-20%), SHORT_ANSWER (10-20%), FILL_BLANK (5-10%)
+   - Vary point values based on question complexity (1-5 points)
+   - Include explanations for each question that help students understand why the correct answer is correct
+
+6. CONTENT QUALITY:
+   - Questions should be specific to "${topic}" in ${subject}
+   - Avoid generic or vague questions
+   - Ensure questions are answerable based on the learning objectives and lesson content
+   - Each question should have one clearly correct answer
+
+TECHNICAL REQUIREMENTS:
+- Generate exactly ${numQuestions} questions
+- Each question must include:
+  * question_text: Clear, grade-appropriate question
+  * question_type: One of MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER, FILL_BLANK
+  * points: Point value (1-5 based on complexity)
+  * For MULTIPLE_CHOICE/TRUE_FALSE: options array with text and is_correct boolean
+  * For SHORT_ANSWER/FILL_BLANK: correct_answer string
+  * explanation: Brief explanation (1-2 sentences) written at ${form} level explaining why the correct answer is correct
+
+IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks. The response must be a single JSON object that can be parsed directly.
+
+Respond with this exact JSON structure:
+{
+  "quiz_title": "Quiz: ${topic}",
+  "quiz_description": "Assessment quiz for ${form} students on ${topic}",
+  "quiz_questions": [
+    {
+      "question_text": "Question aligned with learning objectives, written in ${form}-appropriate language",
+      "question_type": "MULTIPLE_CHOICE",
+      "points": 2,
+      "bloom_level": "understand",
+      "aligned_objective": "Which learning objective this question assesses",
+      "options": [
+        {"text": "Correct answer - clearly right", "is_correct": true},
+        {"text": "Meaningful distractor 1 - common misconception", "is_correct": false},
+        {"text": "Meaningful distractor 2 - related but incorrect", "is_correct": false},
+        {"text": "Meaningful distractor 3 - plausible but wrong", "is_correct": false}
+      ],
+      "explanation": "Clear explanation at ${form} level why the correct answer is correct"
+    }
+  ]
+}
+
+Remember: 
+- All questions must align with the learning objectives
+- Language must be appropriate for ${form} students
+- Distractors must be meaningful and test understanding
+- Include Bloom's Taxonomy level for each question
+- Respond with ONLY the JSON object, nothing else.`;
+
+  try {
+    console.log('[AI Service] Generating quiz with improved prompt...', {
+      topic,
+      subject,
+      form,
+      numQuestions,
+      bloomLevel,
+      hasObjectives: objectivesList.length > 0
+    });
+
+    const requestBody = {
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert educational assessment creator. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.7,
+      max_tokens: 4000
+    };
+
+    const response = await fetch(OPENAI_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.choices[0]?.message?.content?.trim();
+
+    if (!content) {
+      throw new Error('No content received from API');
+    }
+
+    // Parse JSON response
+    let quizData;
+    try {
+      // Remove markdown code blocks if present
+      const cleanedContent = content.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      quizData = JSON.parse(cleanedContent);
+    } catch (parseError) {
+      console.error('[AI Service] JSON parse error:', parseError);
+      console.error('[AI Service] Raw content:', content.substring(0, 500));
+      throw new Error('Failed to parse quiz response. Please try again.');
+    }
+
+    // Validate and format quiz data
+    if (!quizData.quiz_questions || !Array.isArray(quizData.quiz_questions)) {
+      throw new Error('Invalid quiz format: missing quiz_questions array');
+    }
+
+    // Ensure all questions have required fields
+    const validatedQuestions = quizData.quiz_questions.map((q, idx) => {
+      if (!q.question_text) {
+        throw new Error(`Question ${idx + 1} is missing question_text`);
+      }
+
+      const validatedQ = {
+        question_text: q.question_text.trim(),
+        question_type: q.question_type || 'MULTIPLE_CHOICE',
+        points: q.points || 1,
+        explanation: q.explanation || '',
+        bloom_level: q.bloom_level || 'understand',
+        aligned_objective: q.aligned_objective || ''
+      };
+
+      // Validate options for multiple choice/true-false
+      if (['MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(validatedQ.question_type)) {
+        if (!q.options || !Array.isArray(q.options) || q.options.length < 2) {
+          throw new Error(`Question ${idx + 1} (${validatedQ.question_type}) is missing valid options array`);
+        }
+        validatedQ.options = q.options.map(opt => ({
+          text: opt.text || String(opt),
+          is_correct: opt.is_correct === true || opt.is_correct === 'true'
+        }));
+
+        // Ensure at least one correct answer
+        if (!validatedQ.options.some(opt => opt.is_correct)) {
+          throw new Error(`Question ${idx + 1} has no correct answer`);
+        }
+      } else if (['SHORT_ANSWER', 'FILL_BLANK'].includes(validatedQ.question_type)) {
+        if (!q.correct_answer) {
+          throw new Error(`Question ${idx + 1} (${validatedQ.question_type}) is missing correct_answer`);
+        }
+        validatedQ.correct_answer = q.correct_answer.trim();
+      }
+
+      return validatedQ;
+    });
+
+    return {
+      quiz_title: quizData.quiz_title || `Quiz: ${topic}`,
+      quiz_description: quizData.quiz_description || `Assessment quiz for ${form} students on ${topic}`,
+      quiz_questions: validatedQuestions
+    };
+  } catch (error) {
+    console.error('[AI Service] Error generating quiz:', error);
+    throw error;
+  }
+};
+
 export default {
   generateLessonPlan,
   generateEnhancedLessonPlan,
@@ -2525,6 +2795,7 @@ export default {
   generateStudentFacingContent,
   generateFlashcards,
   generateInteractiveVideo,
-  generateInteractiveBook
+  generateInteractiveBook,
+  generateQuiz
 };
 
