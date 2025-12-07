@@ -109,7 +109,171 @@
     line-height: 1.6;
 }
 
-/* Laptop Container */
+/* Hero Image Container with SKN Theme */
+.hero-image-container {
+    position: relative;
+    width: 100%;
+    max-width: 600px;
+    margin: 0 auto;
+    perspective: 1200px;
+    padding: 2rem;
+}
+
+/* SKN Flag Background - Decorative stripes */
+.skn-flag-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    overflow: hidden;
+    opacity: 0.15;
+    z-index: 0;
+}
+
+.flag-stripe {
+    flex: 1;
+    width: 100%;
+}
+
+.flag-green {
+    background: linear-gradient(135deg, var(--hp-primary) 0%, #007a2e 100%);
+}
+
+.flag-yellow {
+    background: linear-gradient(135deg, var(--hp-secondary) 0%, #f0c000 100%);
+}
+
+.flag-black {
+    background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+}
+
+/* SKN Image Frame */
+.skn-image-frame {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    z-index: 2;
+    transform: perspective(1200px) rotateY(-8deg) rotateX(3deg);
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hero-image-container:hover .skn-image-frame {
+    transform: perspective(1200px) rotateY(0deg) rotateX(0deg);
+}
+
+.skn-hero-image {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+    box-shadow: 
+        0 20px 60px rgba(0, 150, 57, 0.2),
+        0 10px 30px rgba(252, 209, 22, 0.15),
+        0 0 0 4px rgba(255, 255, 255, 0.8),
+        0 0 0 8px rgba(0, 150, 57, 0.1);
+    border: 3px solid var(--hp-white);
+    background: var(--hp-white);
+    padding: 0.5rem;
+    transition: all 0.4s ease;
+    object-fit: contain;
+}
+
+.hero-image-container:hover .skn-hero-image {
+    box-shadow: 
+        0 30px 80px rgba(0, 150, 57, 0.3),
+        0 15px 40px rgba(252, 209, 22, 0.2),
+        0 0 0 4px rgba(255, 255, 255, 0.9),
+        0 0 0 8px rgba(0, 150, 57, 0.2);
+    transform: scale(1.02);
+}
+
+/* SKN Image Overlay Badge */
+.skn-image-overlay {
+    position: absolute;
+    bottom: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--hp-primary) 0%, #007a2e 100%);
+    padding: 0.75rem 1.5rem;
+    border-radius: 50px;
+    box-shadow: 
+        0 10px 30px rgba(0, 150, 57, 0.3),
+        0 0 0 3px var(--hp-white),
+        0 0 0 6px rgba(252, 209, 22, 0.3);
+    z-index: 3;
+    white-space: nowrap;
+}
+
+.skn-badge-text {
+    color: var(--hp-white);
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    line-height: 1.3;
+}
+
+/* Decorative Circles */
+.hero-decorative-elements {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.decorative-circle {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.1;
+    animation: float 6s ease-in-out infinite;
+}
+
+.circle-1 {
+    width: 120px;
+    height: 120px;
+    background: var(--hp-primary);
+    top: 10%;
+    right: 10%;
+    animation-delay: 0s;
+}
+
+.circle-2 {
+    width: 80px;
+    height: 80px;
+    background: var(--hp-secondary);
+    bottom: 20%;
+    left: 5%;
+    animation-delay: 2s;
+}
+
+.circle-3 {
+    width: 60px;
+    height: 60px;
+    background: var(--hp-accent);
+    top: 50%;
+    right: 5%;
+    animation-delay: 4s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+    }
+    50% {
+        transform: translateY(-20px) scale(1.1);
+    }
+}
+
+/* Laptop Container (Legacy - keeping for compatibility) */
 .laptop-container {
     position: relative;
     width: 100%;
@@ -316,8 +480,26 @@
         font-size: 2.5rem;
     }
 
-    .laptop-container {
+    .laptop-container,
+    .hero-image-container {
         margin-top: 2rem;
+    }
+
+    .skn-image-frame {
+        transform: perspective(1200px) rotateY(0deg) rotateX(0deg);
+    }
+
+    .skn-image-overlay {
+        bottom: -10px;
+        padding: 0.5rem 1rem;
+    }
+
+    .skn-badge-text {
+        font-size: 0.75rem;
+    }
+
+    .decorative-circle {
+        display: none;
     }
 
     .floating-menu {

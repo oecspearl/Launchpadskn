@@ -758,7 +758,7 @@ export default function SKNCurriculum() {
             <FileText size={14} />
             {curriculumData.title}
           </span>
-          <span className="skn-badge">
+          <span className="skn-badge skn-badge-highlight">
             <BookOpen size={14} />
             {curriculumData.grade}
           </span>

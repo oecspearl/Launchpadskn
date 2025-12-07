@@ -52,13 +52,40 @@ const Homepage = () => {
                                 </div>
                             </div>
                             <div className="col-lg-6">
-                                <div className="laptop-container">
-                                    {/* Placeholder for Laptop Image - Clean, professional placeholder */}
-                                    <img
-                                        src="https://placehold.co/800x500/f1f5f9/1e293b?text=Launchpad+SKN+Platform+Preview"
-                                        alt="Launchpad SKN Platform Interface"
-                                        className="laptop-image"
-                                    />
+                                <div className="hero-image-container">
+                                    {/* SKN Flag Colors Decorative Background */}
+                                    <div className="skn-flag-background">
+                                        <div className="flag-stripe flag-green"></div>
+                                        <div className="flag-stripe flag-yellow"></div>
+                                        <div className="flag-stripe flag-black"></div>
+                                    </div>
+                                    
+                                    {/* SKN Image with Frame */}
+                                    <div className="skn-image-frame">
+                                        <img
+                                            src="/skn.png"
+                                            alt="St. Kitts and Nevis - Federation of the Caribbean"
+                                            className="skn-hero-image"
+                                            onError={(e) => {
+                                                // Fallback if skn.png doesn't exist, try snk.png
+                                                if (e.target.src !== '/snk.png') {
+                                                    e.target.src = '/snk.png';
+                                                }
+                                            }}
+                                        />
+                                        <div className="skn-image-overlay">
+                                            <div className="skn-badge-text">
+                                                Federation of<br />St. Kitts & Nevis
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Decorative Elements */}
+                                    <div className="hero-decorative-elements">
+                                        <div className="decorative-circle circle-1"></div>
+                                        <div className="decorative-circle circle-2"></div>
+                                        <div className="decorative-circle circle-3"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>

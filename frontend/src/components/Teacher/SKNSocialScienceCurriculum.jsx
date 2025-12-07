@@ -801,7 +801,7 @@ export default function SKNSocialScienceCurriculum() {
             <FileText size={14} />
             {curriculumData.title}
           </span>
-          <span className="skn-ss-badge">
+          <span className="skn-ss-badge skn-ss-badge-highlight">
             <GraduationCap size={14} />
             {curriculumData.grade}
           </span>
