@@ -1559,7 +1559,10 @@ export const generateStudentFacingContent = async ({
   subject,
   form,
   lessonPlan,
-  learningObjectives
+  learningObjectives,
+  contentType = null,
+  quantity = 1,
+  additionalPrompt = ''
 }) => {
   if (!API_KEY) {
     throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
@@ -1569,6 +1572,154 @@ export const generateStudentFacingContent = async ({
     throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
   }
 
+  // Map content types to their descriptions
+  const contentTypeMap = {
+    'LEARNING_OUTCOMES': {
+      name: 'Learning Outcomes',
+      description: `By the end of this lesson, ${form} students will be able to:`,
+      instruction: `Generate ${quantity} learning outcome${quantity > 1 ? 's' : ''} (${quantity} total). Each outcome should be clear, measurable, and written at ${form} level. Use simple language and make them specific to "${topic}" in ${subject}.`
+    },
+    'KEY_CONCEPTS': {
+      name: 'Key Concepts',
+      description: 'Main concepts explained in simple, clear language',
+      instruction: `Generate ${quantity} key concept${quantity > 1 ? 's' : ''} (${quantity} total). Each concept should be explained clearly at ${form} level. Use simple language and examples students can relate to.`
+    },
+    'LEARNING_ACTIVITIES': {
+      name: 'Learning Activities',
+      description: 'Step-by-step activities students can follow',
+      instruction: `Generate ${quantity} learning activit${quantity > 1 ? 'ies' : 'y'} (${quantity} total). Each activity should have clear, step-by-step instructions that ${form} students can follow independently. Make them engaging and practical.`
+    },
+    'REFLECTION_QUESTIONS': {
+      name: 'Reflection Questions',
+      description: 'Thought-provoking questions for students to think about',
+      instruction: `Generate ${quantity} reflection question${quantity > 1 ? 's' : ''} (${quantity} total). Each question should be open-ended, encourage critical thinking, and be appropriate for ${form} students.`
+    },
+    'DISCUSSION_PROMPTS': {
+      name: 'Discussion Prompts',
+      description: 'Questions for class discussion',
+      instruction: `Generate ${quantity} discussion prompt${quantity > 1 ? 's' : ''} (${quantity} total). Each prompt should encourage class participation and deeper thinking about the topic. Make them engaging and appropriate for ${form} students.`
+    },
+    'SUMMARY': {
+      name: 'Summary',
+      description: 'A clear summary of what students learned',
+      instruction: `Generate a concise summary (2-3 paragraphs) of the lesson's main points, written clearly at ${form} level. Help students understand what they learned and why it matters.`
+    }
+  };
+
+  // If a specific content type is requested, generate only that type
+  if (contentType && contentTypeMap[contentType]) {
+    const typeInfo = contentTypeMap[contentType];
+    // Map content types to their JSON field names
+    const fieldNameMap = {
+      'LEARNING_OUTCOMES': 'learning_outcomes',
+      'KEY_CONCEPTS': 'key_concepts',
+      'LEARNING_ACTIVITIES': 'learning_activities',
+      'REFLECTION_QUESTIONS': 'reflection_questions',
+      'DISCUSSION_PROMPTS': 'discussion_prompts',
+      'SUMMARY': 'summary'
+    };
+    const fieldName = fieldNameMap[contentType] || contentType.toLowerCase().replace(/_/g, '_');
+    
+    let prompt = `You are an expert educational content creator specializing in student-facing materials. Create clear, engaging, and age-appropriate ${typeInfo.name.toLowerCase()} for ${form} students based on this lesson:
+
+Subject: ${subject}
+Form: ${form}
+Topic: ${topic}
+Lesson Title: ${lessonTitle}
+${learningObjectives ? `Learning Objectives:\n${learningObjectives}\n` : ''}
+${lessonPlan ? `Lesson Plan:\n${lessonPlan.substring(0, 3000)}\n` : ''}
+${additionalPrompt ? `Additional Instructions:\n${additionalPrompt}\n` : ''}
+
+${typeInfo.instruction}
+
+IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks.
+
+Respond with this exact JSON structure:
+{
+  "${fieldName}": "${typeInfo.description} - ${typeInfo.instruction}"
+}
+
+Make the content:
+- Written at ${form} reading/comprehension level
+- Clear and engaging
+- Practical and actionable
+- Specific to the topic "${topic}" in ${subject}
+- Free of jargon or overly complex language
+
+Remember: Respond with ONLY the JSON object, nothing else.`;
+
+    try {
+      console.log(`[AI Service] Generating ${typeInfo.name}...`);
+      const requestBody = {
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert educational content creator for students. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      };
+
+      const response = await fetch(OPENAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      const content = data.choices[0]?.message?.content;
+
+      if (!content) {
+        throw new Error('No response content received from AI');
+      }
+
+      // Parse JSON from response
+      let studentContent;
+      try {
+        const jsonMatch = content.match(/```(?:json)?\s*(\{[\s\S]*\})\s*```/);
+        if (jsonMatch) {
+          studentContent = JSON.parse(jsonMatch[1]);
+        } else {
+          const jsonObjectMatch = content.match(/\{[\s\S]*\}/);
+          if (jsonObjectMatch) {
+            studentContent = JSON.parse(jsonObjectMatch[0]);
+          } else {
+            studentContent = JSON.parse(content);
+          }
+        }
+        console.log(`[AI Service] Successfully parsed ${typeInfo.name}`);
+      } catch (parseError) {
+        console.warn(`[AI Service] Failed to parse JSON, using fallback:`, parseError);
+        studentContent = {
+          [fieldName]: `${typeInfo.name} for ${topic} in ${subject}.`
+        };
+      }
+
+      // Ensure the field exists
+      studentContent[fieldName] = studentContent[fieldName] || '';
+      
+      return studentContent;
+    } catch (error) {
+      console.error(`[AI Service] Error generating ${typeInfo.name}:`, error);
+      throw error;
+    }
+  }
+
+  // Default: Generate all content types
   const prompt = `You are an expert educational content creator specializing in student-facing materials. Create clear, engaging, and age-appropriate content for ${form} students based on this lesson:
 
 Subject: ${subject}
@@ -1577,6 +1728,7 @@ Topic: ${topic}
 Lesson Title: ${lessonTitle}
 ${learningObjectives ? `Learning Objectives:\n${learningObjectives}\n` : ''}
 ${lessonPlan ? `Lesson Plan:\n${lessonPlan.substring(0, 3000)}\n` : ''}
+${additionalPrompt ? `Additional Instructions:\n${additionalPrompt}\n` : ''}
 
 Generate student-facing content that includes:
 
