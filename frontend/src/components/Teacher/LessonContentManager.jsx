@@ -487,20 +487,47 @@ function LessonContentManager() {
       if (contentItems.length > 0) {
         try {
           for (const item of contentItems) {
+            // Validate user has numeric user_id
+            if (!user || (!user.user_id && !user.userId)) {
+              throw new Error('User information not available. Please refresh the page and try again.');
+            }
+
+            // Use numeric user_id from database, not UUID
+            const uploadedBy = user.user_id ? parseInt(user.user_id) : null;
+            if (!uploadedBy || isNaN(uploadedBy)) {
+              throw new Error('Invalid user ID. Please refresh the page and try again.');
+            }
+
             const contentData = {
               lesson_id: parseInt(lessonId),
               ...item,
               is_published: true,
-              uploaded_by: user.user_id || user.userId
+              uploaded_by: uploadedBy
             };
+
+            // Validate required fields
+            if (!contentData.lesson_id || isNaN(contentData.lesson_id)) {
+              throw new Error(`Invalid lesson ID: ${lessonId}`);
+            }
+            if (!contentData.content_type || !contentData.title) {
+              throw new Error(`Content item "${item.title}" is missing required fields`);
+            }
+
+            console.log('[Content Manager] Inserting master AI content:', {
+              lesson_id: contentData.lesson_id,
+              content_type: contentData.content_type,
+              title: contentData.title,
+              uploaded_by: contentData.uploaded_by
+            });
 
             const { error: contentError } = await supabase
               .from('lesson_content')
               .insert([contentData]);
 
             if (contentError) {
-              console.error('Error saving content item:', contentError);
-              throw new Error(`Failed to save ${item.title}: ${contentError.message}`);
+              console.error('[Content Manager] Insert error:', contentError);
+              console.error('[Content Manager] Data attempted:', contentData);
+              throw new Error(`Failed to save ${item.title}: ${contentError.message || 'Unknown error'}`);
             }
           }
 
@@ -635,6 +662,23 @@ function LessonContentManager() {
     setError(null);
 
     try {
+      // Validate user has numeric user_id
+      if (!user || (!user.user_id && !user.userId)) {
+        throw new Error('User information not available. Please refresh the page and try again.');
+      }
+
+      // Use numeric user_id from database, not UUID
+      const uploadedBy = user.user_id ? parseInt(user.user_id) : null;
+      if (!uploadedBy || isNaN(uploadedBy)) {
+        throw new Error('Invalid user ID. Please refresh the page and try again.');
+      }
+
+      // Validate lesson_id
+      const lessonIdInt = parseInt(lessonId);
+      if (!lessonIdInt || isNaN(lessonIdInt)) {
+        throw new Error(`Invalid lesson ID: ${lessonId}`);
+      }
+
       const maxSequence = content.length > 0
         ? Math.max(...content.map(c => c.sequence_order || 0))
         : 0;
@@ -642,16 +686,16 @@ function LessonContentManager() {
       const quizTitle = pendingQuizTitle || generatedQuiz.quiz_title || `Quiz: ${lessonData.topic || 'Lesson Quiz'}`;
 
       const contentData = {
-        lesson_id: parseInt(lessonId),
+        lesson_id: lessonIdInt,
         content_type: 'QUIZ',
-        title: quizTitle,
-        description: generatedQuiz.quiz_description || '',
+        title: quizTitle.trim(),
+        description: generatedQuiz.quiz_description ? generatedQuiz.quiz_description.trim() : '',
         content_section: 'Assessment',
         sequence_order: maxSequence + 1,
         is_required: true,
         estimated_minutes: quizParams.numQuestions * 2,
         is_published: true,
-        uploaded_by: user.user_id || user.userId
+        uploaded_by: uploadedBy
       };
 
       const { data: contentItem, error: contentError } = await supabase
@@ -676,7 +720,7 @@ function LessonContentManager() {
         randomize_questions: false,
         randomize_answers: false,
         is_published: true,
-        created_by: user.user_id || user.userId
+        created_by: uploadedBy
       };
 
       const { data: quiz, error: quizError } = await supabase
@@ -1013,28 +1057,63 @@ function LessonContentManager() {
         ? Math.max(...content.map(c => c.sequence_order || 0))
         : 0;
 
+      // Validate user has numeric user_id
+      if (!user || (!user.user_id && !user.userId)) {
+        throw new Error('User information not available. Please refresh the page and try again.');
+      }
+
+      // Use numeric user_id from database, not UUID
+      const uploadedBy = user.user_id ? parseInt(user.user_id) : null;
+      if (!uploadedBy || isNaN(uploadedBy)) {
+        throw new Error('Invalid user ID. Please refresh the page and try again.');
+      }
+
       for (let i = 0; i < generatedContentItems.length; i++) {
         const item = generatedContentItems[i];
+        
+        // Validate required fields
+        if (!item.content_type || !item.title) {
+          console.error('Invalid content item:', item);
+          throw new Error(`Content item ${i + 1} is missing required fields (content_type or title)`);
+        }
+
         const contentData = {
           lesson_id: parseInt(lessonId),
           content_type: item.content_type,
-          title: item.title,
-          description: item.description || '',
-          content_text: item.content_text || '',
-          url: item.url || null,
+          title: item.title.trim(),
+          description: item.description ? item.description.trim() : null,
+          content_text: item.content_text ? item.content_text.trim() : null,
+          url: item.url ? item.url.trim() : null,
           content_section: item.content_section || 'Learning',
           sequence_order: maxSequence + i + 1,
           is_required: item.is_required !== false,
-          estimated_minutes: item.estimated_minutes || 10,
+          estimated_minutes: item.estimated_minutes ? parseInt(item.estimated_minutes) : null,
           is_published: true,
-          uploaded_by: user.user_id || user.userId
+          uploaded_by: uploadedBy
         };
 
-        const { error: contentError } = await supabase
-          .from('lesson_content')
-          .insert([contentData]);
+        // Validate lesson_id
+        if (!contentData.lesson_id || isNaN(contentData.lesson_id)) {
+          throw new Error(`Invalid lesson ID: ${lessonId}`);
+        }
 
-        if (contentError) throw contentError;
+        console.log('[Content Manager] Inserting content:', {
+          lesson_id: contentData.lesson_id,
+          content_type: contentData.content_type,
+          title: contentData.title,
+          uploaded_by: contentData.uploaded_by
+        });
+
+        const { error: contentError, data } = await supabase
+          .from('lesson_content')
+          .insert([contentData])
+          .select();
+
+        if (contentError) {
+          console.error('[Content Manager] Insert error:', contentError);
+          console.error('[Content Manager] Data attempted:', contentData);
+          throw new Error(`Failed to save "${item.title}": ${contentError.message || 'Unknown error'}`);
+        }
       }
 
       setSuccess(`Successfully added ${generatedContentItems.length} content item(s)!`);
@@ -1042,8 +1121,29 @@ function LessonContentManager() {
       setGeneratedContentItems([]);
       fetchContent();
     } catch (err) {
-      console.error('Error saving generated content:', err);
-      setError(err.message || 'Failed to save content');
+      console.error('[Content Manager] Error saving generated content:', err);
+      console.error('[Content Manager] Error details:', {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        hint: err.hint
+      });
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Failed to save content';
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.code === '23503') {
+        errorMessage = 'Invalid reference: The lesson or user does not exist. Please refresh the page.';
+      } else if (err.code === '23505') {
+        errorMessage = 'Duplicate entry: Some content may already exist.';
+      } else if (err.code === '23502') {
+        errorMessage = 'Missing required field: Please check all required fields are filled.';
+      } else if (err.hint) {
+        errorMessage = `${errorMessage}: ${err.hint}`;
+      }
+      
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
@@ -1088,25 +1188,42 @@ function LessonContentManager() {
         ? Math.max(...content.map(c => c.sequence_order || 0))
         : 0;
 
+      // Validate user has numeric user_id
+      if (!user || (!user.user_id && !user.userId)) {
+        throw new Error('User information not available. Please refresh the page and try again.');
+      }
+
+      // Use numeric user_id from database, not UUID
+      const uploadedBy = user.user_id ? parseInt(user.user_id) : null;
+      if (!uploadedBy || isNaN(uploadedBy)) {
+        throw new Error('Invalid user ID. Please refresh the page and try again.');
+      }
+
+      // Validate lesson_id
+      const lessonIdInt = parseInt(lessonId);
+      if (!lessonIdInt || isNaN(lessonIdInt)) {
+        throw new Error(`Invalid lesson ID: ${lessonId}`);
+      }
+
       const contentData = {
-        lesson_id: parseInt(lessonId),
+        lesson_id: lessonIdInt,
         content_type: contentType,
-        title: title,
-        description: description || null,
-        instructions: instructions || null,
-        content_text: contentText || null,
-        url: fileUrl || null,
-        file_path: filePath,
-        file_name: fileName,
-        file_size: fileSize,
-        mime_type: mimeType,
+        title: title.trim(),
+        description: description ? description.trim() : null,
+        instructions: instructions ? instructions.trim() : null,
+        content_text: contentText ? contentText.trim() : null,
+        url: fileUrl ? fileUrl.trim() : null,
+        file_path: filePath || null,
+        file_name: fileName || null,
+        file_size: fileSize || null,
+        mime_type: mimeType || null,
         content_section: contentSection,
         sequence_order: editingContent ? editingContent.sequence_order : maxSequence + 1,
         is_required: isRequired,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes) : null,
         prerequisites: selectedPrerequisites.length > 0 ? selectedPrerequisites : null,
         is_published: true,
-        uploaded_by: user.user_id || user.userId
+        uploaded_by: uploadedBy
       };
 
       // Handle 3D model metadata
@@ -1136,8 +1253,29 @@ function LessonContentManager() {
       handleCloseModal();
       fetchContent();
     } catch (err) {
-      console.error('Error saving content:', err);
-      setError(err.message || 'Failed to save content');
+      console.error('[Content Manager] Error saving content:', err);
+      console.error('[Content Manager] Error details:', {
+        message: err.message,
+        code: err.code,
+        details: err.details,
+        hint: err.hint
+      });
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Failed to save content';
+      if (err.message) {
+        errorMessage = err.message;
+      } else if (err.code === '23503') {
+        errorMessage = 'Invalid reference: The lesson or user does not exist. Please refresh the page.';
+      } else if (err.code === '23505') {
+        errorMessage = 'Duplicate entry: This content may already exist.';
+      } else if (err.code === '23502') {
+        errorMessage = 'Missing required field: Please check all required fields are filled.';
+      } else if (err.hint) {
+        errorMessage = `${errorMessage}: ${err.hint}`;
+      }
+      
+      setError(errorMessage);
     } finally {
       setUploading(false);
     }
