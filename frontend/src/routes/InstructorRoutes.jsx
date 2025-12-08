@@ -2,6 +2,33 @@ import React, { lazy } from 'react';
 import { Route } from 'react-router-dom';
 import PrivateRoute from '../components/Auth/PrivateRoute';
 import FirstTimeLoginCheck from '../components/Auth/FirstTimeLoginCheck';
+// Use lazy loading with better error handling for LessonContentManager
+// The file is large (5882 lines) which can cause module resolution issues
+const LessonContentManager = lazy(() => 
+  import('../components/Teacher/LessonContentManager')
+    .then(module => {
+      // Try to get default export, or named export, or the module itself
+      const component = module.default || module.LessonContentManager || module;
+      if (!component) {
+        throw new Error('LessonContentManager export not found');
+      }
+      return { default: component };
+    })
+    .catch(error => {
+      console.error('Failed to load LessonContentManager:', error);
+      // Return a fallback component
+      return {
+        default: () => (
+          <div style={{ padding: '2rem', textAlign: 'center' }}>
+            <h3>Failed to load LessonContentManager</h3>
+            <p>Error: {error?.message || String(error)}</p>
+            <p>This may be due to a syntax error in the component file.</p>
+            <button onClick={() => window.location.reload()}>Reload Page</button>
+          </div>
+        )
+      };
+    })
+);
 
 // Lazy load instructor components
 const TeacherDashboard = lazy(() => import('../components/Teacher/TeacherDashboard'));
@@ -11,7 +38,6 @@ const LessonPlanning = lazy(() => import('../components/Teacher/LessonPlanning')
 const AttendanceMarking = lazy(() => import('../components/Teacher/AttendanceMarking'));
 const GradeEntry = lazy(() => import('../components/Teacher/GradeEntry'));
 const Gradebook = lazy(() => import('../components/Teacher/Gradebook'));
-const LessonContentManager = lazy(() => import('../components/Teacher/LessonContentManager'));
 const ContentLibrary = lazy(() => import('../components/Teacher/ContentLibrary'));
 const LessonTemplateLibrary = lazy(() => import('../components/Teacher/LessonTemplateLibrary'));
 const Curriculum = lazy(() => import('../components/Teacher/Curriculum'));

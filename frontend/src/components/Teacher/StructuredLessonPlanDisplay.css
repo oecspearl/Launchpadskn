@@ -54,7 +54,7 @@
 
 .section-title {
     font-weight: 700;
-    font-size: 1.25rem;
+    font-size: 0.9375rem;
     letter-spacing: 0.5px;
     color: white; /* Light text on dark background */
 }
@@ -392,7 +392,7 @@
     }
 
     .section-title {
-        font-size: 1.125rem;
+        font-size: 0.875rem;
     }
 
     .lesson-section-body {

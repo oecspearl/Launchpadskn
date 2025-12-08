@@ -245,11 +245,7 @@ function ManageInstructors() {
       }, 100);
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error';
-      console.error(`Error saving instructor: ${errorMsg}`, {
-        error: err,
-        instructorData: currentInstructor,
-        isEditing
-      });
+      console.error(`Error saving instructor: ${errorMsg}`, 'Error:', err?.message || String(err), 'Editing:', isEditing);
       setError(`Failed to save instructor: ${errorMsg}`);
     } finally {
       setSubmitLoading(false);
@@ -287,12 +283,7 @@ function ManageInstructors() {
     } catch (err) {
       const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error';
       const action = newStatus ? 'activate' : 'deactivate';
-      console.error(`Error toggling instructor status: ${errorMsg}`, {
-        error: err,
-        instructorId: instructor.instructorId,
-        newStatus,
-        action
-      });
+      console.error(`Error toggling instructor status: ${errorMsg}`, 'Error:', err?.message || String(err), 'Instructor ID:', instructor.instructorId, 'New Status:', newStatus, 'Action:', action);
       setError(`Failed to ${action} instructor: ${errorMsg}`);
     }
   };

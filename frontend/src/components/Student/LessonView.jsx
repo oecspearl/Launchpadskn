@@ -1333,7 +1333,7 @@ function LessonView() {
                           .createSignedUrl(cleanPath, 3600);
 
                         if (error) {
-                          console.error('Storage error details:', { error, bucketName, filePath: cleanPath });
+                          console.error('Storage error details:', error?.message || String(error), 'Bucket:', bucketName, 'Path:', cleanPath);
                           throw error;
                         }
                         if (data?.signedUrl) {
@@ -1374,7 +1374,7 @@ function LessonView() {
                           .createSignedUrl(cleanPath, 3600);
 
                         if (error) {
-                          console.error('Storage error details:', { error, bucketName, filePath: cleanPath });
+                          console.error('Storage error details:', error?.message || String(error), 'Bucket:', bucketName, 'Path:', cleanPath);
                           throw error;
                         }
                         if (data?.signedUrl) {
@@ -1417,12 +1417,7 @@ function LessonView() {
                           .createSignedUrl(cleanPath, 3600);
 
                         if (error) {
-                          console.error('Storage error details:', {
-                            error,
-                            bucketName,
-                            filePath: cleanPath,
-                            originalPath: filePath
-                          });
+                          console.error('Storage error details:', error?.message || String(error), 'Bucket:', bucketName, 'Path:', cleanPath, 'Original:', filePath);
                           throw error;
                         }
                         if (data?.signedUrl) {

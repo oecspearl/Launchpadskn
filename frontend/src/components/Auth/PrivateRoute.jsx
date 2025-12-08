@@ -42,7 +42,7 @@ function PrivateRoute({ children, allowedRoles }) {
       actualIsAuthenticated = true;
       console.log('[PrivateRoute] Using stored auth. User:', actualUser.email, 'Role:', actualUser.role);
     } catch (e) {
-      console.error('[PrivateRoute] Error parsing stored user:', e);
+      console.error('[PrivateRoute] Error parsing stored user:', e?.message || String(e));
       // Clear invalid localStorage
       localStorage.removeItem('user');
       localStorage.removeItem('token');
@@ -87,7 +87,7 @@ function PrivateRoute({ children, allowedRoles }) {
         case 'student':
           return <Navigate to="/student/dashboard" replace />;
         default:
-          console.error('[PrivateRoute] Unknown role:', userRole);
+          console.error('[PrivateRoute] Unknown role:', String(userRole || 'undefined'));
           return <Navigate to="/login" replace />;
       }
     }

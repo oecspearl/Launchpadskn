@@ -1634,10 +1634,12 @@ ${typeInfo.instruction}
 
 IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks.
 
-Respond with this exact JSON structure:
+Respond with this exact JSON structure (replace the placeholder with actual content):
 {
-  "${fieldName}": "${typeInfo.description} - ${typeInfo.instruction}"
+  "${fieldName}": "Your actual generated content here - ${typeInfo.instruction}"
 }
+
+The "${fieldName}" field should contain the actual generated content, not a description of what to generate.
 
 Make the content:
 - Written at ${form} reading/comprehension level
@@ -1711,6 +1713,13 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
 
       // Ensure the field exists
       studentContent[fieldName] = studentContent[fieldName] || '';
+      
+      console.log(`[AI Service] Generated ${typeInfo.name}:`, {
+        fieldName,
+        hasContent: !!studentContent[fieldName],
+        contentLength: studentContent[fieldName]?.length || 0,
+        allKeys: Object.keys(studentContent)
+      });
       
       return studentContent;
     } catch (error) {

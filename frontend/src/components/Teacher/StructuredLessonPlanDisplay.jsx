@@ -142,7 +142,7 @@ function StructuredLessonPlanDisplay({ lessonPlanText }) {
         <div className="structured-lesson-plan">
             {sections.map((section, sectionIndex) => {
                 const SectionIcon = getSectionIcon(section.title);
-                const isExpanded = expandedSections[sectionIndex] !== false; // Default to expanded
+                const isExpanded = expandedSections[sectionIndex] === true; // Default to collapsed
 
                 return (
                     <Card key={sectionIndex} className="lesson-section-card mb-3">
