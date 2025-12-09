@@ -14,6 +14,7 @@ import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerCompo
 
 import { useParams, useNavigate } from 'react-router-dom';
 import supabaseService from '../../services/supabaseService';
+import DOMPurify from 'dompurify';
 
 function StudentViewPreview() {
     const { lessonId } = useParams();
@@ -92,11 +93,12 @@ function StudentViewPreview() {
                     borderRadius: '12px',
                     lineHeight: '1.8',
                     fontSize: '1.1rem',
-                    color: 'var(--theme-text)',
-                    whiteSpace: 'pre-wrap'
-                }}>
-                {text}
-            </div>
+                    color: 'var(--theme-text)'
+                }}
+                dangerouslySetInnerHTML={{ 
+                    __html: text ? DOMPurify.sanitize(text) : '<p class="text-muted">No content available.</p>' 
+                }}
+            />
         );
     };
 

@@ -29,6 +29,7 @@ import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
 import TinyMCEEditor from '../common/TinyMCEEditor';
+import DOMPurify from 'dompurify';
 import './LessonContentManager-redesign.css';
 
 // Ensure html2pdf is available globally for compatibility
@@ -2733,7 +2734,14 @@ function LessonContentManager() {
                                   item.content_type === 'DISCUSSION_PROMPTS' ? item.discussion_prompts :
                                   item.content_type === 'SUMMARY' ? item.summary : '';
                                 
-                                const contentLines = contentText ? contentText.split('\n').filter(line => line.trim()).join('. ') : '';
+                                // Strip HTML tags for preview text (first 150 characters)
+                                const stripHtml = (html) => {
+                                  if (!html) return '';
+                                  const tmp = document.createElement('DIV');
+                                  tmp.innerHTML = html;
+                                  return tmp.textContent || tmp.innerText || '';
+                                };
+                                const previewText = contentText ? stripHtml(contentText).substring(0, 150) + (stripHtml(contentText).length > 150 ? '...' : '') : '';
                                 
                                 return (
                                   <Draggable
@@ -2779,8 +2787,8 @@ function LessonContentManager() {
                                                 </span>
                                               )}
                                             </div>
-                                            {contentLines && (
-                                              <p className="content-item-text">{contentLines}</p>
+                                            {previewText && (
+                                              <p className="content-item-text">{previewText}</p>
                                             )}
                                           </div>
                                           
@@ -3788,9 +3796,12 @@ function LessonContentManager() {
                     <div className="p-4">
                       <div className="mb-3">
                         <h5 className="mb-3">{previewingContent.title}</h5>
-                        <div className="white-space-pre-wrap" style={{ fontSize: '1rem', lineHeight: '1.8' }}>
-                          {contentText || 'No content available.'}
-                        </div>
+                        <div 
+                          style={{ fontSize: '1rem', lineHeight: '1.8' }}
+                          dangerouslySetInnerHTML={{ 
+                            __html: contentText ? DOMPurify.sanitize(contentText) : '<p class="text-muted">No content available.</p>' 
+                          }}
+                        />
                       </div>
                     </div>
                   );
@@ -4988,17 +4999,20 @@ function LessonContentManager() {
 
                     {/* Text Content */}
                     {!['VIDEO', 'QUIZ', 'ASSIGNMENT', 'FLASHCARD'].includes(item.content_type) && item.content_text && (
-                      <div className="mt-2" style={{
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        padding: '10px',
-                        backgroundColor: '#f8f9fa',
-                        borderRadius: '4px',
-                        fontSize: '0.9rem',
-                        whiteSpace: 'pre-wrap'
-                      }}>
-                        {item.content_text}
-                      </div>
+                      <div 
+                        className="mt-2" 
+                        style={{
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          padding: '10px',
+                          backgroundColor: '#f8f9fa',
+                          borderRadius: '4px',
+                          fontSize: '0.9rem'
+                        }}
+                        dangerouslySetInnerHTML={{ 
+                          __html: DOMPurify.sanitize(item.content_text) 
+                        }}
+                      />
                     )}
                   </ListGroup.Item>
                 ))}
