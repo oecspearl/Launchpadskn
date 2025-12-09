@@ -47,6 +47,7 @@ const SKNMathsCurriculumForm2 = lazy(() => import('../components/Teacher/SKNMath
 const SKNSocialScienceCurriculumForm2 = lazy(() => import('../components/Teacher/SKNSocialScienceCurriculumForm2'));
 const StudentProfileView = lazy(() => import('../components/Teacher/StudentProfileView'));
 const StudentViewPreview = lazy(() => import('../components/Teacher/StudentViewPreview'));
+const TeacherHelpPage = lazy(() => import('../components/Help/TeacherHelpPage'));
 
 const InstructorRoutes = () => (
     <>
@@ -193,6 +194,14 @@ const InstructorRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['instructor']}>
                     <StudentViewPreview />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/teacher/help"
+            element={
+                <PrivateRoute allowedRoles={['instructor']}>
+                    <TeacherHelpPage />
                 </PrivateRoute>
             }
         />
