@@ -1741,16 +1741,18 @@ ${additionalPrompt ? `Additional Instructions:\n${additionalPrompt}\n` : ''}
 
 Generate student-facing content that includes:
 
-1. KEY_CONCEPTS: Main concepts explained in simple, clear language at ${form} level (3-5 key concepts)
-2. LEARNING_ACTIVITIES: Step-by-step activities students can follow (2-3 activities)
-3. REFLECTION_QUESTIONS: Thought-provoking questions for students to think about (3-5 questions)
-4. DISCUSSION_PROMPTS: Questions for class discussion (2-3 prompts)
-5. SUMMARY: A clear summary of what students learned (concise, at ${form} level)
+1. LEARNING_OUTCOMES: Clear, measurable learning outcomes written at ${form} level (3-5 outcomes)
+2. KEY_CONCEPTS: Main concepts explained in simple, clear language at ${form} level (3-5 key concepts)
+3. LEARNING_ACTIVITIES: Step-by-step activities students can follow (2-3 activities)
+4. REFLECTION_QUESTIONS: Thought-provoking questions for students to think about (3-5 questions)
+5. DISCUSSION_PROMPTS: Questions for class discussion (2-3 prompts)
+6. SUMMARY: A clear summary of what students learned (concise, at ${form} level)
 
 IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks.
 
 Respond with this exact JSON structure:
 {
+  "learning_outcomes": "3-5 clear, measurable learning outcomes written at ${form} level. Each outcome should be specific to the topic and written in simple language that students can understand.",
   "key_concepts": "Clear explanation of 3-5 main concepts, written at ${form} level. Use simple language and examples students can relate to.",
   "learning_activities": "Step-by-step activities (2-3 activities) that students can complete. Make instructions clear and easy to follow.",
   "reflection_questions": "3-5 thoughtful questions that help students reflect on what they learned. Questions should be open-ended and encourage critical thinking.",
@@ -1824,6 +1826,7 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
     } catch (parseError) {
       console.warn('[AI Service] Failed to parse JSON, using fallback:', parseError);
       studentContent = {
+        learning_outcomes: `By the end of this lesson, students will understand ${topic}.`,
         key_concepts: `Key concepts for ${topic} in ${subject}.`,
         learning_activities: `Activities related to ${topic}.`,
         reflection_questions: `What did you learn about ${topic}?`,
@@ -1833,6 +1836,7 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
     }
 
     // Ensure all fields exist
+    studentContent.learning_outcomes = studentContent.learning_outcomes || '';
     studentContent.key_concepts = studentContent.key_concepts || '';
     studentContent.learning_activities = studentContent.learning_activities || '';
     studentContent.reflection_questions = studentContent.reflection_questions || '';

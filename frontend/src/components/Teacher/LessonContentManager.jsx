@@ -636,7 +636,10 @@ function LessonContentManager() {
           subject: subjectName,
           form: formName,
           lessonPlan,
-          learningObjectives
+          learningObjectives,
+          contentType: contentType,
+          quantity: perContentAIQuantity || 1,
+          additionalPrompt: perContentAIPrompt || ''
         });
 
         // Extract the relevant field based on content type
