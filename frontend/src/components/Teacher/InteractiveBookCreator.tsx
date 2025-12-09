@@ -18,6 +18,7 @@ import {
 } from '../../types/contentTypes';
 import { searchEducationalVideos } from '../../services/youtubeService';
 import { generateInteractiveBook } from '../../services/aiLessonService';
+import TinyMCEEditor from '../common/TinyMCEEditor';
 import DOMPurify from 'dompurify';
 import './InteractiveBookCreator.css';
 
@@ -561,12 +562,14 @@ function InteractiveBookCreator({
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Description</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
+              <TinyMCEEditor
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Enter book description"
+                height={120}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                plugins="lists link"
+                menubar={false}
               />
             </Form.Group>
             <Form.Group className="mb-3">
@@ -727,23 +730,27 @@ function InteractiveBookCreator({
 
             <Form.Group className="mb-3">
               <Form.Label>Learning Outcomes (Optional)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
+              <TinyMCEEditor
                 value={aiLearningOutcomes}
                 onChange={(e) => setAiLearningOutcomes(e.target.value)}
                 placeholder="What students should learn from this book"
+                height={150}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                plugins="lists"
+                menubar={false}
               />
             </Form.Group>
 
             <Form.Group className="mb-3">
               <Form.Label>Additional Comments (Optional)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
+              <TinyMCEEditor
                 value={aiAdditionalComments}
                 onChange={(e) => setAiAdditionalComments(e.target.value)}
                 placeholder="Any additional instructions or context for the AI (e.g., 'Focus on key concepts', 'Include real-world examples', 'Make content engaging')"
+                height={150}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                plugins="lists"
+                menubar={false}
               />
             </Form.Group>
           </Form>
@@ -1023,12 +1030,11 @@ function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps)
           </ButtonGroup>
         </div>
         {!showPreview ? (
-          <Form.Control
-            as="textarea"
-            rows={10}
+          <TinyMCEEditor
             value={page.content || ''}
             onChange={(e) => onUpdate({ content: e.target.value })}
             placeholder="Enter page content. HTML is supported."
+            height={400}
           />
         ) : (
           <div
@@ -1155,12 +1161,14 @@ function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps)
             <div>
               <Form.Group className="mb-3">
                 <Form.Label>Image Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
+                <TinyMCEEditor
                   value={imagePrompt}
                   onChange={(e) => setImagePrompt(e.target.value)}
                   placeholder="e.g., A diagram showing the water cycle with evaporation, condensation, and precipitation"
+                  height={120}
+                  toolbar="undo redo | formatselect | bold italic"
+                  plugins=""
+                  menubar={false}
                 />
                 <Form.Text className="text-muted">
                   Describe the image you want to generate. Be specific and detailed for best results.
@@ -1295,14 +1303,16 @@ function VideoPageEditor({ page, onUpdate }: VideoPageEditorProps) {
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Instructions (Optional)</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={3}
+            <TinyMCEEditor
               value={page.videoData.instructions || ''}
               onChange={(e) => onUpdate({
                 videoData: { ...page.videoData!, instructions: e.target.value }
               })}
               placeholder="Instructions for students watching this video"
+              height={150}
+              toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+              plugins="lists link"
+              menubar={false}
             />
           </Form.Group>
           <div className="mb-3">
@@ -1405,11 +1415,13 @@ function QuizPageEditor({ page, onUpdate }: QuizPageEditorProps) {
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Question</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
+              <TinyMCEEditor
                 value={question.question}
                 onChange={(e) => updateQuestion(question.id, { question: e.target.value })}
+                height={120}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                plugins="lists link"
+                menubar={false}
               />
             </Form.Group>
             {question.type === 'multiple-choice' && (
@@ -1467,12 +1479,14 @@ function QuizPageEditor({ page, onUpdate }: QuizPageEditorProps) {
             )}
             <Form.Group className="mb-3">
               <Form.Label>Explanation (Optional)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
+              <TinyMCEEditor
                 value={question.explanation || ''}
                 onChange={(e) => updateQuestion(question.id, { explanation: e.target.value })}
                 placeholder="Explanation shown after answering"
+                height={120}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                plugins="lists link"
+                menubar={false}
               />
             </Form.Group>
           </Card.Body>
@@ -1540,14 +1554,16 @@ function ImagePageEditor({ page, onUpdate }: ImagePageEditorProps) {
       )}
       <Form.Group className="mb-3">
         <Form.Label>Instructions (Optional)</Form.Label>
-        <Form.Control
-          as="textarea"
-          rows={3}
+        <TinyMCEEditor
           value={imageData.instructions || ''}
           onChange={(e) => onUpdate({
             imageData: { ...imageData, instructions: e.target.value }
           })}
           placeholder="Instructions for students viewing this image"
+          height={150}
+          toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+          plugins="lists link"
+          menubar={false}
         />
       </Form.Group>
     </>

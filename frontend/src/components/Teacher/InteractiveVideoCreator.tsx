@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { supabase } from '../../config/supabase';
+import TinyMCEEditor from '../common/TinyMCEEditor';
 import {
   InteractiveVideoData,
   VideoCheckpoint,
@@ -444,12 +445,14 @@ function InteractiveVideoCreator({
 
               <Form.Group className="mb-3">
                 <Form.Label>Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
+                <TinyMCEEditor
                   value={description || ''}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter video description"
+                  height={120}
+                  toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                  plugins="lists link"
+                  menubar={false}
                 />
               </Form.Group>
 
@@ -618,14 +621,16 @@ function InteractiveVideoCreator({
 
                           <Form.Group className="mb-2">
                             <Form.Label>Content *</Form.Label>
-                            <Form.Control
-                              as="textarea"
-                              rows={3}
+                            <TinyMCEEditor
                               value={checkpoint.content || ''}
                               onChange={(e) => updateCheckpoint(checkpoint.id, {
                                 content: e.target.value
                               })}
                               placeholder="Question text, note content, etc."
+                              height={150}
+                              toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                              plugins="lists link"
+                              menubar={false}
                             />
                           </Form.Group>
 
@@ -681,14 +686,16 @@ function InteractiveVideoCreator({
                           {checkpoint.type === 'quiz' && (
                             <Form.Group className="mb-2">
                               <Form.Label>Explanation (shown after answering)</Form.Label>
-                              <Form.Control
-                                as="textarea"
-                                rows={2}
+                              <TinyMCEEditor
                                 value={(checkpoint.explanation || '')}
                                 onChange={(e) => updateCheckpoint(checkpoint.id, {
                                   explanation: e.target.value
                                 })}
                                 placeholder="Explanation of the correct answer"
+                                height={120}
+                                toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                                plugins="lists link"
+                                menubar={false}
                               />
                             </Form.Group>
                           )}
@@ -919,12 +926,14 @@ function InteractiveVideoCreator({
 
             <Form.Group className="mb-3">
               <Form.Label>Learning Outcomes (Optional)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
+              <TinyMCEEditor
                 value={aiLearningOutcomes}
                 onChange={(e) => setAiLearningOutcomes(e.target.value)}
                 placeholder="What students should learn from this video"
+                height={150}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                plugins="lists"
+                menubar={false}
               />
             </Form.Group>
 
@@ -982,12 +991,14 @@ function InteractiveVideoCreator({
 
             <Form.Group className="mb-3">
               <Form.Label>Additional Comments (Optional)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
+              <TinyMCEEditor
                 value={aiAdditionalComments}
                 onChange={(e) => setAiAdditionalComments(e.target.value)}
                 placeholder="Any additional instructions or context for the AI (e.g., 'Focus on key concepts', 'Include real-world examples', 'Make questions challenging')"
+                height={150}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                plugins="lists"
+                menubar={false}
               />
             </Form.Group>
           </Form>

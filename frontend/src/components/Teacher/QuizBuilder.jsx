@@ -8,6 +8,7 @@ import {
   FaArrowUp, FaArrowDown, FaGripVertical
 } from 'react-icons/fa';
 import supabaseService from '../../services/supabaseService';
+import TinyMCEEditor from '../common/TinyMCEEditor';
 
 const QUESTION_TYPES = {
   MULTIPLE_CHOICE: 'Multiple Choice',
@@ -482,22 +483,26 @@ function QuizBuilder({ show, onHide, contentId, quizId = null, onSave }) {
               </Col>
               <Col md={12} className="mb-3">
                 <Form.Label>Description</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
+                <TinyMCEEditor
                   value={description || ''}
                   onChange={(e) => setDescription(e.target.value || '')}
                   placeholder="Brief description of the quiz"
+                  height={120}
+                  toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                  plugins="lists"
+                  menubar={false}
                 />
               </Col>
               <Col md={12} className="mb-3">
                 <Form.Label>Instructions</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
+                <TinyMCEEditor
                   value={instructions || ''}
                   onChange={(e) => setInstructions(e.target.value || '')}
                   placeholder="Instructions for students taking this quiz"
+                  height={150}
+                  toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                  plugins="lists"
+                  menubar={false}
                 />
               </Col>
               <Col md={6} className="mb-3">
@@ -750,23 +755,26 @@ function QuestionEditor({
             </Col>
             <Col md={12} className="mb-3">
               <Form.Label>Question Text *</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
+              <TinyMCEEditor
                 value={question.question_text || ''}
                 onChange={(e) => onUpdate('question_text', e.target.value || '')}
                 placeholder="Enter your question"
-                required
+                height={150}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                plugins="lists link"
+                menubar={false}
               />
             </Col>
             <Col md={12} className="mb-3">
               <Form.Label>Explanation (shown after answering)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
+              <TinyMCEEditor
                 value={question.explanation || ''}
                 onChange={(e) => onUpdate('explanation', e.target.value)}
                 placeholder="Optional explanation of the correct answer"
+                height={120}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                plugins="lists link"
+                menubar={false}
               />
             </Col>
           </Row>

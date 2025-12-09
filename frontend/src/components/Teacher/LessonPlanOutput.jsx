@@ -6,6 +6,7 @@ import {
   FaEye, FaEdit, FaInfoCircle, FaCopy, FaDownload, FaSave
 } from 'react-icons/fa';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
+import TinyMCEEditor from '../common/TinyMCEEditor';
 import './LessonPlanOutput.css';
 
 function LessonPlanOutput({ onSaveLesson }) {
@@ -509,12 +510,10 @@ function LessonPlanOutput({ onSaveLesson }) {
             <div className="lesson-plan-edit-container">
               <Form>
                 <Form.Group>
-                  <Form.Control
-                    as="textarea"
-                    rows={20}
+                  <TinyMCEEditor
                     value={editedContent || lessonPlan || ''}
                     onChange={(e) => setEditedContent(e.target.value)}
-                    style={{ fontFamily: 'monospace', fontSize: '0.9rem' }}
+                    height={600}
                   />
                 </Form.Group>
               </Form>

@@ -11,6 +11,7 @@ import { useAuth } from '../../contexts/AuthContextSupabase';
 import { supabase } from '../../config/supabase';
 import { FlashcardData, Flashcard, defaultFlashcardSettings, createEmptyFlashcardData } from '../../types/contentTypes';
 import { generateFlashcards } from '../../services/aiLessonService';
+import TinyMCEEditor from '../common/TinyMCEEditor';
 import './FlashcardCreator.css';
 
 interface FlashcardCreatorProps {
@@ -412,12 +413,14 @@ function FlashcardCreator({
               </Form.Group>
               <Form.Group>
                 <Form.Label>Description (Optional)</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
+                <TinyMCEEditor
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Brief description of this flashcard set"
+                  height={120}
+                  toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                  plugins="lists"
+                  menubar={false}
                 />
               </Form.Group>
             </Card.Body>
@@ -732,12 +735,14 @@ function FlashcardCreator({
 
             <Form.Group className="mb-3">
               <Form.Label>Additional Context (Optional)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={3}
+              <TinyMCEEditor
                 value={aiContext}
                 onChange={(e) => setAiContext(e.target.value)}
                 placeholder="Any additional instructions or context for the AI (e.g., 'Focus on definitions', 'Include examples', 'Cover key dates')"
+                height={150}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                plugins="lists"
+                menubar={false}
               />
             </Form.Group>
           </Form>
@@ -801,12 +806,14 @@ function FlashcardEditor({ card, onSave, onCancel }: FlashcardEditorProps) {
         <Col md={6}>
           <Form.Group className="mb-3">
             <Form.Label>Front (Question/Term) *</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={4}
+            <TinyMCEEditor
               value={front}
               onChange={(e) => setFront(e.target.value)}
               placeholder="Enter the front side text..."
+              height={150}
+              toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+              plugins="lists link"
+              menubar={false}
             />
           </Form.Group>
           <Form.Group className="mb-3">
@@ -825,12 +832,14 @@ function FlashcardEditor({ card, onSave, onCancel }: FlashcardEditorProps) {
         <Col md={6}>
           <Form.Group className="mb-3">
             <Form.Label>Back (Answer/Definition) *</Form.Label>
-            <Form.Control
-              as="textarea"
-              rows={4}
+            <TinyMCEEditor
               value={back}
               onChange={(e) => setBack(e.target.value)}
               placeholder="Enter the back side text..."
+              height={150}
+              toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+              plugins="lists link"
+              menubar={false}
             />
           </Form.Group>
           <Form.Group className="mb-3">

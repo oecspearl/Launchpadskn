@@ -28,6 +28,7 @@ import { generateAssignmentRubric, generateCompleteLessonContent, generateStuden
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
+import TinyMCEEditor from '../common/TinyMCEEditor';
 import './LessonContentManager-redesign.css';
 
 // Ensure html2pdf is available globally for compatibility
@@ -3015,13 +3016,11 @@ function LessonContentManager() {
                 )}
                 {!perContentAIGenerating && (
                   <>
-                    <Form.Control
-                      as="textarea"
-                      rows={6}
+                    <TinyMCEEditor
                       value={contentText || ''}
                       onChange={(e) => setContentText(e.target.value || '')}
                       placeholder={`Enter ${contentType.replace('_', ' ').toLowerCase()}...`}
-                      required
+                      height={300}
                     />
                     <div className="mt-2">
                       <Form.Control
@@ -3507,23 +3506,27 @@ function LessonContentManager() {
                 <>
                   <Form.Group className="mb-3">
                     <Form.Label>Description</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={2}
+                    <TinyMCEEditor
                       value={description || ''}
                       onChange={(e) => setDescription(e.target.value || '')}
                       placeholder="Brief description of this content"
+                      height={150}
+                      toolbar="undo redo | bold italic | bullist numlist | link"
+                      plugins="lists link"
+                      menubar={false}
                     />
                   </Form.Group>
 
                   <Form.Group className="mb-3">
                     <Form.Label>Instructions for Students</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={3}
+                    <TinyMCEEditor
                       value={instructions || ''}
                       onChange={(e) => setInstructions(e.target.value || '')}
                       placeholder="Instructions on how students should use this content (e.g., 'Watch this video and take notes', 'Complete this reading before the next lesson')"
+                      height={200}
+                      toolbar="undo redo | formatselect | bold italic | bullist numlist | link"
+                      plugins="lists link"
+                      menubar={false}
                     />
                     <Form.Text className="text-muted">
                       Provide clear instructions to guide students on how to engage with this content.
@@ -3532,12 +3535,14 @@ function LessonContentManager() {
 
                   <Form.Group className="mb-3">
                     <Form.Label>Key Concepts</Form.Label>
-                    <Form.Control
-                      as="textarea"
-                      rows={2}
+                    <TinyMCEEditor
                       value={keyConcepts || ''}
                       onChange={(e) => setKeyConcepts(e.target.value || '')}
                       placeholder="Key concepts or terms covered in this content (one per line or comma-separated)"
+                      height={150}
+                      toolbar="undo redo | bold italic | bullist numlist | link"
+                      plugins="lists link"
+                      menubar={false}
                     />
                     <Form.Text className="text-muted">
                       List the main concepts or terms students should understand.
@@ -5293,12 +5298,14 @@ function LessonContentManager() {
                 
                 <Form.Group className="mb-4">
                   <Form.Label><strong>Additional Instructions (Optional)</strong></Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
+                  <TinyMCEEditor
                     value={masterAIPrompt || ''}
                     onChange={(e) => setMasterAIPrompt(e.target.value)}
                     placeholder="Add specific instructions (e.g., focus on practical examples, include real-world applications)"
+                    height={150}
+                    toolbar="undo redo | bold italic | bullist numlist"
+                    plugins="lists"
+                    menubar={false}
                   />
                 </Form.Group>
 

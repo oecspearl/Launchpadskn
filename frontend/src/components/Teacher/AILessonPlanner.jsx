@@ -5,6 +5,7 @@ import {
 } from 'react-bootstrap';
 import { FaRobot, FaMagic } from 'react-icons/fa';
 import { generateLessonPlan } from '../../services/aiLessonService';
+import TinyMCEEditor from '../common/TinyMCEEditor';
 
 function AILessonPlanner({ 
   onPlanGenerated, 
@@ -203,13 +204,14 @@ function AILessonPlanner({
 
             <Form.Group className="mb-3">
               <Form.Label>Previous Topics Covered (Optional)</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                name="previousTopics"
+              <TinyMCEEditor
                 value={formData.previousTopics}
-                onChange={handleInputChange}
+                onChange={(e) => handleInputChange({ target: { name: 'previousTopics', value: e.target.value } })}
                 placeholder="List any previous topics that relate to this lesson..."
+                height={120}
+                toolbar="undo redo | formatselect | bold italic | bullist numlist"
+                plugins="lists"
+                menubar={false}
               />
               <Form.Text className="text-muted">
                 This helps AI create a more contextual lesson plan.
