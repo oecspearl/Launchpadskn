@@ -1,5 +1,24 @@
 import { supabase } from '../config/supabase';
 
+// Helper function for formatting relative time
+const formatRelativeTime = (timestamp) => {
+    if (!timestamp) return 'N/A';
+
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffMs = now - time;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
+    if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
+    if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+
+    return time.toLocaleDateString();
+};
+
 export const dashboardService = {
     async getDashboardStats() {
         try {
@@ -127,7 +146,7 @@ export const dashboardService = {
                         user: user.name || user.email,
                         action: 'registered as',
                         target: roleText,
-                        time: this.formatRelativeTime(user.created_at),
+                        time: formatRelativeTime(user.created_at),
                         timestamp: new Date(user.created_at).getTime()
                     });
                 });
@@ -141,7 +160,7 @@ export const dashboardService = {
                         user: 'Admin',
                         action: 'created subject',
                         target: subject.subject_name,
-                        time: this.formatRelativeTime(subject.created_at),
+                        time: formatRelativeTime(subject.created_at),
                         timestamp: new Date(subject.created_at).getTime()
                     });
                 });
@@ -155,7 +174,7 @@ export const dashboardService = {
                         user: 'Admin',
                         action: 'created class',
                         target: cls.class_name,
-                        time: this.formatRelativeTime(cls.created_at),
+                        time: formatRelativeTime(cls.created_at),
                         timestamp: new Date(cls.created_at).getTime()
                     });
                 });
@@ -169,7 +188,7 @@ export const dashboardService = {
                         user: 'Admin',
                         action: 'created form',
                         target: form.form_name || `Form ${form.form_number}`,
-                        time: this.formatRelativeTime(form.created_at),
+                        time: formatRelativeTime(form.created_at),
                         timestamp: new Date(form.created_at).getTime()
                     });
                 });
@@ -184,21 +203,5 @@ export const dashboardService = {
         }
     },
 
-    formatRelativeTime(timestamp) {
-        if (!timestamp) return 'N/A';
-
-        const now = new Date();
-        const time = new Date(timestamp);
-        const diffMs = now - time;
-        const diffMins = Math.floor(diffMs / 60000);
-        const diffHours = Math.floor(diffMs / 3600000);
-        const diffDays = Math.floor(diffMs / 86400000);
-
-        if (diffMins < 1) return 'Just now';
-        if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'minute' : 'minutes'} ago`;
-        if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hour' : 'hours'} ago`;
-        if (diffDays < 7) return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
-
-        return time.toLocaleDateString();
-    }
+    formatRelativeTime
 };
