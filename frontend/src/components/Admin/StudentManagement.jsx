@@ -1,78 +1,192 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Alert } from 'react-bootstrap';
-import { FaSearch, FaUserGraduate, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEye, FaInfoCircle } from 'react-icons/fa';
-import supabaseService from '../../services/supabaseService';
+import React, { useState, useMemo } from 'react';
+import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Alert, Spinner } from 'react-bootstrap';
+import { FaSearch, FaUserGraduate, FaEnvelope, FaPhone, FaEye, FaInfoCircle } from 'react-icons/fa';
+import { useQuery } from '@tanstack/react-query';
+import { userService } from '../../services/userService';
+import { classService } from '../../services/classService';
+import { institutionService } from '../../services/institutionService';
+import { ROLES } from '../../constants/roles';
 import Breadcrumb from '../common/Breadcrumb';
 import StudentInformationManagement from './StudentInformationManagement';
 
 function StudentManagement() {
-  const [students, setStudents] = useState([]);
-  const [filteredStudents, setFilteredStudents] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedSchool, setSelectedSchool] = useState('all');
+  const [selectedForm, setSelectedForm] = useState('all');
+  const [selectedClass, setSelectedClass] = useState('all');
+
+  // Modals
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
   const breadcrumbItems = [
     { label: 'Dashboard', path: '/admin/dashboard', type: 'dashboard' },
     { label: 'Student Management', type: 'student' }
   ];
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
+  // ── Queries ──
+  const { data: schools = [] } = useQuery({
+    queryKey: ['institutions'],
+    queryFn: () => institutionService.getAllInstitutions()
+  });
 
-  useEffect(() => {
-    filterStudents();
-  }, [students, searchTerm, statusFilter]);
+  const { data: forms = [] } = useQuery({
+    queryKey: ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(null)
+  });
 
-  const fetchStudents = async () => {
-    try {
-      setLoading(true);
-      // Fetch students using Supabase
-      const studentsData = await supabaseService.getUsersByRole('STUDENT');
-      
-      // Transform to expected format
-      const formattedStudents = (studentsData || []).map(student => ({
-        userId: student.user_id || student.id,
+  const { data: classes = [] } = useQuery({
+    queryKey: ['classes'],
+    queryFn: () => classService.getClasses(ROLES.ADMIN)
+  });
+
+  const { data: allStudents = [], isLoading: isLoadingStudents } = useQuery({
+    queryKey: ['students'],
+    queryFn: () => userService.getUsersByRole(ROLES.STUDENT)
+  });
+
+  const { data: assignments = [], isLoading: isLoadingAssignments } = useQuery({
+    queryKey: ['student-assignments-all'],
+    queryFn: () => classService.getAllStudentAssignments()
+  });
+
+  const isLoading = isLoadingStudents || isLoadingAssignments;
+
+  // ── Build lookup: studentId → assignment info ──
+  const assignmentMap = useMemo(() => {
+    const map = {};
+    assignments.forEach(a => {
+      if (!a.student) return;
+      const sid = a.student_id || a.student?.user_id;
+      if (sid && !map[sid]) {
+        map[sid] = a;
+      }
+    });
+    return map;
+  }, [assignments]);
+
+  // ── Enrich students with class/form/school data ──
+  const enrichedStudents = useMemo(() => {
+    return allStudents.map(student => {
+      const sid = student.user_id || student.id;
+      const assignment = assignmentMap[sid];
+      const cls = assignment?.class;
+      const form = cls?.form;
+      return {
+        userId: sid,
         name: student.name || student.email,
         email: student.email,
         isActive: student.is_active !== false,
         phone: student.phone || '',
         address: student.address || '',
-        dateOfBirth: student.date_of_birth || null
-      }));
-      
-      setStudents(formattedStudents);
-    } catch (error) {
-      setError('Failed to fetch students');
-      console.error('Error fetching students:', error);
-    } finally {
-      setLoading(false);
+        dateOfBirth: student.date_of_birth || null,
+        createdAt: student.created_at,
+        emergencyContact: student.emergency_contact,
+        // Class/form/school info
+        className: cls?.class_name || null,
+        classId: cls?.class_id || null,
+        formName: form?.form_name || (form?.form_number ? `Form ${form.form_number}` : null),
+        formId: form?.form_id || null,
+        schoolId: form?.school_id || student.institution_id || null,
+        schoolName: null, // resolved below
+      };
+    });
+  }, [allStudents, assignmentMap]);
+
+  // Resolve school names
+  const studentsWithSchools = useMemo(() => {
+    if (schools.length === 0) return enrichedStudents;
+    const schoolMap = {};
+    schools.forEach(s => { schoolMap[s.institutionId] = s.name; });
+    return enrichedStudents.map(s => ({
+      ...s,
+      schoolName: s.schoolId ? schoolMap[s.schoolId] || null : null
+    }));
+  }, [enrichedStudents, schools]);
+
+  // ── Cascading filter options ──
+  const filteredForms = useMemo(() => {
+    if (selectedSchool === 'all') return forms;
+    return forms.filter(f => String(f.school_id) === String(selectedSchool));
+  }, [forms, selectedSchool]);
+
+  const filteredClasses = useMemo(() => {
+    let cls = classes;
+    if (selectedForm !== 'all') {
+      cls = cls.filter(c => String(c.form_id) === String(selectedForm));
+    } else if (selectedSchool !== 'all') {
+      const formIds = new Set(filteredForms.map(f => f.form_id));
+      cls = cls.filter(c => formIds.has(c.form_id));
     }
+    return cls;
+  }, [classes, selectedForm, selectedSchool, filteredForms]);
+
+  // ── Apply all filters to students ──
+  const displayStudents = useMemo(() => {
+    let list = studentsWithSchools;
+
+    // School filter
+    if (selectedSchool !== 'all') {
+      list = list.filter(s => String(s.schoolId) === String(selectedSchool) || !s.schoolId);
+      // If filtering by school, hide unassigned unless no other filters
+      if (selectedForm !== 'all' || selectedClass !== 'all') {
+        list = list.filter(s => s.schoolId);
+      }
+    }
+
+    // Form filter
+    if (selectedForm !== 'all') {
+      list = list.filter(s => String(s.formId) === String(selectedForm));
+    }
+
+    // Class filter
+    if (selectedClass !== 'all') {
+      list = list.filter(s => String(s.classId) === String(selectedClass));
+    }
+
+    // Status filter
+    if (statusFilter !== 'all') {
+      list = list.filter(s => statusFilter === 'active' ? s.isActive : !s.isActive);
+    }
+
+    // Search
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      list = list.filter(s =>
+        s.name.toLowerCase().includes(term) ||
+        s.email.toLowerCase().includes(term)
+      );
+    }
+
+    // Sort: assigned students first (by school → form → class → name), then unassigned
+    return list.sort((a, b) => {
+      if (a.classId && !b.classId) return -1;
+      if (!a.classId && b.classId) return 1;
+      if (a.schoolName !== b.schoolName) return (a.schoolName || 'zzz').localeCompare(b.schoolName || 'zzz');
+      if (a.formName !== b.formName) return (a.formName || 'zzz').localeCompare(b.formName || 'zzz');
+      if (a.className !== b.className) return (a.className || 'zzz').localeCompare(b.className || 'zzz');
+      return a.name.localeCompare(b.name);
+    });
+  }, [studentsWithSchools, selectedSchool, selectedForm, selectedClass, statusFilter, searchTerm]);
+
+  // ── Stats ──
+  const assignedCount = studentsWithSchools.filter(s => s.classId).length;
+  const unassignedCount = studentsWithSchools.length - assignedCount;
+  const hasMultipleSchools = schools.length > 1;
+
+  // ── Filter reset helpers ──
+  const handleSchoolChange = (value) => {
+    setSelectedSchool(value);
+    setSelectedForm('all');
+    setSelectedClass('all');
   };
 
-  const filterStudents = () => {
-    let filtered = students;
-
-    if (searchTerm) {
-      filtered = filtered.filter(student =>
-        student.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        student.email.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(student => 
-        statusFilter === 'active' ? student.isActive : !student.isActive
-      );
-    }
-
-    setFilteredStudents(filtered);
+  const handleFormChange = (value) => {
+    setSelectedForm(value);
+    setSelectedClass('all');
   };
 
   const handleViewStudent = (student) => {
@@ -80,96 +194,131 @@ function StudentManagement() {
     setShowModal(true);
   };
 
-  const getStatusBadge = (isActive) => {
-    return isActive ? 
-      <Badge bg="success">Active</Badge> : 
-      <Badge bg="secondary">Inactive</Badge>;
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <Container className="py-4">
-        <div className="text-center">
-          <div className="spinner-border" role="status">
-            <span className="visually-hidden">Loading...</span>
-          </div>
-        </div>
+      <Container className="py-4 d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <Spinner animation="border" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </Spinner>
       </Container>
     );
   }
 
   return (
-    <Container className="py-4">
+    <Container fluid className="py-4">
       <Breadcrumb items={breadcrumbItems} />
-      
-      {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
-      {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
 
-      <Row className="mb-4 pt-5">
-        <Col>
-          <div className="d-flex justify-content-between align-items-center">
-            <div>
-              <h2 className="mb-1">
-                <FaUserGraduate className="me-2 text-primary" />
-                Student Management
-              </h2>
-              <p className="text-muted">Manage student accounts and enrollment requests</p>
-            </div>
-            <div className="d-flex align-items-center">
-              <Badge bg="info" className="me-2">
-                Total Students: {students.length}
-              </Badge>
-            </div>
-          </div>
-        </Col>
-      </Row>
+      <div className="d-flex justify-content-between align-items-center mb-4 pt-3">
+        <div>
+          <h2 className="mb-1">
+            <FaUserGraduate className="me-2 text-primary" />
+            Student Management
+          </h2>
+          <p className="text-muted mb-0">View and manage students by school, form, and class</p>
+        </div>
+        <div className="d-flex gap-2">
+          <Badge bg="info" className="d-flex align-items-center px-3 py-2">
+            Total: {allStudents.length}
+          </Badge>
+          <Badge bg="success" className="d-flex align-items-center px-3 py-2">
+            Assigned: {assignedCount}
+          </Badge>
+          {unassignedCount > 0 && (
+            <Badge bg="warning" text="dark" className="d-flex align-items-center px-3 py-2">
+              Unassigned: {unassignedCount}
+            </Badge>
+          )}
+        </div>
+      </div>
 
-      {/* Students List Section */}
-      <Card>
-        <Card.Header>
-          <Row className="align-items-center">
-            <Col md={6}>
-              <h5 className="mb-0">All Students</h5>
+      {/* ── Filters ── */}
+      <Card className="border-0 shadow-sm mb-3">
+        <Card.Body className="py-3">
+          <Row className="g-2 align-items-end">
+            {hasMultipleSchools && (
+              <Col md={2}>
+                <Form.Label className="small mb-1 fw-semibold">School</Form.Label>
+                <Form.Select size="sm" value={selectedSchool} onChange={(e) => handleSchoolChange(e.target.value)}>
+                  <option value="all">All Schools</option>
+                  {schools.map(s => (
+                    <option key={s.institutionId} value={s.institutionId}>{s.name}</option>
+                  ))}
+                </Form.Select>
+              </Col>
+            )}
+            <Col md={hasMultipleSchools ? 2 : 3}>
+              <Form.Label className="small mb-1 fw-semibold">Form</Form.Label>
+              <Form.Select size="sm" value={selectedForm} onChange={(e) => handleFormChange(e.target.value)}>
+                <option value="all">All Forms</option>
+                {hasMultipleSchools && selectedSchool === 'all' ? (
+                  schools.map(school => {
+                    const schoolForms = filteredForms.filter(f => String(f.school_id) === String(school.institutionId));
+                    if (schoolForms.length === 0) return null;
+                    return (
+                      <optgroup key={school.institutionId} label={school.name}>
+                        {schoolForms.map(f => (
+                          <option key={f.form_id} value={f.form_id}>
+                            {f.form_name || `Form ${f.form_number}`}
+                          </option>
+                        ))}
+                      </optgroup>
+                    );
+                  })
+                ) : (
+                  filteredForms.map(f => (
+                    <option key={f.form_id} value={f.form_id}>
+                      {f.form_name || `Form ${f.form_number}`}
+                    </option>
+                  ))
+                )}
+              </Form.Select>
             </Col>
-            <Col md={6}>
-              <Row>
-                <Col md={8}>
-                  <InputGroup>
-                    <InputGroup.Text>
-                      <FaSearch />
-                    </InputGroup.Text>
-                    <Form.Control
-                      type="text"
-                      placeholder="Search students..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                  </InputGroup>
-                </Col>
-                <Col md={4}>
-                  <Form.Select
-                    value={statusFilter}
-                    onChange={(e) => setStatusFilter(e.target.value)}
-                  >
-                    <option value="all">All Status</option>
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                  </Form.Select>
-                </Col>
-              </Row>
+            <Col md={hasMultipleSchools ? 2 : 3}>
+              <Form.Label className="small mb-1 fw-semibold">Class</Form.Label>
+              <Form.Select size="sm" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
+                <option value="all">All Classes</option>
+                {filteredClasses.map(c => (
+                  <option key={c.class_id} value={c.class_id}>
+                    {c.class_name} ({c.class_code})
+                  </option>
+                ))}
+              </Form.Select>
+            </Col>
+            <Col md={2}>
+              <Form.Label className="small mb-1 fw-semibold">Status</Form.Label>
+              <Form.Select size="sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </Form.Select>
+            </Col>
+            <Col md={hasMultipleSchools ? 4 : 4}>
+              <Form.Label className="small mb-1 fw-semibold">Search</Form.Label>
+              <InputGroup size="sm">
+                <InputGroup.Text><FaSearch /></InputGroup.Text>
+                <Form.Control
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </InputGroup>
             </Col>
           </Row>
-        </Card.Header>
+        </Card.Body>
+      </Card>
+
+      {/* ── Student Table ── */}
+      <Card className="border-0 shadow-sm">
         <Card.Body>
-          {filteredStudents.length === 0 ? (
+          {displayStudents.length === 0 ? (
             <div className="text-center py-5">
               <FaUserGraduate size={48} className="text-muted mb-3" />
               <h5>No students found</h5>
               <p className="text-muted">
-                {searchTerm || statusFilter !== 'all' 
-                  ? 'Try adjusting your search or filter criteria'
-                  : 'No students have registered yet'
-                }
+                {searchTerm || statusFilter !== 'all' || selectedSchool !== 'all' || selectedForm !== 'all' || selectedClass !== 'all'
+                  ? 'Try adjusting your filters'
+                  : 'No students have registered yet'}
               </p>
             </div>
           ) : (
@@ -177,45 +326,54 @@ function StudentManagement() {
               <thead>
                 <tr>
                   <th>Student</th>
-                  <th>Contact</th>
+                  <th>Email</th>
+                  {hasMultipleSchools && <th>School</th>}
+                  <th>Form</th>
+                  <th>Class</th>
                   <th>Status</th>
-                  <th>Joined</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredStudents.map((student) => (
+                {displayStudents.map((student) => (
                   <tr key={student.userId}>
                     <td>
-                      <div>
-                        <strong>{student.name}</strong>
-                        <div className="small text-muted">ID: {student.userId}</div>
-                      </div>
+                      <strong>{student.name}</strong>
                     </td>
                     <td>
-                      <div>
-                        <div className="small">
-                          <FaEnvelope className="me-1" />
-                          {student.email}
-                        </div>
-                        {student.phone && (
-                          <div className="small">
-                            <FaPhone className="me-1" />
-                            {student.phone}
-                          </div>
-                        )}
-                      </div>
+                      <span className="small">{student.email}</span>
                     </td>
-                    <td>{getStatusBadge(student.isActive)}</td>
-                    <td>{new Date(student.createdAt).toLocaleDateString()}</td>
+                    {hasMultipleSchools && (
+                      <td>
+                        <span className="small">{student.schoolName || <span className="text-muted">—</span>}</span>
+                      </td>
+                    )}
+                    <td>
+                      {student.formName
+                        ? <Badge bg="outline-secondary" className="border text-dark">{student.formName}</Badge>
+                        : <span className="text-muted">—</span>
+                      }
+                    </td>
+                    <td>
+                      {student.className
+                        ? <Badge bg="primary">{student.className}</Badge>
+                        : <Badge bg="warning" text="dark">Unassigned</Badge>
+                      }
+                    </td>
+                    <td>
+                      <Badge bg={student.isActive ? 'success' : 'secondary'}>
+                        {student.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                    </td>
                     <td>
                       <Button
                         variant="outline-primary"
                         size="sm"
-                        className="me-2"
+                        className="me-1"
                         onClick={() => handleViewStudent(student)}
+                        title="View details"
                       >
-                        <FaEye /> View
+                        <FaEye />
                       </Button>
                       <Button
                         variant="outline-info"
@@ -224,9 +382,9 @@ function StudentManagement() {
                           setSelectedStudent(student);
                           setShowInfoModal(true);
                         }}
-                        title="Student Information Management"
+                        title="Student information"
                       >
-                        <FaInfoCircle /> Info
+                        <FaInfoCircle />
                       </Button>
                     </td>
                   </tr>
@@ -234,6 +392,9 @@ function StudentManagement() {
               </tbody>
             </Table>
           )}
+          <div className="text-muted small mt-2">
+            Showing {displayStudents.length} of {allStudents.length} students
+          </div>
         </Card.Body>
       </Card>
 
@@ -258,10 +419,19 @@ function StudentManagement() {
                 )}
               </Col>
               <Col md={6}>
-                <h6>Account Information</h6>
-                <p><strong>User ID:</strong> {selectedStudent.userId}</p>
-                <p><strong>Status:</strong> {getStatusBadge(selectedStudent.isActive)}</p>
-                <p><strong>Joined:</strong> {new Date(selectedStudent.createdAt).toLocaleDateString()}</p>
+                <h6>Academic Information</h6>
+                {selectedStudent.schoolName && (
+                  <p><strong>School:</strong> {selectedStudent.schoolName}</p>
+                )}
+                {selectedStudent.formName && (
+                  <p><strong>Form:</strong> {selectedStudent.formName}</p>
+                )}
+                {selectedStudent.className ? (
+                  <p><strong>Class:</strong> {selectedStudent.className}</p>
+                ) : (
+                  <p><strong>Class:</strong> <Badge bg="warning" text="dark">Unassigned</Badge></p>
+                )}
+                <p><strong>Status:</strong> <Badge bg={selectedStudent.isActive ? 'success' : 'secondary'}>{selectedStudent.isActive ? 'Active' : 'Inactive'}</Badge></p>
                 {selectedStudent.emergencyContact && (
                   <p><strong>Emergency Contact:</strong> {selectedStudent.emergencyContact}</p>
                 )}
