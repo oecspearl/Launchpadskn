@@ -291,6 +291,7 @@ function ClassManagement() {
   // Modal state
   const [showModal, setShowModal] = useState(false);
   const [editingClass, setEditingClass] = useState(null);
+  const [modalSchoolId, setModalSchoolId] = useState('');
   const [classData, setClassData] = useState({
     form_id: '',
     class_name: '',
@@ -307,6 +308,11 @@ function ClassManagement() {
   const [success, setSuccess] = useState(null);
 
   // Queries
+  const { data: schools = [] } = useQuery({
+    queryKey: ['institutions'],
+    queryFn: () => institutionService.getAllInstitutions()
+  });
+
   const { data: forms = [], isLoading: isLoadingForms } = useQuery({
     queryKey: ['forms'],
     queryFn: () => institutionService.getFormsBySchool(null)
@@ -377,8 +383,13 @@ function ClassManagement() {
 
   // Handlers
   const handleOpenModal = (classItem = null) => {
+    const defaultSchoolId = schools.length === 1 ? schools[0].institutionId : '';
+
     if (classItem) {
       setEditingClass(classItem);
+      // Look up the school from the form
+      const formObj = forms.find(f => f.form_id === classItem.form_id);
+      setModalSchoolId(formObj?.school_id || defaultSchoolId);
       setClassData({
         form_id: classItem.form_id || '',
         class_name: classItem.class_name || '',
@@ -392,8 +403,13 @@ function ClassManagement() {
       });
     } else {
       setEditingClass(null);
-      const preselectedFormId = selectedForm !== 'all' ? selectedForm : (forms[0]?.form_id || '');
-      const formObj = forms.find(f => String(f.form_id) === String(preselectedFormId));
+      setModalSchoolId(defaultSchoolId);
+      // If only one school, pre-select first form for that school
+      const formsForSchool = defaultSchoolId
+        ? forms.filter(f => String(f.school_id) === String(defaultSchoolId))
+        : forms;
+      const preselectedFormId = selectedForm !== 'all' ? selectedForm : (formsForSchool[0]?.form_id || '');
+      const formObj = formsForSchool.find(f => String(f.form_id) === String(preselectedFormId));
       const academicYear = formObj?.academic_year || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
       setClassData({
         form_id: preselectedFormId,
@@ -413,6 +429,7 @@ function ClassManagement() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingClass(null);
+    setModalSchoolId('');
     setClassData({
       form_id: '',
       class_name: '',
@@ -426,6 +443,17 @@ function ClassManagement() {
     });
     setError(null);
     setSuccess(null);
+  };
+
+  const handleModalSchoolChange = (schoolId) => {
+    setModalSchoolId(schoolId);
+    // Reset form selection when school changes
+    setClassData(prev => ({
+      ...prev,
+      form_id: '',
+      academic_year: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
+      class_code: prev.class_name && !editingClass ? '' : prev.class_code
+    }));
   };
 
   const handleFormChange = (newFormId) => {
@@ -532,11 +560,27 @@ function ClassManagement() {
             onChange={(e) => setSelectedForm(e.target.value)}
           >
             <option value="all">All Forms</option>
-            {forms.map(form => (
-              <option key={form.form_id} value={form.form_id}>
-                {form.form_number}{form.stream} ({form.academic_year})
-              </option>
-            ))}
+            {schools.length > 1 ? (
+              schools.map(school => {
+                const schoolForms = forms.filter(f => String(f.school_id) === String(school.institutionId));
+                if (schoolForms.length === 0) return null;
+                return (
+                  <optgroup key={school.institutionId} label={school.name}>
+                    {schoolForms.map(form => (
+                      <option key={form.form_id} value={form.form_id}>
+                        {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })
+            ) : (
+              forms.map(form => (
+                <option key={form.form_id} value={form.form_id}>
+                  {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                </option>
+              ))
+            )}
           </Form.Select>
         </Col>
       </Row>
@@ -586,7 +630,9 @@ function ClassManagement() {
                       </td>
                       <td><Badge bg="secondary">{classItem.class_code}</Badge></td>
                       <td>
-                        {classItem.form ? `${classItem.form.form_number}${classItem.form.stream || ''}` : 'N/A'}
+                        {classItem.form
+                          ? (classItem.form.form_name || `Form ${classItem.form.form_number}`)
+                          : 'N/A'}
                       </td>
                       <td>{classItem.academic_year}</td>
                       <td>{classItem.form_tutor?.name || 'Not assigned'}</td>
@@ -647,21 +693,63 @@ function ClassManagement() {
           <Modal.Body>
             {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
 
-            <Form.Group className="mb-3">
-              <Form.Label>Form *</Form.Label>
-              <Form.Select
-                value={classData.form_id}
-                onChange={(e) => handleFormChange(e.target.value)}
-                required
-              >
-                <option value="">Select Form</option>
-                {forms.map(form => (
-                  <option key={form.form_id} value={form.form_id}>
-                    {form.form_number}{form.stream} ({form.academic_year})
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
+            {schools.length > 1 ? (
+              <Row className="mb-3">
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>School *</Form.Label>
+                    <Form.Select
+                      value={modalSchoolId}
+                      onChange={(e) => handleModalSchoolChange(e.target.value)}
+                      required
+                    >
+                      <option value="">Select School</option>
+                      {schools.map(school => (
+                        <option key={school.institutionId} value={school.institutionId}>
+                          {school.name}
+                        </option>
+                      ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+                <Col md={6}>
+                  <Form.Group>
+                    <Form.Label>Form *</Form.Label>
+                    <Form.Select
+                      value={classData.form_id}
+                      onChange={(e) => handleFormChange(e.target.value)}
+                      required
+                      disabled={!modalSchoolId}
+                    >
+                      <option value="">{modalSchoolId ? 'Select Form' : 'Select a school first'}</option>
+                      {forms
+                        .filter(f => String(f.school_id) === String(modalSchoolId))
+                        .map(form => (
+                          <option key={form.form_id} value={form.form_id}>
+                            {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                          </option>
+                        ))}
+                    </Form.Select>
+                  </Form.Group>
+                </Col>
+              </Row>
+            ) : (
+              <Form.Group className="mb-3">
+                <Form.Label>Form *</Form.Label>
+                <Form.Select
+                  value={classData.form_id}
+                  onChange={(e) => handleFormChange(e.target.value)}
+                  required
+                >
+                  <option value="">Select Form</option>
+                  {forms.map(form => (
+                    <option key={form.form_id} value={form.form_id}>
+                      {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            )}
 
             <Row>
               <Col md={6}>
