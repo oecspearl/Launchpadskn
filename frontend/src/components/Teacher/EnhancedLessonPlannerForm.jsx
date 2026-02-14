@@ -6,7 +6,7 @@ import {
 import { FaBook, FaUsers, FaCog, FaMagic } from 'react-icons/fa';
 import { generateEnhancedLessonPlan } from '../../services/aiLessonService';
 import { supabase } from '../../config/supabase';
-import TinyMCEEditor from '../common/TinyMCEEditor';
+import TinyMCEEditor from '../Editor/TextEditor';
 
 function EnhancedLessonPlannerForm({ 
   subjectName = '',

@@ -8,7 +8,7 @@ import {
   FaArrowUp, FaArrowDown, FaGripVertical
 } from 'react-icons/fa';
 import supabaseService from '../../services/supabaseService';
-import TinyMCEEditor from '../common/TinyMCEEditor';
+import TinyMCEEditor from '../Editor/TextEditor';
 
 const QUESTION_TYPES = {
   MULTIPLE_CHOICE: 'Multiple Choice',

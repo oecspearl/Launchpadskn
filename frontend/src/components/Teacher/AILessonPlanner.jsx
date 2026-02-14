@@ -5,7 +5,7 @@ import {
 } from 'react-bootstrap';
 import { FaRobot, FaMagic } from 'react-icons/fa';
 import { generateLessonPlan } from '../../services/aiLessonService';
-import TinyMCEEditor from '../common/TinyMCEEditor';
+import TinyMCEEditor from '../Editor/TextEditor';
 
 function AILessonPlanner({ 
   onPlanGenerated, 

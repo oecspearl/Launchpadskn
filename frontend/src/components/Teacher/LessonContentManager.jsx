@@ -28,7 +28,7 @@ import { generateAssignmentRubric, generateCompleteLessonContent, generateStuden
 import { searchEducationalVideos } from '../../services/youtubeService';
 import html2pdf from 'html2pdf.js';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
-import TinyMCEEditor from '../common/TinyMCEEditor';
+import TinyMCEEditor from '../Editor/TextEditor';
 import DOMPurify from 'dompurify';
 import './LessonContentManager-redesign.css';
 

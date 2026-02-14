@@ -6,7 +6,7 @@ import {
   FaEye, FaEdit, FaInfoCircle, FaCopy, FaDownload, FaSave
 } from 'react-icons/fa';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
-import TinyMCEEditor from '../common/TinyMCEEditor';
+import TinyMCEEditor from '../Editor/TextEditor';
 import './LessonPlanOutput.css';
 
 function LessonPlanOutput({ onSaveLesson }) {
