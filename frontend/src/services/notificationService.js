@@ -360,7 +360,11 @@ export const subscribeToNotifications = (userId, callback) => {
                 callback(payload.new);
             }
         )
-        .subscribe();
+        .subscribe((status, err) => {
+            if (err) {
+                console.warn('Notification subscription error:', err.message || err);
+            }
+        });
 
     return channel;
 };

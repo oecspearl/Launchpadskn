@@ -9,9 +9,10 @@ import { detectVideoType, extractYouTubeVideoId } from '../types/contentTypes';
 const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
-// Debug: Log API key status (without exposing the key)
-console.log('[AI Service] API Key configured:', API_KEY ? 'Yes (length: ' + API_KEY.length + ')' : 'No');
-console.log('[AI Service] API Key starts with:', API_KEY ? API_KEY.substring(0, 10) + '...' : 'N/A');
+// Only log API key status in development (never expose key details)
+if (import.meta.env.DEV) {
+    console.log('[AI Service] API Key configured:', API_KEY ? 'Yes' : 'No');
+}
 
 /**
  * Generate a lesson plan using AI

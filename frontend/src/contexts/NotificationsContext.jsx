@@ -104,6 +104,12 @@ export const NotificationsProvider = ({ children }) => {
 
         const userId = user.user_id || user.userId;
 
+        // Skip realtime subscription if userId is a UUID (profile not fully loaded yet)
+        // Notifications table uses numeric user_id, so UUID would cause 403
+        if (typeof userId === 'string' && userId.includes('-')) {
+            return;
+        }
+
         // Subscribe to real-time notifications
         const channel = subscribeToNotifications(userId, handleNewNotification);
         setRealtimeChannel(channel);
