@@ -43,7 +43,7 @@ const HeroCard = ({ heroLesson, getGradient, formatDate, formatTime }) => {
                         )}
                     </div>
 
-                    <p style={{ color: '#cbd5e1', marginBottom: '2rem', lineHeight: '1.6', maxWidth: '600px' }}>
+                    <p style={{ color: 'var(--stream-text-muted)', marginBottom: '2rem', lineHeight: '1.6', maxWidth: '600px' }}>
                         {heroLesson.description || "Get ready for your next big learning adventure. Join the session to start earning XP and mastering new skills."}
                     </p>
 

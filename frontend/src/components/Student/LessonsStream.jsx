@@ -104,9 +104,9 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
         <StreamHeader greeting={getGreeting()} />
         <div className="hero-card" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="text-center">
-            <FaGamepad style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.2)', marginBottom: '1rem' }} />
-            <h3 style={{ color: 'white' }}>No Missions Available</h3>
-            <p style={{ color: '#94a3b8' }}>Check back later for new quests!</p>
+            <FaGamepad style={{ fontSize: '4rem', color: 'var(--stream-text-muted)', opacity: 0.3, marginBottom: '1rem' }} />
+            <h3 style={{ color: 'var(--stream-text)' }}>No Missions Available</h3>
+            <p style={{ color: 'var(--stream-text-muted)' }}>Check back later for new quests!</p>
           </div>
         </div>
       </div>

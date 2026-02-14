@@ -299,7 +299,7 @@ function LessonViewStream() {
                             <FaRocket className="text-primary" />
                             Mission Steps
                         </div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--theme-text-muted, #94a3b8)' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--theme-text-muted)' }}>
                             {completedContent.size}/{lesson.content?.length || 0} Complete
                         </span>
                     </div>
@@ -334,7 +334,7 @@ function LessonViewStream() {
                                 <div className="viewer-title">{activeContent.title}</div>
                                 <div className="d-flex gap-2 align-items-center">
                                     {activeContent.estimated_minutes && (
-                                        <span className="xp-badge" style={{ background: 'var(--theme-glass, rgba(255,255,255,0.1))', color: 'var(--theme-text-muted, #e2e8f0)' }}>
+                                        <span className="xp-badge" style={{ background: 'var(--theme-glass)', color: 'var(--theme-text-muted)' }}>
                                             <FaClock className="me-1" /> {activeContent.estimated_minutes} min
                                         </span>
                                     )}
@@ -352,7 +352,7 @@ function LessonViewStream() {
                             <div className="viewer-content">
                                 {/* Description (only if not text content type) */}
                                 {activeContent.description && !['LEARNING_ACTIVITIES', 'KEY_CONCEPTS', 'SUMMARY', 'REFLECTION_QUESTIONS'].includes(activeContent.content_type) && (
-                                    <div style={{ marginBottom: '2rem', color: 'var(--theme-text-muted, #cbd5e1)', lineHeight: '1.6' }}>
+                                    <div style={{ marginBottom: '2rem', color: 'var(--theme-text-muted)', lineHeight: '1.6' }}>
                                         {activeContent.description}
                                     </div>
                                 )}

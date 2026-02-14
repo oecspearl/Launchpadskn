@@ -1,19 +1,19 @@
 /* ===== Theme System - CSS Variables ===== */
-/* Cool Dark Theme (Default) */
+/* Light Theme as default */
 :root,
 .theme-cool-dark {
-    --theme-bg: #1a1d24;
-    --theme-card-bg: rgba(30, 35, 44, 0.85);
-    --theme-glass: rgba(255, 255, 255, 0.04);
-    --theme-glass-border: rgba(200, 210, 220, 0.12);
-    --theme-primary: #5b9bd5;
-    --theme-accent: #9b87d4;
-    --theme-success: #52b788;
-    --theme-warning: #e9b44c;
-    --theme-danger: #e07a7a;
-    --theme-text: #ffffff;
-    --theme-text-muted: #a8b5c4;
-    --theme-glow: 0 0 15px rgba(91, 155, 213, 0.1);
+    --theme-bg: #f8f9fa;
+    --theme-card-bg: rgba(255, 255, 255, 0.95);
+    --theme-glass: rgba(0, 0, 0, 0.02);
+    --theme-glass-border: rgba(0, 0, 0, 0.1);
+    --theme-primary: #3b82f6;
+    --theme-accent: #8b5cf6;
+    --theme-success: #10b981;
+    --theme-warning: #f59e0b;
+    --theme-danger: #ef4444;
+    --theme-text: #1a1d24;
+    --theme-text-muted: #6b7280;
+    --theme-glow: 0 0 15px rgba(59, 130, 246, 0.1);
 }
 
 /* Global Dark Mode Override - Ensure lesson preview respects global dark mode */
@@ -37,19 +37,19 @@
     --theme-text-muted: #cbd5e0;
 }
 
-/* Warm Dark Theme */
+/* Warm Dark Theme - kept for compatibility */
 .theme-warm-dark {
-    --theme-bg: #241e1a;
-    --theme-card-bg: rgba(44, 35, 30, 0.85);
-    --theme-glass: rgba(255, 255, 255, 0.04);
-    --theme-glass-border: rgba(220, 200, 180, 0.12);
+    --theme-bg: #f8f9fa;
+    --theme-card-bg: rgba(255, 255, 255, 0.95);
+    --theme-glass: rgba(0, 0, 0, 0.02);
+    --theme-glass-border: rgba(0, 0, 0, 0.1);
     --theme-primary: #d4915b;
     --theme-accent: #c97d5b;
     --theme-success: #7bb788;
     --theme-warning: #e9b44c;
     --theme-danger: #e07a7a;
-    --theme-text: #ffffff;
-    --theme-text-muted: #c4b5a8;
+    --theme-text: #1a1d24;
+    --theme-text-muted: #6b7280;
     --theme-glow: 0 0 15px rgba(212, 145, 91, 0.1);
 }
 
@@ -69,20 +69,20 @@
     --theme-glow: 0 0 15px rgba(59, 130, 246, 0.1);
 }
 
-/* High Contrast Theme */
+/* High Contrast Theme - kept for compatibility */
 .theme-high-contrast {
-    --theme-bg: #000000;
-    --theme-card-bg: rgba(20, 20, 20, 0.95);
-    --theme-glass: rgba(255, 255, 255, 0.05);
-    --theme-glass-border: rgba(255, 255, 255, 0.3);
-    --theme-primary: #00ff00;
-    --theme-accent: #00ffff;
-    --theme-success: #00ff00;
-    --theme-warning: #ffff00;
-    --theme-danger: #ff0000;
-    --theme-text: #ffffff;
-    --theme-text-muted: #cccccc;
-    --theme-glow: 0 0 20px rgba(0, 255, 0, 0.3);
+    --theme-bg: #ffffff;
+    --theme-card-bg: rgba(255, 255, 255, 1);
+    --theme-glass: rgba(0, 0, 0, 0.03);
+    --theme-glass-border: rgba(0, 0, 0, 0.2);
+    --theme-primary: #0050cc;
+    --theme-accent: #6b21a8;
+    --theme-success: #047857;
+    --theme-warning: #d97706;
+    --theme-danger: #dc2626;
+    --theme-text: #000000;
+    --theme-text-muted: #4b5563;
+    --theme-glow: 0 0 20px rgba(0, 80, 204, 0.2);
 }
 
 /* ===== Layout - Using Theme Variables ===== */
@@ -686,7 +686,7 @@
 .discussion-sidebar-header h5 {
     font-size: 1rem;
     font-weight: 600;
-    color: var(--theme-text, #ffffff);
+    color: var(--theme-text, #1a1d24);
     margin: 0;
     display: flex;
     align-items: center;

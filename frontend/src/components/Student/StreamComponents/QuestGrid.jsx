@@ -41,7 +41,7 @@ const QuestGrid = ({ quests, getGradient, formatDate, formatTime, calculateXP })
                                     <FaTrophy />
                                     {calculateXP(lesson.start_time, lesson.end_time)} XP
                                 </div>
-                                <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                                <div style={{ color: 'var(--stream-text-muted)', fontSize: '0.85rem' }}>
                                     <FaClock className="me-1" />
                                     {formatTime(lesson.start_time)}
                                 </div>

@@ -1,25 +1,25 @@
-/* ===== StreamHub Theme Variables - Eye-Friendly Palette ===== */
+/* ===== StreamHub Theme Variables - Light Mode Default ===== */
 .lessons-stream-container {
-  /* Softer, warmer backgrounds - reduces eye strain */
-  --stream-bg: #1a1d24;
-  --stream-card-bg: rgba(30, 35, 44, 0.95);
-  --stream-glass: rgba(255, 255, 255, 0.04);
-  --stream-glass-border: rgba(200, 210, 220, 0.12);
+  /* Light backgrounds */
+  --stream-bg: #f8f9fa;
+  --stream-card-bg: #ffffff;
+  --stream-glass: rgba(0, 0, 0, 0.02);
+  --stream-glass-border: rgba(0, 0, 0, 0.1);
 
-  /* Muted, comfortable accent colors */
-  --stream-primary: #5b9bd5;
-  --stream-accent: #9b87d4;
-  --stream-success: #52b788;
-  --stream-warning: #e9b44c;
-  --stream-danger: #e07a7a;
+  /* Accent colors */
+  --stream-primary: #3b82f6;
+  --stream-accent: #8b5cf6;
+  --stream-success: #10b981;
+  --stream-warning: #f59e0b;
+  --stream-danger: #ef4444;
 
-  /* Warmer, more readable text */
-  --stream-text: #f0f4f8;
-  --stream-text-muted: #cbd5e1;
+  /* Dark, readable text */
+  --stream-text: #1a1d24;
+  --stream-text-muted: #6b7280;
 
   /* Subtle effects */
-  --stream-glow: 0 0 15px rgba(91, 155, 213, 0.1);
-  --stream-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  --stream-glow: 0 0 15px rgba(59, 130, 246, 0.1);
+  --stream-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 
   /* Layout */
   width: 100%;
@@ -47,38 +47,19 @@
   --stream-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-/* Warm Dark Theme */
+/* Warm Dark Theme - kept for compatibility, uses light colors */
 .lessons-stream-container.theme-warm-dark {
-  --stream-bg: #241e1a;
-  --stream-card-bg: rgba(44, 35, 30, 0.95);
-  --stream-glass: rgba(255, 255, 255, 0.04);
-  --stream-glass-border: rgba(220, 200, 180, 0.12);
   --stream-primary: #d4915b;
   --stream-accent: #c97d5b;
   --stream-success: #7bb788;
-  --stream-warning: #e9b44c;
-  --stream-danger: #e07a7a;
-  --stream-text: #f0f4f8;
-  --stream-text-muted: #c4b5a8;
-  --stream-glow: 0 0 15px rgba(212, 145, 91, 0.1);
-  --stream-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* High Contrast Theme */
+/* High Contrast Theme - kept for compatibility, uses light colors */
 .lessons-stream-container.theme-high-contrast {
-  --stream-bg: #000000;
-  --stream-card-bg: rgba(20, 20, 20, 0.95);
-  --stream-glass: rgba(255, 255, 255, 0.05);
-  --stream-glass-border: rgba(255, 255, 255, 0.3);
-  --stream-primary: #00ff00;
-  --stream-accent: #00ffff;
-  --stream-success: #00ff00;
-  --stream-warning: #ffff00;
-  --stream-danger: #ff0000;
-  --stream-text: #ffffff;
-  --stream-text-muted: #cccccc;
-  --stream-glow: 0 0 20px rgba(0, 255, 0, 0.3);
-  --stream-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+  --stream-primary: #0050cc;
+  --stream-accent: #6b21a8;
+  --stream-text: #000000;
+  --stream-text-muted: #4b5563;
 }
 
 /* ===== Header Section ===== */
@@ -104,7 +85,7 @@
 .stream-title {
   font-size: 2.5rem;
   font-weight: 800;
-  color: #ffffff;
+  color: var(--stream-text);
   margin: 0;
 }
 
@@ -154,7 +135,7 @@
   border-radius: 24px;
   overflow: hidden;
   backdrop-filter: blur(20px);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--stream-shadow);
   min-height: 450px;
   position: relative;
 }
@@ -169,7 +150,7 @@
 }
 
 .hero-visual {
-  background: linear-gradient(135deg, #2a2d3a 0%, #3a3f52 100%);
+  background: linear-gradient(135deg, var(--stream-primary) 0%, var(--stream-accent) 100%);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -210,12 +191,11 @@
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 1.5rem;
-  background: linear-gradient(to right, #fff, #a8b5c4);
+  background: linear-gradient(to right, var(--stream-text), var(--stream-text-muted));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  color: white;
-  /* Fallback */
+  color: var(--stream-text);
 }
 
 .hero-meta {
@@ -274,7 +254,7 @@
 }
 
 .btn-details {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--stream-glass);
   color: var(--stream-text);
   border: 1px solid var(--stream-glass-border);
   padding: 1rem 2rem;
@@ -289,11 +269,11 @@
 }
 
 .btn-details:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.18);
+  background: var(--stream-glass-border);
+  border-color: var(--stream-glass-border);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  color: var(--stream-text);
 }
 
 /* ===== Quest Log (Upcoming Lessons) ===== */
@@ -314,7 +294,7 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: #ffffff;
+  color: var(--stream-text);
 }
 
 .quest-grid {
@@ -405,9 +385,9 @@
 }
 
 .archive-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--stream-glass-border);
   transform: translateX(4px);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: var(--stream-glass-border);
 }
 
 .archive-info {
