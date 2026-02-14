@@ -304,8 +304,9 @@ export const institutionService = {
     async getFormsBySchool(schoolId) {
         let query = supabase
             .from('forms')
-            .select('*, coordinator:users!forms_coordinator_id_fkey(name, email)')
+            .select('*, coordinator:users!forms_coordinator_id_fkey(name, email), school:institutions!forms_school_id_fkey(institution_id, name)')
             .eq('is_active', true)
+            .order('school_id', { ascending: true })
             .order('form_number', { ascending: true });
 
         // Only filter by school_id if it's provided

@@ -69,6 +69,19 @@ function FormManagement() {
     classCountByForm[c.form_id] = (classCountByForm[c.form_id] || 0) + 1;
   });
 
+  // Group forms by school for clear display
+  const formsBySchool = {};
+  forms.forEach(form => {
+    const schoolId = form.school_id;
+    const schoolName = form.school?.name || schools.find(s => s.institutionId === schoolId)?.name || 'Unknown School';
+    if (!formsBySchool[schoolId]) {
+      formsBySchool[schoolId] = { schoolName, forms: [] };
+    }
+    formsBySchool[schoolId].forms.push(form);
+  });
+  const schoolGroups = Object.values(formsBySchool);
+  const hasMultipleSchools = schoolGroups.length > 1;
+
   // Mutations
   const createFormMutation = useMutation({
     mutationFn: (data) => institutionService.createForm(data),
@@ -243,7 +256,7 @@ function FormManagement() {
                 <tr>
                   <th>Form</th>
                   <th>Academic Year</th>
-                  <th>School</th>
+                  {!hasMultipleSchools && <th>School</th>}
                   <th>Coordinator</th>
                   <th>Classes</th>
                   <th>Status</th>
@@ -251,94 +264,109 @@ function FormManagement() {
                 </tr>
               </thead>
               <tbody>
-                {forms.map((form) => (
-                  <React.Fragment key={form.form_id}>
-                    <tr
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => toggleExpand(form.form_id)}
-                    >
-                      <td>
-                        <div className="d-flex align-items-center">
-                          {expandedFormId === form.form_id ?
-                            <FaChevronDown className="me-2 text-muted" size={12} /> :
-                            <FaChevronRight className="me-2 text-muted" size={12} />
-                          }
-                          <strong>{form.form_name || `Form ${form.form_number}`}</strong>
-                        </div>
-                      </td>
-                      <td>{form.academic_year}</td>
-                      <td>
-                        {form.school?.name || schools.find(s => s.institutionId === form.school_id)?.name || 'N/A'}
-                      </td>
-                      <td>{form.coordinator?.name || 'Not assigned'}</td>
-                      <td>
-                        <Badge bg="info">
-                          {classCountByForm[form.form_id] || 0}
-                        </Badge>
-                      </td>
-                      <td>
-                        <Badge bg={form.is_active ? 'success' : 'secondary'}>
-                          {form.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </td>
-                      <td>
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          className="me-1"
-                          onClick={(e) => { e.stopPropagation(); handleOpenModal(form); }}
-                          title="Edit form"
-                        >
-                          <FaEdit />
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleDelete(form.form_id); }}
-                          title="Archive form"
-                        >
-                          <FaTrash />
-                        </Button>
-                      </td>
-                    </tr>
-                    {expandedFormId === form.form_id && (
+                {schoolGroups.map((group) => (
+                  <React.Fragment key={group.schoolName}>
+                    {hasMultipleSchools && (
                       <tr>
-                        <td colSpan="7" className="p-0 border-top-0">
-                          <div className="bg-light p-3">
-                            <div className="d-flex justify-content-between align-items-center mb-2">
-                              <h6 className="mb-0">Classes in {form.form_name || `Form ${form.form_number}`}</h6>
-                              <Button size="sm" variant="outline-primary" onClick={() => navigate('/admin/classes')}>
-                                Manage Classes
-                              </Button>
-                            </div>
-                            {getClassesForForm(form.form_id).length === 0 ? (
-                              <p className="text-muted small mb-0">No classes created yet for this form.</p>
-                            ) : (
-                              <Table size="sm" hover className="mb-0">
-                                <thead>
-                                  <tr><th>Class</th><th>Code</th><th>Tutor</th><th>Enrollment</th><th>Room</th></tr>
-                                </thead>
-                                <tbody>
-                                  {getClassesForForm(form.form_id).map(c => (
-                                    <tr key={c.class_id}>
-                                      <td><strong>{c.class_name}</strong></td>
-                                      <td><Badge bg="secondary">{c.class_code}</Badge></td>
-                                      <td>{c.form_tutor?.name || 'Not assigned'}</td>
-                                      <td>
-                                        <Badge bg={c.current_enrollment >= c.capacity ? 'danger' : 'success'}>
-                                          {c.current_enrollment || 0} / {c.capacity}
-                                        </Badge>
-                                      </td>
-                                      <td>{c.room_number || '-'}</td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </Table>
-                            )}
-                          </div>
+                        <td colSpan={hasMultipleSchools ? 6 : 7}
+                          className="bg-light fw-bold text-primary border-bottom-0"
+                          style={{ fontSize: '0.95rem', letterSpacing: '0.02em' }}
+                        >
+                          {group.schoolName}
                         </td>
                       </tr>
                     )}
+                    {group.forms.map((form) => (
+                      <React.Fragment key={form.form_id}>
+                        <tr
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => toggleExpand(form.form_id)}
+                        >
+                          <td>
+                            <div className="d-flex align-items-center">
+                              {hasMultipleSchools && <span style={{ width: 16, display: 'inline-block' }} />}
+                              {expandedFormId === form.form_id ?
+                                <FaChevronDown className="me-2 text-muted" size={12} /> :
+                                <FaChevronRight className="me-2 text-muted" size={12} />
+                              }
+                              <strong>{form.form_name || `Form ${form.form_number}`}</strong>
+                            </div>
+                          </td>
+                          <td>{form.academic_year}</td>
+                          {!hasMultipleSchools && (
+                            <td>{form.school?.name || group.schoolName}</td>
+                          )}
+                          <td>{form.coordinator?.name || 'Not assigned'}</td>
+                          <td>
+                            <Badge bg="info">
+                              {classCountByForm[form.form_id] || 0}
+                            </Badge>
+                          </td>
+                          <td>
+                            <Badge bg={form.is_active ? 'success' : 'secondary'}>
+                              {form.is_active ? 'Active' : 'Inactive'}
+                            </Badge>
+                          </td>
+                          <td>
+                            <Button
+                              variant="outline-primary"
+                              size="sm"
+                              className="me-1"
+                              onClick={(e) => { e.stopPropagation(); handleOpenModal(form); }}
+                              title="Edit form"
+                            >
+                              <FaEdit />
+                            </Button>
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); handleDelete(form.form_id); }}
+                              title="Archive form"
+                            >
+                              <FaTrash />
+                            </Button>
+                          </td>
+                        </tr>
+                        {expandedFormId === form.form_id && (
+                          <tr>
+                            <td colSpan={hasMultipleSchools ? 6 : 7} className="p-0 border-top-0">
+                              <div className="bg-light p-3">
+                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                  <h6 className="mb-0">Classes in {form.form_name || `Form ${form.form_number}`}</h6>
+                                  <Button size="sm" variant="outline-primary" onClick={() => navigate('/admin/classes')}>
+                                    Manage Classes
+                                  </Button>
+                                </div>
+                                {getClassesForForm(form.form_id).length === 0 ? (
+                                  <p className="text-muted small mb-0">No classes created yet for this form.</p>
+                                ) : (
+                                  <Table size="sm" hover className="mb-0">
+                                    <thead>
+                                      <tr><th>Class</th><th>Code</th><th>Tutor</th><th>Enrollment</th><th>Room</th></tr>
+                                    </thead>
+                                    <tbody>
+                                      {getClassesForForm(form.form_id).map(c => (
+                                        <tr key={c.class_id}>
+                                          <td><strong>{c.class_name}</strong></td>
+                                          <td><Badge bg="secondary">{c.class_code}</Badge></td>
+                                          <td>{c.form_tutor?.name || 'Not assigned'}</td>
+                                          <td>
+                                            <Badge bg={c.current_enrollment >= c.capacity ? 'danger' : 'success'}>
+                                              {c.current_enrollment || 0} / {c.capacity}
+                                            </Badge>
+                                          </td>
+                                          <td>{c.room_number || '-'}</td>
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </Table>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    ))}
                   </React.Fragment>
                 ))}
               </tbody>
