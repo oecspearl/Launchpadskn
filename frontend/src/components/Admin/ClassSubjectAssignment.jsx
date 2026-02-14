@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container, Row, Col, Card, Button, Spinner, Alert,
   Table, Modal, Form, Badge
@@ -17,8 +17,9 @@ import InteractiveContentHub from '../InteractiveContent/InteractiveContentHub';
 
 function ClassSubjectAssignment() {
   const queryClient = useQueryClient();
-  const [selectedClass, setSelectedClass] = useState('all');
+  const [selectedSchool, setSelectedSchool] = useState('all');
   const [selectedForm, setSelectedForm] = useState('all');
+  const [selectedClass, setSelectedClass] = useState('all');
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -26,6 +27,8 @@ function ClassSubjectAssignment() {
   const [showCollaboration, setShowCollaboration] = useState(false);
   const [showInteractiveContent, setShowInteractiveContent] = useState(false);
   const [selectedClassSubject, setSelectedClassSubject] = useState(null);
+  const [modalSchoolId, setModalSchoolId] = useState('');
+  const [modalFormId, setModalFormId] = useState('');
   const [assignmentData, setAssignmentData] = useState({
     class_id: '',
     subject_offering_id: '',
@@ -36,6 +39,11 @@ function ClassSubjectAssignment() {
   const [success, setSuccess] = useState(null);
 
   // Queries
+  const { data: schools = [] } = useQuery({
+    queryKey: ['institutions'],
+    queryFn: () => institutionService.getAllInstitutions()
+  });
+
   const { data: teachers = [], isLoading: isLoadingTeachers } = useQuery({
     queryKey: ['teachers'],
     queryFn: async () => {
@@ -71,11 +79,69 @@ function ClassSubjectAssignment() {
 
   const isLoading = isLoadingTeachers || isLoadingForms || isLoadingClasses || isLoadingOfferings || isLoadingAssignments;
 
+  const hasMultipleSchools = schools.length > 1;
+
+  // Build a school lookup from forms (forms have school data joined)
+  const schoolMap = useMemo(() => {
+    const map = {};
+    forms.forEach(f => {
+      if (f.school) {
+        map[f.school.institution_id || f.school_id] = f.school.name;
+      }
+    });
+    return map;
+  }, [forms]);
+
+  // Filtered forms based on selected school
+  const filteredForms = useMemo(() => {
+    if (selectedSchool === 'all') return forms;
+    return forms.filter(f => String(f.school_id) === String(selectedSchool));
+  }, [forms, selectedSchool]);
+
+  // Filtered classes based on selected form (and indirectly school)
+  const filteredClassOptions = useMemo(() => {
+    if (selectedForm === 'all') {
+      if (selectedSchool === 'all') return classes;
+      // Filter classes by forms belonging to the selected school
+      const schoolFormIds = filteredForms.map(f => f.form_id);
+      return classes.filter(c => schoolFormIds.includes(c.form_id));
+    }
+    return classes.filter(c => c.form_id === parseInt(selectedForm));
+  }, [classes, selectedForm, selectedSchool, filteredForms]);
+
+  // Modal: forms filtered by modal school
+  const modalForms = useMemo(() => {
+    if (!modalSchoolId) return forms;
+    return forms.filter(f => String(f.school_id) === String(modalSchoolId));
+  }, [forms, modalSchoolId]);
+
+  // Modal: classes filtered by modal form
+  const modalClasses = useMemo(() => {
+    if (!modalFormId) return [];
+    return classes.filter(c => c.form_id === parseInt(modalFormId));
+  }, [classes, modalFormId]);
+
+  // Modal: offerings filtered by modal form
+  const modalOfferings = useMemo(() => {
+    if (!modalFormId) return [];
+    return formOfferings.filter(o => o.form_id === parseInt(modalFormId));
+  }, [formOfferings, modalFormId]);
+
+  // Resolve school name for a class subject
+  const getSchoolName = (classSubject) => {
+    const formId = classSubject.class?.form_id;
+    if (!formId) return 'N/A';
+    const formObj = forms.find(f => f.form_id === formId);
+    if (!formObj) return 'N/A';
+    return formObj.school?.name || schoolMap[formObj.school_id] || 'N/A';
+  };
+
   // Mutations
   const assignSubjectMutation = useMutation({
     mutationFn: (data) => classService.assignSubjectToClass(data.class_id, data.subject_offering_id, data.teacher_id),
     onSuccess: () => {
       queryClient.invalidateQueries(['class-subjects']);
+      queryClient.invalidateQueries(['class-subjects-inline']);
       setSuccess('Subject assigned to class successfully');
       handleCloseModal();
     },
@@ -96,15 +162,35 @@ function ClassSubjectAssignment() {
     mutationFn: (id) => classService.removeSubjectFromClass(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['class-subjects']);
+      queryClient.invalidateQueries(['class-subjects-inline']);
       setSuccess('Subject removed from class successfully');
     },
     onError: (err) => setError(err.message || 'Failed to remove subject')
   });
 
   // Handlers
+  const handleSchoolChange = (schoolId) => {
+    setSelectedSchool(schoolId);
+    setSelectedForm('all');
+    setSelectedClass('all');
+  };
+
+  const handleFormChange = (formId) => {
+    setSelectedForm(formId);
+    setSelectedClass('all');
+  };
+
   const handleOpenModal = () => {
+    const defaultSchoolId = schools.length === 1 ? (schools[0].institutionId || schools[0].institution_id) : '';
+    // If a filter is active, pre-populate modal
+    const preSchool = selectedSchool !== 'all' ? selectedSchool : defaultSchoolId;
+    const preForm = selectedForm !== 'all' ? selectedForm : '';
+    const preClass = selectedClass !== 'all' ? selectedClass : '';
+
+    setModalSchoolId(preSchool ? String(preSchool) : '');
+    setModalFormId(preForm ? String(preForm) : '');
     setAssignmentData({
-      class_id: selectedClass !== 'all' ? selectedClass : (classes[0]?.class_id || ''),
+      class_id: preClass || '',
       subject_offering_id: '',
       teacher_id: ''
     });
@@ -113,6 +199,8 @@ function ClassSubjectAssignment() {
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setModalSchoolId('');
+    setModalFormId('');
     setAssignmentData({
       class_id: '',
       subject_offering_id: '',
@@ -120,6 +208,17 @@ function ClassSubjectAssignment() {
     });
     setError(null);
     setSuccess(null);
+  };
+
+  const handleModalSchoolChange = (schoolId) => {
+    setModalSchoolId(schoolId);
+    setModalFormId('');
+    setAssignmentData({ class_id: '', subject_offering_id: '', teacher_id: '' });
+  };
+
+  const handleModalFormChange = (formId) => {
+    setModalFormId(formId);
+    setAssignmentData({ ...assignmentData, class_id: '', subject_offering_id: '' });
   };
 
   const handleSubmit = (e) => {
@@ -137,28 +236,22 @@ function ClassSubjectAssignment() {
     }
   };
 
-  // Filter classes by form
-  const filteredClasses = classes.filter(c => {
-    if (selectedForm === 'all') return true;
-    return c.form_id === parseInt(selectedForm);
-  }).filter(c => {
-    if (selectedClass === 'all') return true;
-    return c.class_id.toString() === selectedClass;
-  });
-
-  // Filter assignments by form and class
-  const filteredAssignments = classSubjects.filter(cs => {
-    if (selectedForm !== 'all') {
-      if (cs.class?.form_id !== parseInt(selectedForm)) return false;
-    }
-    if (selectedClass !== 'all') {
-      if (cs.class_id.toString() !== selectedClass) return false;
-    }
-    return true;
-  });
-
-  // Get forms for filter (derived from classes to ensure relevance, or use fetched forms)
-  // Using fetched forms is better as it includes all active forms
+  // Filter assignments by school, form and class
+  const filteredAssignments = useMemo(() => {
+    return classSubjects.filter(cs => {
+      if (selectedSchool !== 'all') {
+        const formObj = forms.find(f => f.form_id === cs.class?.form_id);
+        if (!formObj || String(formObj.school_id) !== String(selectedSchool)) return false;
+      }
+      if (selectedForm !== 'all') {
+        if (cs.class?.form_id !== parseInt(selectedForm)) return false;
+      }
+      if (selectedClass !== 'all') {
+        if (cs.class_id.toString() !== selectedClass) return false;
+      }
+      return true;
+    });
+  }, [classSubjects, selectedSchool, selectedForm, selectedClass, forms]);
 
   if (isLoading) {
     return (
@@ -185,37 +278,64 @@ function ClassSubjectAssignment() {
 
       {/* Filters */}
       <Row className="mb-3">
-        <Col md={6}>
+        {hasMultipleSchools && (
+          <Col md={4}>
+            <Form.Label>Filter by School</Form.Label>
+            <Form.Select
+              value={selectedSchool}
+              onChange={(e) => handleSchoolChange(e.target.value)}
+            >
+              <option value="all">All Schools</option>
+              {schools.map(school => (
+                <option key={school.institutionId || school.institution_id} value={school.institutionId || school.institution_id}>
+                  {school.name}
+                </option>
+              ))}
+            </Form.Select>
+          </Col>
+        )}
+        <Col md={hasMultipleSchools ? 4 : 6}>
           <Form.Label>Filter by Form</Form.Label>
           <Form.Select
             value={selectedForm}
-            onChange={(e) => {
-              setSelectedForm(e.target.value);
-              setSelectedClass('all');
-            }}
+            onChange={(e) => handleFormChange(e.target.value)}
           >
             <option value="all">All Forms</option>
-            {forms.map(form => (
-              <option key={form.form_id} value={form.form_id}>
-                {form.form_number}{form.stream} ({form.academic_year})
-              </option>
-            ))}
+            {hasMultipleSchools && selectedSchool === 'all' ? (
+              schools.map(school => {
+                const schoolForms = forms.filter(f => String(f.school_id) === String(school.institutionId || school.institution_id));
+                if (schoolForms.length === 0) return null;
+                return (
+                  <optgroup key={school.institutionId || school.institution_id} label={school.name}>
+                    {schoolForms.map(form => (
+                      <option key={form.form_id} value={form.form_id}>
+                        {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })
+            ) : (
+              filteredForms.map(form => (
+                <option key={form.form_id} value={form.form_id}>
+                  {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                </option>
+              ))
+            )}
           </Form.Select>
         </Col>
-        <Col md={6}>
+        <Col md={hasMultipleSchools ? 4 : 6}>
           <Form.Label>Filter by Class</Form.Label>
           <Form.Select
             value={selectedClass}
             onChange={(e) => setSelectedClass(e.target.value)}
           >
             <option value="all">All Classes</option>
-            {classes
-              .filter(c => selectedForm === 'all' || c.form_id === parseInt(selectedForm))
-              .map(classItem => (
-                <option key={classItem.class_id} value={classItem.class_id}>
-                  {classItem.form?.form_number}{classItem.form?.stream} - {classItem.class_name}
-                </option>
-              ))}
+            {filteredClassOptions.map(classItem => (
+              <option key={classItem.class_id} value={classItem.class_id}>
+                {classItem.form?.form_name || `Form ${classItem.form?.form_number || '?'}`} - {classItem.class_name}
+              </option>
+            ))}
           </Form.Select>
         </Col>
       </Row>
@@ -226,6 +346,7 @@ function ClassSubjectAssignment() {
           <h5 className="mb-0">
             <FaBook className="me-2" />
             Current Assignments
+            <Badge bg="secondary" className="ms-2">{filteredAssignments.length}</Badge>
           </h5>
         </Card.Header>
         <Card.Body>
@@ -237,8 +358,9 @@ function ClassSubjectAssignment() {
             <Table responsive hover>
               <thead>
                 <tr>
-                  <th>Class</th>
+                  {hasMultipleSchools && <th>School</th>}
                   <th>Form</th>
+                  <th>Class</th>
                   <th>Subject</th>
                   <th>Subject Code</th>
                   <th>Teacher</th>
@@ -248,11 +370,16 @@ function ClassSubjectAssignment() {
               <tbody>
                 {filteredAssignments.map((classSubject) => (
                   <tr key={classSubject.class_subject_id}>
+                    {hasMultipleSchools && (
+                      <td>{getSchoolName(classSubject)}</td>
+                    )}
                     <td>
-                      <Badge bg="primary">{classSubject.class?.class_name || 'N/A'}</Badge>
+                      {classSubject.class?.form
+                        ? (classSubject.class.form.form_name || `Form ${classSubject.class.form.form_number}`)
+                        : 'N/A'}
                     </td>
                     <td>
-                      {classSubject.class?.form ? `${classSubject.class.form.form_number}${classSubject.class.form.stream || ''}` : 'N/A'}
+                      <Badge bg="primary">{classSubject.class?.class_name || 'N/A'}</Badge>
                     </td>
                     <td><strong>{classSubject.subject_offering?.subject?.subject_name || 'N/A'}</strong></td>
                     <td>{classSubject.subject_offering?.subject?.subject_code || 'N/A'}</td>
@@ -317,54 +444,89 @@ function ClassSubjectAssignment() {
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
+            {/* School selector (multi-school only) */}
+            {hasMultipleSchools && (
+              <Form.Group className="mb-3">
+                <Form.Label>School *</Form.Label>
+                <Form.Select
+                  value={modalSchoolId}
+                  onChange={(e) => handleModalSchoolChange(e.target.value)}
+                  required
+                >
+                  <option value="">Select School</option>
+                  {schools.map(school => (
+                    <option key={school.institutionId || school.institution_id} value={school.institutionId || school.institution_id}>
+                      {school.name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            )}
+
+            {/* Form selector */}
+            <Form.Group className="mb-3">
+              <Form.Label>Form *</Form.Label>
+              <Form.Select
+                value={modalFormId}
+                onChange={(e) => handleModalFormChange(e.target.value)}
+                required
+                disabled={hasMultipleSchools && !modalSchoolId}
+              >
+                <option value="">
+                  {hasMultipleSchools && !modalSchoolId ? 'Select a school first' : 'Select Form'}
+                </option>
+                {modalForms.map(form => (
+                  <option key={form.form_id} value={form.form_id}>
+                    {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                  </option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+
+            {/* Class selector */}
             <Form.Group className="mb-3">
               <Form.Label>Class *</Form.Label>
               <Form.Select
                 value={assignmentData.class_id}
-                onChange={(e) => setAssignmentData({ ...assignmentData, class_id: e.target.value })}
+                onChange={(e) => setAssignmentData({ ...assignmentData, class_id: e.target.value, subject_offering_id: '' })}
                 required
+                disabled={!modalFormId}
               >
-                <option value="">Select Class</option>
-                {classes
-                  .filter(c => selectedForm === 'all' || c.form_id === parseInt(selectedForm))
-                  .map(classItem => (
-                    <option key={classItem.class_id} value={classItem.class_id}>
-                      {classItem.form?.form_number}{classItem.form?.stream} - {classItem.class_name} ({classItem.academic_year})
-                    </option>
-                  ))}
+                <option value="">
+                  {!modalFormId ? 'Select a form first' : 'Select Class'}
+                </option>
+                {modalClasses.map(classItem => (
+                  <option key={classItem.class_id} value={classItem.class_id}>
+                    {classItem.class_name} ({classItem.class_code || classItem.academic_year})
+                  </option>
+                ))}
               </Form.Select>
             </Form.Group>
 
+            {/* Subject Offering selector */}
             <Form.Group className="mb-3">
               <Form.Label>Subject Offering *</Form.Label>
               <Form.Select
                 value={assignmentData.subject_offering_id}
                 onChange={(e) => setAssignmentData({ ...assignmentData, subject_offering_id: e.target.value })}
                 required
+                disabled={!modalFormId}
               >
-                <option value="">Select Subject Offering</option>
-                {formOfferings.map(offering => {
-                  // Only show offerings that match the selected class's form
-                  if (assignmentData.class_id) {
-                    const selectedClassObj = classes.find(c => c.class_id.toString() === assignmentData.class_id.toString());
-                    if (selectedClassObj && offering.form_id !== selectedClassObj.form_id) {
-                      return null;
-                    }
-                  } else if (selectedForm !== 'all') {
-                    if (offering.form_id !== parseInt(selectedForm)) return null;
-                  }
-                  return (
-                    <option key={offering.offering_id} value={offering.offering_id}>
-                      {offering.subject?.subject_name} ({offering.subject?.subject_code}) - {offering.form?.form_number}{offering.form?.stream}
-                    </option>
-                  );
-                })}
+                <option value="">
+                  {!modalFormId ? 'Select a form first' : 'Select Subject Offering'}
+                </option>
+                {modalOfferings.map(offering => (
+                  <option key={offering.offering_id} value={offering.offering_id}>
+                    {offering.subject?.subject_name} ({offering.subject?.subject_code})
+                  </option>
+                ))}
               </Form.Select>
               <Form.Text className="text-muted">
-                Only subjects offered for the selected class's form are shown
+                Only subjects offered for the selected form are shown
               </Form.Text>
             </Form.Group>
 
+            {/* Teacher selector */}
             <Form.Group className="mb-3">
               <Form.Label>Teacher</Form.Label>
               <Form.Select
