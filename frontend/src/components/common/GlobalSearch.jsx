@@ -131,7 +131,7 @@ const GlobalSearch = ({ show, onHide }) => {
                 id: item.assessment_id,
                 title: item.assessment_name
             });
-            navigate(`/student/assignments/${item.assessment_id}`);
+            navigate(`/student/assignments/${item.assessment_id}/submit`);
         } else if (item.type === 'subject') {
             navigate(`/student/subjects/${item.class_subject_id}`);
         }

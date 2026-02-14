@@ -360,11 +360,40 @@ function LessonViewStream() {
                                 {/* Content Renderers */}
                                 {activeContent.content_type === 'VIDEO' && (
                                     <div className="ratio ratio-16x9" style={{ borderRadius: '12px', overflow: 'hidden' }}>
-                                        <iframe
-                                            src={activeContent.url?.replace('watch?v=', 'embed/')}
-                                            title={activeContent.title}
-                                            allowFullScreen
-                                            style={{ border: 0 }}
+                                        {activeContent.url && /\.(mp4|webm|ogg)(\?|$)/i.test(activeContent.url) ? (
+                                            <video controls style={{ width: '100%', height: '100%' }}>
+                                                <source src={activeContent.url} />
+                                            </video>
+                                        ) : (
+                                            <iframe
+                                                src={(() => {
+                                                    const url = activeContent.url || '';
+                                                    const ytMatch = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+                                                    if (ytMatch) return `https://www.youtube.com/embed/${ytMatch[1]}`;
+                                                    const vimeoMatch = url.match(/vimeo\.com\/(\d+)/);
+                                                    if (vimeoMatch) return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+                                                    return url;
+                                                })()}
+                                                title={activeContent.title}
+                                                allowFullScreen
+                                                style={{ border: 0 }}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
+                                {activeContent.content_type === 'IMAGE' && (
+                                    <div style={{ textAlign: 'center' }}>
+                                        <img
+                                            src={activeContent.url || activeContent.content_url}
+                                            alt={activeContent.title}
+                                            style={{
+                                                maxWidth: '100%',
+                                                maxHeight: '70vh',
+                                                borderRadius: '12px',
+                                                objectFit: 'contain'
+                                            }}
+                                            onError={(e) => { e.target.style.display = 'none'; }}
                                         />
                                     </div>
                                 )}
@@ -422,14 +451,18 @@ function LessonViewStream() {
                                         renderTextContent(activeContent)
                                     )}
 
-                                {['QUIZ', 'ASSIGNMENT'].includes(activeContent.content_type) && (
+                                {['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'].includes(activeContent.content_type) && (
                                     <div className="text-center py-5" style={{ background: 'var(--theme-glass)', borderRadius: '12px' }}>
                                         <div style={{ fontSize: '3rem', color: 'var(--theme-primary)', marginBottom: '1rem' }}>
                                             {getContentIcon(activeContent.content_type)}
                                         </div>
                                         <h3 style={{ color: 'var(--theme-text)' }}>{activeContent.title}</h3>
                                         <p className="text-muted mb-4" style={{ color: 'var(--theme-text-muted)' }}>
-                                            {activeContent.content_type === 'QUIZ' ? 'Ready to test your knowledge?' : 'Complete this assignment to earn XP.'}
+                                            {activeContent.content_type === 'QUIZ' ? 'Ready to test your knowledge?' :
+                                             activeContent.content_type === 'TEST' || activeContent.content_type === 'EXAM' ? 'Complete this assessment to earn XP.' :
+                                             activeContent.content_type === 'SURVEY' ? 'Share your feedback.' :
+                                             activeContent.content_type === 'PROJECT' ? 'Work on your project submission.' :
+                                             'Complete this assignment to earn XP.'}
                                         </p>
                                         <button
                                             className="btn-play"
@@ -437,20 +470,23 @@ function LessonViewStream() {
                                             onClick={() => {
                                                 if (activeContent.content_type === 'QUIZ') {
                                                     navigate(`/student/quizzes/${activeContent.content_id}`);
+                                                } else if (activeContent.url) {
+                                                    window.open(activeContent.url, '_blank');
                                                 } else {
                                                     navigate(`/student/assignments/${activeContent.content_id}/submit`);
                                                 }
                                             }}
                                         >
-                                            Start {activeContent.content_type === 'QUIZ' ? 'Quiz' : 'Assignment'}
+                                            Start {activeContent.content_type?.replace('_', ' ')}
                                         </button>
                                     </div>
                                 )}
 
                                 {/* Fallback for other types */}
-                                {!['VIDEO', '3D_MODEL', 'FLASHCARD', 'INTERACTIVE_VIDEO', 'INTERACTIVE_BOOK',
+                                {!['VIDEO', 'IMAGE', '3D_MODEL', 'FLASHCARD', 'INTERACTIVE_VIDEO', 'INTERACTIVE_BOOK',
                                     'LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'REFLECTION_QUESTIONS',
-                                    'DISCUSSION_PROMPTS', 'SUMMARY', 'QUIZ', 'ASSIGNMENT'].includes(activeContent.content_type) && (
+                                    'DISCUSSION_PROMPTS', 'SUMMARY', 'QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT',
+                                    'SURVEY', 'CHECKPOINT'].includes(activeContent.content_type) && (
                                         <div className="text-center py-5" style={{ background: 'var(--theme-glass)', borderRadius: '12px' }}>
                                             <div style={{ fontSize: '3rem', color: 'var(--theme-primary)', marginBottom: '1rem' }}>
                                                 {getContentIcon(activeContent.content_type)}
@@ -473,7 +509,7 @@ function LessonViewStream() {
                                 {/* Interactive Checkpoint Demo */}
                                 {activeContent.content_type === 'CHECKPOINT' && (
                                     <CheckpointRenderer
-                                        checkpoint={activeContent.data}
+                                        checkpoint={activeContent.content_data || activeContent.data}
                                         onComplete={() => toggleContentComplete(activeContent.content_id)}
                                     />
                                 )}

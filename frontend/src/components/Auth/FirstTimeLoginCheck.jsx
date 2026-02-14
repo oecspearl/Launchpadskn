@@ -7,7 +7,7 @@ function FirstTimeLoginCheck({ children }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (isAuthenticated && user && user.role === 'INSTRUCTOR') {
+    if (isAuthenticated && user && user.role?.toLowerCase() === 'instructor') {
       console.log('FirstTimeLoginCheck - user.isFirstLogin:', user.isFirstLogin, 'type:', typeof user.isFirstLogin);
       // Handle both boolean and string values
       const isFirstLogin = user.isFirstLogin === true || user.isFirstLogin === 'true';
@@ -18,7 +18,7 @@ function FirstTimeLoginCheck({ children }) {
   }, [isAuthenticated, user, navigate]);
 
   // If user needs to change password, don't render children
-  if (isAuthenticated && user && user.role === 'INSTRUCTOR') {
+  if (isAuthenticated && user && user.role?.toLowerCase() === 'instructor') {
     const isFirstLogin = user.isFirstLogin === true || user.isFirstLogin === 'true';
     if (isFirstLogin) {
       return null;
