@@ -7,7 +7,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import FlagLogo from './FlagLogo';
-import DarkModeToggle from './DarkModeToggle';
+
 import QuickSearch from './QuickSearch';
 import GlobalSearch from './GlobalSearch';
 import NotificationCenter from './NotificationCenter';
@@ -169,9 +169,6 @@ function AppNavbar() {
 
               <div className="vr mx-2 d-none d-lg-block opacity-25"></div>
 
-              {/* Dark Mode Toggle */}
-              <DarkModeToggle className="ms-2" />
-
               {/* Notifications */}
               <NotificationCenter />
 
@@ -241,7 +238,6 @@ function AppNavbar() {
                 <FaBook size={14} className="me-1" />
                 Curriculum
               </Nav.Link>
-              <DarkModeToggle />
               <Nav.Link as={Link} to="/login" className="nav-link-custom">
                 Login
               </Nav.Link>

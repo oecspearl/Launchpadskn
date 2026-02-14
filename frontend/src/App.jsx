@@ -5,7 +5,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContextSupabase';
 import { ToastProvider } from './contexts/ToastContext';
 import { NotificationsProvider } from './contexts/NotificationsContext';
-import { ThemeProvider } from './contexts/ThemeContext';
+
 import Navbar from './components/common/Navbar';
 import ErrorBoundary from './components/common/ErrorBoundary';
 import OfflineAlert from './components/common/OfflineAlert';
@@ -25,23 +25,21 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>
-              <NotificationsProvider>
-                <Router>
-                  <div className="App">
-                    <OfflineAlert />
-                    <Navbar />
-                    <Container className="mt-4">
-                      <AppRoutes />
-                    </Container>
-                  </div>
-                </Router>
-              </NotificationsProvider>
-            </ToastProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          <ToastProvider>
+            <NotificationsProvider>
+              <Router>
+                <div className="App">
+                  <OfflineAlert />
+                  <Navbar />
+                  <Container className="mt-4">
+                    <AppRoutes />
+                  </Container>
+                </div>
+              </Router>
+            </NotificationsProvider>
+          </ToastProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );

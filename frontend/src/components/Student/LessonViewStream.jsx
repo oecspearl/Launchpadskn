@@ -17,7 +17,7 @@ import './LessonViewStream.css';
 import FlashcardViewer from './FlashcardViewer';
 import InteractiveVideoViewer from './InteractiveVideoViewer';
 import InteractiveBookPlayer from './InteractiveBookPlayer';
-import ThemeSelector from './ThemeSelector';
+
 import NotesPanel from './NotesPanel';
 import DiscussionBoard from './DiscussionBoard';
 import CheckpointRenderer from './CheckpointRenderer';
@@ -32,10 +32,7 @@ function LessonViewStream() {
     const [completedContent, setCompletedContent] = useState(new Set());
     const [activeContent, setActiveContent] = useState(null);
     const [virtualClassroom, setVirtualClassroom] = useState(null);
-    const [theme, setTheme] = useState(() => {
-        // Load theme from localStorage or default to 'cool-dark'
-        return localStorage.getItem('lesson-viewer-theme') || 'cool-dark';
-    });
+    const theme = 'light';
     const [showDiscussionSidebar, setShowDiscussionSidebar] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const viewerPanelRef = useRef(null);
@@ -191,12 +188,6 @@ function LessonViewStream() {
         );
     };
 
-    // Theme change handler
-    const handleThemeChange = (newTheme) => {
-        setTheme(newTheme);
-        localStorage.setItem('lesson-viewer-theme', newTheme);
-    };
-
     // Fullscreen toggle handler
     const toggleFullscreen = async () => {
         const element = viewerPanelRef.current;
@@ -287,7 +278,6 @@ function LessonViewStream() {
                         )}
                     </div>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        <ThemeSelector currentTheme={theme} onThemeChange={handleThemeChange} />
                         <div className="xp-badge" style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
                             <FaTrophy className="me-2" />
                             {calculateXP()} XP Earned

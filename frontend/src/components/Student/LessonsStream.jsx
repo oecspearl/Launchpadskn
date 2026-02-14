@@ -6,7 +6,6 @@ import StreamHeader from './StreamComponents/StreamHeader';
 import HeroCard from './StreamComponents/HeroCard';
 import QuestGrid from './StreamComponents/QuestGrid';
 import ArchiveList from './StreamComponents/ArchiveList';
-import ThemeSelector from './ThemeSelector';
 import './LessonsStream.css';
 
 function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
@@ -14,15 +13,7 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
   const [heroLesson, setHeroLesson] = useState(null);
   const [quests, setQuests] = useState([]);
   const [archives, setArchives] = useState([]);
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('lessons-stream-theme') || 'cool-dark';
-  });
-
-  // Handle theme changes
-  const handleThemeChange = (newTheme) => {
-    setTheme(newTheme);
-    localStorage.setItem('lessons-stream-theme', newTheme);
-  };
+  const theme = 'light';
 
   // Process lessons into Hero, Quests (Upcoming), and Archives (Past)
   useEffect(() => {
@@ -110,7 +101,7 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
   if (!lessons || lessons.length === 0) {
     return (
       <div className="lessons-stream-container">
-        <StreamHeader greeting={getGreeting()} theme={theme} onThemeChange={handleThemeChange} />
+        <StreamHeader greeting={getGreeting()} />
         <div className="hero-card" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="text-center">
             <FaGamepad style={{ fontSize: '4rem', color: 'rgba(255,255,255,0.2)', marginBottom: '1rem' }} />
@@ -124,7 +115,7 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
 
   return (
     <div className={`lessons-stream-container theme-${theme}`}>
-      <StreamHeader greeting={getGreeting()} theme={theme} onThemeChange={handleThemeChange} />
+      <StreamHeader greeting={getGreeting()} />
 
       <HeroCard
         heroLesson={heroLesson}
