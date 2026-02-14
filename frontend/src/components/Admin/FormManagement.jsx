@@ -4,18 +4,21 @@ import {
   Table, Modal, Form, Badge
 } from 'react-bootstrap';
 import {
-  FaPlus, FaEdit, FaTrash
+  FaPlus, FaEdit, FaTrash, FaChevronDown, FaChevronRight
 } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { institutionService } from '../../services/institutionService';
 import { userService } from '../../services/userService';
+import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
 
 function FormManagement() {
   const queryClient = useQueryClient();
-  const [isLoading, setIsLoading] = useState(false); // Managed by React Query
+  const navigate = useNavigate();
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [expandedFormId, setExpandedFormId] = useState(null);
 
   // Modal state
   const [showModal, setShowModal] = useState(false);
@@ -40,9 +43,8 @@ function FormManagement() {
     queryFn: async () => {
       const [admins, instructors] = await Promise.all([
         userService.getUsersByRole(ROLES.ADMIN),
-        userService.getUsersByRole(ROLES.INSTRUCTOR) // Assuming INSTRUCTOR role exists in constants
+        userService.getUsersByRole(ROLES.INSTRUCTOR)
       ]);
-      // Merge and deduplicate just in case
       const all = [...admins, ...instructors];
       const unique = Array.from(new Map(all.map(item => [item.user_id, item])).values());
       return unique.sort((a, b) => a.name.localeCompare(b.name));
@@ -54,7 +56,18 @@ function FormManagement() {
     queryFn: () => institutionService.getFormsBySchool(null)
   });
 
+  const { data: classes = [] } = useQuery({
+    queryKey: ['classes'],
+    queryFn: () => classService.getClasses(ROLES.ADMIN)
+  });
+
   const isLoadingData = isLoadingSchools || isLoadingCoordinators || isLoadingForms;
+
+  // Count classes per form
+  const classCountByForm = {};
+  classes.forEach(c => {
+    classCountByForm[c.form_id] = (classCountByForm[c.form_id] || 0) + 1;
+  });
 
   // Mutations
   const createFormMutation = useMutation({
@@ -81,30 +94,34 @@ function FormManagement() {
     mutationFn: (id) => institutionService.deleteForm(id),
     onSuccess: () => {
       queryClient.invalidateQueries(['forms']);
-      setSuccess('Form deleted successfully');
+      setSuccess('Form archived successfully');
+      setExpandedFormId(null);
     },
-    onError: (err) => setError(err.message || 'Failed to delete form')
+    onError: (err) => setError(err.message || 'Failed to archive form')
   });
 
   // Handlers
   const handleOpenModal = (form = null) => {
+    const defaultSchoolId = schools.length === 1 ? schools[0].institutionId : '';
+    const currentYear = new Date().getFullYear();
+
     if (form) {
       setEditingForm(form);
       setFormData({
-        school_id: form.school_id || '',
+        school_id: form.school_id || defaultSchoolId,
         form_number: form.form_number || '',
         form_name: form.form_name || '',
-        academic_year: form.academic_year || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+        academic_year: form.academic_year || `${currentYear}-${currentYear + 1}`,
         coordinator_id: form.coordinator_id || '',
         description: form.description || ''
       });
     } else {
       setEditingForm(null);
       setFormData({
-        school_id: schools[0]?.institutionId || '', // Note: institutionService returns camelCase for institutions
+        school_id: defaultSchoolId,
         form_number: '',
         form_name: '',
-        academic_year: new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+        academic_year: `${currentYear}-${currentYear + 1}`,
         coordinator_id: '',
         description: ''
       });
@@ -127,20 +144,66 @@ function FormManagement() {
     setSuccess(null);
   };
 
+  const handleFormNumberChange = (value) => {
+    const num = parseInt(value);
+    if (!editingForm && num >= 1 && num <= 7) {
+      setFormData({
+        ...formData,
+        form_number: num,
+        form_name: `Form ${num}`
+      });
+    } else {
+      setFormData({ ...formData, form_number: value ? parseInt(value) : '' });
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const cleanedData = {
+      ...formData,
+      school_id: formData.school_id ? parseInt(formData.school_id) : null,
+      form_number: formData.form_number ? parseInt(formData.form_number) : null,
+      coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id) : null,
+      description: formData.description || null
+    };
+
+    if (!cleanedData.school_id) {
+      setError('School is required');
+      return;
+    }
+    if (!cleanedData.form_number || cleanedData.form_number < 1 || cleanedData.form_number > 7) {
+      setError('Form number must be between 1 and 7');
+      return;
+    }
+    if (!cleanedData.form_name || cleanedData.form_name.trim() === '') {
+      setError('Form name is required');
+      return;
+    }
+    if (!cleanedData.academic_year || cleanedData.academic_year.trim() === '') {
+      setError('Academic year is required');
+      return;
+    }
+
     if (editingForm) {
-      updateFormMutation.mutate({ id: editingForm.form_id, data: formData });
+      updateFormMutation.mutate({ id: editingForm.form_id, data: cleanedData });
     } else {
-      createFormMutation.mutate(formData);
+      createFormMutation.mutate(cleanedData);
     }
   };
 
   const handleDelete = (formId) => {
-    if (window.confirm('Are you sure you want to delete this form? This will also delete all associated classes.')) {
+    if (window.confirm('Are you sure you want to archive this form? Associated classes will remain but the form will be hidden.')) {
       deleteFormMutation.mutate(formId);
     }
   };
+
+  const toggleExpand = (formId) => {
+    setExpandedFormId(expandedFormId === formId ? null : formId);
+  };
+
+  // Get classes for a specific form
+  const getClassesForForm = (formId) => classes.filter(c => c.form_id === formId);
 
   if (isLoadingData) {
     return (
@@ -178,52 +241,105 @@ function FormManagement() {
             <Table responsive hover>
               <thead>
                 <tr>
-                  <th>Form Number</th>
-                  <th>Form Name</th>
+                  <th>Form</th>
                   <th>Academic Year</th>
                   <th>School</th>
                   <th>Coordinator</th>
+                  <th>Classes</th>
                   <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {forms.map((form) => (
-                  <tr key={form.form_id}>
-                    <td>{form.form_number}</td>
-                    <td>{form.form_name}</td>
-                    <td>{form.academic_year}</td>
-                    <td>
-                      {/* institutionService returns institutions in camelCase, but forms might have school relation in snake_case or camelCase depending on how it was fetched. 
-                            getFormsBySchool uses supabase select with join, so it returns snake_case usually unless transformed.
-                            institutionService.getFormsBySchool returns raw data.
-                        */}
-                      {form.school?.name || schools.find(s => s.institutionId === form.school_id)?.name || 'N/A'}
-                    </td>
-                    <td>{form.coordinator?.name || 'Not assigned'}</td>
-                    <td>
-                      <Badge bg={form.is_active ? 'success' : 'secondary'}>
-                        {form.is_active ? 'Active' : 'Inactive'}
-                      </Badge>
-                    </td>
-                    <td>
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        className="me-2"
-                        onClick={() => handleOpenModal(form)}
-                      >
-                        <FaEdit />
-                      </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        onClick={() => handleDelete(form.form_id)}
-                      >
-                        <FaTrash />
-                      </Button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={form.form_id}>
+                    <tr
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => toggleExpand(form.form_id)}
+                    >
+                      <td>
+                        <div className="d-flex align-items-center">
+                          {expandedFormId === form.form_id ?
+                            <FaChevronDown className="me-2 text-muted" size={12} /> :
+                            <FaChevronRight className="me-2 text-muted" size={12} />
+                          }
+                          <strong>{form.form_name || `Form ${form.form_number}`}</strong>
+                        </div>
+                      </td>
+                      <td>{form.academic_year}</td>
+                      <td>
+                        {form.school?.name || schools.find(s => s.institutionId === form.school_id)?.name || 'N/A'}
+                      </td>
+                      <td>{form.coordinator?.name || 'Not assigned'}</td>
+                      <td>
+                        <Badge bg="info">
+                          {classCountByForm[form.form_id] || 0}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Badge bg={form.is_active ? 'success' : 'secondary'}>
+                          {form.is_active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          className="me-1"
+                          onClick={(e) => { e.stopPropagation(); handleOpenModal(form); }}
+                          title="Edit form"
+                        >
+                          <FaEdit />
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); handleDelete(form.form_id); }}
+                          title="Archive form"
+                        >
+                          <FaTrash />
+                        </Button>
+                      </td>
+                    </tr>
+                    {expandedFormId === form.form_id && (
+                      <tr>
+                        <td colSpan="7" className="p-0 border-top-0">
+                          <div className="bg-light p-3">
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                              <h6 className="mb-0">Classes in {form.form_name || `Form ${form.form_number}`}</h6>
+                              <Button size="sm" variant="outline-primary" onClick={() => navigate('/admin/classes')}>
+                                Manage Classes
+                              </Button>
+                            </div>
+                            {getClassesForForm(form.form_id).length === 0 ? (
+                              <p className="text-muted small mb-0">No classes created yet for this form.</p>
+                            ) : (
+                              <Table size="sm" hover className="mb-0">
+                                <thead>
+                                  <tr><th>Class</th><th>Code</th><th>Tutor</th><th>Enrollment</th><th>Room</th></tr>
+                                </thead>
+                                <tbody>
+                                  {getClassesForForm(form.form_id).map(c => (
+                                    <tr key={c.class_id}>
+                                      <td><strong>{c.class_name}</strong></td>
+                                      <td><Badge bg="secondary">{c.class_code}</Badge></td>
+                                      <td>{c.form_tutor?.name || 'Not assigned'}</td>
+                                      <td>
+                                        <Badge bg={c.current_enrollment >= c.capacity ? 'danger' : 'success'}>
+                                          {c.current_enrollment || 0} / {c.capacity}
+                                        </Badge>
+                                      </td>
+                                      <td>{c.room_number || '-'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </Table>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </Table>
@@ -240,21 +356,34 @@ function FormManagement() {
         </Modal.Header>
         <Form onSubmit={handleSubmit}>
           <Modal.Body>
-            <Form.Group className="mb-3">
-              <Form.Label>School *</Form.Label>
-              <Form.Select
-                value={formData.school_id}
-                onChange={(e) => setFormData({ ...formData, school_id: e.target.value })}
-                required
-              >
-                <option value="">Select School</option>
-                {schools.map(school => (
-                  <option key={school.institutionId} value={school.institutionId}>
-                    {school.name}
-                  </option>
-                ))}
-              </Form.Select>
-            </Form.Group>
+            {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
+
+            {schools.length > 1 ? (
+              <Form.Group className="mb-3">
+                <Form.Label>School *</Form.Label>
+                <Form.Select
+                  value={formData.school_id}
+                  onChange={(e) => setFormData({ ...formData, school_id: e.target.value })}
+                  required
+                >
+                  <option value="">Select School</option>
+                  {schools.map(school => (
+                    <option key={school.institutionId} value={school.institutionId}>
+                      {school.name}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            ) : (
+              <Form.Group className="mb-3">
+                <Form.Label>School</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={schools[0]?.name || 'N/A'}
+                  disabled
+                />
+              </Form.Group>
+            )}
 
             <Row>
               <Col md={6}>
@@ -265,7 +394,7 @@ function FormManagement() {
                     min="1"
                     max="7"
                     value={formData.form_number}
-                    onChange={(e) => setFormData({ ...formData, form_number: parseInt(e.target.value) })}
+                    onChange={(e) => handleFormNumberChange(e.target.value)}
                     required
                   />
                 </Form.Group>
@@ -281,6 +410,9 @@ function FormManagement() {
                     placeholder="e.g., Form 3, Lower Sixth"
                     required
                   />
+                  <Form.Text className="text-muted">
+                    Auto-generated from form number
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -321,7 +453,7 @@ function FormManagement() {
               <Form.Label>Description</Form.Label>
               <Form.Control
                 as="textarea"
-                rows={3}
+                rows={2}
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Optional description"
@@ -332,7 +464,8 @@ function FormManagement() {
             <Button variant="secondary" onClick={handleCloseModal}>
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="primary" type="submit"
+              disabled={createFormMutation.isLoading || updateFormMutation.isLoading}>
               {editingForm ? 'Update' : 'Create'} Form
             </Button>
           </Modal.Footer>
