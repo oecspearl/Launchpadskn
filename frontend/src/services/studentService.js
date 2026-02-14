@@ -525,12 +525,27 @@ export const studentService = {
     },
 
     async getStudentGrades(studentId, academicYear = null) {
+        // Handle UUID vs numeric ID
+        let numericStudentId = studentId;
+        if (typeof studentId === 'string' && studentId.includes('-')) {
+            const { data: userProfile } = await supabase
+                .from('users')
+                .select('user_id')
+                .eq('id', studentId)
+                .maybeSingle();
+            if (userProfile && userProfile.user_id) {
+                numericStudentId = userProfile.user_id;
+            } else {
+                return [];
+            }
+        }
+
         const { data: classAssignment } = await supabase
             .from('student_class_assignments')
             .select('class_id')
-            .eq('student_id', studentId)
+            .eq('student_id', numericStudentId)
             .eq('is_active', true)
-            .single();
+            .maybeSingle();
 
         if (!classAssignment) return [];
 
@@ -556,7 +571,7 @@ export const studentService = {
           )
         )
       `)
-            .eq('student_id', studentId)
+            .eq('student_id', numericStudentId)
             .in('assessment.class_subject_id', classSubjectIds);
 
         if (error) throw error;

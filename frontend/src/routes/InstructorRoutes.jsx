@@ -78,6 +78,14 @@ const InstructorRoutes = () => (
             }
         />
         <Route
+            path="/teacher/lessons/create"
+            element={
+                <PrivateRoute allowedRoles={['instructor']}>
+                    <LessonPlanning />
+                </PrivateRoute>
+            }
+        />
+        <Route
             path="/teacher/lessons/:lessonId"
             element={
                 <PrivateRoute allowedRoles={['instructor']}>

@@ -695,7 +695,7 @@ export const classService = {
             .select('class_id')
             .eq('student_id', numericStudentId)
             .eq('is_active', true)
-            .single();
+            .maybeSingle();
 
         if (!classAssignment) return [];
 
