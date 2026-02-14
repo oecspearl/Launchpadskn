@@ -81,10 +81,14 @@ const NotificationCenter = () => {
                 as="div"
                 className="notification-bell"
                 onClick={() => setShow(!show)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setShow(!show); } }}
             >
-                <FaBell size={18} />
+                <FaBell size={18} aria-hidden="true" />
                 {unreadCount > 0 && (
-                    <Badge bg="danger" className="notification-badge">
+                    <Badge bg="danger" className="notification-badge" aria-hidden="true">
                         {unreadCount > 99 ? '99+' : unreadCount}
                     </Badge>
                 )}
@@ -103,6 +107,10 @@ const NotificationCenter = () => {
                                 setShow(false);
                             }}
                             title="Notification Settings"
+                            aria-label="Notification Settings"
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === 'Enter') { navigate('/notification-preferences'); setShow(false); } }}
                             style={{ cursor: 'pointer' }}
                         />
                     </div>

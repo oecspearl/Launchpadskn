@@ -79,7 +79,7 @@ export const globalSearch = async (query, user, filters = {}) => {
 
         return results;
     } catch (error) {
-        console.error('Search error:', error);
+        if (import.meta.env.DEV) console.error('Search error:', error);
         return results;
     }
 };
@@ -138,7 +138,7 @@ const searchLessons = async (query, user) => {
             matchedFields: result.matches?.map(m => m.key) || []
         }));
     } catch (error) {
-        console.error('Lesson search error:', error);
+        if (import.meta.env.DEV) console.error('Lesson search error:', error);
         return [];
     }
 };
@@ -178,7 +178,7 @@ const searchAssignments = async (query, user) => {
             matchedFields: result.matches?.map(m => m.key) || []
         }));
     } catch (error) {
-        console.error('Assignment search error:', error);
+        if (import.meta.env.DEV) console.error('Assignment search error:', error);
         return [];
     }
 };
@@ -218,7 +218,7 @@ const searchSubjects = async (query, user) => {
             matchedFields: result.matches?.map(m => m.key) || []
         }));
     } catch (error) {
-        console.error('Subject search error:', error);
+        if (import.meta.env.DEV) console.error('Subject search error:', error);
         return [];
     }
 };
@@ -233,7 +233,7 @@ const searchUsers = async (query) => {
         // TODO: Implement user search endpoint
         return [];
     } catch (error) {
-        console.error('User search error:', error);
+        if (import.meta.env.DEV) console.error('User search error:', error);
         return [];
     }
 };
@@ -247,7 +247,7 @@ export const getSearchHistory = () => {
         const history = localStorage.getItem(SEARCH_HISTORY_KEY);
         return history ? JSON.parse(history) : [];
     } catch (error) {
-        console.error('Error reading search history:', error);
+        if (import.meta.env.DEV) console.error('Error reading search history:', error);
         return [];
     }
 };
@@ -270,7 +270,7 @@ export const saveSearchHistory = (query) => {
 
         localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(updated));
     } catch (error) {
-        console.error('Error saving search history:', error);
+        if (import.meta.env.DEV) console.error('Error saving search history:', error);
     }
 };
 
@@ -281,7 +281,7 @@ export const clearSearchHistory = () => {
     try {
         localStorage.removeItem(SEARCH_HISTORY_KEY);
     } catch (error) {
-        console.error('Error clearing search history:', error);
+        if (import.meta.env.DEV) console.error('Error clearing search history:', error);
     }
 };
 

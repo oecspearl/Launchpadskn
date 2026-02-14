@@ -63,16 +63,13 @@ function TeacherClassManagement() {
     queryKey: ['class-recent-lessons', classSubjectIds],
     queryFn: async () => {
       if (classSubjectIds.length === 0) return [];
-      // Fetch lessons for all class subjects
-      const allLessons = [];
-      for (const csId of classSubjectIds) {
-        try {
-          const lessons = await classService.getLessonsByClassSubject(csId);
-          allLessons.push(...(lessons || []));
-        } catch (err) {
-          console.warn('Error fetching lessons:', err);
-        }
-      }
+      // Fetch lessons for all class subjects in parallel
+      const results = await Promise.allSettled(
+        classSubjectIds.map(csId => classService.getLessonsByClassSubject(csId))
+      );
+      const allLessons = results
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value || []);
       // Sort by date and time, take most recent 5
       return allLessons
         .sort((a, b) => {
@@ -89,15 +86,13 @@ function TeacherClassManagement() {
     queryKey: ['class-upcoming-assessments', classSubjectIds],
     queryFn: async () => {
       if (classSubjectIds.length === 0) return [];
-      const allAssessments = [];
-      for (const csId of classSubjectIds) {
-        try {
-          const assessments = await studentService.getAssessmentsByClassSubject(csId);
-          allAssessments.push(...(assessments || []));
-        } catch (err) {
-          console.warn('Error fetching assessments:', err);
-        }
-      }
+      // Fetch assessments for all class subjects in parallel
+      const results = await Promise.allSettled(
+        classSubjectIds.map(csId => studentService.getAssessmentsByClassSubject(csId))
+      );
+      const allAssessments = results
+        .filter(r => r.status === 'fulfilled')
+        .flatMap(r => r.value || []);
       // Filter upcoming and sort
       return allAssessments
         .filter(a => a.due_date && new Date(a.due_date) >= new Date())

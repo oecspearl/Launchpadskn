@@ -15,7 +15,7 @@ const adminService = {
     try {
       return await supabaseService.getDashboardStats();
     } catch (error) {
-      console.error('Error fetching dashboard stats:', error);
+      if (import.meta.env.DEV) console.error('Error fetching dashboard stats:', error);
       throw error;
     }
   },
@@ -28,7 +28,7 @@ const adminService = {
     try {
       return await supabaseService.getAllUsers();
     } catch (error) {
-      console.error('Error fetching all users:', error);
+      if (import.meta.env.DEV) console.error('Error fetching all users:', error);
       throw error;
     }
   },
@@ -37,7 +37,7 @@ const adminService = {
     try {
       return await supabaseService.getUserProfile(id);
     } catch (error) {
-      console.error('Error fetching user:', error);
+      if (import.meta.env.DEV) console.error('Error fetching user:', error);
       throw error;
     }
   },
@@ -46,7 +46,7 @@ const adminService = {
     try {
       return await supabaseService.getUsersByRole(role);
     } catch (error) {
-      console.error('Error fetching users by role:', error);
+      if (import.meta.env.DEV) console.error('Error fetching users by role:', error);
       throw error;
     }
   },
@@ -63,7 +63,7 @@ const adminService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error activating user:', error);
+      if (import.meta.env.DEV) console.error('Error activating user:', error);
       throw error;
     }
   },
@@ -80,7 +80,7 @@ const adminService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error deactivating user:', error);
+      if (import.meta.env.DEV) console.error('Error deactivating user:', error);
       throw error;
     }
   },
@@ -89,7 +89,7 @@ const adminService = {
     try {
       return await supabaseService.updateUserProfile(id, userData);
     } catch (error) {
-      console.error('Error updating user:', error);
+      if (import.meta.env.DEV) console.error('Error updating user:', error);
       throw error;
     }
   },
@@ -102,7 +102,7 @@ const adminService = {
     try {
       return await supabaseService.getAllInstitutions();
     } catch (error) {
-      console.error('Error fetching institutions:', error);
+      if (import.meta.env.DEV) console.error('Error fetching institutions:', error);
       throw error;
     }
   },
@@ -111,7 +111,7 @@ const adminService = {
     try {
       return await supabaseService.getInstitutionById(id);
     } catch (error) {
-      console.error('Error fetching institution:', error);
+      if (import.meta.env.DEV) console.error('Error fetching institution:', error);
       throw error;
     }
   },
@@ -120,7 +120,7 @@ const adminService = {
     try {
       return await supabaseService.createInstitution(institutionData);
     } catch (error) {
-      console.error('Error creating institution:', error);
+      if (import.meta.env.DEV) console.error('Error creating institution:', error);
       throw error;
     }
   },
@@ -129,7 +129,7 @@ const adminService = {
     try {
       return await supabaseService.updateInstitution(id, updates);
     } catch (error) {
-      console.error('Error updating institution:', error);
+      if (import.meta.env.DEV) console.error('Error updating institution:', error);
       throw error;
     }
   },
@@ -138,7 +138,7 @@ const adminService = {
     try {
       await supabaseService.deleteInstitution(id);
     } catch (error) {
-      console.error('Error deleting institution:', error);
+      if (import.meta.env.DEV) console.error('Error deleting institution:', error);
       throw error;
     }
   },
@@ -151,7 +151,7 @@ const adminService = {
     try {
       return await supabaseService.getAllDepartments();
     } catch (error) {
-      console.error('Error fetching departments:', error);
+      if (import.meta.env.DEV) console.error('Error fetching departments:', error);
       throw error;
     }
   },
@@ -167,7 +167,7 @@ const adminService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error fetching department:', error);
+      if (import.meta.env.DEV) console.error('Error fetching department:', error);
       throw error;
     }
   },
@@ -176,7 +176,7 @@ const adminService = {
     try {
       return await supabaseService.getDepartmentsByInstitution(institutionId);
     } catch (error) {
-      console.error('Error fetching departments:', error);
+      if (import.meta.env.DEV) console.error('Error fetching departments:', error);
       throw error;
     }
   },
@@ -185,7 +185,7 @@ const adminService = {
     try {
       return await supabaseService.createDepartment(departmentData);
     } catch (error) {
-      console.error('Error creating department:', error);
+      if (import.meta.env.DEV) console.error('Error creating department:', error);
       throw error;
     }
   },
@@ -202,7 +202,7 @@ const adminService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating department:', error);
+      if (import.meta.env.DEV) console.error('Error updating department:', error);
       throw error;
     }
   },
@@ -216,7 +216,7 @@ const adminService = {
       
       if (error) throw error;
     } catch (error) {
-      console.error('Error deleting department:', error);
+      if (import.meta.env.DEV) console.error('Error deleting department:', error);
       throw error;
     }
   },
@@ -229,7 +229,7 @@ const adminService = {
     try {
       return await supabaseService.getAllForms(schoolId);
     } catch (error) {
-      console.error('Error fetching forms:', error);
+      if (import.meta.env.DEV) console.error('Error fetching forms:', error);
       throw error;
     }
   },
@@ -238,7 +238,7 @@ const adminService = {
     try {
       return await supabaseService.createForm(formData);
     } catch (error) {
-      console.error('Error creating form:', error);
+      if (import.meta.env.DEV) console.error('Error creating form:', error);
       throw error;
     }
   },
@@ -255,7 +255,7 @@ const adminService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating form:', error);
+      if (import.meta.env.DEV) console.error('Error updating form:', error);
       throw error;
     }
   },
@@ -268,7 +268,7 @@ const adminService = {
     try {
       return await supabaseService.getClassesByForm(formId);
     } catch (error) {
-      console.error('Error fetching classes:', error);
+      if (import.meta.env.DEV) console.error('Error fetching classes:', error);
       throw error;
     }
   },
@@ -277,7 +277,7 @@ const adminService = {
     try {
       return await supabaseService.createClass(classData);
     } catch (error) {
-      console.error('Error creating class:', error);
+      if (import.meta.env.DEV) console.error('Error creating class:', error);
       throw error;
     }
   },
@@ -290,7 +290,7 @@ const adminService = {
     try {
       return await supabaseService.getAllSubjects(schoolId);
     } catch (error) {
-      console.error('Error fetching subjects:', error);
+      if (import.meta.env.DEV) console.error('Error fetching subjects:', error);
       throw error;
     }
   },
@@ -299,7 +299,7 @@ const adminService = {
     try {
       return await supabaseService.createSubject(subjectData);
     } catch (error) {
-      console.error('Error creating subject:', error);
+      if (import.meta.env.DEV) console.error('Error creating subject:', error);
       throw error;
     }
   },
@@ -312,7 +312,7 @@ const adminService = {
     try {
       return await supabaseService.getUsersByRole('INSTRUCTOR');
     } catch (error) {
-      console.error('Error fetching instructors:', error);
+      if (import.meta.env.DEV) console.error('Error fetching instructors:', error);
       throw error;
     }
   },
@@ -358,7 +358,7 @@ const adminService = {
       
       return profileData;
     } catch (error) {
-      console.error('Error creating instructor:', error);
+      if (import.meta.env.DEV) console.error('Error creating instructor:', error);
       throw error;
     }
   },

@@ -14,7 +14,7 @@ const studentInformationService = {
       if (error) throw error;
       return data && data.length > 0 ? data[0] : null;
     } catch (error) {
-      console.error('Error fetching student profile:', error);
+      if (import.meta.env.DEV) console.error('Error fetching student profile:', error);
       throw error;
     }
   },
@@ -36,7 +36,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error upserting student profile:', error);
+      if (import.meta.env.DEV) console.error('Error upserting student profile:', error);
       throw error;
     }
   },
@@ -54,7 +54,7 @@ const studentInformationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching student lifecycle:', error);
+      if (import.meta.env.DEV) console.error('Error fetching student lifecycle:', error);
       throw error;
     }
   },
@@ -82,7 +82,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating lifecycle event:', error);
+      if (import.meta.env.DEV) console.error('Error creating lifecycle event:', error);
       throw error;
     }
   },
@@ -101,7 +101,7 @@ const studentInformationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching student transfers:', error);
+      if (import.meta.env.DEV) console.error('Error fetching student transfers:', error);
       throw error;
     }
   },
@@ -117,7 +117,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating transfer:', error);
+      if (import.meta.env.DEV) console.error('Error creating transfer:', error);
       throw error;
     }
   },
@@ -137,7 +137,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating transfer:', error);
+      if (import.meta.env.DEV) console.error('Error updating transfer:', error);
       throw error;
     }
   },
@@ -156,7 +156,7 @@ const studentInformationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching special needs:', error);
+      if (import.meta.env.DEV) console.error('Error fetching special needs:', error);
       throw error;
     }
   },
@@ -172,7 +172,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating special need:', error);
+      if (import.meta.env.DEV) console.error('Error creating special need:', error);
       throw error;
     }
   },
@@ -192,7 +192,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating special need:', error);
+      if (import.meta.env.DEV) console.error('Error updating special need:', error);
       throw error;
     }
   },
@@ -211,7 +211,7 @@ const studentInformationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching accommodations:', error);
+      if (import.meta.env.DEV) console.error('Error fetching accommodations:', error);
       throw error;
     }
   },
@@ -227,7 +227,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating accommodation:', error);
+      if (import.meta.env.DEV) console.error('Error creating accommodation:', error);
       throw error;
     }
   },
@@ -247,7 +247,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating accommodation:', error);
+      if (import.meta.env.DEV) console.error('Error updating accommodation:', error);
       throw error;
     }
   },
@@ -267,7 +267,7 @@ const studentInformationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching disciplinary records:', error);
+      if (import.meta.env.DEV) console.error('Error fetching disciplinary records:', error);
       throw error;
     }
   },
@@ -282,7 +282,7 @@ const studentInformationService = {
       if (error) throw error;
       return data && data.length > 0 ? data[0] : null;
     } catch (error) {
-      console.error('Error fetching disciplinary summary:', error);
+      if (import.meta.env.DEV) console.error('Error fetching disciplinary summary:', error);
       throw error;
     }
   },
@@ -298,7 +298,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating disciplinary incident:', error);
+      if (import.meta.env.DEV) console.error('Error creating disciplinary incident:', error);
       throw error;
     }
   },
@@ -318,7 +318,7 @@ const studentInformationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating disciplinary incident:', error);
+      if (import.meta.env.DEV) console.error('Error updating disciplinary incident:', error);
       throw error;
     }
   }

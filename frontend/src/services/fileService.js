@@ -49,7 +49,7 @@ export const uploadFile = async (file, folder = 'uploads', onProgress = null) =>
             fileType: file.type
         };
     } catch (error) {
-        console.error('File upload error:', error);
+        if (import.meta.env.DEV) console.error('File upload error:', error);
         return {
             success: false,
             error: error.message
@@ -105,7 +105,7 @@ export const deleteFile = async (filePath) => {
 
         return { success: true };
     } catch (error) {
-        console.error('File delete error:', error);
+        if (import.meta.env.DEV) console.error('File delete error:', error);
         return {
             success: false,
             error: error.message

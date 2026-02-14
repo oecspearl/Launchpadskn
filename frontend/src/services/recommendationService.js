@@ -43,7 +43,7 @@ export const recommendationService = {
     // Dismiss a recommendation
     dismissRecommendation: async (id) => {
         await new Promise(resolve => setTimeout(resolve, 200));
-        console.log(`Dismissed recommendation ${id}`);
+        if (import.meta.env.DEV) console.log(`Dismissed recommendation ${id}`);
         return true;
     }
 };

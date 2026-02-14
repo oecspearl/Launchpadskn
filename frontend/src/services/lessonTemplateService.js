@@ -85,13 +85,13 @@ const lessonTemplateService = {
       // Increment view count for each item
       if (data && data.length > 0) {
         data.forEach(item => {
-          this.incrementViewCount(item.template_id).catch(console.error);
+          this.incrementViewCount(item.template_id).catch((err) => { if (import.meta.env.DEV) console.error(err); });
         });
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error fetching templates:', error);
+      if (import.meta.env.DEV) console.error('Error fetching templates:', error);
       throw error;
     }
   },
@@ -138,12 +138,12 @@ const lessonTemplateService = {
 
       // Increment view count
       if (data) {
-        this.incrementViewCount(templateId).catch(console.error);
+        this.incrementViewCount(templateId).catch((err) => { if (import.meta.env.DEV) console.error(err); });
       }
 
       return data;
     } catch (error) {
-      console.error('Error fetching template by ID:', error);
+      if (import.meta.env.DEV) console.error('Error fetching template by ID:', error);
       throw error;
     }
   },
@@ -155,7 +155,7 @@ const lessonTemplateService = {
       });
       if (error) throw error;
     } catch (error) {
-      console.error('Error incrementing view count:', error);
+      if (import.meta.env.DEV) console.error('Error incrementing view count:', error);
       // Don't throw - this is not critical
     }
   },
@@ -254,7 +254,7 @@ const lessonTemplateService = {
 
       return template;
     } catch (error) {
-      console.error('Error saving lesson as template:', error);
+      if (import.meta.env.DEV) console.error('Error saving lesson as template:', error);
       throw error;
     }
   },
@@ -352,7 +352,7 @@ const lessonTemplateService = {
 
       return lesson;
     } catch (error) {
-      console.error('Error creating lesson from template:', error);
+      if (import.meta.env.DEV) console.error('Error creating lesson from template:', error);
       throw error;
     }
   },
@@ -380,7 +380,7 @@ const lessonTemplateService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error rating template:', error);
+      if (import.meta.env.DEV) console.error('Error rating template:', error);
       throw error;
     }
   },
@@ -403,7 +403,7 @@ const lessonTemplateService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching ratings:', error);
+      if (import.meta.env.DEV) console.error('Error fetching ratings:', error);
       throw error;
     }
   },
@@ -426,7 +426,7 @@ const lessonTemplateService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error adding to favorites:', error);
+      if (import.meta.env.DEV) console.error('Error adding to favorites:', error);
       throw error;
     }
   },
@@ -441,7 +441,7 @@ const lessonTemplateService = {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error removing from favorites:', error);
+      if (import.meta.env.DEV) console.error('Error removing from favorites:', error);
       throw error;
     }
   },
@@ -475,7 +475,7 @@ const lessonTemplateService = {
       if (error) throw error;
       return data.map(fav => fav.template).filter(Boolean);
     } catch (error) {
-      console.error('Error fetching favorites:', error);
+      if (import.meta.env.DEV) console.error('Error fetching favorites:', error);
       throw error;
     }
   },
@@ -492,7 +492,7 @@ const lessonTemplateService = {
       if (error) throw error;
       return !!data;
     } catch (error) {
-      console.error('Error checking favorite:', error);
+      if (import.meta.env.DEV) console.error('Error checking favorite:', error);
       return false;
     }
   },
@@ -536,7 +536,7 @@ const lessonTemplateService = {
 
       return stats;
     } catch (error) {
-      console.error('Error fetching template stats:', error);
+      if (import.meta.env.DEV) console.error('Error fetching template stats:', error);
       throw error;
     }
   }

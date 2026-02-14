@@ -89,13 +89,13 @@ const contentLibraryService = {
       // Increment view count for each item
       if (data && data.length > 0) {
         data.forEach(item => {
-          this.incrementViewCount(item.library_id).catch(console.error);
+          this.incrementViewCount(item.library_id).catch(e => { if (import.meta.env.DEV) console.error(e); });
         });
       }
 
       return data || [];
     } catch (error) {
-      console.error('Error fetching library content:', error);
+      if (import.meta.env.DEV) console.error('Error fetching library content:', error);
       throw error;
     }
   },
@@ -134,12 +134,12 @@ const contentLibraryService = {
 
       // Increment view count
       if (data) {
-        this.incrementViewCount(libraryId).catch(console.error);
+        this.incrementViewCount(libraryId).catch(e => { if (import.meta.env.DEV) console.error(e); });
       }
 
       return data;
     } catch (error) {
-      console.error('Error fetching library content by ID:', error);
+      if (import.meta.env.DEV) console.error('Error fetching library content by ID:', error);
       throw error;
     }
   },
@@ -151,7 +151,7 @@ const contentLibraryService = {
       });
       if (error) throw error;
     } catch (error) {
-      console.error('Error incrementing view count:', error);
+      if (import.meta.env.DEV) console.error('Error incrementing view count:', error);
       // Don't throw - this is not critical
     }
   },
@@ -175,7 +175,7 @@ const contentLibraryService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error sharing content to library:', error);
+      if (import.meta.env.DEV) console.error('Error sharing content to library:', error);
       throw error;
     }
   },
@@ -252,7 +252,7 @@ const contentLibraryService = {
 
       return lessonContent;
     } catch (error) {
-      console.error('Error adding library content to lesson:', error);
+      if (import.meta.env.DEV) console.error('Error adding library content to lesson:', error);
       throw error;
     }
   },
@@ -280,7 +280,7 @@ const contentLibraryService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error rating content:', error);
+      if (import.meta.env.DEV) console.error('Error rating content:', error);
       throw error;
     }
   },
@@ -303,7 +303,7 @@ const contentLibraryService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching ratings:', error);
+      if (import.meta.env.DEV) console.error('Error fetching ratings:', error);
       throw error;
     }
   },
@@ -326,7 +326,7 @@ const contentLibraryService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error adding to favorites:', error);
+      if (import.meta.env.DEV) console.error('Error adding to favorites:', error);
       throw error;
     }
   },
@@ -341,7 +341,7 @@ const contentLibraryService = {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error removing from favorites:', error);
+      if (import.meta.env.DEV) console.error('Error removing from favorites:', error);
       throw error;
     }
   },
@@ -360,7 +360,7 @@ const contentLibraryService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching favorites:', error);
+      if (import.meta.env.DEV) console.error('Error fetching favorites:', error);
       throw error;
     }
   },
@@ -377,7 +377,7 @@ const contentLibraryService = {
       if (error) throw error;
       return !!data;
     } catch (error) {
-      console.error('Error checking favorite:', error);
+      if (import.meta.env.DEV) console.error('Error checking favorite:', error);
       return false;
     }
   },
@@ -423,7 +423,7 @@ const contentLibraryService = {
 
       return stats;
     } catch (error) {
-      console.error('Error fetching library stats:', error);
+      if (import.meta.env.DEV) console.error('Error fetching library stats:', error);
       throw error;
     }
   }

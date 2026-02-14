@@ -15,7 +15,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data && data.length > 0 ? data[0] : null;
     } catch (error) {
-      console.error('Error fetching learning path:', error);
+      if (import.meta.env.DEV) console.error('Error fetching learning path:', error);
       throw error;
     }
   },
@@ -29,7 +29,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching path stages:', error);
+      if (import.meta.env.DEV) console.error('Error fetching path stages:', error);
       throw error;
     }
   },
@@ -46,7 +46,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating path progress:', error);
+      if (import.meta.env.DEV) console.error('Error updating path progress:', error);
       throw error;
     }
   },
@@ -62,7 +62,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating learning path:', error);
+      if (import.meta.env.DEV) console.error('Error creating learning path:', error);
       throw error;
     }
   },
@@ -81,7 +81,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data && data.length > 0 ? data[0] : null;
     } catch (error) {
-      console.error('Error fetching gamification:', error);
+      if (import.meta.env.DEV) console.error('Error fetching gamification:', error);
       throw error;
     }
   },
@@ -101,7 +101,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error awarding points:', error);
+      if (import.meta.env.DEV) console.error('Error awarding points:', error);
       throw error;
     }
   },
@@ -116,7 +116,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching leaderboard:', error);
+      if (import.meta.env.DEV) console.error('Error fetching leaderboard:', error);
       throw error;
     }
   },
@@ -131,7 +131,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching badges:', error);
+      if (import.meta.env.DEV) console.error('Error fetching badges:', error);
       throw error;
     }
   },
@@ -158,7 +158,7 @@ const interactiveContentService = {
       }
       return data;
     } catch (error) {
-      console.error('Error awarding badge:', error);
+      if (import.meta.env.DEV) console.error('Error awarding badge:', error);
       throw error;
     }
   },
@@ -177,7 +177,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching forum topics:', error);
+      if (import.meta.env.DEV) console.error('Error fetching forum topics:', error);
       throw error;
     }
   },
@@ -192,7 +192,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching forum posts:', error);
+      if (import.meta.env.DEV) console.error('Error fetching forum posts:', error);
       throw error;
     }
   },
@@ -208,7 +208,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating forum topic:', error);
+      if (import.meta.env.DEV) console.error('Error creating forum topic:', error);
       throw error;
     }
   },
@@ -224,7 +224,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating forum post:', error);
+      if (import.meta.env.DEV) console.error('Error creating forum post:', error);
       throw error;
     }
   },
@@ -243,7 +243,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching peer reviews:', error);
+      if (import.meta.env.DEV) console.error('Error fetching peer reviews:', error);
       throw error;
     }
   },
@@ -259,7 +259,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating peer review:', error);
+      if (import.meta.env.DEV) console.error('Error creating peer review:', error);
       throw error;
     }
   },
@@ -278,7 +278,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching virtual labs:', error);
+      if (import.meta.env.DEV) console.error('Error fetching virtual labs:', error);
       throw error;
     }
   },
@@ -294,7 +294,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating lab session:', error);
+      if (import.meta.env.DEV) console.error('Error creating lab session:', error);
       throw error;
     }
   },
@@ -314,7 +314,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating lab session:', error);
+      if (import.meta.env.DEV) console.error('Error updating lab session:', error);
       throw error;
     }
   },
@@ -334,7 +334,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching AR/VR content:', error);
+      if (import.meta.env.DEV) console.error('Error fetching AR/VR content:', error);
       throw error;
     }
   },
@@ -350,7 +350,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating AR/VR session:', error);
+      if (import.meta.env.DEV) console.error('Error creating AR/VR session:', error);
       throw error;
     }
   },
@@ -371,7 +371,7 @@ const interactiveContentService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating AR/VR session:', error);
+      if (import.meta.env.DEV) console.error('Error updating AR/VR session:', error);
       throw error;
     }
   }

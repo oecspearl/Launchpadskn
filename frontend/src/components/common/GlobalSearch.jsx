@@ -54,7 +54,7 @@ const GlobalSearch = ({ show, onHide }) => {
             setResults(searchResults);
             setSelectedIndex(0);
         } catch (error) {
-            console.error('Search error:', error);
+            if (import.meta.env.DEV) console.error('Search error:', error);
         } finally {
             setIsSearching(false);
         }
@@ -186,7 +186,7 @@ const GlobalSearch = ({ show, onHide }) => {
             <Modal.Body className="p-0">
                 <div className="search-header">
                     <div className="search-input-wrapper">
-                        <FaSearch className="search-icon" />
+                        <FaSearch className="search-icon" aria-hidden="true" />
                         <Form.Control
                             ref={inputRef}
                             type="text"
@@ -195,6 +195,10 @@ const GlobalSearch = ({ show, onHide }) => {
                             onChange={(e) => setQuery(e.target.value)}
                             onKeyDown={handleKeyDown}
                             className="search-input"
+                            aria-label="Search lessons, assignments, and subjects"
+                            role="combobox"
+                            aria-expanded={flatResults.length > 0}
+                            aria-autocomplete="list"
                         />
                         {isSearching && <Spinner animation="border" size="sm" className="search-spinner" />}
                         {query && (
@@ -203,8 +207,9 @@ const GlobalSearch = ({ show, onHide }) => {
                                 size="sm"
                                 onClick={() => setQuery('')}
                                 className="clear-button"
+                                aria-label="Clear search"
                             >
-                                <FaTimes />
+                                <FaTimes aria-hidden="true" />
                             </Button>
                         )}
                     </div>

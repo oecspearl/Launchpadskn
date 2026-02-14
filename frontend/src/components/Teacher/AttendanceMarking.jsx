@@ -89,7 +89,7 @@ function AttendanceMarking() {
       
       setIsLoading(false);
     } catch (err) {
-      console.error('Error fetching data:', err);
+      if (import.meta.env.DEV) console.error('Error fetching data:', err);
       setError('Failed to load attendance data');
       setIsLoading(false);
     }
@@ -115,53 +115,27 @@ function AttendanceMarking() {
       setError(null);
       setSuccess(null);
       
-      // Save attendance for each student
-      for (const student of students) {
-        const status = attendance[student.user_id] || 'ABSENT';
-        const notes = attendanceNotes[student.user_id] || '';
-        
-        // Check if attendance already exists
-        const { data: existing } = await supabase
-          .from('lesson_attendance')
-          .select('*')
-          .eq('lesson_id', lessonId)
-          .eq('student_id', student.user_id)
-          .maybeSingle();
-        
-        if (existing) {
-          // Update
-          const { error } = await supabase
-            .from('lesson_attendance')
-            .update({
-              status,
-              notes,
-              marked_by: user.userId,
-              marked_at: new Date().toISOString()
-            })
-            .eq('attendance_id', existing.attendance_id);
-          
-          if (error) throw error;
-        } else {
-          // Insert
-          const { error } = await supabase
-            .from('lesson_attendance')
-            .insert({
-              lesson_id: parseInt(lessonId),
-              student_id: student.user_id,
-              status,
-              notes,
-              marked_by: user.userId,
-              marked_at: new Date().toISOString()
-            });
-          
-          if (error) throw error;
-        }
-      }
+      // Batch upsert attendance for all students
+      const now = new Date().toISOString();
+      const records = students.map(student => ({
+        lesson_id: parseInt(lessonId),
+        student_id: student.user_id,
+        status: attendance[student.user_id] || 'ABSENT',
+        notes: attendanceNotes[student.user_id] || '',
+        marked_by: user.userId,
+        marked_at: now
+      }));
+
+      const { error: upsertError } = await supabase
+        .from('lesson_attendance')
+        .upsert(records, { onConflict: 'lesson_id,student_id' });
+
+      if (upsertError) throw upsertError;
       
       setSuccess('Attendance saved successfully');
       fetchData(); // Refresh to show saved data
     } catch (err) {
-      console.error('Error saving attendance:', err);
+      if (import.meta.env.DEV) console.error('Error saving attendance:', err);
       setError(err.message || 'Failed to save attendance');
     } finally {
       setIsSaving(false);

@@ -91,7 +91,7 @@ function SubjectView() {
             .in('lesson_id', lessonIds);
           
           if (lcError) {
-            console.error('Error fetching lesson content assignments:', lcError);
+            if (import.meta.env.DEV) console.error('Error fetching lesson content assignments:', lcError);
           } else {
             lessonContentAssignments = data || [];
           }
@@ -141,7 +141,7 @@ function SubjectView() {
       
       setIsLoading(false);
     } catch (err) {
-      console.error('Error fetching subject data:', err);
+      if (import.meta.env.DEV) console.error('Error fetching subject data:', err);
       setError('Failed to load subject details');
       setIsLoading(false);
     }
@@ -219,9 +219,14 @@ function SubjectView() {
     return (
       <Container className="mt-4">
         <Alert variant="danger">{error}</Alert>
-        <Button variant="primary" onClick={() => navigate('/student/dashboard')}>
-          Back to Dashboard
-        </Button>
+        <div className="d-flex gap-2">
+          <Button variant="primary" onClick={fetchSubjectData}>
+            Try Again
+          </Button>
+          <Button variant="outline-secondary" onClick={() => navigate('/student/dashboard')}>
+            Back to Dashboard
+          </Button>
+        </div>
       </Container>
     );
   }

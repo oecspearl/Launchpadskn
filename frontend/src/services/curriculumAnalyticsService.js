@@ -11,7 +11,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return data && data.length > 0 ? data[0] : null;
     } catch (error) {
-      console.error('Error fetching coverage summary:', error);
+      if (import.meta.env.DEV) console.error('Error fetching coverage summary:', error);
       throw error;
     }
   },
@@ -26,7 +26,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching curriculum coverage:', error);
+      if (import.meta.env.DEV) console.error('Error fetching curriculum coverage:', error);
       throw error;
     }
   },
@@ -43,7 +43,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching time allocation:', error);
+      if (import.meta.env.DEV) console.error('Error fetching time allocation:', error);
       throw error;
     }
   },
@@ -58,7 +58,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching outcome achievement:', error);
+      if (import.meta.env.DEV) console.error('Error fetching outcome achievement:', error);
       throw error;
     }
   },
@@ -74,7 +74,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching gap analysis:', error);
+      if (import.meta.env.DEV) console.error('Error fetching gap analysis:', error);
       throw error;
     }
   },
@@ -89,7 +89,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error updating coverage:', error);
+      if (import.meta.env.DEV) console.error('Error updating coverage:', error);
       throw error;
     }
   },
@@ -106,7 +106,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error calculating time allocation:', error);
+      if (import.meta.env.DEV) console.error('Error calculating time allocation:', error);
       throw error;
     }
   },
@@ -121,7 +121,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return data || 0;
     } catch (error) {
-      console.error('Error identifying gaps:', error);
+      if (import.meta.env.DEV) console.error('Error identifying gaps:', error);
       throw error;
     }
   },
@@ -145,7 +145,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return data && data.length > 0 ? data[0] : null;
     } catch (error) {
-      console.error('Error fetching analytics snapshot:', error);
+      if (import.meta.env.DEV) console.error('Error fetching analytics snapshot:', error);
       throw error;
     }
   },
@@ -193,7 +193,7 @@ const curriculumAnalyticsService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating snapshot:', error);
+      if (import.meta.env.DEV) console.error('Error creating snapshot:', error);
       throw error;
     }
   }

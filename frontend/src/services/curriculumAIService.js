@@ -51,11 +51,11 @@ const callOpenAI = async (systemPrompt, userPrompt, temperature = 0.7) => {
             }
             return JSON.parse(content);
         } catch (e) {
-            console.warn('Failed to parse JSON from AI response, returning raw text', e);
+            if (import.meta.env.DEV) console.warn('Failed to parse JSON from AI response, returning raw text', e);
             return content;
         }
     } catch (error) {
-        console.error('AI Service Error:', error);
+        if (import.meta.env.DEV) console.error('AI Service Error:', error);
         throw error;
     }
 };
@@ -140,7 +140,7 @@ export const findResources = async (query, subject, gradeLevel) => {
             });
         });
     } catch (e) {
-        console.error('YouTube search failed:', e);
+        if (import.meta.env.DEV) console.error('YouTube search failed:', e);
     }
 
     // 2. AI Suggestions for Games/Websites
@@ -171,7 +171,7 @@ export const findResources = async (query, subject, gradeLevel) => {
             });
         }
     } catch (e) {
-        console.error('AI resource suggestion failed:', e);
+        if (import.meta.env.DEV) console.error('AI resource suggestion failed:', e);
     }
 
     return resources;

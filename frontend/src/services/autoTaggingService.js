@@ -76,7 +76,7 @@ const autoTaggingService = {
       // Limit to top 10 most relevant tags
       return Array.from(tags).slice(0, 10);
     } catch (error) {
-      console.error('Error generating tags:', error);
+      if (import.meta.env.DEV) console.error('Error generating tags:', error);
       return [];
     }
   },
@@ -297,7 +297,7 @@ const autoTaggingService = {
 
       return normalizedTags.slice(0, 10); // Limit to 10 tags
     } catch (error) {
-      console.error('Error getting suggested tags:', error);
+      if (import.meta.env.DEV) console.error('Error getting suggested tags:', error);
       return [];
     }
   },
@@ -317,7 +317,7 @@ const autoTaggingService = {
         'mathematics', 'science', 'history', 'language', 'art'
       ].slice(0, limit);
     } catch (error) {
-      console.error('Error getting popular tags:', error);
+      if (import.meta.env.DEV) console.error('Error getting popular tags:', error);
       return [];
     }
   }

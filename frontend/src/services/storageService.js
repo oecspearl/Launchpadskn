@@ -36,7 +36,7 @@ export const storageService = {
 
             return filesWithUrls;
         } catch (error) {
-            console.error('[storageService] Error listing files:', error);
+            if (import.meta.env.DEV) console.error('[storageService] Error listing files:', error);
             return [];
         }
     },

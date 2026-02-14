@@ -19,10 +19,12 @@ const formatRelativeTime = (timestamp) => {
     return time.toLocaleDateString();
 };
 
+const log = (...args) => { if (import.meta.env.DEV) console.log('[dashboardService]', ...args); };
+
 export const dashboardService = {
     async getDashboardStats() {
         try {
-            console.log('[dashboardService] getDashboardStats called');
+            log('getDashboardStats called');
 
             const [
                 usersResult,
@@ -50,7 +52,7 @@ export const dashboardService = {
             const totalInstructors = instructorsResult.status === 'fulfilled' ? (instructorsResult.value.count || 0) : 0;
             const totalAdmins = adminsResult.status === 'fulfilled' ? (adminsResult.value.count || 0) : 0;
 
-            console.log('[dashboardService] Stats:', { totalUsers, totalSubjects, totalClasses, totalForms, totalStudents, totalInstructors, totalAdmins });
+            log('Stats:', { totalUsers, totalSubjects, totalClasses, totalForms, totalStudents, totalInstructors, totalAdmins });
 
             return {
                 totalUsers,
@@ -63,7 +65,7 @@ export const dashboardService = {
                 totalAdmins
             };
         } catch (error) {
-            console.error('[dashboardService] Error in getDashboardStats:', error);
+            if (import.meta.env.DEV) console.error('[dashboardService] Error in getDashboardStats:', error);
             return {
                 totalUsers: 0,
                 totalSubjects: 0,
@@ -79,7 +81,7 @@ export const dashboardService = {
 
     async getRecentActivity(limit = 10) {
         try {
-            console.log('[dashboardService] getRecentActivity called');
+            log('getRecentActivity called');
 
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -198,7 +200,7 @@ export const dashboardService = {
             return activities.slice(0, limit);
 
         } catch (error) {
-            console.error('[dashboardService] Error in getRecentActivity:', error);
+            if (import.meta.env.DEV) console.error('[dashboardService] Error in getRecentActivity:', error);
             return [];
         }
     },

@@ -15,7 +15,7 @@ export const getRecentlyViewed = () => {
         const data = localStorage.getItem(STORAGE_KEY);
         return data ? JSON.parse(data) : {};
     } catch (error) {
-        console.error('Error reading recently viewed:', error);
+        if (import.meta.env.DEV) console.error('Error reading recently viewed:', error);
         return {};
     }
 };
@@ -54,7 +54,7 @@ export const addRecentlyViewed = (type, item) => {
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(recentlyViewed));
     } catch (error) {
-        console.error('Error adding recently viewed:', error);
+        if (import.meta.env.DEV) console.error('Error adding recently viewed:', error);
     }
 };
 
@@ -70,7 +70,7 @@ export const getRecentlyViewedByType = (type, limit = MAX_ITEMS_PER_TYPE) => {
         const items = recentlyViewed[type] || [];
         return items.slice(0, limit);
     } catch (error) {
-        console.error('Error getting recently viewed by type:', error);
+        if (import.meta.env.DEV) console.error('Error getting recently viewed by type:', error);
         return [];
     }
 };
@@ -82,7 +82,7 @@ export const clearRecentlyViewed = () => {
     try {
         localStorage.removeItem(STORAGE_KEY);
     } catch (error) {
-        console.error('Error clearing recently viewed:', error);
+        if (import.meta.env.DEV) console.error('Error clearing recently viewed:', error);
     }
 };
 
@@ -96,7 +96,7 @@ export const clearRecentlyViewedByType = (type) => {
         delete recentlyViewed[type];
         localStorage.setItem(STORAGE_KEY, JSON.stringify(recentlyViewed));
     } catch (error) {
-        console.error('Error clearing recently viewed by type:', error);
+        if (import.meta.env.DEV) console.error('Error clearing recently viewed by type:', error);
     }
 };
 
@@ -116,7 +116,7 @@ export const removeRecentlyViewed = (type, id) => {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(recentlyViewed));
         }
     } catch (error) {
-        console.error('Error removing recently viewed:', error);
+        if (import.meta.env.DEV) console.error('Error removing recently viewed:', error);
     }
 };
 

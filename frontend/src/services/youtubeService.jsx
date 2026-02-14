@@ -52,7 +52,7 @@ export const searchEducationalVideos = async ({
   }
 
   try {
-    console.log('[YouTube Service] Searching for videos:', searchQuery);
+    if (import.meta.env.DEV) console.log('[YouTube Service] Searching for videos:', searchQuery);
 
     const params = new URLSearchParams({
       part: 'snippet',
@@ -69,14 +69,14 @@ export const searchEducationalVideos = async ({
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('[YouTube Service] API error:', errorData);
+      if (import.meta.env.DEV) console.error('[YouTube Service] API error:', errorData);
       throw new Error(errorData.error?.message || `YouTube API request failed with status ${response.status}`);
     }
 
     const data = await response.json();
 
     if (!data.items || data.items.length === 0) {
-      console.warn('[YouTube Service] No videos found for query:', searchQuery);
+      if (import.meta.env.DEV) console.warn('[YouTube Service] No videos found for query:', searchQuery);
       return [];
     }
 
@@ -92,10 +92,10 @@ export const searchEducationalVideos = async ({
       embedUrl: `https://www.youtube.com/embed/${item.id.videoId}`
     }));
 
-    console.log('[YouTube Service] Found', videos.length, 'videos');
+    if (import.meta.env.DEV) console.log('[YouTube Service] Found', videos.length, 'videos');
     return videos;
   } catch (error) {
-    console.error('[YouTube Service] Error searching videos:', error);
+    if (import.meta.env.DEV) console.error('[YouTube Service] Error searching videos:', error);
     throw error;
   }
 };
@@ -144,7 +144,7 @@ export const getVideoDetails = async (videoId) => {
       embedUrl: `https://www.youtube.com/embed/${item.id}`
     };
   } catch (error) {
-    console.error('[YouTube Service] Error getting video details:', error);
+    if (import.meta.env.DEV) console.error('[YouTube Service] Error getting video details:', error);
     throw error;
   }
 };
@@ -173,7 +173,7 @@ export const findBestVideoForLesson = async ({ topic, subject, form }) => {
     // Return the first (most relevant) video
     return videos[0];
   } catch (error) {
-    console.error('[YouTube Service] Error finding best video:', error);
+    if (import.meta.env.DEV) console.error('[YouTube Service] Error finding best video:', error);
     return null;
   }
 };

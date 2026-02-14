@@ -37,7 +37,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      if (import.meta.env.DEV) console.error('Error fetching comments:', error);
       throw error;
     }
   },
@@ -64,7 +64,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error adding comment:', error);
+      if (import.meta.env.DEV) console.error('Error adding comment:', error);
       throw error;
     }
   },
@@ -84,7 +84,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating comment:', error);
+      if (import.meta.env.DEV) console.error('Error updating comment:', error);
       throw error;
     }
   },
@@ -98,7 +98,7 @@ const teacherCollaborationService = {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error deleting comment:', error);
+      if (import.meta.env.DEV) console.error('Error deleting comment:', error);
       throw error;
     }
   },
@@ -151,7 +151,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching content requests:', error);
+      if (import.meta.env.DEV) console.error('Error fetching content requests:', error);
       throw error;
     }
   },
@@ -178,7 +178,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating content request:', error);
+      if (import.meta.env.DEV) console.error('Error creating content request:', error);
       throw error;
     }
   },
@@ -201,7 +201,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error fulfilling content request:', error);
+      if (import.meta.env.DEV) console.error('Error fulfilling content request:', error);
       throw error;
     }
   },
@@ -242,7 +242,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching collaborators:', error);
+      if (import.meta.env.DEV) console.error('Error fetching collaborators:', error);
       throw error;
     }
   },
@@ -268,7 +268,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error inviting collaborator:', error);
+      if (import.meta.env.DEV) console.error('Error inviting collaborator:', error);
       throw error;
     }
   },
@@ -282,7 +282,7 @@ const teacherCollaborationService = {
 
       if (error) throw error;
     } catch (error) {
-      console.error('Error removing collaborator:', error);
+      if (import.meta.env.DEV) console.error('Error removing collaborator:', error);
       throw error;
     }
   },
@@ -323,7 +323,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching suggestions:', error);
+      if (import.meta.env.DEV) console.error('Error fetching suggestions:', error);
       throw error;
     }
   },
@@ -349,7 +349,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating suggestion:', error);
+      if (import.meta.env.DEV) console.error('Error creating suggestion:', error);
       throw error;
     }
   },
@@ -370,7 +370,7 @@ const teacherCollaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error reviewing suggestion:', error);
+      if (import.meta.env.DEV) console.error('Error reviewing suggestion:', error);
       throw error;
     }
   }

@@ -1,7 +1,18 @@
 /**
  * Safe logging utility to prevent "Cannot convert object to primitive value" errors
- * when logging complex objects with circular references
+ * when logging complex objects with circular references.
+ *
+ * DEV-ONLY wrappers: devLog, devWarn, devError only log in development mode.
  */
+
+const isDev = import.meta.env.DEV;
+
+/** Log only in development */
+export function devLog(...args) { if (isDev) console.log(...args); }
+/** Warn only in development */
+export function devWarn(...args) { if (isDev) console.warn(...args); }
+/** Error only in development */
+export function devError(...args) { if (isDev) safeError(...args); }
 
 /**
  * Safely converts an error or object to a string representation

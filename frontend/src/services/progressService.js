@@ -42,7 +42,7 @@ export const getStudentProgress = async (studentId) => {
             subjects
         };
     } catch (error) {
-        console.error('Error fetching student progress:', error);
+        if (import.meta.env.DEV) console.error('Error fetching student progress:', error);
         throw error;
     }
 };

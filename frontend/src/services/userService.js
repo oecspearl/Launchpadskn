@@ -248,7 +248,7 @@ export const userService = {
 
                 results.success.push({ email: user.email, id: createdUser.id });
             } catch (err) {
-                console.error(`Failed to create user ${user.email}:`, err);
+                if (import.meta.env.DEV) console.error(`Failed to create user ${user.email}:`, err);
                 results.failed.push({
                     email: user.email,
                     reason: err.message || 'Unknown error'

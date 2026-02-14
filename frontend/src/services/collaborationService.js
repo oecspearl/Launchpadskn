@@ -15,7 +15,7 @@ const collaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching active sessions:', error);
+      if (import.meta.env.DEV) console.error('Error fetching active sessions:', error);
       throw error;
     }
   },
@@ -31,7 +31,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating session:', error);
+      if (import.meta.env.DEV) console.error('Error creating session:', error);
       throw error;
     }
   },
@@ -47,7 +47,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error joining session:', error);
+      if (import.meta.env.DEV) console.error('Error joining session:', error);
       throw error;
     }
   },
@@ -62,7 +62,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error leaving session:', error);
+      if (import.meta.env.DEV) console.error('Error leaving session:', error);
       throw error;
     }
   },
@@ -76,7 +76,7 @@ const collaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching participants:', error);
+      if (import.meta.env.DEV) console.error('Error fetching participants:', error);
       throw error;
     }
   },
@@ -96,7 +96,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error fetching document:', error);
+      if (import.meta.env.DEV) console.error('Error fetching document:', error);
       throw error;
     }
   },
@@ -112,7 +112,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating document:', error);
+      if (import.meta.env.DEV) console.error('Error creating document:', error);
       throw error;
     }
   },
@@ -132,7 +132,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating document:', error);
+      if (import.meta.env.DEV) console.error('Error updating document:', error);
       throw error;
     }
   },
@@ -149,7 +149,7 @@ const collaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching document changes:', error);
+      if (import.meta.env.DEV) console.error('Error fetching document changes:', error);
       throw error;
     }
   },
@@ -165,7 +165,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error adding document change:', error);
+      if (import.meta.env.DEV) console.error('Error adding document change:', error);
       throw error;
     }
   },
@@ -185,7 +185,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating virtual classroom:', error);
+      if (import.meta.env.DEV) console.error('Error creating virtual classroom:', error);
       throw error;
     }
   },
@@ -201,7 +201,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error fetching virtual classroom:', error);
+      if (import.meta.env.DEV) console.error('Error fetching virtual classroom:', error);
       throw error;
     }
   },
@@ -217,7 +217,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating breakout room:', error);
+      if (import.meta.env.DEV) console.error('Error creating breakout room:', error);
       throw error;
     }
   },
@@ -237,7 +237,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error fetching whiteboard:', error);
+      if (import.meta.env.DEV) console.error('Error fetching whiteboard:', error);
       throw error;
     }
   },
@@ -253,7 +253,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating whiteboard:', error);
+      if (import.meta.env.DEV) console.error('Error creating whiteboard:', error);
       throw error;
     }
   },
@@ -273,7 +273,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating whiteboard:', error);
+      if (import.meta.env.DEV) console.error('Error updating whiteboard:', error);
       throw error;
     }
   },
@@ -293,7 +293,7 @@ const collaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching tutoring sessions:', error);
+      if (import.meta.env.DEV) console.error('Error fetching tutoring sessions:', error);
       throw error;
     }
   },
@@ -309,7 +309,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating tutoring session:', error);
+      if (import.meta.env.DEV) console.error('Error creating tutoring session:', error);
       throw error;
     }
   },
@@ -329,7 +329,7 @@ const collaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching group projects:', error);
+      if (import.meta.env.DEV) console.error('Error fetching group projects:', error);
       throw error;
     }
   },
@@ -345,7 +345,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating group project:', error);
+      if (import.meta.env.DEV) console.error('Error creating group project:', error);
       throw error;
     }
   },
@@ -361,7 +361,7 @@ const collaborationService = {
       if (error) throw error;
       return data || [];
     } catch (error) {
-      console.error('Error fetching project tasks:', error);
+      if (import.meta.env.DEV) console.error('Error fetching project tasks:', error);
       throw error;
     }
   },
@@ -377,7 +377,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error creating project task:', error);
+      if (import.meta.env.DEV) console.error('Error creating project task:', error);
       throw error;
     }
   },
@@ -391,7 +391,7 @@ const collaborationService = {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error updating project progress:', error);
+      if (import.meta.env.DEV) console.error('Error updating project progress:', error);
       throw error;
     }
   }

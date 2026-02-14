@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Container, Row, Col, Card, Table, Badge, Button, Form,
   Spinner, Alert, Tabs, Tab, InputGroup
@@ -176,7 +176,7 @@ function Gradebook() {
       
       setIsLoading(false);
     } catch (err) {
-      console.error('Error fetching gradebook data:', err);
+      if (import.meta.env.DEV) console.error('Error fetching gradebook data:', err);
       setError('Failed to load gradebook data');
       setIsLoading(false);
     }
@@ -218,14 +218,19 @@ function Gradebook() {
   
   const calculateStudentAverage = (studentId) => {
     const studentGrades = grades[studentId] || {};
-    const gradeValues = Object.values(studentGrades)
-      .filter(g => g.percentage != null)
-      .map(g => g.percentage);
-    
-    if (gradeValues.length === 0) return null;
-    
-    const sum = gradeValues.reduce((a, b) => a + b, 0);
-    return (sum / gradeValues.length).toFixed(1);
+    const gradedAssessments = Object.entries(studentGrades)
+      .filter(([, g]) => g.marks_obtained != null)
+      .map(([assessmentId, g]) => {
+        const assessment = assessments.find(a => String(a.assessment_id) === String(assessmentId));
+        return { marks: g.marks_obtained, total: assessment?.total_marks || 0 };
+      })
+      .filter(g => g.total > 0);
+
+    if (gradedAssessments.length === 0) return null;
+
+    const totalMarks = gradedAssessments.reduce((sum, g) => sum + g.marks, 0);
+    const totalPossible = gradedAssessments.reduce((sum, g) => sum + g.total, 0);
+    return ((totalMarks / totalPossible) * 100).toFixed(1);
   };
   
   const calculateAttendancePercentage = (studentId) => {
@@ -241,8 +246,8 @@ function Gradebook() {
     return ((presentCount / attendanceRecords.length) * 100).toFixed(1);
   };
   
-  // Get unique dates from lessons, sorted by date
-  const getUniqueDates = () => {
+  // Get unique dates from lessons, sorted by date (memoized)
+  const uniqueDates = useMemo(() => {
     const dates = new Set();
     lessons.forEach(lesson => {
       if (lesson.lesson_date) {
@@ -251,7 +256,7 @@ function Gradebook() {
       }
     });
     return Array.from(dates).sort().reverse().slice(0, 30); // Last 30 days
-  };
+  }, [lessons]);
   
   const filteredStudents = students.filter(student => {
     if (!searchTerm) return true;
@@ -262,60 +267,55 @@ function Gradebook() {
     );
   });
   
+  const escapeCSV = (value) => {
+    const str = String(value ?? '');
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const downloadCSV = (headers, rows, filename) => {
+    const csv = [headers.map(escapeCSV).join(','), ...rows.map(r => r.map(escapeCSV).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const exportToCSV = () => {
     if (activeTab === 'grades') {
-      // Export grades
       const headers = ['Student Name', 'Student Email', ...assessments.map(a => a.assessment_name), 'Average'];
-      const rows = filteredStudents.map(student => {
-        const row = [
-          student.name || '',
-          student.email || '',
-          ...assessments.map(assessment => {
-            const grade = grades[student.user_id]?.[assessment.assessment_id];
-            return grade ? `${grade.marks_obtained}/${assessment.total_marks} (${grade.percentage?.toFixed(1)}%)` : '-';
-          }),
-          calculateStudentAverage(student.user_id) || '-'
-        ];
-        return row.join(',');
-      });
-      
-      const csv = [headers.join(','), ...rows].join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `gradebook_${classSubject?.subject_offering?.subject?.subject_name || 'grades'}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      const rows = filteredStudents.map(student => [
+        student.name || '',
+        student.email || '',
+        ...assessments.map(assessment => {
+          const grade = grades[student.user_id]?.[assessment.assessment_id];
+          return grade ? `${grade.marks_obtained}/${assessment.total_marks} (${grade.percentage?.toFixed(1)}%)` : '-';
+        }),
+        calculateStudentAverage(student.user_id) || '-'
+      ]);
+      downloadCSV(headers, rows, `gradebook_${classSubject?.subject_offering?.subject?.subject_name || 'grades'}.csv`);
     } else {
-      // Export attendance
-      const dateHeaders = getUniqueDates().map(dateKey => {
+      const dates = uniqueDates;
+      const dateHeaders = dates.map(dateKey => {
         const date = new Date(dateKey);
         return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       });
       const headers = ['Student Name', 'Student Email', ...dateHeaders, 'Attendance %'];
       const rows = filteredStudents.map(student => {
         const studentAttendance = attendance[student.user_id] || {};
-        const row = [
+        return [
           student.name || '',
           student.email || '',
-          ...getUniqueDates().map(dateKey => {
-            const att = studentAttendance[dateKey];
-            return att?.status || '-';
-          }),
+          ...dates.map(dateKey => studentAttendance[dateKey]?.status || '-'),
           calculateAttendancePercentage(student.user_id) || '0'
         ];
-        return row.join(',');
       });
-      
-      const csv = [headers.join(','), ...rows].join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `attendance_${classSubject?.subject_offering?.subject?.subject_name || 'attendance'}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
+      downloadCSV(headers, rows, `attendance_${classSubject?.subject_offering?.subject?.subject_name || 'attendance'}.csv`);
     }
   };
   
@@ -501,7 +501,7 @@ function Gradebook() {
                   <thead>
                     <tr>
                       <th>Student Name</th>
-                      {getUniqueDates().map(dateKey => {
+                      {uniqueDates.map(dateKey => {
                         const date = new Date(dateKey);
                         return (
                           <th key={dateKey} style={{ minWidth: '100px' }}>
@@ -518,7 +518,7 @@ function Gradebook() {
                   <tbody>
                     {filteredStudents.length === 0 ? (
                       <tr>
-                        <td colSpan={getUniqueDates().length + 2} className="text-center">
+                        <td colSpan={uniqueDates.length + 2} className="text-center">
                           No students found
                         </td>
                       </tr>
@@ -530,7 +530,7 @@ function Gradebook() {
                             <td>
                               <strong>{student.name || student.email}</strong>
                             </td>
-                            {getUniqueDates().map(dateKey => {
+                            {uniqueDates.map(dateKey => {
                               const att = attendance[student.user_id]?.[dateKey];
                               return (
                                 <td key={dateKey} className="text-center">
@@ -554,9 +554,9 @@ function Gradebook() {
                   </tbody>
                 </Table>
               )}
-              {getUniqueDates().length >= 30 && (
+              {uniqueDates.length >= 30 && (
                 <Alert variant="info" className="mt-3">
-                  Showing attendance for the 30 most recent days. Total days with lessons: {getUniqueDates().length}
+                  Showing attendance for the 30 most recent days.
                 </Alert>
               )}
             </Card.Body>
@@ -600,7 +600,7 @@ function Gradebook() {
             <Card.Body>
               <div className="d-flex justify-content-between mb-2">
                 <span>Total Days with Lessons:</span>
-                <strong>{getUniqueDates().length}</strong>
+                <strong>{uniqueDates.length}</strong>
               </div>
               <div className="d-flex justify-content-between mb-2">
                 <span>Total Lessons:</span>
