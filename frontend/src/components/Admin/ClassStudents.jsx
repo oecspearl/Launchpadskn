@@ -1,17 +1,18 @@
 import React from 'react';
-import { useParams } from 'react-router-dom';
-import { Container, Table, Alert, Spinner } from 'react-bootstrap';
+import { useParams, useNavigate } from 'react-router-dom';
+import { Container, Table, Alert, Spinner, Button } from 'react-bootstrap';
+import { FaArrowLeft } from 'react-icons/fa';
 import { useQuery } from '@tanstack/react-query';
 import { classService } from '../../services/classService';
 
 const ClassStudents = () => {
     const { classId } = useParams();
+    const navigate = useNavigate();
 
     const { data: students, isLoading, error } = useQuery({
         queryKey: ['classStudents', classId],
         queryFn: async () => {
             const data = await classService.getClassRoster(classId);
-            // Map to just the student objects to match previous behavior
             return (data || []).map(item => item.student);
         },
         enabled: !!classId
@@ -35,7 +36,12 @@ const ClassStudents = () => {
 
     return (
         <Container className="mt-4">
-            <h2>Students in Class {classId}</h2>
+            <div className="d-flex align-items-center mb-3">
+                <Button variant="outline-secondary" size="sm" onClick={() => navigate('/admin/classes')} className="me-3">
+                    <FaArrowLeft className="me-1" /> Back to Classes
+                </Button>
+                <h2 className="mb-0">Students in Class {classId}</h2>
+            </div>
             {!students || students.length === 0 ? (
                 <Alert variant="info">No students enrolled.</Alert>
             ) : (

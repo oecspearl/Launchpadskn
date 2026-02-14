@@ -19,6 +19,7 @@ const UserManagement = lazy(() => import('../components/Admin/UserManagement'));
 const ARVRContentManager = lazy(() => import('../components/Admin/ARVRContentManager'));
 const AdminHelpPage = lazy(() => import('../components/Help/AdminHelpPage'));
 const StudentProfile = lazy(() => import('../components/Admin/StudentProfile'));
+const ClassStudents = lazy(() => import('../components/Admin/ClassStudents'));
 
 const AdminRoutes = () => (
     <>
@@ -125,6 +126,14 @@ const AdminRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['admin']}>
                     <ARVRContentManager />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/admin/classes/:classId/students"
+            element={
+                <PrivateRoute allowedRoles={['admin']}>
+                    <ClassStudents />
                 </PrivateRoute>
             }
         />
