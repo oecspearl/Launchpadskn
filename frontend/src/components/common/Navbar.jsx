@@ -142,6 +142,9 @@ function AppNavbar() {
                   <NavDropdown.Item as={Link} to="/admin/classes">Classes</NavDropdown.Item>
                   <NavDropdown.Item as={Link} to="/admin/subjects">Subjects</NavDropdown.Item>
                   <NavDropdown.Divider />
+                  <NavDropdown.Item as={Link} to="/admin/students">Students</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/admin/instructors">Instructors</NavDropdown.Item>
+                  <NavDropdown.Divider />
                   <NavDropdown.Item as={Link} to="/teacher/curriculum">Curriculum</NavDropdown.Item>
                 </NavDropdown>
               )}

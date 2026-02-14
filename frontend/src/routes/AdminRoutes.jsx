@@ -17,6 +17,7 @@ const StudentAssignment = lazy(() => import('../components/Admin/StudentAssignme
 const ClassSubjectAssignment = lazy(() => import('../components/Admin/ClassSubjectAssignment'));
 const UserManagement = lazy(() => import('../components/Admin/UserManagement'));
 const ARVRContentManager = lazy(() => import('../components/Admin/ARVRContentManager'));
+const StudentManagement = lazy(() => import('../components/Admin/StudentManagement'));
 const AdminHelpPage = lazy(() => import('../components/Help/AdminHelpPage'));
 const StudentProfile = lazy(() => import('../components/Admin/StudentProfile'));
 const ClassStudents = lazy(() => import('../components/Admin/ClassStudents'));
@@ -126,6 +127,14 @@ const AdminRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['admin']}>
                     <ARVRContentManager />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/admin/students"
+            element={
+                <PrivateRoute allowedRoles={['admin']}>
+                    <StudentManagement />
                 </PrivateRoute>
             }
         />
