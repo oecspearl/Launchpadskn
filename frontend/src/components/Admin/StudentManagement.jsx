@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Alert } from 'react-bootstrap';
-import { FaSearch, FaUserGraduate, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEye, FaCheck, FaTimes, FaInfoCircle } from 'react-icons/fa';
+import { FaSearch, FaUserGraduate, FaEnvelope, FaPhone, FaMapMarkerAlt, FaEye, FaInfoCircle } from 'react-icons/fa';
 import supabaseService from '../../services/supabaseService';
 import Breadcrumb from '../common/Breadcrumb';
 import StudentInformationManagement from './StudentInformationManagement';
@@ -14,7 +14,6 @@ function StudentManagement() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
-  const [enrollmentRequests, setEnrollmentRequests] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -25,7 +24,6 @@ function StudentManagement() {
 
   useEffect(() => {
     fetchStudents();
-    fetchEnrollmentRequests();
   }, []);
 
   useEffect(() => {
@@ -58,11 +56,6 @@ function StudentManagement() {
     }
   };
 
-  const fetchEnrollmentRequests = async () => {
-    // Enrollments deprecated - replaced by class assignments
-    setEnrollmentRequests([]);
-  };
-
   const filterStudents = () => {
     let filtered = students;
 
@@ -85,18 +78,6 @@ function StudentManagement() {
   const handleViewStudent = (student) => {
     setSelectedStudent(student);
     setShowModal(true);
-  };
-
-  const handleApproveEnrollment = async (enrollmentId) => {
-    // Deprecated - use Student Assignment page instead
-    setError('Enrollment approval is deprecated. Please use Student Assignment page.');
-    setTimeout(() => setError(''), 3000);
-  };
-
-  const handleRejectEnrollment = async (enrollmentId) => {
-    // Deprecated - use Student Assignment page instead
-    setError('Enrollment rejection is deprecated. Please use Student Assignment page.');
-    setTimeout(() => setError(''), 3000);
   };
 
   const getStatusBadge = (isActive) => {
@@ -138,71 +119,10 @@ function StudentManagement() {
               <Badge bg="info" className="me-2">
                 Total Students: {students.length}
               </Badge>
-              <Badge bg="warning">
-                Pending Requests: {enrollmentRequests.length}
-              </Badge>
             </div>
           </div>
         </Col>
       </Row>
-
-      {/* Enrollment Requests Section */}
-      {enrollmentRequests.length > 0 && (
-        <Card className="mb-4">
-          <Card.Header>
-            <h5 className="mb-0">Pending Enrollment Requests ({enrollmentRequests.length})</h5>
-          </Card.Header>
-          <Card.Body>
-            <Table responsive>
-              <thead>
-                <tr>
-                  <th>Student</th>
-                  <th>Course</th>
-                  <th>Requested Date</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enrollmentRequests.map((request) => (
-                  <tr key={request.enrollmentId}>
-                    <td>
-                      <div>
-                        <strong>{request.student?.name || 'Unknown Student'}</strong>
-                        <div className="small text-muted">{request.student?.email}</div>
-                      </div>
-                    </td>
-                    <td>
-                      <div>
-                        <strong>{request.course?.title || 'Unknown Course'}</strong>
-                        <div className="small text-muted">{request.course?.code}</div>
-                      </div>
-                    </td>
-                    <td>{new Date(request.enrollmentDate).toLocaleDateString()}</td>
-                    <td>
-                      <div className="btn-group">
-                        <Button
-                          variant="outline-success"
-                          size="sm"
-                          onClick={() => handleApproveEnrollment(request.enrollmentId)}
-                        >
-                          <FaCheck /> Approve
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => handleRejectEnrollment(request.enrollmentId)}
-                        >
-                          <FaTimes /> Reject
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          </Card.Body>
-        </Card>
-      )}
 
       {/* Students List Section */}
       <Card>

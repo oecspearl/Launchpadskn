@@ -211,20 +211,22 @@ function ManageInstructors() {
         
         setSuccessMessage("Instructor updated successfully!");
       } else {
-        // Create new instructor user using Supabase Auth
+        // Create new instructor user using Supabase Auth signUp (works with anon key)
         const { supabase } = await import('../../config/supabase');
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email: currentInstructor.email,
           password: currentInstructor.password,
-          email_confirm: true,
-          user_metadata: {
-            name: `${currentInstructor.firstName} ${currentInstructor.lastName}`,
-            role: 'INSTRUCTOR'
+          options: {
+            data: {
+              name: `${currentInstructor.firstName} ${currentInstructor.lastName}`,
+              role: 'INSTRUCTOR'
+            }
           }
         });
-        
+
         if (authError) throw authError;
-        
+        if (!authData.user) throw new Error('User creation failed');
+
         // Create user profile in users table
         await supabase.from('users').insert({
           id: authData.user.id,

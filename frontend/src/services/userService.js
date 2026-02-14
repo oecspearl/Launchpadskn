@@ -111,17 +111,20 @@ export const userService = {
      * Create a new user (admin creates with email, password, role, institution_id)
      */
     async createUser({ email, password, role = ROLES.STUDENT, institution_id }) {
-        // Create auth user (requires service_role key)
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        // Use signUp (works with anon key) instead of admin.createUser (requires service_role)
+        const { data: authData, error: authError } = await supabase.auth.signUp({
             email,
             password,
-            email_confirm: true,
+            options: {
+                data: { role: role.toUpperCase(), institution_id },
+            },
         });
         if (authError) throw authError;
+        if (!authData.user) throw new Error('User creation failed');
 
         // Insert profile into custom users table
         const profile = {
-            user_id: authData.user.id,
+            id: authData.user.id,
             email,
             role: role.toUpperCase(),
             institution_id,
