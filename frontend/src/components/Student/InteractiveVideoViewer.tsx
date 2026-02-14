@@ -43,24 +43,8 @@ function InteractiveVideoViewer({
   const videoRef = useRef<HTMLIFrameElement | HTMLVideoElement>(null);
   const timeUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Guard clause for missing contentData
-  if (!contentData) {
-    return (
-      <Container className="interactive-video-viewer">
-        <Alert variant="danger">
-          Error: Video content data is missing.
-        </Alert>
-        {onClose && (
-          <Button variant="secondary" onClick={onClose} className="mt-3">
-            Close
-          </Button>
-        )}
-      </Container>
-    );
-  }
-
-  const settings = contentData.settings || {};
-  const checkpoints = contentData.checkpoints || [];
+  const settings = contentData?.settings || {};
+  const checkpoints = contentData?.checkpoints || [];
   const sortedCheckpoints = [...checkpoints].sort((a, b) => a.timestamp - b.timestamp);
 
   // Estimate video duration based on checkpoints if not available
@@ -73,19 +57,6 @@ function InteractiveVideoViewer({
       console.log('[InteractiveVideoViewer] Estimated video duration:', estimatedDuration, 'based on max checkpoint:', maxCheckpoint);
     }
   }, [checkpoints, videoDuration]);
-
-  // Debug: Log checkpoints on mount
-  useEffect(() => {
-    console.log('[InteractiveVideoViewer] Loaded with checkpoints:', {
-      total: checkpoints.length,
-      checkpoints: sortedCheckpoints.map(cp => ({
-        id: cp.id,
-        timestamp: cp.timestamp,
-        type: cp.type,
-        title: cp.title
-      }))
-    });
-  }, []);
 
   // Format time helper
   const formatTime = (seconds: number): string => {
@@ -135,6 +106,22 @@ function InteractiveVideoViewer({
       }
     };
   }, [isPlaying, sortedCheckpoints, completedCheckpoints]);
+
+  // Guard clause for missing contentData (after all hooks)
+  if (!contentData) {
+    return (
+      <Container className="interactive-video-viewer">
+        <Alert variant="danger">
+          Error: Video content data is missing.
+        </Alert>
+        {onClose && (
+          <Button variant="secondary" onClick={onClose} className="mt-3">
+            Close
+          </Button>
+        )}
+      </Container>
+    );
+  }
 
   // Pause video using appropriate method for each video type
   const pauseVideo = () => {
@@ -214,12 +201,15 @@ function InteractiveVideoViewer({
 
       setIsCorrect(correct);
       setShowExplanation(true);
-      setCheckpointAttempts(new Map(checkpointAttempts.set(checkpoint.id, attempts + 1)));
+      const newAttempts = new Map(checkpointAttempts);
+      newAttempts.set(checkpoint.id, attempts + 1);
+      setCheckpointAttempts(newAttempts);
 
       if (correct || !checkpoint.required) {
-        // Mark as completed
         setCompletedCheckpoints(new Set([...completedCheckpoints, checkpoint.id]));
-        setCheckpointAnswers(new Map(checkpointAnswers.set(checkpoint.id, selectedAnswer)));
+        const newAnswers = new Map(checkpointAnswers);
+        newAnswers.set(checkpoint.id, selectedAnswer);
+        setCheckpointAnswers(newAnswers);
       }
     } else {
       // For note, pause, reflection types - just mark as viewed
@@ -512,7 +502,7 @@ function InteractiveVideoViewer({
                     <div
                       key={cp.id}
                       className={`checkpoint-marker ${completedCheckpoints.has(cp.id) ? 'completed' : ''} ${activeCheckpoint?.id === cp.id ? 'active' : ''}`}
-                      style={{ left: `${(cp.timestamp / 600) * 100}%` }}
+                      style={{ left: `${videoDuration > 0 ? (cp.timestamp / videoDuration) * 100 : 0}%` }}
                       title={`${formatTime(cp.timestamp)} - ${cp.type}`}
                     >
                       <FaQuestionCircle />
@@ -550,19 +540,19 @@ function InteractiveVideoViewer({
                       Check for Checkpoint
                     </Button>
                   )}
-                  <Button
-                    variant="outline-info"
-                    size="sm"
-                    onClick={() => {
-                      // Debug: Show all checkpoint info
-                      console.log('Checkpoints:', sortedCheckpoints);
-                      console.log('Current time:', currentTime);
-                      console.log('Completed:', Array.from(completedCheckpoints));
-                      alert(`Checkpoints: ${sortedCheckpoints.length}\nCurrent time: ${formatTime(currentTime)}\nCompleted: ${completedCheckpoints.size}`);
-                    }}
-                  >
-                    Debug Info
-                  </Button>
+                  {import.meta.env.DEV && (
+                    <Button
+                      variant="outline-info"
+                      size="sm"
+                      onClick={() => {
+                        console.log('Checkpoints:', sortedCheckpoints);
+                        console.log('Current time:', currentTime);
+                        console.log('Completed:', Array.from(completedCheckpoints));
+                      }}
+                    >
+                      Debug Info
+                    </Button>
+                  )}
                 </div>
               </Card.Header>
               <Card.Body>

@@ -4,6 +4,17 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { FaEnvelope, FaLock, FaSignInAlt, FaBuilding, FaDatabase } from 'react-icons/fa';
 
+function getDashboardPath(role) {
+  switch (role) {
+    case 'admin': return '/admin/dashboard';
+    case 'school_admin': return '/school-admin/dashboard';
+    case 'instructor':
+    case 'teacher': return '/teacher/dashboard';
+    case 'student': return '/student/dashboard';
+    default: return '/login';
+  }
+}
+
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,39 +66,13 @@ function Login() {
 
       if (actualIsAuthenticated && actualUser && actualUser.role) {
         const role = (actualUser.role || '').toLowerCase().trim();
-        console.log('[Login] User authenticated, attempting redirect...', { role, email: actualUser.email });
 
-        if (role) {
-          let dashboardPath = '/login';
+        const dashboardPath = getDashboardPath(role);
 
-          if (role === 'admin') {
-            dashboardPath = '/admin/dashboard';
-          } else if (role === 'instructor' || role === 'teacher') {
-            dashboardPath = '/teacher/dashboard';
-          } else if (role === 'student') {
-            dashboardPath = '/student/dashboard';
-          }
-
-          console.log('[Login] Determined dashboard path:', dashboardPath);
-
-          // Only redirect if we're on login page and user is authenticated
-          if (currentPath === '/login' && dashboardPath !== '/login') {
-            console.log('[Login] On login page but authenticated, redirecting to:', dashboardPath);
-            // User is authenticated but on login page, redirect
-            window.location.replace(dashboardPath);
-          } else if (currentPath === '/' && dashboardPath !== '/login') {
-            console.log('[Login] On root path, redirecting authenticated user to dashboard');
-            // User is on root path (/) and authenticated, redirect to dashboard
-            window.location.replace(dashboardPath);
-          }
+        // Only redirect if we're on login page and user is authenticated
+        if ((currentPath === '/login' || currentPath === '/') && dashboardPath !== '/login') {
+          navigate(dashboardPath, { replace: true });
         }
-      } else {
-        console.log('[Login] Not authenticated, showing login form', {
-          isAuthenticated: actualIsAuthenticated,
-          hasUser: !!actualUser,
-          hasRole: !!actualUser?.role,
-          hasStoredUser: !!storedUser
-        });
       }
     }, 500); // Wait 500ms before checking auth to ensure form renders
 
@@ -111,18 +96,11 @@ function Login() {
         userData = await login(email, password);
       }
 
-      console.log('Login successful, userData:', userData);
-
-      // Check if userData was returned
       if (!userData) {
-        console.error('Login returned no userData');
         throw new Error('Login failed: No user data returned');
       }
 
-      // Ensure role matching is case-insensitive
       const role = (userData?.role || '').toLowerCase();
-
-      console.log('User role:', role, 'Full userData:', JSON.stringify(userData, null, 2));
 
       // Wait a moment for auth state to update
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -135,31 +113,16 @@ function Login() {
       }
 
       // Determine dashboard path
-      let dashboardPath = '/login';
-      switch (role) {
-        case 'admin':
-          dashboardPath = '/admin/dashboard';
-          break;
-        case 'instructor':
-          dashboardPath = '/teacher/dashboard';
-          break;
-        case 'student':
-          dashboardPath = '/student/dashboard';
-          break;
-        default:
-          console.warn('Unknown role:', role, 'userData:', userData);
-          setError(`Invalid user role: ${role}. Expected: admin, instructor, or student`);
-          dashboardPath = '/admin/dashboard'; // Fallback to admin
+      const dashboardPath = getDashboardPath(role);
+
+      if (dashboardPath === '/login') {
+        setError(`Invalid user role: ${role}. Please contact your administrator.`);
+        setIsLoading(false);
+        return;
       }
 
-      console.log('[Login] handleSubmit - Navigating to:', dashboardPath);
-
-      // Clear loading state
       setIsLoading(false);
-
-      // Use window.location.replace() for immediate redirect (most reliable)
-      console.log('[Login] Using window.location.replace() for redirect');
-      window.location.replace(dashboardPath);
+      navigate(dashboardPath, { replace: true });
     } catch (err) {
       console.error('Login error:', err);
       const errorMessage = loginType === 'ad'
@@ -337,11 +300,13 @@ function Login() {
                     <FaBuilding className="me-1" />
                     Active Directory users are managed by your system administrator
                   </small>
-                  <div className="mt-2">
-                    <small className="text-info">
-                      Test Users: jadmin@mylab.local, sinstructor@mylab.local, mstudent@mylab.local
-                    </small>
-                  </div>
+                  {import.meta.env.DEV && (
+                    <div className="mt-2">
+                      <small className="text-info">
+                        Test Users: jadmin@mylab.local, sinstructor@mylab.local, mstudent@mylab.local
+                      </small>
+                    </div>
+                  )}
                 </div>
               )}
             </Card.Footer>

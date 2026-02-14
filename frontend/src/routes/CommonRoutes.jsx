@@ -18,7 +18,7 @@ const CommonRoutes = () => (
         <Route
             path="/change-password"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <ChangePassword />
                 </PrivateRoute>
             }
@@ -26,7 +26,7 @@ const CommonRoutes = () => (
         <Route
             path="/profile"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <Profile />
                 </PrivateRoute>
             }
@@ -34,7 +34,7 @@ const CommonRoutes = () => (
         <Route
             path="/courses/:courseId"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <CourseDetails />
                 </PrivateRoute>
             }
@@ -42,7 +42,7 @@ const CommonRoutes = () => (
         <Route
             path="/notification-preferences"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <NotificationPreferences />
                 </PrivateRoute>
             }
@@ -50,7 +50,7 @@ const CommonRoutes = () => (
         <Route
             path="/notifications"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <NotificationsList />
                 </PrivateRoute>
             }
@@ -58,7 +58,7 @@ const CommonRoutes = () => (
         <Route
             path="/curriculum/skn-mathematics"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <SKNCurriculum />
                 </PrivateRoute>
             }
@@ -66,7 +66,7 @@ const CommonRoutes = () => (
         <Route
             path="/curriculum/skn-social-science"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <SKNSocialScienceCurriculum />
                 </PrivateRoute>
             }
@@ -74,7 +74,7 @@ const CommonRoutes = () => (
         <Route
             path="/curriculum/skn-mathematics-form2"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <SKNMathsCurriculumForm2 />
                 </PrivateRoute>
             }
@@ -82,7 +82,7 @@ const CommonRoutes = () => (
         <Route
             path="/curriculum/skn-social-science-form2"
             element={
-                <PrivateRoute allowedRoles={['admin', 'instructor', 'student']}>
+                <PrivateRoute allowedRoles={['admin', 'school_admin', 'instructor', 'student']}>
                     <SKNSocialScienceCurriculumForm2 />
                 </PrivateRoute>
             }

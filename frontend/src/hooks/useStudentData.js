@@ -45,23 +45,23 @@ export const useStudentData = (user) => {
         enabled: !!studentId,
     });
 
-    // 4. Fetch Assignments (Derived from subjects)
+    // 4. Fetch Assignments (Derived from subjects) — batched to avoid N+1
+    const classSubjectIds = subjects?.map(s => s.class_subject_id) || [];
     const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
-        queryKey: ['studentAssignments', subjects],
+        queryKey: ['studentAssignments', classSubjectIds.join(',')],
         queryFn: async () => {
-            if (!subjects?.length) return [];
-            const classSubjectIds = subjects.map(s => s.class_subject_id);
-            const allAssessments = [];
-            for (const id of classSubjectIds) {
-                const assessments = await supabaseService.getAssessmentsByClassSubject(id);
-                if (assessments) allAssessments.push(...assessments);
-            }
-            return allAssessments
-                .filter(a => a.due_date && new Date(a.due_date) >= new Date())
+            if (!classSubjectIds.length) return [];
+            // Fetch all assessments in parallel instead of sequentially
+            const results = await Promise.all(
+                classSubjectIds.map(id => supabaseService.getAssessmentsByClassSubject(id))
+            );
+            return results
+                .flat()
+                .filter(a => a && a.due_date && new Date(a.due_date) >= new Date())
                 .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
                 .slice(0, 5);
         },
-        enabled: !!subjects?.length,
+        enabled: classSubjectIds.length > 0,
     });
 
     // 5. Fetch Grades

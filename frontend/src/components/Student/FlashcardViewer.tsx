@@ -33,24 +33,8 @@ function FlashcardViewer({
   const [knownCards, setKnownCards] = useState<Set<string>>(new Set());
   const [studyMode, setStudyMode] = useState<'study' | 'review'>('study');
 
-  // Guard clause for missing contentData
-  if (!contentData) {
-    return (
-      <Container className="flashcard-viewer">
-        <Alert variant="danger">
-          Error: Flashcard content data is missing.
-        </Alert>
-        {onClose && (
-          <Button variant="secondary" onClick={onClose} className="mt-3">
-            <FaArrowLeft /> Back
-          </Button>
-        )}
-      </Container>
-    );
-  }
-
-  const settings = contentData.settings || {};
-  const cards = contentData.cards || [];
+  const settings = contentData?.settings || {};
+  const cards = contentData?.cards || [];
 
   // Initialize card order based on study mode
   useEffect(() => {
@@ -85,7 +69,7 @@ function FlashcardViewer({
     setCurrentIndex(0);
     setShowBack(false);
     setFlipped(false);
-  }, [cards, settings.studyMode, settings.shuffleCards]);
+  }, [cards.length, settings.studyMode, settings.shuffleCards]);
 
   // Ensure currentIndex is within bounds
   const safeIndex = Math.min(currentIndex, cardOrder.length - 1);
@@ -175,6 +159,22 @@ function FlashcardViewer({
       return () => clearTimeout(timer);
     }
   }, [showBack, flipped, settings.autoAdvance, settings.autoAdvanceDelay, safeIndex, cardOrder.length, onComplete, currentCard]);
+
+  // Guard clause for missing contentData (after all hooks)
+  if (!contentData) {
+    return (
+      <Container className="flashcard-viewer">
+        <Alert variant="danger">
+          Error: Flashcard content data is missing.
+        </Alert>
+        {onClose && (
+          <Button variant="secondary" onClick={onClose} className="mt-3">
+            <FaArrowLeft /> Back
+          </Button>
+        )}
+      </Container>
+    );
+  }
 
   if (!currentCard || cards.length === 0) {
     return (

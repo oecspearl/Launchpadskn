@@ -1,95 +1,95 @@
 /**
  * Supabase Authentication Service
- * Replaces the old authService.js with Supabase Auth
+ * Handles all authentication operations via Supabase Auth
  */
 import { supabase } from '../config/supabase';
 import supabaseService from './supabaseService';
 
+const log = (...args) => {
+  if (import.meta.env.DEV) console.log('[AuthService]', ...args);
+};
+const warn = (...args) => {
+  if (import.meta.env.DEV) console.warn('[AuthService]', ...args);
+};
+
 class AuthService {
-  
+
   /**
    * Login with email and password
    */
   async login(email, password) {
     try {
-      // Sign in with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email,
         password
       });
-      
+
       if (authError) throw authError;
-      
-      // Try to get user profile from users table
-      let profile = null;
+
       let userData = null;
-      
+
+      // Try to get user profile from users table (by UUID first, then email)
       try {
-        profile = await supabaseService.getUserProfile(authData.user.id);
-        
-        // Profile found - use it
+        const profile = await supabaseService.getUserProfile(authData.user.id);
         userData = {
           userId: profile.user_id || authData.user.id,
+          user_id: profile.user_id,
+          id: authData.user.id,
           email: authData.user.email,
-          name: profile.name || 'Admin User',
-          role: (profile.role || 'ADMIN').toUpperCase().trim(),
+          name: profile.name || authData.user.email.split('@')[0],
+          role: (profile.role || 'STUDENT').toUpperCase().trim(),
           token: authData.session.access_token,
           refreshToken: authData.session.refresh_token,
           loginTime: Date.now()
         };
-        
-        console.log('[AuthService] Profile found, userData:', userData);
+        log('Profile found for:', userData.email);
       } catch (profileError) {
-        // Profile not found - try to find by email instead
-        console.warn('[AuthService] Profile not found by UUID, trying by email:', profileError);
-        
+        warn('Profile not found by UUID, trying by email');
+
         try {
-          // Try finding by email as fallback
           const { data: emailProfile, error: emailError } = await supabase
             .from('users')
             .select('*')
             .eq('email', authData.user.email)
             .maybeSingle();
-          
+
           if (emailProfile && !emailError) {
-            // Found by email - link the UUID and use it
-            console.log('[AuthService] Found profile by email, linking UUID');
+            // Found by email - link the UUID
+            log('Found profile by email, linking UUID');
             await supabase
               .from('users')
               .update({ id: authData.user.id })
               .eq('user_id', emailProfile.user_id);
-            
+
             userData = {
               userId: emailProfile.user_id,
+              user_id: emailProfile.user_id,
+              id: authData.user.id,
               email: emailProfile.email,
-              name: emailProfile.name || 'Admin User',
-              role: (emailProfile.role || 'ADMIN').toUpperCase().trim(),
+              name: emailProfile.name || authData.user.email.split('@')[0],
+              role: (emailProfile.role || 'STUDENT').toUpperCase().trim(),
               token: authData.session.access_token,
               refreshToken: authData.session.refresh_token,
               loginTime: Date.now()
             };
           } else {
-            // Still not found - use auth metadata or defaults
-            console.warn('[AuthService] Profile not found by email either, creating new profile');
-            
-            // Determine role from email or metadata
-            const isAdminEmail = authData.user.email.toLowerCase().includes('admin');
-            const defaultRole = isAdminEmail ? 'ADMIN' : 'STUDENT';
-            const role = (authData.user.user_metadata?.role || defaultRole).toUpperCase().trim();
-            
+            // No profile found - create one with role from metadata or default to STUDENT
+            warn('No profile found, creating new profile');
+            const role = (authData.user.user_metadata?.role || 'STUDENT').toUpperCase().trim();
+
             userData = {
               userId: authData.user.id,
+              id: authData.user.id,
               email: authData.user.email,
-              name: authData.user.user_metadata?.name || 'Admin User',
+              name: authData.user.user_metadata?.name || authData.user.email.split('@')[0],
               role: role,
               token: authData.session.access_token,
               refreshToken: authData.session.refresh_token,
               loginTime: Date.now()
             };
-            
+
             // Try to create profile in users table
             try {
-              console.log('[AuthService] Attempting to create user profile in database');
               const { error: createError } = await supabase
                 .from('users')
                 .insert({
@@ -100,69 +100,57 @@ class AuthService {
                   is_active: true,
                   created_at: new Date().toISOString()
                 });
-              
+
               if (createError) {
-                console.error('[AuthService] Could not create profile:', createError);
-                // Still continue with login even if profile creation fails
-              } else {
-                console.log('[AuthService] Profile created successfully');
+                warn('Could not create profile:', createError.message);
               }
             } catch (createError) {
-              console.error('[AuthService] Error creating profile:', createError);
-              // Still continue with login
+              warn('Error creating profile:', createError.message);
             }
           }
         } catch (emailLookupError) {
-          console.error('[AuthService] Error in email lookup fallback:', emailLookupError);
-          // Final fallback - ensure admin gets ADMIN role
-          const isAdminEmail = authData.user.email.toLowerCase().includes('admin');
+          warn('Email lookup failed, using defaults');
           userData = {
             userId: authData.user.id,
+            id: authData.user.id,
             email: authData.user.email,
-            name: 'Admin User',
-            role: isAdminEmail ? 'ADMIN' : 'STUDENT',
+            name: authData.user.email.split('@')[0],
+            role: (authData.user.user_metadata?.role || 'STUDENT').toUpperCase().trim(),
             token: authData.session.access_token,
             refreshToken: authData.session.refresh_token,
             loginTime: Date.now()
           };
         }
       }
-      
-      // Ensure role is uppercase and valid
-      const validRoles = ['ADMIN', 'INSTRUCTOR', 'STUDENT'];
+
+      // Validate role against known roles - default to STUDENT for unknown roles
+      const validRoles = ['ADMIN', 'SCHOOL_ADMIN', 'INSTRUCTOR', 'STUDENT'];
       const normalizedRole = (userData.role || '').toUpperCase().trim();
-      userData.role = validRoles.includes(normalizedRole) ? normalizedRole : 'STUDENT';
-      
-      // Special handling for admin emails
-      if (userData.email.toLowerCase().includes('admin') && userData.role !== 'ADMIN') {
-        console.warn('[AuthService] Admin email detected but role is not ADMIN, fixing...');
-        userData.role = 'ADMIN';
+      if (normalizedRole === 'TEACHER') {
+        userData.role = 'INSTRUCTOR';
+      } else {
+        userData.role = validRoles.includes(normalizedRole) ? normalizedRole : 'STUDENT';
       }
-      
-      console.log('[AuthService] Final userData:', { 
-        email: userData.email, 
-        role: userData.role,
-        userId: userData.userId 
-      });
-      
-      // Store in localStorage for compatibility with existing code
+
+      log('Login successful:', { email: userData.email, role: userData.role });
+
+      // Store in localStorage for compatibility
       localStorage.setItem('user', JSON.stringify(userData));
       localStorage.setItem('token', authData.session.access_token);
       sessionStorage.setItem('sessionActive', 'true');
-      
+
       return userData;
     } catch (error) {
-      console.error('Login error', error);
+      if (import.meta.env.DEV) console.error('Login error', error);
       throw error;
     }
   }
-  
+
   /**
    * Register new user
    */
   async register(name, email, password, role = 'STUDENT', phone = '', dateOfBirth = '', address = '', emergencyContact = '') {
     try {
-      // Sign up with Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -177,16 +165,16 @@ class AuthService {
           }
         }
       });
-      
+
       if (authError) throw authError;
-      
-      // Create user profile in users table
+
+      // Create user profile - use both id and user_id for dual-ID compatibility
       const { error: profileError } = await supabase
         .from('users')
         .insert({
-          user_id: authData.user.id,
-          name,
+          id: authData.user.id,
           email,
+          name,
           role,
           phone: phone || null,
           date_of_birth: dateOfBirth || null,
@@ -195,13 +183,14 @@ class AuthService {
           is_active: true,
           is_first_login: true
         });
-      
+
       if (profileError) {
-        // If profile creation fails, delete the auth user
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        // Profile creation failed - log but don't try admin.deleteUser
+        // (service role key is not available on client)
+        warn('Profile creation failed after signup:', profileError.message);
         throw profileError;
       }
-      
+
       return {
         userId: authData.user.id,
         email: authData.user.email,
@@ -210,145 +199,118 @@ class AuthService {
         message: 'Registration successful. Please check your email to verify your account.'
       };
     } catch (error) {
-      console.error('Registration error', error);
+      if (import.meta.env.DEV) console.error('Registration error', error);
       throw error;
     }
   }
-  
+
   /**
-   * Logout
+   * Logout - clears all application storage
    */
   async logout() {
     try {
       await supabase.auth.signOut();
+    } catch (error) {
+      warn('Logout error:', error.message);
+    } finally {
+      // Always clear local storage regardless of signOut success
       localStorage.removeItem('user');
       localStorage.removeItem('token');
+      localStorage.removeItem('lastLoginTime');
+      localStorage.removeItem('currentLoginTime');
       sessionStorage.removeItem('sessionActive');
-    } catch (error) {
-      console.error('Logout error', error);
-      throw error;
     }
   }
-  
-  /**
-   * Get current user from localStorage
-   */
+
   getCurrentUser() {
     const userStr = localStorage.getItem('user');
     if (!userStr) return null;
-    return JSON.parse(userStr);
+    try {
+      return JSON.parse(userStr);
+    } catch {
+      return null;
+    }
   }
-  
-  /**
-   * Get current session token
-   */
+
   getToken() {
     return localStorage.getItem('token');
   }
-  
-  /**
-   * Check if user is authenticated
-   */
+
   async isAuthenticated() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       if (!session) {
-        // Clear stale data
         localStorage.removeItem('user');
         localStorage.removeItem('token');
         sessionStorage.removeItem('sessionActive');
         return false;
       }
-      
-      // Update token if session exists
+
       if (session.access_token) {
         localStorage.setItem('token', session.access_token);
       }
-      
+
       return true;
     } catch (error) {
-      console.error('Auth check error', error);
+      warn('Auth check error:', error.message);
       return false;
     }
   }
-  
-  /**
-   * Send password reset email
-   */
+
   async sendPasswordResetEmail(email) {
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/reset-password`
       });
-      
       if (error) throw error;
-      
       return { message: 'Password reset email sent. Please check your inbox.' };
     } catch (error) {
-      console.error('Send password reset email error', error);
+      if (import.meta.env.DEV) console.error('Send password reset email error', error);
       throw error;
     }
   }
-  
-  /**
-   * Reset password with token
-   */
-  async resetPassword(token, newPassword) {
+
+  async resetPassword(_token, newPassword) {
     try {
-      // Supabase handles password reset differently
-      // The token is in the URL after redirect
+      // Supabase handles reset via magic link that establishes a session automatically
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
-      
       if (error) throw error;
-      
       return { message: 'Password reset successful' };
     } catch (error) {
-      console.error('Reset password error', error);
+      if (import.meta.env.DEV) console.error('Reset password error', error);
       throw error;
     }
   }
-  
-  /**
-   * Update user password (authenticated user)
-   */
+
   async updatePassword(newPassword) {
     try {
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });
-      
       if (error) throw error;
-      
       return { message: 'Password updated successfully' };
     } catch (error) {
-      console.error('Update password error', error);
+      if (import.meta.env.DEV) console.error('Update password error', error);
       throw error;
     }
   }
-  
-  /**
-   * Get fresh session (refresh token)
-   */
+
   async refreshSession() {
     try {
       const { data: { session }, error } = await supabase.auth.refreshSession();
-      
       if (error) throw error;
-      
       if (session?.access_token) {
         localStorage.setItem('token', session.access_token);
       }
-      
       return session;
     } catch (error) {
-      console.error('Refresh session error', error);
+      warn('Refresh session error:', error.message);
       throw error;
     }
   }
 }
 
 export default new AuthService();
-

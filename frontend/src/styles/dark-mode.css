@@ -7,20 +7,21 @@
   color: var(--text-primary) !important;
 }
 
-/* Force all text elements to be light in dark mode */
-[data-theme="dark"] p,
-[data-theme="dark"] span,
-[data-theme="dark"] div:not(.btn):not(.badge):not(.alert),
+/* Force text elements to be light in dark mode — scoped to avoid breaking
+   Bootstrap status indicators (.badge, .alert, .btn, .text-*, .bg-*) */
+[data-theme="dark"] p:not([class*="text-"]),
+[data-theme="dark"] span:not(.badge):not([class*="text-"]):not([class*="spinner"]),
+[data-theme="dark"] div:not(.btn):not(.badge):not(.alert):not([class*="bg-"]):not([class*="text-"]),
 [data-theme="dark"] label,
-[data-theme="dark"] small,
-[data-theme="dark"] strong,
+[data-theme="dark"] small:not([class*="text-"]),
+[data-theme="dark"] strong:not([class*="text-"]),
 [data-theme="dark"] b,
 [data-theme="dark"] em,
-[data-theme="dark"] i,
-[data-theme="dark"] li,
+[data-theme="dark"] i:not([class*="text-"]),
+[data-theme="dark"] li:not(.list-group-item),
 [data-theme="dark"] td,
 [data-theme="dark"] th {
-  color: var(--text-primary) !important;
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] h1,
@@ -29,7 +30,7 @@
 [data-theme="dark"] h4,
 [data-theme="dark"] h5,
 [data-theme="dark"] h6 {
-  color: var(--text-primary) !important;
+  color: var(--text-primary);
 }
 
 /* Override inline styles with hardcoded dark colors - use attribute selectors */

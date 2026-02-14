@@ -12,21 +12,20 @@ class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    // Safely log error to avoid "Cannot convert object to primitive value" errors
     try {
       const errorMessage = error?.message || error?.toString() || 'Unknown error';
-      const errorStack = error?.stack || 'No stack trace';
-      const componentStack = errorInfo?.componentStack || 'No component stack';
-      console.error('ErrorBoundary caught an error:', errorMessage, '\nStack:', errorStack, '\nComponent Stack:', componentStack);
-    } catch (logError) {
-      // If logging fails, just set state without logging
-      console.error('ErrorBoundary: Failed to log error details');
+      if (import.meta.env.DEV) {
+        console.error('ErrorBoundary caught an error:', errorMessage, errorInfo?.componentStack);
+      }
+    } catch {
+      // Ignore logging failures
     }
-    this.setState({
-      error,
-      errorInfo
-    });
+    this.setState({ error, errorInfo });
   }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null, errorInfo: null });
+  };
 
   handleReload = () => {
     window.location.reload();
@@ -38,30 +37,25 @@ class ErrorBoundary extends React.Component {
         <Container className="mt-5">
           <Alert variant="danger">
             <Alert.Heading>Something went wrong</Alert.Heading>
-            <p>The application encountered an error. Please try reloading the page.</p>
-            {this.state.error && (
+            <p>The application encountered an error. You can try again or reload the page.</p>
+            <div className="d-flex gap-2 mt-3">
+              <Button variant="primary" onClick={this.handleRetry}>
+                Try Again
+              </Button>
+              <Button variant="outline-secondary" onClick={this.handleReload}>
+                Reload Page
+              </Button>
+            </div>
+            {import.meta.env.DEV && this.state.error && (
               <details className="mt-3">
-                <summary>Error Details</summary>
+                <summary>Error Details (dev only)</summary>
                 <pre className="mt-2" style={{ fontSize: '12px', maxHeight: '300px', overflow: 'auto' }}>
-                  {this.state.error?.message || this.state.error?.toString() || 'Unknown error'}
-                  {this.state.error?.stack && (
-                    <>
-                      {'\n\nStack Trace:\n'}
-                      {this.state.error.stack}
-                    </>
-                  )}
-                  {this.state.errorInfo?.componentStack && (
-                    <>
-                      {'\n\nComponent Stack:\n'}
-                      {this.state.errorInfo.componentStack}
-                    </>
-                  )}
+                  {this.state.error?.message || 'Unknown error'}
+                  {this.state.error?.stack && `\n\nStack Trace:\n${this.state.error.stack}`}
+                  {this.state.errorInfo?.componentStack && `\n\nComponent Stack:\n${this.state.errorInfo.componentStack}`}
                 </pre>
               </details>
             )}
-            <Button variant="primary" onClick={this.handleReload} className="mt-3">
-              Reload Page
-            </Button>
           </Alert>
         </Container>
       );
@@ -72,4 +66,3 @@ class ErrorBoundary extends React.Component {
 }
 
 export default ErrorBoundary;
-

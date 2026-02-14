@@ -50,7 +50,7 @@ function StudentAssignment() {
       // Let's use getClasses(ROLES.ADMIN) to get all active classes.
       const all = await classService.getClasses(ROLES.ADMIN);
       if (selectedForm !== 'all') {
-        return all.filter(c => c.form_id === selectedForm);
+        return all.filter(c => String(c.form_id) === String(selectedForm));
       }
       return all;
     }

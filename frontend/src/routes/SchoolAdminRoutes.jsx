@@ -28,7 +28,7 @@ const SchoolAdminRoutes = () => (
             path="/school-admin/forms"
             element={
                 <PrivateRoute allowedRoles={['admin', 'school_admin']}>
-                    <SchoolAdminDashboard />
+                    <InstitutionScopedFormManagement />
                 </PrivateRoute>
             }
         />
@@ -36,7 +36,7 @@ const SchoolAdminRoutes = () => (
             path="/school-admin/classes"
             element={
                 <PrivateRoute allowedRoles={['admin', 'school_admin']}>
-                    <SchoolAdminDashboard />
+                    <InstitutionScopedClassManagement />
                 </PrivateRoute>
             }
         />
@@ -44,7 +44,7 @@ const SchoolAdminRoutes = () => (
             path="/school-admin/subjects"
             element={
                 <PrivateRoute allowedRoles={['admin', 'school_admin']}>
-                    <SchoolAdminDashboard />
+                    <InstitutionScopedSubjectManagement />
                 </PrivateRoute>
             }
         />
@@ -52,7 +52,7 @@ const SchoolAdminRoutes = () => (
             path="/school-admin/students"
             element={
                 <PrivateRoute allowedRoles={['admin', 'school_admin']}>
-                    <SchoolAdminDashboard />
+                    <InstitutionScopedStudentManagement />
                 </PrivateRoute>
             }
         />
@@ -60,7 +60,7 @@ const SchoolAdminRoutes = () => (
             path="/school-admin/instructors"
             element={
                 <PrivateRoute allowedRoles={['admin', 'school_admin']}>
-                    <SchoolAdminDashboard />
+                    <InstitutionScopedInstructorManagement />
                 </PrivateRoute>
             }
         />
@@ -68,7 +68,7 @@ const SchoolAdminRoutes = () => (
             path="/school-admin/reports"
             element={
                 <PrivateRoute allowedRoles={['admin', 'school_admin']}>
-                    <SchoolAdminDashboard />
+                    <InstitutionScopedReports />
                 </PrivateRoute>
             }
         />
@@ -76,4 +76,3 @@ const SchoolAdminRoutes = () => (
 );
 
 export default SchoolAdminRoutes;
-

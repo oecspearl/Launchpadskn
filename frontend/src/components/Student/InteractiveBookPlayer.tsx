@@ -38,24 +38,9 @@ function InteractiveBookPlayer({
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const playerRef = useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Guard clause for missing contentData
-  if (!contentData) {
-    return (
-      <Container className="interactive-book-player">
-        <Alert variant="danger">
-          Error: Book content data is missing.
-        </Alert>
-        {onClose && (
-          <Button variant="secondary" onClick={onClose} className="mt-3">
-            <FaArrowLeft /> Back
-          </Button>
-        )}
-      </Container>
-    );
-  }
-
-  const pages = contentData.pages || [];
+  const pages = contentData?.pages || [];
   const currentPage = pages[currentPageIndex];
   const progress = pages.length > 0 ? ((viewedPages.size / pages.length) * 100) : 0;
 
@@ -64,14 +49,21 @@ function InteractiveBookPlayer({
     if (currentPageIndex !== null && !viewedPages.has(currentPageIndex)) {
       setViewedPages(prev => new Set([...prev, currentPageIndex]));
     }
-  }, [currentPageIndex, viewedPages]);
+  }, [currentPageIndex]);
 
-  // Save progress
+  // Save progress (debounced to avoid excessive API calls)
   useEffect(() => {
-    if (user && contentId && viewedPages.size > 0) {
+    if (!user || !contentId || viewedPages.size === 0 || !contentData) return;
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    saveTimeoutRef.current = setTimeout(() => {
       saveProgress();
-    }
-  }, [viewedPages, user, contentId]);
+    }, 2000);
+
+    return () => {
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    };
+  }, [viewedPages.size, contentId]);
 
   // Handle window resize
   useEffect(() => {
@@ -109,6 +101,22 @@ function InteractiveBookPlayer({
       }
     };
   }, []);
+
+  // Guard clause for missing contentData (after all hooks)
+  if (!contentData) {
+    return (
+      <Container className="interactive-book-player">
+        <Alert variant="danger">
+          Error: Book content data is missing.
+        </Alert>
+        {onClose && (
+          <Button variant="secondary" onClick={onClose} className="mt-3">
+            <FaArrowLeft /> Back
+          </Button>
+        )}
+      </Container>
+    );
+  }
 
   const saveProgress = async () => {
     try {
@@ -515,8 +523,8 @@ interface ImagePageContentProps {
 }
 
 function ImagePageContent({ imageData }: ImagePageContentProps) {
-  // Debug: Log the image data to console
-  console.log('ImagePageContent received imageData:', imageData);
+  const [imageError, setImageError] = useState(false);
+  const imgSrc = imageData.imageUrl || imageData.url;
 
   return (
     <div className="image-page-content">
@@ -525,56 +533,27 @@ function ImagePageContent({ imageData }: ImagePageContentProps) {
           {imageData.instructions}
         </Alert>
       )}
-      {imageData.imageUrl ? (
+      {imgSrc && !imageError ? (
         <img
-          src={imageData.imageUrl}
+          src={imgSrc}
           alt={imageData.imageDescription || imageData.caption || "Page content"}
           className="img-fluid"
           style={{ maxHeight: '600px', width: 'auto', margin: '0 auto', display: 'block' }}
-          onError={(e) => {
-            console.error('Image failed to load:', imageData.imageUrl);
-            // If image fails to load, show error message
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'alert alert-danger';
-            errorDiv.innerHTML = `<strong>Image failed to load</strong><br/>URL: ${imageData.imageUrl}`;
-            target.parentElement?.appendChild(errorDiv);
-          }}
-          onLoad={() => {
-            console.log('Image loaded successfully:', imageData.imageUrl);
-          }}
+          onError={() => setImageError(true)}
         />
-      ) : imageData.url ? (
-        // Fallback: try 'url' field instead of 'imageUrl'
-        <img
-          src={imageData.url}
-          alt={imageData.imageDescription || imageData.caption || "Page content"}
-          className="img-fluid"
-          style={{ maxHeight: '600px', width: 'auto', margin: '0 auto', display: 'block' }}
-          onError={(e) => {
-            console.error('Image failed to load:', imageData.url);
-            const target = e.target as HTMLImageElement;
-            target.style.display = 'none';
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'alert alert-danger';
-            errorDiv.innerHTML = `<strong>Image failed to load</strong><br/>URL: ${imageData.url}`;
-            target.parentElement?.appendChild(errorDiv);
-          }}
-        />
+      ) : imageError ? (
+        <Alert variant="danger">
+          <strong>Image failed to load.</strong> Please contact your teacher.
+        </Alert>
       ) : imageData.imageDescription || imageData.caption ? (
         <Alert variant="warning">
           <strong>Image Description:</strong> {imageData.imageDescription || imageData.caption}
           <br />
           <small>Image URL is missing. Please contact your teacher.</small>
-          <br />
-          <small className="text-muted">Debug: {JSON.stringify(imageData)}</small>
         </Alert>
       ) : (
         <Alert variant="warning">
           No image available for this page.
-          <br />
-          <small className="text-muted">Debug: {JSON.stringify(imageData)}</small>
         </Alert>
       )}
       {imageData.caption && (

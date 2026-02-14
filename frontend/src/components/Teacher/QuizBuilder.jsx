@@ -367,15 +367,12 @@ function QuizBuilder({ show, onHide, contentId, quizId = null, onSave }) {
 
         // Save options for multiple choice/true-false
         if (['MULTIPLE_CHOICE', 'TRUE_FALSE'].includes(question.question_type)) {
-          // Delete old options if updating
-          if (savedQuestion.question_id && !question.question_id.toString().startsWith('temp-')) {
-            const oldOptions = question.options.filter(opt => opt.option_id && !opt.option_id.toString().startsWith('temp-'));
-            for (const oldOpt of oldOptions) {
-              await supabaseService.deleteAnswerOption(oldOpt.option_id);
-            }
-          }
+          // Collect existing option IDs to determine which to delete
+          const existingOptionIds = question.options
+            .filter(opt => opt.option_id && !opt.option_id.toString().startsWith('temp-'))
+            .map(opt => opt.option_id);
 
-          // Create new options
+          // Create/update options first (before deleting old ones)
           for (let j = 0; j < question.options.length; j++) {
             const option = question.options[j];
             const optionData = {
@@ -390,6 +387,21 @@ function QuizBuilder({ show, onHide, contentId, quizId = null, onSave }) {
               await supabaseService.updateAnswerOption(option.option_id, optionData);
             } else {
               await supabaseService.createAnswerOption(optionData);
+            }
+          }
+
+          // Now delete options that were removed by the user
+          if (savedQuestion.question_id && !question.question_id.toString().startsWith('temp-')) {
+            try {
+              const existingQuestionData = await supabaseService.getQuizQuestionOptions(savedQuestion.question_id);
+              const currentOptionIds = new Set(existingOptionIds);
+              for (const oldOpt of existingQuestionData || []) {
+                if (!currentOptionIds.has(oldOpt.option_id)) {
+                  await supabaseService.deleteAnswerOption(oldOpt.option_id);
+                }
+              }
+            } catch {
+              // Old options cleanup is best-effort
             }
           }
         }

@@ -3,7 +3,9 @@ import { Card, Form, Button, ListGroup, Badge } from 'react-bootstrap';
 import { FaComments, FaPaperPlane, FaUserCircle, FaReply } from 'react-icons/fa';
 
 function DiscussionBoard({ lessonId, user }) {
-    // Mock data for demonstration
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [replyText, setReplyText] = useState('');
+    // Sample data — discussion persistence coming soon
     const [comments, setComments] = useState([
         {
             id: 1,
@@ -69,7 +71,12 @@ function DiscussionBoard({ lessonId, user }) {
                                         <small className="text-muted">{comment.timestamp}</small>
                                     </div>
                                     <p className="mb-1">{comment.text}</p>
-                                    <Button variant="link" size="sm" className="p-0 text-decoration-none">
+                                    <Button
+                                        variant="link"
+                                        size="sm"
+                                        className="p-0 text-decoration-none"
+                                        onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                                    >
                                         <FaReply className="me-1" /> Reply
                                     </Button>
                                 </div>
@@ -88,6 +95,59 @@ function DiscussionBoard({ lessonId, user }) {
                                     </div>
                                 </div>
                             ))}
+
+                            {/* Reply Form */}
+                            {replyingTo === comment.id && (
+                                <div className="ms-5 mt-2 d-flex gap-2">
+                                    <Form.Control
+                                        type="text"
+                                        size="sm"
+                                        placeholder="Write a reply..."
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && replyText.trim()) {
+                                                const reply = {
+                                                    id: Date.now(),
+                                                    user: user?.name || 'Me',
+                                                    text: replyText,
+                                                    timestamp: 'Just now'
+                                                };
+                                                setComments(comments.map(c =>
+                                                    c.id === comment.id
+                                                        ? { ...c, replies: [...c.replies, reply] }
+                                                        : c
+                                                ));
+                                                setReplyText('');
+                                                setReplyingTo(null);
+                                            }
+                                        }}
+                                    />
+                                    <Button
+                                        size="sm"
+                                        variant="primary"
+                                        disabled={!replyText.trim()}
+                                        onClick={() => {
+                                            if (!replyText.trim()) return;
+                                            const reply = {
+                                                id: Date.now(),
+                                                user: user?.name || 'Me',
+                                                text: replyText,
+                                                timestamp: 'Just now'
+                                            };
+                                            setComments(comments.map(c =>
+                                                c.id === comment.id
+                                                    ? { ...c, replies: [...c.replies, reply] }
+                                                    : c
+                                            ));
+                                            setReplyText('');
+                                            setReplyingTo(null);
+                                        }}
+                                    >
+                                        <FaPaperPlane />
+                                    </Button>
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>

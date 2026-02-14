@@ -347,7 +347,7 @@ const getDefaultPreferences = () => ({
  */
 export const subscribeToNotifications = (userId, callback) => {
     const channel = supabase
-        .channel('notifications')
+        .channel(`notifications-${userId}`)
         .on(
             'postgres_changes',
             {
