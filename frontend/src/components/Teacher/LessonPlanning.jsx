@@ -63,12 +63,44 @@ function LessonPlanning() {
     session_id: null
   });
   
+  // State for class subject selection when no classSubjectId in URL
+  const [teacherClassSubjects, setTeacherClassSubjects] = useState([]);
+
   useEffect(() => {
     if (classSubjectId) {
       fetchData();
       fetchVirtualClassrooms();
+    } else {
+      // No classSubjectId - fetch teacher's class subjects for selection
+      fetchTeacherClassSubjects();
     }
   }, [classSubjectId]);
+
+  const fetchTeacherClassSubjects = async () => {
+    try {
+      setIsLoading(true);
+      const userId = user?.user_id || user?.userId;
+      if (!userId) {
+        setIsLoading(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('class_subjects')
+        .select(`
+          class_subject_id,
+          subject_offering:subject_form_offerings(
+            subject:subjects(subject_name, subject_code)
+          ),
+          class:classes(class_name, form:forms(form_name))
+        `)
+        .eq('teacher_id', userId);
+      setTeacherClassSubjects(data || []);
+      setIsLoading(false);
+    } catch (err) {
+      console.error('Error fetching teacher class subjects:', err);
+      setIsLoading(false);
+    }
+  };
 
   const fetchVirtualClassrooms = async () => {
     try {
@@ -497,6 +529,43 @@ function LessonPlanning() {
     );
   }
   
+  if (!classSubjectId) {
+    return (
+      <Container className="mt-4">
+        <Card className="border-0 shadow-sm">
+          <Card.Body className="p-4">
+            <h4 className="mb-3"><FaBook className="me-2 text-primary" />Select a Class Subject</h4>
+            <p className="text-muted mb-4">Choose a class subject to plan lessons for.</p>
+            {teacherClassSubjects.length === 0 ? (
+              <Alert variant="info">No class subjects assigned. Contact your administrator.</Alert>
+            ) : (
+              <Row>
+                {teacherClassSubjects.map(cs => (
+                  <Col md={6} lg={4} key={cs.class_subject_id} className="mb-3">
+                    <Card
+                      className="h-100 border"
+                      style={{ cursor: 'pointer', transition: 'all 0.2s' }}
+                      onClick={() => navigate(`/teacher/class-subjects/${cs.class_subject_id}/lessons`)}
+                      onMouseOver={e => e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)'}
+                      onMouseOut={e => e.currentTarget.style.boxShadow = 'none'}
+                    >
+                      <Card.Body>
+                        <h6 className="mb-1">{cs.subject_offering?.subject?.subject_name || 'Subject'}</h6>
+                        <small className="text-muted">
+                          {cs.class?.class_name} {cs.class?.form?.form_name ? `• ${cs.class.form.form_name}` : ''}
+                        </small>
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            )}
+          </Card.Body>
+        </Card>
+      </Container>
+    );
+  }
+
   if (!classSubject) {
     return (
       <Container className="mt-4">
