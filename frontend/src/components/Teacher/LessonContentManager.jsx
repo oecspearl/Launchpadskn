@@ -152,6 +152,14 @@ function LessonContentManager() {
     }
   }, [content]);
 
+  const toggleSection = (sectionName) => {
+    setExpandedSections(prev =>
+      prev.includes(sectionName)
+        ? prev.filter(s => s !== sectionName)
+        : [...prev, sectionName]
+    );
+  };
+
   useEffect(() => {
     if (lessonId) {
       fetchContent();
