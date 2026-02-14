@@ -282,9 +282,10 @@ function ClassDetailPanel({ classItem }) {
 }
 
 // ─── Main ClassManagement component ─────────────────────────────────────────
-function ClassManagement() {
+function ClassManagement({ institutionId }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const isScoped = !!institutionId;
   const [selectedForm, setSelectedForm] = useState('all');
   const [expandedClassId, setExpandedClassId] = useState(null);
 
@@ -310,17 +311,21 @@ function ClassManagement() {
   // Queries
   const { data: schools = [] } = useQuery({
     queryKey: ['institutions'],
-    queryFn: () => institutionService.getAllInstitutions()
+    queryFn: () => institutionService.getAllInstitutions(),
+    enabled: !isScoped
   });
 
   const { data: forms = [], isLoading: isLoadingForms } = useQuery({
-    queryKey: ['forms'],
-    queryFn: () => institutionService.getFormsBySchool(null)
+    queryKey: isScoped ? ['forms', institutionId] : ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(isScoped ? institutionId : null)
   });
 
   const { data: tutors = [], isLoading: isLoadingTutors } = useQuery({
-    queryKey: ['tutors'],
+    queryKey: isScoped ? ['tutors', institutionId] : ['tutors'],
     queryFn: async () => {
+      if (isScoped) {
+        return userService.getUsersByInstitution(institutionId, ROLES.INSTRUCTOR);
+      }
       const [admins, instructors] = await Promise.all([
         userService.getUsersByRole(ROLES.ADMIN),
         userService.getUsersByRole(ROLES.INSTRUCTOR)
@@ -332,8 +337,10 @@ function ClassManagement() {
   });
 
   const { data: classes = [], isLoading: isLoadingClasses } = useQuery({
-    queryKey: ['classes'],
-    queryFn: () => classService.getClasses(ROLES.ADMIN)
+    queryKey: isScoped ? ['classes', institutionId] : ['classes'],
+    queryFn: () => isScoped
+      ? classService.getClassesByInstitution(institutionId)
+      : classService.getClasses(ROLES.ADMIN)
   });
 
   const isLoading = isLoadingForms || isLoadingTutors || isLoadingClasses;

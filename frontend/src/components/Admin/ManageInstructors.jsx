@@ -6,7 +6,8 @@ import {
 import { FaEdit, FaUserPlus, FaChevronDown, FaChevronRight, FaBook, FaPlus, FaTimes } from 'react-icons/fa';
 import supabaseService from '../../services/supabaseService';
 
-function ManageInstructors() {
+function ManageInstructors({ institutionId }) {
+  const isScoped = !!institutionId;
   // State for instructors and UI
   const [instructors, setInstructors] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -36,14 +37,16 @@ function ManageInstructors() {
     fetchInstructors();
     fetchDepartments();
     fetchCourses();
-  }, []);
+  }, [institutionId]);
 
   // Function to fetch instructors
   const fetchInstructors = async () => {
     setLoading(true);
     try {
-      // Fetch instructors from Supabase
-      const instructorUsers = await supabaseService.getUsersByRole('INSTRUCTOR');
+      // Fetch instructors - scoped by institution if provided
+      const instructorUsers = isScoped
+        ? await supabaseService.getUsersByInstitution(institutionId, 'INSTRUCTOR')
+        : await supabaseService.getUsersByRole('INSTRUCTOR');
       
       // Transform user data to instructor format
       const transformedInstructors = (instructorUsers || []).map(user => ({
@@ -78,8 +81,8 @@ function ManageInstructors() {
   // Function to fetch courses (now subjects)
   const fetchCourses = async () => {
     try {
-      // Fetch subjects as replacement for courses
-      const subjects = await supabaseService.getSubjectsBySchool(null);
+      // Fetch subjects - scoped by institution if provided
+      const subjects = await supabaseService.getSubjectsBySchool(isScoped ? institutionId : null);
       setCourses(subjects || []);
     } catch (err) {
       console.error("Error fetching courses (subjects):", err);

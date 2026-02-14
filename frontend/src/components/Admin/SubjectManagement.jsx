@@ -11,8 +11,9 @@ import { institutionService } from '../../services/institutionService';
 import StructuredCurriculumEditor from './StructuredCurriculumEditor';
 import InteractiveCurriculumBuilder from './InteractiveCurriculumBuilder';
 
-function SubjectManagement() {
+function SubjectManagement({ institutionId }) {
   const queryClient = useQueryClient();
+  const isScoped = !!institutionId;
   const [activeTab, setActiveTab] = useState('subjects');
 
   // Modal state for subjects
@@ -47,7 +48,8 @@ function SubjectManagement() {
   // Queries
   const { data: schools = [], isLoading: isLoadingSchools } = useQuery({
     queryKey: ['institutions'],
-    queryFn: () => institutionService.getAllInstitutions()
+    queryFn: () => institutionService.getAllInstitutions(),
+    enabled: !isScoped
   });
 
   const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
@@ -56,18 +58,20 @@ function SubjectManagement() {
   });
 
   const { data: forms = [], isLoading: isLoadingForms } = useQuery({
-    queryKey: ['forms'],
-    queryFn: () => institutionService.getFormsBySchool(null) // Fetch all forms
+    queryKey: isScoped ? ['forms', institutionId] : ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(isScoped ? institutionId : null)
   });
 
   const { data: subjects = [], isLoading: isLoadingSubjects } = useQuery({
-    queryKey: ['subjects'],
-    queryFn: () => institutionService.getSubjectsBySchool(null) // Fetch all subjects
+    queryKey: isScoped ? ['subjects', institutionId] : ['subjects'],
+    queryFn: () => isScoped
+      ? institutionService.getSubjectsByInstitution(institutionId)
+      : institutionService.getSubjectsBySchool(null)
   });
 
   const { data: formOfferings = [], isLoading: isLoadingOfferings } = useQuery({
-    queryKey: ['offerings'],
-    queryFn: () => institutionService.getCurriculumContent(null) // Fetch all offerings
+    queryKey: isScoped ? ['offerings', institutionId] : ['offerings'],
+    queryFn: () => institutionService.getCurriculumContent(isScoped ? institutionId : null)
   });
 
   const isLoading = isLoadingSchools || isLoadingDepartments || isLoadingForms || isLoadingSubjects || isLoadingOfferings;
@@ -140,7 +144,7 @@ function SubjectManagement() {
     setEditingSubject(null);
     setEditingOffering(null);
     setSubjectData({
-      school_id: '',
+      school_id: isScoped ? institutionId : '',
       subject_name: '',
       subject_code: '',
       cxc_code: '',
@@ -419,6 +423,7 @@ function SubjectManagement() {
         <Form onSubmit={handleSaveSubject}>
           <Modal.Body>
             <Row>
+              {!isScoped && (
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>School</Form.Label>
@@ -436,6 +441,7 @@ function SubjectManagement() {
                   </Form.Select>
                 </Form.Group>
               </Col>
+              )}
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Department</Form.Label>
