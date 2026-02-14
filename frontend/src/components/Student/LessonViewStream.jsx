@@ -259,7 +259,7 @@ function LessonViewStream() {
                         {virtualClassroom && (
                             <div style={{ marginTop: '1rem' }}>
                                 <button
-                                    className="btn-join-classroom"
+                                    className="btn btn-success btn-join-classroom"
                                     onClick={() => {
                                         if (virtualClassroom.meeting_url) {
                                             window.open(virtualClassroom.meeting_url, '_blank', 'width=1200,height=800');
@@ -269,7 +269,6 @@ function LessonViewStream() {
                                             }
                                         }
                                     }}
-                                    className="btn btn-success"
                                     style={{
                                         padding: '0.75rem 1.5rem',
                                         borderRadius: '8px',
