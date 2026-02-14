@@ -324,7 +324,7 @@ function ProseForgeEditor({
   const savedSelRef = useRef(null);
   const historyRef = useRef({ stack: [value || ''], index: 0 });
   const debounceRef = useRef(null);
-  const lastValueRef = useRef(value || '');
+  const lastValueRef = useRef(null);
   const styleRef = useRef(null);
 
   // State
