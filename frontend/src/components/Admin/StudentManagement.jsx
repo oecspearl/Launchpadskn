@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Alert, Spinner } from 'react-bootstrap';
-import { FaSearch, FaUserGraduate, FaEnvelope, FaPhone, FaEye, FaInfoCircle } from 'react-icons/fa';
+import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Spinner } from 'react-bootstrap';
+import { FaSearch, FaUserGraduate, FaEye, FaInfoCircle } from 'react-icons/fa';
 import { useQuery } from '@tanstack/react-query';
 import { userService } from '../../services/userService';
 import { classService } from '../../services/classService';
@@ -9,7 +9,17 @@ import { ROLES } from '../../constants/roles';
 import Breadcrumb from '../common/Breadcrumb';
 import StudentInformationManagement from './StudentInformationManagement';
 
-function StudentManagement() {
+/**
+ * StudentManagement - View and filter students by school, form, and class.
+ *
+ * @param {number|string} [institutionId] - When provided, scopes ALL data to
+ *   this institution. Used by SchoolAdmin and Teacher views so they only see
+ *   students from their own organisation.  When omitted the global admin view
+ *   is shown (all schools, with a school filter).
+ */
+function StudentManagement({ institutionId }) {
+  const isScoped = !!institutionId;
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -22,34 +32,50 @@ function StudentManagement() {
   const [showModal, setShowModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
 
-  const breadcrumbItems = [
-    { label: 'Dashboard', path: '/admin/dashboard', type: 'dashboard' },
-    { label: 'Student Management', type: 'student' }
-  ];
+  const breadcrumbItems = isScoped
+    ? [
+        { label: 'Dashboard', path: '/school-admin/dashboard', type: 'dashboard' },
+        { label: 'Students', type: 'student' }
+      ]
+    : [
+        { label: 'Dashboard', path: '/admin/dashboard', type: 'dashboard' },
+        { label: 'Student Management', type: 'student' }
+      ];
 
-  // ── Queries ──
+  // ── Queries (scoped vs global) ──
   const { data: schools = [] } = useQuery({
     queryKey: ['institutions'],
-    queryFn: () => institutionService.getAllInstitutions()
+    queryFn: () => institutionService.getAllInstitutions(),
+    enabled: !isScoped
+  });
+
+  const { data: scopedSchool } = useQuery({
+    queryKey: ['institution', institutionId],
+    queryFn: () => institutionService.getInstitutionById(institutionId),
+    enabled: isScoped
   });
 
   const { data: forms = [] } = useQuery({
-    queryKey: ['forms'],
-    queryFn: () => institutionService.getFormsBySchool(null)
+    queryKey: isScoped ? ['forms', institutionId] : ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(isScoped ? institutionId : null)
   });
 
   const { data: classes = [] } = useQuery({
-    queryKey: ['classes'],
-    queryFn: () => classService.getClasses(ROLES.ADMIN)
+    queryKey: isScoped ? ['classes', institutionId] : ['classes'],
+    queryFn: () => isScoped
+      ? classService.getClassesByInstitution(Number(institutionId))
+      : classService.getClasses(ROLES.ADMIN)
   });
 
   const { data: allStudents = [], isLoading: isLoadingStudents } = useQuery({
-    queryKey: ['students'],
-    queryFn: () => userService.getUsersByRole(ROLES.STUDENT)
+    queryKey: isScoped ? ['students', institutionId] : ['students'],
+    queryFn: () => isScoped
+      ? userService.getUsersByInstitution(institutionId, ROLES.STUDENT)
+      : userService.getUsersByRole(ROLES.STUDENT)
   });
 
   const { data: assignments = [], isLoading: isLoadingAssignments } = useQuery({
-    queryKey: ['student-assignments-all'],
+    queryKey: isScoped ? ['student-assignments', institutionId] : ['student-assignments-all'],
     queryFn: () => classService.getAllStudentAssignments()
   });
 
@@ -91,13 +117,16 @@ function StudentManagement() {
         formName: form?.form_name || (form?.form_number ? `Form ${form.form_number}` : null),
         formId: form?.form_id || null,
         schoolId: form?.school_id || student.institution_id || null,
-        schoolName: null, // resolved below
+        schoolName: isScoped
+          ? (scopedSchool?.name || null)
+          : null, // resolved below for global view
       };
     });
-  }, [allStudents, assignmentMap]);
+  }, [allStudents, assignmentMap, isScoped, scopedSchool]);
 
-  // Resolve school names
+  // Resolve school names (global admin view only)
   const studentsWithSchools = useMemo(() => {
+    if (isScoped) return enrichedStudents;
     if (schools.length === 0) return enrichedStudents;
     const schoolMap = {};
     schools.forEach(s => { schoolMap[s.institutionId] = s.name; });
@@ -105,15 +134,23 @@ function StudentManagement() {
       ...s,
       schoolName: s.schoolId ? schoolMap[s.schoolId] || null : null
     }));
-  }, [enrichedStudents, schools]);
+  }, [enrichedStudents, schools, isScoped]);
 
   // ── Cascading filter options ──
   const filteredForms = useMemo(() => {
+    if (isScoped) return forms; // already scoped by query
     if (selectedSchool === 'all') return forms;
     return forms.filter(f => String(f.school_id) === String(selectedSchool));
-  }, [forms, selectedSchool]);
+  }, [forms, selectedSchool, isScoped]);
 
   const filteredClasses = useMemo(() => {
+    if (isScoped) {
+      // Scoped: filter classes by selected form only
+      if (selectedForm !== 'all') {
+        return classes.filter(c => String(c.form_id) === String(selectedForm));
+      }
+      return classes;
+    }
     let cls = classes;
     if (selectedForm !== 'all') {
       cls = cls.filter(c => String(c.form_id) === String(selectedForm));
@@ -122,16 +159,15 @@ function StudentManagement() {
       cls = cls.filter(c => formIds.has(c.form_id));
     }
     return cls;
-  }, [classes, selectedForm, selectedSchool, filteredForms]);
+  }, [classes, selectedForm, selectedSchool, filteredForms, isScoped]);
 
   // ── Apply all filters to students ──
   const displayStudents = useMemo(() => {
     let list = studentsWithSchools;
 
-    // School filter
-    if (selectedSchool !== 'all') {
+    // School filter (global view only)
+    if (!isScoped && selectedSchool !== 'all') {
       list = list.filter(s => String(s.schoolId) === String(selectedSchool) || !s.schoolId);
-      // If filtering by school, hide unassigned unless no other filters
       if (selectedForm !== 'all' || selectedClass !== 'all') {
         list = list.filter(s => s.schoolId);
       }
@@ -161,21 +197,22 @@ function StudentManagement() {
       );
     }
 
-    // Sort: assigned students first (by school → form → class → name), then unassigned
+    // Sort: assigned first (form → class → name), then unassigned
     return list.sort((a, b) => {
       if (a.classId && !b.classId) return -1;
       if (!a.classId && b.classId) return 1;
-      if (a.schoolName !== b.schoolName) return (a.schoolName || 'zzz').localeCompare(b.schoolName || 'zzz');
+      if (!isScoped && a.schoolName !== b.schoolName) return (a.schoolName || 'zzz').localeCompare(b.schoolName || 'zzz');
       if (a.formName !== b.formName) return (a.formName || 'zzz').localeCompare(b.formName || 'zzz');
       if (a.className !== b.className) return (a.className || 'zzz').localeCompare(b.className || 'zzz');
       return a.name.localeCompare(b.name);
     });
-  }, [studentsWithSchools, selectedSchool, selectedForm, selectedClass, statusFilter, searchTerm]);
+  }, [studentsWithSchools, selectedSchool, selectedForm, selectedClass, statusFilter, searchTerm, isScoped]);
 
   // ── Stats ──
   const assignedCount = studentsWithSchools.filter(s => s.classId).length;
   const unassignedCount = studentsWithSchools.length - assignedCount;
-  const hasMultipleSchools = schools.length > 1;
+  // Show school filter only in global admin view with multiple schools
+  const showSchoolFilter = !isScoped && schools.length > 1;
 
   // ── Filter reset helpers ──
   const handleSchoolChange = (value) => {
@@ -206,15 +243,19 @@ function StudentManagement() {
 
   return (
     <Container fluid className="py-4">
-      <Breadcrumb items={breadcrumbItems} />
+      {!isScoped && <Breadcrumb items={breadcrumbItems} />}
 
       <div className="d-flex justify-content-between align-items-center mb-4 pt-3">
         <div>
           <h2 className="mb-1">
             <FaUserGraduate className="me-2 text-primary" />
-            Student Management
+            {isScoped ? 'Students' : 'Student Management'}
           </h2>
-          <p className="text-muted mb-0">View and manage students by school, form, and class</p>
+          <p className="text-muted mb-0">
+            {isScoped
+              ? `${scopedSchool?.name || 'Your school'} — organised by form and class`
+              : 'View and manage students by school, form, and class'}
+          </p>
         </div>
         <div className="d-flex gap-2">
           <Badge bg="info" className="d-flex align-items-center px-3 py-2">
@@ -235,7 +276,7 @@ function StudentManagement() {
       <Card className="border-0 shadow-sm mb-3">
         <Card.Body className="py-3">
           <Row className="g-2 align-items-end">
-            {hasMultipleSchools && (
+            {showSchoolFilter && (
               <Col md={2}>
                 <Form.Label className="small mb-1 fw-semibold">School</Form.Label>
                 <Form.Select size="sm" value={selectedSchool} onChange={(e) => handleSchoolChange(e.target.value)}>
@@ -246,11 +287,11 @@ function StudentManagement() {
                 </Form.Select>
               </Col>
             )}
-            <Col md={hasMultipleSchools ? 2 : 3}>
+            <Col md={showSchoolFilter ? 2 : 3}>
               <Form.Label className="small mb-1 fw-semibold">Form</Form.Label>
               <Form.Select size="sm" value={selectedForm} onChange={(e) => handleFormChange(e.target.value)}>
                 <option value="all">All Forms</option>
-                {hasMultipleSchools && selectedSchool === 'all' ? (
+                {showSchoolFilter && selectedSchool === 'all' ? (
                   schools.map(school => {
                     const schoolForms = filteredForms.filter(f => String(f.school_id) === String(school.institutionId));
                     if (schoolForms.length === 0) return null;
@@ -273,7 +314,7 @@ function StudentManagement() {
                 )}
               </Form.Select>
             </Col>
-            <Col md={hasMultipleSchools ? 2 : 3}>
+            <Col md={showSchoolFilter ? 2 : 3}>
               <Form.Label className="small mb-1 fw-semibold">Class</Form.Label>
               <Form.Select size="sm" value={selectedClass} onChange={(e) => setSelectedClass(e.target.value)}>
                 <option value="all">All Classes</option>
@@ -292,7 +333,7 @@ function StudentManagement() {
                 <option value="inactive">Inactive</option>
               </Form.Select>
             </Col>
-            <Col md={hasMultipleSchools ? 4 : 4}>
+            <Col md={showSchoolFilter ? 4 : 4}>
               <Form.Label className="small mb-1 fw-semibold">Search</Form.Label>
               <InputGroup size="sm">
                 <InputGroup.Text><FaSearch /></InputGroup.Text>
@@ -327,7 +368,7 @@ function StudentManagement() {
                 <tr>
                   <th>Student</th>
                   <th>Email</th>
-                  {hasMultipleSchools && <th>School</th>}
+                  {showSchoolFilter && <th>School</th>}
                   <th>Form</th>
                   <th>Class</th>
                   <th>Status</th>
@@ -343,7 +384,7 @@ function StudentManagement() {
                     <td>
                       <span className="small">{student.email}</span>
                     </td>
-                    {hasMultipleSchools && (
+                    {showSchoolFilter && (
                       <td>
                         <span className="small">{student.schoolName || <span className="text-muted">—</span>}</span>
                       </td>
