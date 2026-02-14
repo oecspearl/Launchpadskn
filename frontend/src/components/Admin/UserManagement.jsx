@@ -11,6 +11,7 @@ function UserManagement() {
     const [institutions, setInstitutions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
     const [showAdd, setShowAdd] = useState(false);
     const [newUser, setNewUser] = useState({ email: '', password: '', role: 'STUDENT', institution_id: '' });
     const [showReset, setShowReset] = useState(false);
@@ -83,7 +84,7 @@ function UserManagement() {
                     return;
                 }
                 result = await supabaseService.resetUserPasswordDirect(resetInfo.userId, resetInfo.password);
-                alert('Password changed successfully!');
+                setSuccess('Password changed successfully!');
             } else {
                 // Email-based reset
                 if (!resetInfo.userEmail) {
@@ -91,7 +92,7 @@ function UserManagement() {
                     return;
                 }
                 result = await supabaseService.resetUserPassword(resetInfo.userEmail);
-                alert(result.message || 'Password reset email sent successfully!');
+                setSuccess(result.message || 'Password reset email sent successfully!');
             }
 
             setShowReset(false);
@@ -131,8 +132,8 @@ function UserManagement() {
     const handleForcePasswordChange = async (userId, currentStatus) => {
         try {
             await supabaseService.setForcePasswordChange(userId, !currentStatus);
-            fetchData(); // Refresh to show updated status
-            alert(`User will ${!currentStatus ? 'be forced' : 'no longer be forced'} to change password on next login.`);
+            fetchData();
+            setSuccess(`User will ${!currentStatus ? 'be forced' : 'no longer be forced'} to change password on next login.`);
         } catch (err) {
             console.error(err);
             setError(err.message || 'Failed to update force password change status');
@@ -194,6 +195,7 @@ function UserManagement() {
         <Container className="mt-4">
             <h2>User Management</h2>
             {error && <Alert variant="danger" onClose={() => setError(null)} dismissible>{error}</Alert>}
+            {success && <Alert variant="success" onClose={() => setSuccess(null)} dismissible>{success}</Alert>}
             <Button variant="primary" className="mb-3 me-2" onClick={() => setShowAdd(true)}>
                 <FaUserPlus className="me-2" /> Add User
             </Button>

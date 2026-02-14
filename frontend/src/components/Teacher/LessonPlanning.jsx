@@ -40,10 +40,6 @@ function LessonPlanning() {
     breakout_rooms_enabled: false
   });
   
-  // Debug: Log modal state changes
-  useEffect(() => {
-    console.log('[LessonPlanning] showModal state changed to:', showModal);
-  }, [showModal]);
   const [showEnhancedPlanner, setShowEnhancedPlanner] = useState(false);
   const [editingLesson, setEditingLesson] = useState(null);
   const [viewMode, setViewMode] = useState('grid'); // 'grid', 'list', 'calendar'
@@ -354,8 +350,8 @@ function LessonPlanning() {
     
     // Handle different object structures
     // Structure 1: Numbered keys like "1. LESSON HEADER"
-    if (planObj['1. LESSON HEADER'] || planObj['1. LESSON HEADER']) {
-      const header = planObj['1. LESSON HEADER'] || planObj['1. LESSON HEADER'];
+    if (planObj['1. LESSON HEADER']) {
+      const header = planObj['1. LESSON HEADER'];
       formatted += '═══════════════════════════════════════════════════════\n';
       formatted += 'LESSON HEADER\n';
       formatted += '═══════════════════════════════════════════════════════\n';

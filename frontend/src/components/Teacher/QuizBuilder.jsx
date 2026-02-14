@@ -629,6 +629,7 @@ function QuizBuilder({ show, onHide, contentId, quizId = null, onSave }) {
                     isEditing={editingQuestion === question.question_id}
                     onEdit={() => handleEditQuestion(question.question_id)}
                     onSave={() => handleSaveQuestion(question.question_id)}
+                    onCancel={() => setEditingQuestion(null)}
                     onDelete={() => handleDeleteQuestion(question.question_id)}
                     onUpdate={(field, value) => handleUpdateQuestion(question.question_id, field, value)}
                     onAddOption={() => handleAddOption(question.question_id)}
@@ -674,6 +675,7 @@ function QuestionEditor({
   isEditing,
   onEdit,
   onSave,
+  onCancel,
   onDelete,
   onUpdate,
   onAddOption,
@@ -736,7 +738,7 @@ function QuestionEditor({
               <FaSave className="me-1" />
               Save
             </Button>
-            <Button variant="secondary" size="sm" onClick={onSave}>
+            <Button variant="secondary" size="sm" onClick={onCancel}>
               <FaTimes />
             </Button>
           </div>

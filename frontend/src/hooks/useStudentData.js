@@ -6,7 +6,7 @@ export const useStudentData = (user) => {
     const studentId = user?.user_id || user?.userId;
 
     // 1. Fetch Class Assignment
-    const { data: classAssignment, isLoading: isLoadingClass } = useQuery({
+    const { data: classAssignment, isLoading: isLoadingClass, error: classError } = useQuery({
         queryKey: ['studentClass', studentId],
         queryFn: () => classService.getStudentClassAssignment(studentId),
         enabled: !!user,
@@ -15,7 +15,7 @@ export const useStudentData = (user) => {
     const classId = classAssignment?.class?.class_id;
 
     // 2. Fetch Subjects
-    const { data: subjects, isLoading: isLoadingSubjects } = useQuery({
+    const { data: subjects, isLoading: isLoadingSubjects, error: subjectsError } = useQuery({
         queryKey: ['studentSubjects', classId],
         queryFn: () => supabaseService.getSubjectsByClass(classId),
         enabled: !!classId,
@@ -47,16 +47,16 @@ export const useStudentData = (user) => {
 
     // 4. Fetch Assignments (Derived from subjects) — batched to avoid N+1
     const classSubjectIds = subjects?.map(s => s.class_subject_id) || [];
-    const { data: assignments, isLoading: isLoadingAssignments } = useQuery({
+    const { data: assignments, isLoading: isLoadingAssignments, error: assignmentsError } = useQuery({
         queryKey: ['studentAssignments', classSubjectIds.join(',')],
         queryFn: async () => {
             if (!classSubjectIds.length) return [];
-            // Fetch all assessments in parallel instead of sequentially
-            const results = await Promise.all(
+            const results = await Promise.allSettled(
                 classSubjectIds.map(id => supabaseService.getAssessmentsByClassSubject(id))
             );
             return results
-                .flat()
+                .filter(r => r.status === 'fulfilled')
+                .flatMap(r => r.value)
                 .filter(a => a && a.due_date && new Date(a.due_date) >= new Date())
                 .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
                 .slice(0, 5);
@@ -65,13 +65,14 @@ export const useStudentData = (user) => {
     });
 
     // 5. Fetch Grades
-    const { data: grades, isLoading: isLoadingGrades } = useQuery({
+    const { data: grades, isLoading: isLoadingGrades, error: gradesError } = useQuery({
         queryKey: ['studentGrades', studentId],
         queryFn: () => supabaseService.getStudentGrades(studentId),
         enabled: !!studentId,
     });
 
     const isLoading = isLoadingClass || isLoadingSubjects || isLoadingLessons || isLoadingAssignments || isLoadingGrades;
+    const error = classError || subjectsError || assignmentsError || gradesError;
 
     return {
         classAssignment,
@@ -81,5 +82,6 @@ export const useStudentData = (user) => {
         assignments: assignments || [],
         grades: grades || [],
         isLoading,
+        error,
     };
 };
