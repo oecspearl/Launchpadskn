@@ -164,37 +164,43 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    .dashboard-header h2 {
-        color: #f3f4f6;
-    }
+[data-theme="dark"] .dashboard-header h2 {
+    color: var(--text-primary);
+}
 
-    .stat-value {
-        color: #f3f4f6;
-    }
+[data-theme="dark"] .stat-value {
+    color: var(--text-primary);
+}
 
-    .achievement-badge {
-        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-        border-color: #374151;
-    }
+[data-theme="dark"] .stat-label {
+    color: var(--text-tertiary);
+}
 
-    .achievement-title {
-        color: #f3f4f6;
-    }
+[data-theme="dark"] .achievement-badge {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    border-color: var(--border-primary);
+}
 
-    .assignment-item {
-        background: #1f2937;
-    }
+[data-theme="dark"] .achievement-title {
+    color: var(--text-primary);
+}
 
-    .assignment-item div:first-child {
-        color: #f3f4f6;
-    }
+[data-theme="dark"] .achievement-desc {
+    color: var(--text-tertiary);
+}
 
-    .activity-item {
-        border-bottom-color: #374151;
-    }
+[data-theme="dark"] .assignment-item {
+    background: var(--bg-tertiary);
+}
 
-    .activity-item span {
-        color: #f3f4f6;
-    }
+[data-theme="dark"] .assignment-item div:first-child {
+    color: var(--text-primary);
+}
+
+[data-theme="dark"] .activity-item {
+    border-bottom-color: var(--border-primary);
+}
+
+[data-theme="dark"] .activity-item span {
+    color: var(--text-primary);
 }

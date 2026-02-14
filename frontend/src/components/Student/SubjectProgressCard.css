@@ -116,31 +116,37 @@
 }
 
 /* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    .subject-name {
-        color: #f3f4f6;
-    }
+[data-theme="dark"] .subject-name {
+    color: var(--text-primary);
+}
 
-    .subject-code {
-        background: #374151;
-        color: #9ca3af;
-    }
+[data-theme="dark"] .subject-code {
+    background: var(--bg-tertiary);
+    color: var(--text-tertiary);
+}
 
-    .subject-teacher {
-        border-bottom-color: #374151;
-    }
+[data-theme="dark"] .subject-teacher {
+    border-bottom-color: var(--border-primary);
+}
 
-    .stat-value {
-        color: #f3f4f6;
-    }
+[data-theme="dark"] .stat-label {
+    color: var(--text-tertiary);
+}
 
-    .subject-insight.success {
-        background: #064e3b;
-        color: #d1fae5;
-    }
+[data-theme="dark"] .stat-value {
+    color: var(--text-primary);
+}
 
-    .subject-insight.warning {
-        background: #78350f;
-        color: #fef3c7;
-    }
+[data-theme="dark"] .grade-label {
+    color: var(--text-tertiary);
+}
+
+[data-theme="dark"] .subject-insight.success {
+    background: rgba(0, 150, 57, 0.15);
+    color: #6ee7b7;
+}
+
+[data-theme="dark"] .subject-insight.warning {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fcd34d;
 }

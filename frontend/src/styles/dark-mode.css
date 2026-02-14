@@ -52,24 +52,35 @@
 [data-theme="dark"] [style*="background-color:#f8f9fa"],
 [data-theme="dark"] [style*="background-color: #ffffff"],
 [data-theme="dark"] [style*="background-color:#ffffff"],
+[data-theme="dark"] [style*="background-color: #fff"],
+[data-theme="dark"] [style*="background-color:#fff"],
 [data-theme="dark"] [style*="background: #f8f9fa"],
 [data-theme="dark"] [style*="background:#f8f9fa"],
 [data-theme="dark"] [style*="background: #ffffff"],
-[data-theme="dark"] [style*="background:#ffffff"] {
+[data-theme="dark"] [style*="background:#ffffff"],
+[data-theme="dark"] [style*="background: #fff"],
+[data-theme="dark"] [style*="background:#fff"] {
   background-color: var(--bg-tertiary) !important;
   background: var(--bg-tertiary) !important;
 }
 
-/* Lesson View Container - Same background color for both light and dark mode */
-.lesson-view-container,
+/* Override inline white/light backgrounds (LessonView rubric tables etc.) */
+[data-theme="dark"] [style*="backgroundColor: '#fff'"],
+[data-theme="dark"] [style*="backgroundColor: '#fffef0'"],
+[data-theme="dark"] [style*="backgroundColor: '#fff3cd'"] {
+  background-color: var(--bg-tertiary) !important;
+}
+
+/* Lesson View Container */
 [data-theme="dark"] .lesson-view-container {
-  background-color: #DFEDDF !important;
-  background: #DFEDDF !important;
+  background-color: var(--bg-primary) !important;
+  background: var(--bg-primary) !important;
   color: var(--text-primary) !important;
 }
 
-[data-theme="dark"] .lesson-view-container * {
-  color: var(--text-primary) !important;
+[data-theme="dark"] .lesson-view-container .lesson-content-container {
+  background-color: var(--bg-primary) !important;
+  background: var(--bg-primary) !important;
 }
 
 [data-theme="dark"] a:not(.btn):not(.nav-link):not(.dropdown-item) {
@@ -134,26 +145,30 @@
 
 /* Forms */
 [data-theme="dark"] .form-control {
-  background-color: var(--bg-tertiary);
-  border-color: var(--border-primary);
-  color: var(--text-primary);
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .form-control:focus {
-  background-color: var(--bg-tertiary);
-  border-color: var(--primary-color, #009639);
-  color: var(--text-primary);
-  box-shadow: 0 0 0 0.2rem rgba(0, 150, 57, 0.25);
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--primary-color, #009639) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 0 0 0.2rem rgba(0, 150, 57, 0.25) !important;
 }
 
 [data-theme="dark"] .form-select {
-  background-color: var(--bg-tertiary);
-  border-color: var(--border-primary);
-  color: var(--text-primary);
+  background-color: var(--bg-tertiary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .form-label {
-  color: var(--text-primary);
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .form-control::placeholder {
+  color: var(--text-tertiary) !important;
 }
 
 /* Buttons */
@@ -395,13 +410,13 @@
   color: var(--text-secondary) !important;
 }
 
-/* Content items and lesson cards - Use the same background color in dark mode */
+/* Content items and lesson cards */
 [data-theme="dark"] .content-item,
 [data-theme="dark"] .classwork-item,
 [data-theme="dark"] .lesson-item,
 [data-theme="dark"] .learning-item {
-  background-color: #DFEDDF !important;
-  background: #DFEDDF !important;
+  background-color: var(--bg-secondary) !important;
+  background: var(--bg-secondary) !important;
   color: var(--text-primary) !important;
   border-color: var(--border-primary) !important;
 }
@@ -409,8 +424,8 @@
 [data-theme="dark"] .classwork-item:hover,
 [data-theme="dark"] .classwork-item.selected,
 [data-theme="dark"] .classwork-item.expanded {
-  background-color: #c8e0c8 !important;
-  background: #c8e0c8 !important;
+  background-color: var(--bg-tertiary) !important;
+  background: var(--bg-tertiary) !important;
   border-left-color: var(--primary-color, #33AD63) !important;
 }
 
@@ -430,15 +445,10 @@
 }
 
 [data-theme="dark"] .classwork-info-box {
-  background-color: rgba(255, 255, 255, 0.3) !important;
-  background: rgba(255, 255, 255, 0.3) !important;
+  background-color: var(--bg-tertiary) !important;
+  background: var(--bg-tertiary) !important;
   color: var(--text-primary) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-.classwork-info-box {
-  background-color: rgba(255, 255, 255, 0.3) !important;
-  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: var(--border-primary) !important;
 }
 
 [data-theme="dark"] .classwork-info-box h6 {
@@ -446,15 +456,9 @@
 }
 
 [data-theme="dark"] .classwork-text-content {
-  background-color: rgba(255, 255, 255, 0.3) !important;
-  background: rgba(255, 255, 255, 0.3) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-.classwork-text-content {
-  background-color: rgba(255, 255, 255, 0.3) !important;
-  background: rgba(255, 255, 255, 0.3) !important;
-  border-color: rgba(255, 255, 255, 0.2) !important;
+  background-color: var(--bg-tertiary) !important;
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-primary) !important;
 }
 
 [data-theme="dark"] .classwork-text-content * {
@@ -706,5 +710,246 @@
 
 [data-theme="dark"] .card-body .text-primary {
   color: var(--primary-color, #009639) !important;
+}
+
+/* ============================================
+   Lesson View Dark Mode (Student)
+   ============================================ */
+[data-theme="dark"] .lesson-hero-header {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .lesson-title {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .lesson-subtitle {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .back-button {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .back-button:hover {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .sidebar-label {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .sidebar-filter {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .sidebar-filter-select {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-title {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-date {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .classwork-menu {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .classwork-menu:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .classwork-objectives li {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-objectives li::before {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .classwork-expanded {
+  border-top-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .attachment-card {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .attachment-thumbnail {
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .attachment-title {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .attachment-type {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .content-search-filter {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .search-input {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .filter-select {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .search-icon,
+[data-theme="dark"] .filter-icon {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .content-section-header {
+  border-bottom-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .content-section-header h4 {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .content-section-header svg {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .content-count {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .section-time {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .content-time-badge {
+  color: var(--text-tertiary) !important;
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .filter-results-info {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .classwork-actions {
+  border-top-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .classwork-action-btn {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-action-btn:hover {
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .classwork-action-btn.primary {
+  background: var(--primary-color, #009639) !important;
+  border-color: var(--primary-color, #009639) !important;
+  color: #fff !important;
+}
+
+[data-theme="dark"] .classwork-badge {
+  color: var(--text-tertiary) !important;
+}
+
+/* Discussion Sidebar Dark Mode */
+[data-theme="dark"] .discussion-sidebar {
+  background: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .discussion-sidebar-header {
+  border-bottom-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .discussion-sidebar-header h5 {
+  color: var(--text-primary) !important;
+}
+
+/* ============================================
+   Flashcard Viewer Dark Mode
+   ============================================ */
+[data-theme="dark"] .flashcard-front,
+[data-theme="dark"] .flashcard-back {
+  background: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .flashcard-text {
+  color: var(--text-primary) !important;
+}
+
+/* ============================================
+   Interactive Video Viewer Dark Mode
+   ============================================ */
+[data-theme="dark"] .checkpoint-marker {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .checkpoint-marker:hover {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .checkpoint-list-item {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .checkpoint-list-item:hover {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .checkpoint-list-item.completed {
+  background-color: rgba(0, 150, 57, 0.15) !important;
+  border-color: rgba(0, 150, 57, 0.3) !important;
+}
+
+[data-theme="dark"] .checkpoint-list-item.active {
+  background-color: rgba(37, 99, 235, 0.15) !important;
+  border-color: #2563eb !important;
+}
+
+/* ============================================
+   Rubric Table Dark Mode (LessonView.jsx inline styles)
+   ============================================ */
+[data-theme="dark"] .classwork-info-box table {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .classwork-info-box table th {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .classwork-info-box table td {
+  color: var(--text-primary) !important;
+  border-color: var(--border-primary) !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .classwork-info-box table tr:nth-child(even) td {
+  background-color: var(--bg-tertiary) !important;
 }
 

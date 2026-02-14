@@ -269,30 +269,15 @@ function LessonViewStream() {
                                             }
                                         }
                                     }}
+                                    className="btn btn-success"
                                     style={{
-                                        backgroundColor: '#28a745',
-                                        color: 'white',
-                                        border: 'none',
                                         padding: '0.75rem 1.5rem',
                                         borderRadius: '8px',
                                         fontSize: '1rem',
                                         fontWeight: '600',
-                                        cursor: 'pointer',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        gap: '0.5rem',
-                                        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-                                        transition: 'all 0.3s ease'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.backgroundColor = '#218838';
-                                        e.target.style.transform = 'translateY(-2px)';
-                                        e.target.style.boxShadow = '0 6px 8px rgba(0, 0, 0, 0.15)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.backgroundColor = '#28a745';
-                                        e.target.style.transform = 'translateY(0)';
-                                        e.target.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+                                        gap: '0.5rem'
                                     }}
                                 >
                                     <FaVideo />
@@ -325,7 +310,7 @@ function LessonViewStream() {
                             <FaRocket className="text-primary" />
                             Mission Steps
                         </div>
-                        <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--theme-text-muted, #94a3b8)' }}>
                             {completedContent.size}/{lesson.content?.length || 0} Complete
                         </span>
                     </div>
@@ -360,7 +345,7 @@ function LessonViewStream() {
                                 <div className="viewer-title">{activeContent.title}</div>
                                 <div className="d-flex gap-2 align-items-center">
                                     {activeContent.estimated_minutes && (
-                                        <span className="xp-badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#e2e8f0' }}>
+                                        <span className="xp-badge" style={{ background: 'var(--theme-glass, rgba(255,255,255,0.1))', color: 'var(--theme-text-muted, #e2e8f0)' }}>
                                             <FaClock className="me-1" /> {activeContent.estimated_minutes} min
                                         </span>
                                     )}
@@ -378,7 +363,7 @@ function LessonViewStream() {
                             <div className="viewer-content">
                                 {/* Description (only if not text content type) */}
                                 {activeContent.description && !['LEARNING_ACTIVITIES', 'KEY_CONCEPTS', 'SUMMARY', 'REFLECTION_QUESTIONS'].includes(activeContent.content_type) && (
-                                    <div style={{ marginBottom: '2rem', color: '#cbd5e1', lineHeight: '1.6' }}>
+                                    <div style={{ marginBottom: '2rem', color: 'var(--theme-text-muted, #cbd5e1)', lineHeight: '1.6' }}>
                                         {activeContent.description}
                                     </div>
                                 )}
@@ -396,7 +381,7 @@ function LessonViewStream() {
                                 )}
 
                                 {activeContent.content_type === '3D_MODEL' && (
-                                    <div style={{ height: '500px', width: '100%', borderRadius: '12px', overflow: 'hidden', background: '#000' }}>
+                                    <div style={{ height: '500px', width: '100%', borderRadius: '12px', overflow: 'hidden', background: 'var(--theme-bg, #000)' }}>
                                         <ViewerErrorBoundary>
                                             <ModelViewerComponent
                                                 contentUrl={activeContent.url || activeContent.content_url}

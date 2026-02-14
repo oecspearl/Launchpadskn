@@ -66,6 +66,10 @@
   border-bottom: 2px solid #e5e7eb;
 }
 
+[data-theme="dark"] .lesson-plan-section-header {
+  border-bottom-color: var(--border-primary, #4a5568);
+}
+
 .lesson-plan-section-icon {
   width: 40px;
   height: 40px;
@@ -105,22 +109,14 @@
 .lesson-plan-section-title {
   font-weight: 700;
   font-size: 1.125rem;
-  color: #1f2937;
+  color: var(--text-primary, #1f2937);
   margin: 0;
 }
 
-[data-theme="dark"] .lesson-plan-section-title {
-  color: var(--text-primary, #f7fafc);
-}
-
 .lesson-plan-content {
-  color: #374151;
+  color: var(--text-primary, #374151);
   line-height: 1.7;
   font-size: 0.9375rem;
-}
-
-[data-theme="dark"] .lesson-plan-content {
-  color: var(--text-primary, #f7fafc);
 }
 
 /* Formatted Lists */
@@ -233,7 +229,7 @@
   top: 1.25rem;
   width: 12px;
   height: 12px;
-  background: white;
+  background: var(--bg-secondary, white);
   border: 3px solid #2563eb;
   border-radius: 50%;
   z-index: 1;
@@ -414,11 +410,7 @@
 
 .lesson-detail-content span {
   font-weight: 600;
-  color: #1f2937;
-}
-
-[data-theme="dark"] .lesson-detail-content span {
-  color: var(--text-primary, #f7fafc);
+  color: var(--text-primary, #1f2937);
 }
 
 [data-theme="dark"] .lesson-detail-content strong {

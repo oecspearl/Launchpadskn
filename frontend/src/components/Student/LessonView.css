@@ -433,14 +433,14 @@ body .container-fluid .lesson-view-container {
   padding: 0.75rem 1rem;
   margin: 0.75rem 0;
   font-size: 0.875rem;
-  color: #202124;
+  color: var(--text-primary, #202124);
   line-height: 1.6;
 }
 
 .classwork-info-box h6 {
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #5f6368;
+  color: var(--text-secondary, #5f6368);
   margin: 0 0 0.5rem 0;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -858,4 +858,128 @@ $16rem /* Positioned above notes button */;
     height: 56px;
     font-size: 1.25rem;
   }
+}
+
+/* ============================================
+   RUBRIC TABLE STYLES
+   ============================================ */
+.rubric-box {
+  background-color: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.rubric-heading {
+  color: #856404;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.rubric-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 2px solid #856404;
+  background-color: #fff;
+  font-size: 0.9rem;
+}
+
+.rubric-header-row {
+  background-color: #ffc107;
+  color: #856404;
+}
+
+.rubric-th {
+  border: 1px solid #856404;
+  padding: 12px;
+  font-weight: bold;
+}
+
+.rubric-td {
+  border: 1px solid #856404;
+  padding: 12px;
+  color: #856404;
+  vertical-align: top;
+}
+
+.rubric-td-label {
+  font-weight: 500;
+}
+
+.rubric-row-alt {
+  background-color: #fffef0;
+}
+
+.rubric-total-row {
+  background-color: #ffc107;
+  font-weight: bold;
+}
+
+.rubric-total {
+  margin-top: 1rem;
+  padding: 8px;
+  background-color: #ffc107;
+  color: #856404;
+  font-weight: bold;
+  text-align: center;
+  border: 1px solid #856404;
+  border-radius: 4px;
+}
+
+.rubric-text-fallback {
+  white-space: pre-wrap;
+  color: #856404;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+/* Dark Mode for Rubric */
+[data-theme="dark"] .rubric-box {
+  background-color: rgba(252, 209, 22, 0.1) !important;
+  border-color: rgba(252, 209, 22, 0.3) !important;
+}
+
+[data-theme="dark"] .rubric-heading {
+  color: #fcd34d !important;
+}
+
+[data-theme="dark"] .rubric-table {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-primary) !important;
+}
+
+[data-theme="dark"] .rubric-header-row {
+  background-color: rgba(252, 209, 22, 0.15) !important;
+}
+
+[data-theme="dark"] .rubric-th {
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .rubric-td {
+  border-color: var(--border-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .rubric-row-alt {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .rubric-total-row {
+  background-color: rgba(252, 209, 22, 0.15) !important;
+}
+
+[data-theme="dark"] .rubric-total-row td {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .rubric-total {
+  background-color: rgba(252, 209, 22, 0.15) !important;
+  color: #fcd34d !important;
+  border-color: rgba(252, 209, 22, 0.3) !important;
+}
+
+[data-theme="dark"] .rubric-text-fallback {
+  color: var(--text-primary) !important;
 }

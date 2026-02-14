@@ -1121,42 +1121,19 @@ function LessonView() {
                               </div>
                             </div>
                           )}
-                          <div className="classwork-info-box" style={{
-                            backgroundColor: '#fff3cd',
-                            border: '1px solid #ffc107',
-                            borderRadius: '8px',
-                            padding: '1rem'
-                          }}>
-                            <strong style={{ color: '#856404', marginBottom: '1rem', display: 'block' }}>📋 Grading Rubric:</strong>
+                          <div className="classwork-info-box rubric-box">
+                            <strong className="rubric-heading">📋 Grading Rubric:</strong>
 
                             {rubricCriteria ? (
                               rubricCriteria.type === 'matrix' ? (
                                 // Matrix-style rubric with performance levels as columns
                                 <div style={{ overflowX: 'auto' }}>
-                                  <table style={{
-                                    width: '100%',
-                                    borderCollapse: 'collapse',
-                                    border: '2px solid #856404',
-                                    backgroundColor: '#fff',
-                                    fontSize: '0.9rem'
-                                  }}>
+                                  <table className="rubric-table">
                                     <thead>
-                                      <tr style={{ backgroundColor: '#ffc107', color: '#856404' }}>
-                                        <th style={{
-                                          border: '1px solid #856404',
-                                          padding: '12px',
-                                          textAlign: 'left',
-                                          fontWeight: 'bold',
-                                          width: '20%'
-                                        }}>Criteria</th>
+                                      <tr className="rubric-header-row">
+                                        <th className="rubric-th" style={{ width: '20%', textAlign: 'left' }}>Criteria</th>
                                         {rubricCriteria.performanceLevels.map((level, idx) => (
-                                          <th key={idx} style={{
-                                            border: '1px solid #856404',
-                                            padding: '12px',
-                                            textAlign: 'center',
-                                            fontWeight: 'bold',
-                                            fontSize: '0.85rem'
-                                          }}>
+                                          <th key={idx} className="rubric-th" style={{ textAlign: 'center', fontSize: '0.85rem' }}>
                                             {level.name}
                                             {level.points !== null && ` (${level.points})`}
                                           </th>
@@ -1165,41 +1142,17 @@ function LessonView() {
                                     </thead>
                                     <tbody>
                                       {rubricCriteria.criteria.map((crit, idx) => (
-                                        <tr key={idx} style={{
-                                          backgroundColor: idx % 2 === 0 ? '#fff' : '#fffef0'
-                                        }}>
-                                          <td style={{
-                                            border: '1px solid #856404',
-                                            padding: '12px',
-                                            color: '#856404',
-                                            fontWeight: '500',
-                                            verticalAlign: 'top'
-                                          }}>{crit.name}</td>
+                                        <tr key={idx} className={idx % 2 !== 0 ? 'rubric-row-alt' : ''}>
+                                          <td className="rubric-td rubric-td-label">{crit.name}</td>
                                           {crit.descriptions.map((desc, descIdx) => (
-                                            <td key={descIdx} style={{
-                                              border: '1px solid #856404',
-                                              padding: '12px',
-                                              color: '#856404',
-                                              fontSize: '0.85rem',
-                                              lineHeight: '1.5',
-                                              verticalAlign: 'top'
-                                            }}>{desc || '-'}</td>
+                                            <td key={descIdx} className="rubric-td" style={{ fontSize: '0.85rem', lineHeight: '1.5' }}>{desc || '-'}</td>
                                           ))}
                                         </tr>
                                       ))}
                                     </tbody>
                                   </table>
                                   {rubricText.toLowerCase().includes('total points') && (
-                                    <div style={{
-                                      marginTop: '1rem',
-                                      padding: '8px',
-                                      backgroundColor: '#ffc107',
-                                      color: '#856404',
-                                      fontWeight: 'bold',
-                                      textAlign: 'center',
-                                      border: '1px solid #856404',
-                                      borderRadius: '4px'
-                                    }}>
+                                    <div className="rubric-total">
                                       {rubricText.match(/Total Points:\s*(\d+)/i)?.[0] || 'Total Points: 100'}
                                     </div>
                                   )}
@@ -1207,93 +1160,35 @@ function LessonView() {
                               ) : (
                                 // List-style rubric
                                 <div style={{ overflowX: 'auto' }}>
-                                  <table style={{
-                                    width: '100%',
-                                    borderCollapse: 'collapse',
-                                    border: '2px solid #856404',
-                                    backgroundColor: '#fff',
-                                    fontSize: '0.95rem'
-                                  }}>
+                                  <table className="rubric-table">
                                     <thead>
-                                      <tr style={{ backgroundColor: '#ffc107', color: '#856404' }}>
-                                        <th style={{
-                                          border: '1px solid #856404',
-                                          padding: '12px',
-                                          textAlign: 'left',
-                                          fontWeight: 'bold'
-                                        }}>Criterion</th>
-                                        <th style={{
-                                          border: '1px solid #856404',
-                                          padding: '12px',
-                                          textAlign: 'center',
-                                          fontWeight: 'bold',
-                                          width: '100px'
-                                        }}>Points</th>
-                                        <th style={{
-                                          border: '1px solid #856404',
-                                          padding: '12px',
-                                          textAlign: 'left',
-                                          fontWeight: 'bold'
-                                        }}>Description</th>
+                                      <tr className="rubric-header-row">
+                                        <th className="rubric-th" style={{ textAlign: 'left' }}>Criterion</th>
+                                        <th className="rubric-th" style={{ textAlign: 'center', width: '100px' }}>Points</th>
+                                        <th className="rubric-th" style={{ textAlign: 'left' }}>Description</th>
                                       </tr>
                                     </thead>
                                     <tbody>
                                       {rubricCriteria.criteria.map((crit, idx) => (
-                                        <tr key={idx} style={{
-                                          backgroundColor: idx % 2 === 0 ? '#fff' : '#fffef0'
-                                        }}>
-                                          <td style={{
-                                            border: '1px solid #856404',
-                                            padding: '12px',
-                                            color: '#856404',
-                                            fontWeight: '500'
-                                          }}>{crit.criterion}</td>
-                                          <td style={{
-                                            border: '1px solid #856404',
-                                            padding: '12px',
-                                            textAlign: 'center',
-                                            color: '#856404',
-                                            fontWeight: 'bold'
-                                          }}>{crit.points}</td>
-                                          <td style={{
-                                            border: '1px solid #856404',
-                                            padding: '12px',
-                                            color: '#856404'
-                                          }}>{crit.description}</td>
+                                        <tr key={idx} className={idx % 2 !== 0 ? 'rubric-row-alt' : ''}>
+                                          <td className="rubric-td rubric-td-label">{crit.criterion}</td>
+                                          <td className="rubric-td" style={{ textAlign: 'center', fontWeight: 'bold' }}>{crit.points}</td>
+                                          <td className="rubric-td">{crit.description}</td>
                                         </tr>
                                       ))}
-                                      <tr style={{ backgroundColor: '#ffc107', fontWeight: 'bold' }}>
-                                        <td style={{
-                                          border: '1px solid #856404',
-                                          padding: '12px',
-                                          textAlign: 'right',
-                                          color: '#856404'
-                                        }}>Total:</td>
-                                        <td style={{
-                                          border: '1px solid #856404',
-                                          padding: '12px',
-                                          textAlign: 'center',
-                                          color: '#856404'
-                                        }}>
+                                      <tr className="rubric-total-row">
+                                        <td className="rubric-td" style={{ textAlign: 'right' }}>Total:</td>
+                                        <td className="rubric-td" style={{ textAlign: 'center' }}>
                                           {rubricCriteria.criteria.reduce((sum, crit) => sum + crit.points, 0)}
                                         </td>
-                                        <td style={{
-                                          border: '1px solid #856404',
-                                          padding: '12px',
-                                          color: '#856404'
-                                        }}></td>
+                                        <td className="rubric-td"></td>
                                       </tr>
                                     </tbody>
                                   </table>
                                 </div>
                               )
                             ) : (
-                              <div style={{
-                                whiteSpace: 'pre-wrap',
-                                color: '#856404',
-                                fontSize: '0.95rem',
-                                lineHeight: '1.6'
-                              }}>
+                              <div className="rubric-text-fallback">
                                 {rubricText}
                               </div>
                             )}
