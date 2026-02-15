@@ -555,7 +555,7 @@ export const classService = {
           *,
           subject:subjects(*)
         ),
-        teacher:users!class_subjects_teacher_id_fkey(name, email)
+        teacher:users!class_subjects_teacher_id_fkey(name, email, profile_image_url)
       `);
 
         if (filters.classId && filters.classId !== 'all') {

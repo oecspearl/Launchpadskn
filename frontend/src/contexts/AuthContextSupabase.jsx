@@ -217,7 +217,8 @@ export function AuthProvider({ children }) {
           isActive: profile.is_active ?? profile.isActive ?? true,
           force_password_change: profile.force_password_change ?? false,
           phone: profile.phone || null,
-          institution_id: profile.institution_id || null
+          institution_id: profile.institution_id || null,
+          profile_image_url: profile.profile_image_url || null
         };
 
         localStorage.setItem('user', JSON.stringify(userData));

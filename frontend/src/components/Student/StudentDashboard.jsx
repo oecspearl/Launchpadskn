@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   FaBook, FaClipboardList, FaCalendarAlt, FaClock,
   FaMapMarkerAlt, FaGraduationCap, FaTasks, FaChartBar,
-  FaEye, FaBolt
+  FaEye, FaBolt, FaUser
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -305,15 +305,24 @@ function StudentDashboard() {
                         {mySubjects.slice(0, 3).map((classSubject, index) => {
                           const subjectName = getSubjectName(classSubject);
                           const teacherName = classSubject.teacher?.name || 'TBD';
+                          const teacherPhoto = classSubject.teacher?.profile_image_url;
                           return (
                             <div key={index} className="subject-card">
-                              <div className="subject-card-icon">
-                                <FaBook />
+                              <div className="d-flex align-items-center mb-2">
+                                <div style={{
+                                  width: 40, height: 40, borderRadius: '50%', overflow: 'hidden',
+                                  backgroundColor: '#e9ecef', display: 'flex', alignItems: 'center',
+                                  justifyContent: 'center', flexShrink: 0, border: '2px solid #dee2e6'
+                                }}>
+                                  {teacherPhoto ? (
+                                    <img src={teacherPhoto} alt={teacherName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    <FaUser size={16} color="#6c757d" />
+                                  )}
+                                </div>
+                                <small className="text-muted ms-2">{teacherName}</small>
                               </div>
                               <h6 className="subject-card-title">{subjectName}</h6>
-                              <p className="subject-card-meta mb-3">
-                                Teacher: {teacherName}
-                              </p>
                               <Button
                                 variant="outline-primary"
                                 size="sm"
@@ -390,15 +399,24 @@ function StudentDashboard() {
               {mySubjects.map((classSubject, index) => {
                 const subjectName = getSubjectName(classSubject);
                 const teacherName = classSubject.teacher?.name || 'TBD';
+                const teacherPhoto = classSubject.teacher?.profile_image_url;
                 return (
                   <div key={index} className="subject-card h-100">
-                    <div className="subject-card-icon">
-                      <FaBook />
+                    <div className="text-center mb-3">
+                      <div style={{
+                        width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
+                        backgroundColor: '#e9ecef', display: 'flex', alignItems: 'center',
+                        justifyContent: 'center', margin: '0 auto', border: '3px solid #dee2e6'
+                      }}>
+                        {teacherPhoto ? (
+                          <img src={teacherPhoto} alt={teacherName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <FaUser size={24} color="#6c757d" />
+                        )}
+                      </div>
+                      <small className="text-muted d-block mt-1">{teacherName}</small>
                     </div>
                     <h5 className="subject-card-title">{subjectName}</h5>
-                    <p className="subject-card-meta mb-2">
-                      <strong>Teacher:</strong> {teacherName}
-                    </p>
                     <p className="subject-card-meta mb-4">
                       <strong>Class:</strong> {classSubject.class?.class_name || myClass?.class_name}
                     </p>

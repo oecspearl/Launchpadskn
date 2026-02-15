@@ -247,18 +247,33 @@ function SubjectView() {
       {/* Header */}
       <Row className="mb-4 subject-view-header">
         <Col>
-          <Button 
-            variant="link" 
+          <Button
+            variant="link"
             className="p-0 mb-2"
             onClick={() => navigate('/student/dashboard')}
           >
             <FaArrowLeft className="me-2" />
             Back to Dashboard
           </Button>
-          <h2>{getSubjectName()}</h2>
-          <p className="text-muted mb-0">
-            {getFormName()} • {getClassName()} • Teacher: {getTeacherName()}
-          </p>
+          <div className="d-flex align-items-center gap-3">
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%', overflow: 'hidden',
+              backgroundColor: '#e9ecef', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', flexShrink: 0, border: '3px solid #dee2e6'
+            }}>
+              {classSubject?.teacher?.profile_image_url ? (
+                <img src={classSubject.teacher.profile_image_url} alt={getTeacherName()} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <FaUser size={22} color="#6c757d" />
+              )}
+            </div>
+            <div>
+              <h2 className="mb-0">{getSubjectName()}</h2>
+              <p className="text-muted mb-0">
+                {getFormName()} • {getClassName()} • Teacher: {getTeacherName()}
+              </p>
+            </div>
+          </div>
         </Col>
       </Row>
       
