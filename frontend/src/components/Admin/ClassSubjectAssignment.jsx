@@ -121,11 +121,13 @@ function ClassSubjectAssignment() {
     return classes.filter(c => c.form_id === parseInt(modalFormId));
   }, [classes, modalFormId]);
 
-  // Modal: offerings filtered by modal form
+  // Modal: offerings filtered by form_number (subjects are shared nationally)
   const modalOfferings = useMemo(() => {
     if (!modalFormId) return [];
-    return formOfferings.filter(o => o.form_id === parseInt(modalFormId));
-  }, [formOfferings, modalFormId]);
+    const selectedFormObj = forms.find(f => f.form_id === parseInt(modalFormId));
+    if (!selectedFormObj) return [];
+    return formOfferings.filter(o => o.form?.form_number === selectedFormObj.form_number);
+  }, [formOfferings, modalFormId, forms]);
 
   // Resolve school name for a class subject
   const getSchoolName = (classSubject) => {

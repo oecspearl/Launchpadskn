@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container, Row, Col, Card, Button, Spinner, Alert,
   Table, Modal, Form, Badge, Tabs, Tab
@@ -11,9 +11,8 @@ import { institutionService } from '../../services/institutionService';
 import StructuredCurriculumEditor from './StructuredCurriculumEditor';
 import InteractiveCurriculumBuilder from './InteractiveCurriculumBuilder';
 
-function SubjectManagement({ institutionId }) {
+function SubjectManagement() {
   const queryClient = useQueryClient();
-  const isScoped = !!institutionId;
   const [activeTab, setActiveTab] = useState('subjects');
 
   // Modal state for subjects
@@ -45,36 +44,39 @@ function SubjectManagement({ institutionId }) {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
-  // Queries
-  const { data: schools = [], isLoading: isLoadingSchools } = useQuery({
-    queryKey: ['institutions'],
-    queryFn: () => institutionService.getAllInstitutions(),
-    enabled: !isScoped
-  });
-
+  // Queries — always global (subjects/curriculum are shared nationally)
   const { data: departments = [], isLoading: isLoadingDepartments } = useQuery({
     queryKey: ['departments'],
     queryFn: () => institutionService.getAllDepartments()
   });
 
   const { data: forms = [], isLoading: isLoadingForms } = useQuery({
-    queryKey: isScoped ? ['forms', institutionId] : ['forms'],
-    queryFn: () => institutionService.getFormsBySchool(isScoped ? institutionId : null)
+    queryKey: ['forms'],
+    queryFn: () => institutionService.getFormsBySchool(null)
   });
 
   const { data: subjects = [], isLoading: isLoadingSubjects } = useQuery({
-    queryKey: isScoped ? ['subjects', institutionId] : ['subjects'],
-    queryFn: () => isScoped
-      ? institutionService.getSubjectsByInstitution(institutionId)
-      : institutionService.getSubjectsBySchool(null)
+    queryKey: ['subjects'],
+    queryFn: () => institutionService.getSubjectsBySchool(null)
   });
 
   const { data: formOfferings = [], isLoading: isLoadingOfferings } = useQuery({
-    queryKey: isScoped ? ['offerings', institutionId] : ['offerings'],
-    queryFn: () => institutionService.getCurriculumContent(isScoped ? institutionId : null)
+    queryKey: ['offerings'],
+    queryFn: () => institutionService.getCurriculumContent(null)
   });
 
-  const isLoading = isLoadingSchools || isLoadingDepartments || isLoadingForms || isLoadingSubjects || isLoadingOfferings;
+  const isLoading = isLoadingDepartments || isLoadingForms || isLoadingSubjects || isLoadingOfferings;
+
+  // Deduplicate forms by form_number — one representative form_id per level
+  const uniqueFormLevels = useMemo(() => {
+    const seen = new Map();
+    forms.forEach(f => {
+      if (!seen.has(f.form_number)) {
+        seen.set(f.form_number, f);
+      }
+    });
+    return Array.from(seen.values()).sort((a, b) => a.form_number - b.form_number);
+  }, [forms]);
 
   // Mutations
   const createSubjectMutation = useMutation({
@@ -144,7 +146,7 @@ function SubjectManagement({ institutionId }) {
     setEditingSubject(null);
     setEditingOffering(null);
     setSubjectData({
-      school_id: isScoped ? institutionId : '',
+      school_id: '',
       subject_name: '',
       subject_code: '',
       cxc_code: '',
@@ -192,10 +194,15 @@ function SubjectManagement({ institutionId }) {
 
   const handleSaveSubject = (e) => {
     e.preventDefault();
+    // Auto-assign school_id (DB requires NOT NULL) — subjects are shared nationally
+    const dataToSave = { ...subjectData };
+    if (!dataToSave.school_id && forms.length > 0) {
+      dataToSave.school_id = forms[0].school_id;
+    }
     if (editingSubject) {
-      updateSubjectMutation.mutate({ id: editingSubject.subject_id, data: subjectData });
+      updateSubjectMutation.mutate({ id: editingSubject.subject_id, data: dataToSave });
     } else {
-      createSubjectMutation.mutate(subjectData);
+      createSubjectMutation.mutate(dataToSave);
     }
   };
 
@@ -346,7 +353,7 @@ function SubjectManagement({ institutionId }) {
                   {formOfferings.map(offering => (
                     <tr key={offering.offering_id}>
                       <td>
-                        {offering.form ? `${offering.form.form_number}${offering.form.stream || ''}` : '-'}
+                        {offering.form ? `Form ${offering.form.form_number}` : '-'}
                       </td>
                       <td>{offering.subject?.subject_name}</td>
                       <td>{offering.weekly_periods}</td>
@@ -423,25 +430,6 @@ function SubjectManagement({ institutionId }) {
         <Form onSubmit={handleSaveSubject}>
           <Modal.Body>
             <Row>
-              {!isScoped && (
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>School</Form.Label>
-                  <Form.Select
-                    value={subjectData.school_id}
-                    onChange={(e) => setSubjectData({ ...subjectData, school_id: e.target.value })}
-                    required
-                  >
-                    <option value="">Select School...</option>
-                    {schools.map(school => (
-                      <option key={school.institutionId} value={school.institutionId}>
-                        {school.name}
-                      </option>
-                    ))}
-                  </Form.Select>
-                </Form.Group>
-              </Col>
-              )}
               <Col md={6}>
                 <Form.Group className="mb-3">
                   <Form.Label>Department</Form.Label>
@@ -521,17 +509,17 @@ function SubjectManagement({ institutionId }) {
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Form</Form.Label>
+                  <Form.Label>Form Level</Form.Label>
                   <Form.Select
                     value={offeringData.form_id}
                     onChange={(e) => setOfferingData({ ...offeringData, form_id: e.target.value })}
                     required
                     disabled={!!editingOffering}
                   >
-                    <option value="">Select Form...</option>
-                    {forms.map(form => (
+                    <option value="">Select Form Level...</option>
+                    {uniqueFormLevels.map(form => (
                       <option key={form.form_id} value={form.form_id}>
-                        {form.form_number}{form.stream}
+                        Form {form.form_number}
                       </option>
                     ))}
                   </Form.Select>

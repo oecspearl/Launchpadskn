@@ -115,8 +115,9 @@ function ClassDetailPanel({ classItem }) {
     }
   });
 
-  // Filter offerings to only show those matching this class's form
-  const relevantOfferings = formOfferings.filter(o => o.form_id === classItem.form_id);
+  // Filter offerings by form_number (subjects are shared nationally, not per-school)
+  const classFormNumber = classItem.form?.form_number;
+  const relevantOfferings = formOfferings.filter(o => o.form?.form_number === classFormNumber);
   // Filter out students already in the roster
   const rosterStudentIds = new Set(classRoster.map(r => r.student_id));
   const availableStudents = allStudents.filter(s => !rosterStudentIds.has(s.user_id));
