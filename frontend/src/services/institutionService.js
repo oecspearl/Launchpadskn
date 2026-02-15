@@ -451,7 +451,7 @@ export const institutionService = {
         const { data, error } = await supabase
             .from('subjects')
             .select('*')
-            .eq('institution_id', institutionId)
+            .eq('school_id', institutionId)
             .eq('is_active', true)
             .order('subject_name');
 

@@ -11,19 +11,14 @@ export const classService = {
             .from('classes')
             .select(`
         *,
-        form:forms(*)
+        form:forms!inner(*)
       `)
+            .eq('form.school_id', institutionId)
             .eq('is_active', true)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-
-        // Filter by institution through forms
-        if (data) {
-            return data.filter(cls => cls.form?.school_id === institutionId);
-        }
-
-        return [];
+        return data || [];
     },
 
     async getClassesByForm(formId) {
