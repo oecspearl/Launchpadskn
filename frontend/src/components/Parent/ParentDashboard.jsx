@@ -161,6 +161,9 @@ function ParentDashboard() {
                 <FaUserGraduate className="me-2" />
                 Parent Portal
               </h2>
+              {user?.institution_name && (
+                <p className="mb-1 opacity-75 fw-semibold">{user.institution_name}</p>
+              )}
               <p className="mb-0 opacity-75">
                 Viewing: <strong>{childName}</strong>
                 {myClass && (

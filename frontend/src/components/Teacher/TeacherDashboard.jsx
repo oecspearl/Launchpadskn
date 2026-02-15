@@ -219,6 +219,9 @@ function TeacherDashboard() {
       <Row className="teacher-dashboard-header mb-4">
         <Col>
           <h2>Welcome, {user?.name || 'Teacher'}!</h2>
+          {user?.institution_name && (
+            <p className="text-muted mb-0 fw-semibold">{user.institution_name}</p>
+          )}
           <p className="text-muted mb-0">
             Manage your classes and lessons
           </p>

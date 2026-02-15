@@ -221,6 +221,18 @@ export function AuthProvider({ children }) {
           profile_image_url: profile.profile_image_url || null
         };
 
+        // Fetch institution name if user belongs to one
+        if (profile.institution_id) {
+          try {
+            const { data: inst } = await supabase
+              .from('institutions')
+              .select('name')
+              .eq('institution_id', profile.institution_id)
+              .maybeSingle();
+            if (inst) userData.institution_name = inst.name;
+          } catch { /* institution name is optional */ }
+        }
+
         localStorage.setItem('user', JSON.stringify(userData));
         localStorage.setItem('token', session.access_token);
         sessionStorage.setItem('sessionActive', 'true');

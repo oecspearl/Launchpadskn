@@ -134,6 +134,9 @@ function StudentDashboard() {
           <Row className="align-items-center">
             <Col md={8}>
               <h2>Welcome back, {user?.name || 'Student'}!</h2>
+              {user?.institution_name && (
+                <p className="mb-1 opacity-75 fw-semibold">{user.institution_name}</p>
+              )}
               {myClass && (
                 <p className="mb-0 opacity-75">
                   {myClass.form?.form_name || 'Form'} - {myClass.class_name || 'Class'}

@@ -84,7 +84,12 @@ function AppNavbar() {
     >
       <Container>
         <Navbar.Brand as={Link} to={isAuthenticated ? getDashboardRoute() : '/'} className="d-flex align-items-center gap-2">
-          <FlagLogo size="small" showText={true} />
+          <FlagLogo size="small" showText={!user?.institution_name} />
+          {isAuthenticated && user?.institution_name && (
+            <span className="fw-bold small text-dark" style={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user.institution_name}
+            </span>
+          )}
         </Navbar.Brand>
 
         <Navbar.Toggle aria-controls="basic-navbar-nav" className="border-0">
@@ -208,6 +213,9 @@ function AppNavbar() {
                   <p className="mb-0 fw-bold small text-dark">{user.name}</p>
                   <p className="mb-0 small text-muted">{user.email}</p>
                   <Badge bg="light" text="dark" className="mt-1 border">{user.role}</Badge>
+                  {user.institution_name && (
+                    <p className="mb-0 mt-1 small text-muted">{user.institution_name}</p>
+                  )}
                 </div>
                 <NavDropdown.Divider />
                 <NavDropdown.Item as={Link} to="/profile" className="d-flex align-items-center gap-2">
