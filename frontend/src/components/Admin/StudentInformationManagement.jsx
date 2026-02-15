@@ -5,7 +5,7 @@ import {
 } from 'react-bootstrap';
 import {
   FaUser, FaHistory, FaExchangeAlt, FaWheelchair, FaExclamationTriangle,
-  FaEdit, FaSave, FaTimes, FaSearch
+  FaEdit, FaSave, FaTimes, FaSearch, FaUserFriends
 } from 'react-icons/fa';
 import studentInformationService from '../../services/studentInformationService';
 import StudentProfile from './StudentProfile';
@@ -13,6 +13,7 @@ import StudentLifecycle from './StudentLifecycle';
 import TransferManagement from './TransferManagement';
 import SpecialNeedsTracking from './SpecialNeedsTracking';
 import DisciplinaryRecords from './DisciplinaryRecords';
+import ParentLinkManager from './ParentLinkManager';
 import './StudentInformationManagement.css';
 
 function StudentInformationManagement({ studentId, student }) {
@@ -203,6 +204,18 @@ function StudentInformationManagement({ studentId, student }) {
           </>
         }>
           <DisciplinaryRecords
+            studentId={studentId}
+            student={student}
+          />
+        </Tab>
+
+        <Tab eventKey="parents" title={
+          <>
+            <FaUserFriends className="me-1" />
+            Parents
+          </>
+        }>
+          <ParentLinkManager
             studentId={studentId}
             student={student}
           />

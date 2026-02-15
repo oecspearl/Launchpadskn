@@ -14,7 +14,7 @@ const warn = (...args) => {
   if (import.meta.env.DEV) console.warn('[AuthContext]', ...args);
 };
 
-const VALID_ROLES = ['ADMIN', 'SCHOOL_ADMIN', 'INSTRUCTOR', 'STUDENT'];
+const VALID_ROLES = ['ADMIN', 'SCHOOL_ADMIN', 'INSTRUCTOR', 'STUDENT', 'PARENT'];
 
 function normalizeRole(role) {
   const upper = (role || '').toUpperCase().trim();

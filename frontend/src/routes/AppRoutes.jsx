@@ -6,6 +6,7 @@ import AdminRoutes from './AdminRoutes';
 import SchoolAdminRoutes from './SchoolAdminRoutes';
 import InstructorRoutes from './InstructorRoutes';
 import StudentRoutes from './StudentRoutes';
+import ParentRoutes from './ParentRoutes';
 import CommonRoutes from './CommonRoutes';
 import NotFound from '../components/common/NotFound';
 
@@ -26,6 +27,7 @@ const AppRoutes = () => {
                 {SchoolAdminRoutes()}
                 {InstructorRoutes()}
                 {StudentRoutes()}
+                {ParentRoutes()}
                 {CommonRoutes()}
                 {/* Catch-all 404 route */}
                 <Route path="*" element={<NotFound />} />

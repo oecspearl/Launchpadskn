@@ -76,6 +76,8 @@ function PrivateRoute({ children, allowedRoles }) {
           return <Navigate to="/teacher/dashboard" replace />;
         case 'student':
           return <Navigate to="/student/dashboard" replace />;
+        case 'parent':
+          return <Navigate to="/parent/dashboard" replace />;
         default:
           return <Navigate to="/login" replace />;
       }

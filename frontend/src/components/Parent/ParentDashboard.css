@@ -1,0 +1,67 @@
+/* ============================================
+   Parent Dashboard - Reuses Student Dashboard patterns
+   ============================================ */
+
+.parent-dashboard {
+  min-height: 100vh;
+  background: var(--bg-light);
+  padding-bottom: var(--spacing-8);
+}
+
+/* Child Selector */
+.child-selector {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  margin-bottom: 1rem;
+}
+
+/* Stat cards */
+.parent-dashboard .stat-card {
+  border-radius: var(--radius-lg);
+  border: none;
+  box-shadow: var(--shadow-sm);
+  transition: transform var(--transition-base);
+}
+
+.parent-dashboard .stat-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Lesson items */
+.parent-dashboard .lesson-item {
+  display: flex;
+  gap: 1rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--primary-color);
+  background: var(--bg-light);
+  margin-bottom: 0.5rem;
+}
+
+.parent-dashboard .lesson-time {
+  min-width: 50px;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+.parent-dashboard .lesson-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .child-selector {
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .child-selector .form-select {
+    max-width: 100% !important;
+  }
+}

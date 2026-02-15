@@ -58,6 +58,7 @@ function AppNavbar() {
       case 'school_admin': return '/school-admin/dashboard';
       case 'instructor': return '/teacher/dashboard';
       case 'student': return '/student/dashboard';
+      case 'parent': return '/parent/dashboard';
       default: return '/login';
     }
   };
@@ -147,6 +148,18 @@ function AppNavbar() {
                   <NavDropdown.Divider />
                   <NavDropdown.Item as={Link} to="/teacher/curriculum">Curriculum</NavDropdown.Item>
                 </NavDropdown>
+              )}
+
+              {/* Parent Navigation */}
+              {user.role?.toLowerCase() === 'parent' && (
+                <Nav.Link
+                  as={Link}
+                  to="/parent/dashboard"
+                  className={`nav-link-custom ${isActive('/parent/dashboard') ? 'active' : ''}`}
+                >
+                  <FaUserGraduate size={14} />
+                  My Children
+                </Nav.Link>
               )}
 
               {/* School Admin Navigation */}
