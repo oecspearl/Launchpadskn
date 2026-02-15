@@ -6,7 +6,7 @@ import {
 import { Link } from 'react-router-dom';
 import {
   FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, FaUserPlus,
-  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaCube
+  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaCube, FaUserFriends
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -27,6 +27,7 @@ function AdminDashboard() {
     totalCourses: 0,
     totalInstructors: 0,
     totalStudents: 0,
+    totalParents: 0,
     totalForms: 0,
     totalClasses: 0,
     recentActivity: []
@@ -46,7 +47,7 @@ function AdminDashboard() {
       // Use Promise.race only to prevent infinite loading, not to replace data
       const statsPromise = supabaseService.getDashboardStats().catch(err => {
         console.warn('[AdminDashboard] Stats fetch error:', err);
-        return { totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalForms: 0, totalClasses: 0 };
+        return { totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalParents: 0, totalForms: 0, totalClasses: 0 };
       });
 
       // Timeout to prevent infinite loading, but don't replace data if it's still loading
@@ -94,6 +95,7 @@ function AdminDashboard() {
         totalCourses: data?.totalSubjects || data?.totalCourses || 0,
         totalInstructors: data?.totalInstructors || 0,
         totalStudents: data?.totalStudents || 0,
+        totalParents: data?.totalParents || 0,
         totalForms: data?.totalForms || 0,
         totalClasses: data?.totalClasses || 0,
         recentActivity: Array.isArray(recentActivity) ? recentActivity : []
@@ -111,6 +113,7 @@ function AdminDashboard() {
         totalCourses: 0,
         totalInstructors: 0,
         totalStudents: 0,
+        totalParents: 0,
         totalForms: 0,
         totalClasses: 0,
         recentActivity: []
@@ -281,6 +284,15 @@ function AdminDashboard() {
                 <div className="stat-card-title">Total Classes</div>
                 <div className="stat-value-large">{stats.totalClasses}</div>
               </div>
+              <div className="stat-card-modern">
+                <div className="stat-icon-circle" style={{ background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' }}>
+                  <FaUserFriends />
+                </div>
+                <div className="stat-card-title">Parents</div>
+                <div className="stat-value-large" style={{ background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  {stats.totalParents}
+                </div>
+              </div>
             </div>
 
             {/* Quick Access - Modern Cards */}
@@ -360,6 +372,15 @@ function AdminDashboard() {
                     Add, edit, assign roles, and manage users across institutions.
                   </div>
                 </Link>
+                <div className="quick-access-card" onClick={() => setActiveTab('students')} style={{ cursor: 'pointer' }}>
+                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' }}>
+                    <FaUserFriends />
+                  </div>
+                  <div className="quick-access-card-title">Manage Parents</div>
+                  <div className="quick-access-card-description">
+                    Link parents to students via the Students tab &gt; Parents section.
+                  </div>
+                </div>
                 <Link to="/admin/arvr-content" className="quick-access-card">
                   <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                     <FaCube />

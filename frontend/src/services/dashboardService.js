@@ -33,7 +33,8 @@ export const dashboardService = {
                 formsResult,
                 studentsResult,
                 instructorsResult,
-                adminsResult
+                adminsResult,
+                parentsResult
             ] = await Promise.allSettled([
                 supabase.from('users').select('*', { count: 'exact', head: true }),
                 supabase.from('subjects').select('*', { count: 'exact', head: true }),
@@ -41,7 +42,8 @@ export const dashboardService = {
                 supabase.from('forms').select('*', { count: 'exact', head: true }),
                 supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'STUDENT'),
                 supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'INSTRUCTOR'),
-                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'ADMIN')
+                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'ADMIN'),
+                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'PARENT')
             ]);
 
             const totalUsers = usersResult.status === 'fulfilled' ? (usersResult.value.count || 0) : 0;
@@ -51,8 +53,9 @@ export const dashboardService = {
             const totalStudents = studentsResult.status === 'fulfilled' ? (studentsResult.value.count || 0) : 0;
             const totalInstructors = instructorsResult.status === 'fulfilled' ? (instructorsResult.value.count || 0) : 0;
             const totalAdmins = adminsResult.status === 'fulfilled' ? (adminsResult.value.count || 0) : 0;
+            const totalParents = parentsResult.status === 'fulfilled' ? (parentsResult.value.count || 0) : 0;
 
-            log('Stats:', { totalUsers, totalSubjects, totalClasses, totalForms, totalStudents, totalInstructors, totalAdmins });
+            log('Stats:', { totalUsers, totalSubjects, totalClasses, totalForms, totalStudents, totalInstructors, totalAdmins, totalParents });
 
             return {
                 totalUsers,
@@ -62,7 +65,8 @@ export const dashboardService = {
                 totalForms,
                 totalStudents,
                 totalInstructors,
-                totalAdmins
+                totalAdmins,
+                totalParents
             };
         } catch (error) {
             if (import.meta.env.DEV) console.error('[dashboardService] Error in getDashboardStats:', error);
@@ -74,7 +78,8 @@ export const dashboardService = {
                 totalForms: 0,
                 totalStudents: 0,
                 totalInstructors: 0,
-                totalAdmins: 0
+                totalAdmins: 0,
+                totalParents: 0
             };
         }
     },
