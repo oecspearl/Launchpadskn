@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Container, Row, Col, Card, Button, Spinner, Alert,
   Table, Modal, Form, Badge, Tabs, Tab
@@ -26,11 +26,26 @@ function ClassDetailPanel({ classItem }) {
     enabled: activeTab === 'subjects'
   });
 
-  const { data: formOfferings = [] } = useQuery({
+  const { data: rawOfferings = [] } = useQuery({
     queryKey: ['offerings'],
     queryFn: () => institutionService.getCurriculumContent(null),
     enabled: activeTab === 'subjects'
   });
+
+  // Deduplicate offerings by subject_name + form_number (national curriculum)
+  const formOfferings = useMemo(() => {
+    const seen = new Map();
+    rawOfferings.forEach(o => {
+      const key = `${(o.subject?.subject_name || '').toLowerCase().trim()}_${o.form?.form_number}`;
+      const existing = seen.get(key);
+      if (!existing) {
+        seen.set(key, o);
+      } else if (o.curriculum_structure?.topics?.length > 0 && !existing.curriculum_structure?.topics?.length) {
+        seen.set(key, o);
+      }
+    });
+    return Array.from(seen.values());
+  }, [rawOfferings]);
 
   const { data: teachers = [] } = useQuery({
     queryKey: ['tutors'],

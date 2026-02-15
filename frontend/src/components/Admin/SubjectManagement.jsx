@@ -55,15 +55,43 @@ function SubjectManagement() {
     queryFn: () => institutionService.getFormsBySchool(null)
   });
 
-  const { data: subjects = [], isLoading: isLoadingSubjects } = useQuery({
+  const { data: rawSubjects = [], isLoading: isLoadingSubjects } = useQuery({
     queryKey: ['subjects'],
     queryFn: () => institutionService.getSubjectsBySchool(null)
   });
 
-  const { data: formOfferings = [], isLoading: isLoadingOfferings } = useQuery({
+  const { data: rawOfferings = [], isLoading: isLoadingOfferings } = useQuery({
     queryKey: ['offerings'],
     queryFn: () => institutionService.getCurriculumContent(null)
   });
+
+  // Deduplicate subjects by name (national curriculum = one per subject name)
+  const subjects = useMemo(() => {
+    const seen = new Map();
+    rawSubjects.forEach(s => {
+      const name = (s.subject_name || '').toLowerCase().trim();
+      if (!seen.has(name)) seen.set(name, s);
+    });
+    return Array.from(seen.values());
+  }, [rawSubjects]);
+
+  // Deduplicate offerings by subject_name + form_number (one per combo nationally)
+  const formOfferings = useMemo(() => {
+    const seen = new Map();
+    rawOfferings.forEach(o => {
+      const key = `${(o.subject?.subject_name || '').toLowerCase().trim()}_${o.form?.form_number}`;
+      const existing = seen.get(key);
+      if (!existing) {
+        seen.set(key, o);
+      } else {
+        // Prefer the one with richer curriculum data
+        const hasStructure = o.curriculum_structure?.topics?.length > 0;
+        const existingHas = existing.curriculum_structure?.topics?.length > 0;
+        if (hasStructure && !existingHas) seen.set(key, o);
+      }
+    });
+    return Array.from(seen.values());
+  }, [rawOfferings]);
 
   const isLoading = isLoadingDepartments || isLoadingForms || isLoadingSubjects || isLoadingOfferings;
 

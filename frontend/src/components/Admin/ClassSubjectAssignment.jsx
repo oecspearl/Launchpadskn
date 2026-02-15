@@ -67,10 +67,25 @@ function ClassSubjectAssignment() {
     queryFn: () => classService.getClasses(ROLES.ADMIN)
   });
 
-  const { data: formOfferings = [], isLoading: isLoadingOfferings } = useQuery({
+  const { data: rawOfferings = [], isLoading: isLoadingOfferings } = useQuery({
     queryKey: ['offerings'],
     queryFn: () => institutionService.getCurriculumContent(null)
   });
+
+  // Deduplicate offerings by subject_name + form_number (national curriculum)
+  const formOfferings = useMemo(() => {
+    const seen = new Map();
+    rawOfferings.forEach(o => {
+      const key = `${(o.subject?.subject_name || '').toLowerCase().trim()}_${o.form?.form_number}`;
+      const existing = seen.get(key);
+      if (!existing) {
+        seen.set(key, o);
+      } else if (o.curriculum_structure?.topics?.length > 0 && !existing.curriculum_structure?.topics?.length) {
+        seen.set(key, o);
+      }
+    });
+    return Array.from(seen.values());
+  }, [rawOfferings]);
 
   const { data: classSubjects = [], isLoading: isLoadingAssignments } = useQuery({
     queryKey: ['class-subjects', selectedClass],

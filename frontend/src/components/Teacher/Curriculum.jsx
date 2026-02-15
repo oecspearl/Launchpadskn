@@ -54,12 +54,36 @@ function Curriculum() {
         }
       }
 
-      setCurriculumContent(filtered);
+      // Deduplicate offerings by subject_name + form_number (national curriculum = one per combo)
+      const deduped = new Map();
+      filtered.forEach(item => {
+        const key = `${(item.subject?.subject_name || '').toLowerCase().trim()}_${item.form?.form_number}`;
+        const existing = deduped.get(key);
+        if (!existing) {
+          deduped.set(key, item);
+        } else {
+          // Keep the one with richer curriculum data
+          const hasStructure = item.curriculum_structure?.topics?.length > 0;
+          const existingHasStructure = existing.curriculum_structure?.topics?.length > 0;
+          if (hasStructure && !existingHasStructure) {
+            deduped.set(key, item);
+          } else if (!existingHasStructure && !hasStructure && item.curriculum_framework && !existing.curriculum_framework) {
+            deduped.set(key, item);
+          }
+        }
+      });
+      setCurriculumContent(Array.from(deduped.values()));
 
       // Also fetch subjects and forms for filters
       if (!subjects.length) {
         const allSubjects = await supabaseService.getSubjectsBySchool(null);
-        setSubjects(allSubjects || []);
+        // Deduplicate subjects by name (national = one per subject name)
+        const seenSubjects = new Map();
+        (allSubjects || []).forEach(s => {
+          const name = (s.subject_name || '').toLowerCase().trim();
+          if (!seenSubjects.has(name)) seenSubjects.set(name, s);
+        });
+        setSubjects(Array.from(seenSubjects.values()));
       }
 
       if (!forms.length) {
@@ -99,13 +123,13 @@ function Curriculum() {
            outcomes.includes(query);
   });
   
-  // Group curriculum by form for better organization
+  // Group curriculum by form_number for better organization (national = one group per form level)
   const curriculumByForm = filteredCurriculum.reduce((acc, item) => {
-    const formName = item.form?.form_name || 'Unknown Form';
-    if (!acc[formName]) {
-      acc[formName] = [];
+    const formLabel = item.form?.form_number ? `Form ${item.form.form_number}` : 'Unknown Form';
+    if (!acc[formLabel]) {
+      acc[formLabel] = [];
     }
-    acc[formName].push(item);
+    acc[formLabel].push(item);
     return acc;
   }, {});
   
