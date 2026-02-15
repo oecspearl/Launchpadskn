@@ -4,7 +4,7 @@ import { FaChartLine, FaUsers, FaBook, FaDownload, FaServer, FaCheckCircle, FaEx
 import supabaseService from '../../services/supabaseService';
 import Breadcrumb from '../common/Breadcrumb';
 
-function ReportsTab() {
+function ReportsTab({ institutionId }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [analytics, setAnalytics] = useState({
@@ -29,7 +29,7 @@ function ReportsTab() {
       setLoading(true);
       
       // Fetch real data from Supabase
-      const stats = await supabaseService.getDashboardStats();
+      const stats = await supabaseService.getDashboardStats(institutionId || null);
       
       // Get users by role
       const usersByRole = {

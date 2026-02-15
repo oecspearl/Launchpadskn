@@ -203,9 +203,26 @@ export const classService = {
     },
 
     async getAllStudentAssignments(filters = {}) {
-        let query = supabase
-            .from('student_class_assignments')
-            .select(`
+        let query;
+
+        if (filters.institutionId) {
+            // Institution-scoped: use inner join to filter by institution via forms.school_id
+            query = supabase
+                .from('student_class_assignments')
+                .select(`
+        *,
+        student:users(*),
+        class:classes!inner(
+          *,
+          form:forms!inner(*)
+        )
+      `)
+                .eq('is_active', true)
+                .eq('class.form.school_id', filters.institutionId);
+        } else {
+            query = supabase
+                .from('student_class_assignments')
+                .select(`
         *,
         student:users(*),
         class:classes(
@@ -213,38 +230,11 @@ export const classService = {
           form:forms(*)
         )
       `)
-            .eq('is_active', true);
+                .eq('is_active', true);
+        }
 
         if (filters.classId && filters.classId !== 'all') {
             query = query.eq('class_id', filters.classId);
-        }
-
-        if (filters.formId && filters.formId !== 'all') {
-            // This is tricky because form_id is on the class, not the assignment directly usually.
-            // But let's check the schema. The previous code didn't filter assignments by form directly in the DB query, 
-            // it filtered classes by form, then if selectedClass was 'all', it fetched all assignments.
-            // Wait, the previous code:
-            // if (selectedClass !== 'all') { assignmentQuery = assignmentQuery.eq('class_id', selectedClass); }
-            // It didn't filter by formId in the assignment query!
-            // It only filtered classes list by form.
-            // But if I select a form, and keep class as 'all', should I show assignments for that form?
-            // The previous code:
-            // if (selectedClass !== 'all') ...
-            // It seems it only filters by class_id if a specific class is selected.
-            // If only form is selected, it still fetches ALL assignments?
-            // Let's look at the previous code again.
-            /*
-              if (selectedClass !== 'all') {
-                assignmentQuery = assignmentQuery.eq('class_id', selectedClass);
-              }
-              const { data: assignmentsData } = await assignmentQuery...
-            */
-            // So if I select Form 1, but Class 'All', it fetches ALL assignments for ALL forms?
-            // That seems like a bug or limitation in the original code.
-            // However, I will replicate the behavior or improve it.
-            // If I want to filter by form, I'd need to filter by class.form_id.
-            // Supabase supports filtering on joined tables with !inner if needed, but let's stick to the simple case first.
-            // I'll just support classId filter for now to match the original behavior's explicit filter.
         }
 
         const { data, error } = await query.order('academic_year', { ascending: false });
@@ -538,9 +528,29 @@ export const classService = {
     },
 
     async getAllClassSubjects(filters = {}) {
-        let query = supabase
-            .from('class_subjects')
-            .select(`
+        let query;
+
+        if (filters.institutionId) {
+            // Institution-scoped: filter via class → form → school_id
+            query = supabase
+                .from('class_subjects')
+                .select(`
+        *,
+        class:classes!inner(
+          *,
+          form:forms!inner(*)
+        ),
+        subject_offering:subject_form_offerings(
+          *,
+          subject:subjects(*)
+        ),
+        teacher:users!class_subjects_teacher_id_fkey(name, email, profile_image_url)
+      `)
+                .eq('class.form.school_id', filters.institutionId);
+        } else {
+            query = supabase
+                .from('class_subjects')
+                .select(`
         *,
         class:classes(
           *,
@@ -552,6 +562,7 @@ export const classService = {
         ),
         teacher:users!class_subjects_teacher_id_fkey(name, email, profile_image_url)
       `);
+        }
 
         if (filters.classId && filters.classId !== 'all') {
             query = query.eq('class_id', filters.classId);

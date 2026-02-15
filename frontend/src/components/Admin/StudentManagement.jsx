@@ -76,7 +76,7 @@ function StudentManagement({ institutionId }) {
 
   const { data: assignments = [], isLoading: isLoadingAssignments } = useQuery({
     queryKey: isScoped ? ['student-assignments', institutionId] : ['student-assignments-all'],
-    queryFn: () => classService.getAllStudentAssignments()
+    queryFn: () => classService.getAllStudentAssignments(isScoped ? { institutionId } : {})
   });
 
   const isLoading = isLoadingStudents || isLoadingAssignments;

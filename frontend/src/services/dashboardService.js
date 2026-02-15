@@ -22,10 +22,52 @@ const formatRelativeTime = (timestamp) => {
 const log = (...args) => { if (import.meta.env.DEV) console.log('[dashboardService]', ...args); };
 
 export const dashboardService = {
-    async getDashboardStats() {
+    async getDashboardStats(institutionId = null) {
         try {
-            log('getDashboardStats called');
+            log('getDashboardStats called', institutionId ? `for institution ${institutionId}` : '(global)');
 
+            if (institutionId) {
+                // Institution-scoped stats
+                const [
+                    studentsResult,
+                    instructorsResult,
+                    subjectsResult,
+                    classesResult,
+                    formsResult,
+                    parentsResult
+                ] = await Promise.allSettled([
+                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'STUDENT'),
+                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'INSTRUCTOR'),
+                    supabase.from('subjects').select('*', { count: 'exact', head: true }).eq('school_id', institutionId),
+                    supabase.from('classes').select('*, form:forms!inner(*)', { count: 'exact', head: true }).eq('form.school_id', institutionId),
+                    supabase.from('forms').select('*', { count: 'exact', head: true }).eq('school_id', institutionId),
+                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'PARENT')
+                ]);
+
+                const totalStudents = studentsResult.status === 'fulfilled' ? (studentsResult.value.count || 0) : 0;
+                const totalInstructors = instructorsResult.status === 'fulfilled' ? (instructorsResult.value.count || 0) : 0;
+                const totalSubjects = subjectsResult.status === 'fulfilled' ? (subjectsResult.value.count || 0) : 0;
+                const totalClasses = classesResult.status === 'fulfilled' ? (classesResult.value.count || 0) : 0;
+                const totalForms = formsResult.status === 'fulfilled' ? (formsResult.value.count || 0) : 0;
+                const totalParents = parentsResult.status === 'fulfilled' ? (parentsResult.value.count || 0) : 0;
+                const totalUsers = totalStudents + totalInstructors + totalParents;
+
+                log('Institution stats:', { totalUsers, totalSubjects, totalClasses, totalForms, totalStudents, totalInstructors, totalParents });
+
+                return {
+                    totalUsers,
+                    totalSubjects,
+                    totalCourses: totalSubjects,
+                    totalClasses,
+                    totalForms,
+                    totalStudents,
+                    totalInstructors,
+                    totalAdmins: 0,
+                    totalParents
+                };
+            }
+
+            // Global stats (no institution filter)
             const [
                 usersResult,
                 subjectsResult,
@@ -84,9 +126,9 @@ export const dashboardService = {
         }
     },
 
-    async getRecentActivity(limit = 10) {
+    async getRecentActivity(limit = 10, institutionId = null) {
         try {
-            log('getRecentActivity called');
+            log('getRecentActivity called', institutionId ? `for institution ${institutionId}` : '(global)');
 
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -96,48 +138,52 @@ export const dashboardService = {
             const createTimeoutPromise = (timeoutMs) =>
                 new Promise((resolve) => setTimeout(() => resolve({ status: 'fulfilled', value: { data: [] } }), timeoutMs));
 
+            // Build institution-scoped queries when institutionId is provided
+            let usersQuery = supabase
+                .from('users')
+                .select('user_id, email, name, role, created_at')
+                .gte('created_at', sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            let subjectsQuery = supabase
+                .from('subjects')
+                .select('subject_id, subject_name, created_at')
+                .gte('created_at', sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            let classesQuery = supabase
+                .from('classes')
+                .select('class_id, class_name, created_at, form:forms!inner(school_id)')
+                .gte('created_at', sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            let formsQuery = supabase
+                .from('forms')
+                .select('form_id, form_number, form_name, created_at')
+                .gte('created_at', sevenDaysAgo.toISOString())
+                .order('created_at', { ascending: false })
+                .limit(limit);
+
+            if (institutionId) {
+                usersQuery = usersQuery.eq('institution_id', institutionId);
+                subjectsQuery = subjectsQuery.eq('school_id', institutionId);
+                classesQuery = classesQuery.eq('form.school_id', institutionId);
+                formsQuery = formsQuery.eq('school_id', institutionId);
+            }
+
             const [
                 recentUsersResult,
                 recentSubjectsResult,
                 recentClassesResult,
                 recentFormsResult
             ] = await Promise.allSettled([
-                Promise.race([
-                    supabase
-                        .from('users')
-                        .select('user_id, email, name, role, created_at')
-                        .gte('created_at', sevenDaysAgo.toISOString())
-                        .order('created_at', { ascending: false })
-                        .limit(limit),
-                    createTimeoutPromise(activityTimeout)
-                ]),
-                Promise.race([
-                    supabase
-                        .from('subjects')
-                        .select('subject_id, subject_name, created_at')
-                        .gte('created_at', sevenDaysAgo.toISOString())
-                        .order('created_at', { ascending: false })
-                        .limit(limit),
-                    createTimeoutPromise(activityTimeout)
-                ]),
-                Promise.race([
-                    supabase
-                        .from('classes')
-                        .select('class_id, class_name, created_at')
-                        .gte('created_at', sevenDaysAgo.toISOString())
-                        .order('created_at', { ascending: false })
-                        .limit(limit),
-                    createTimeoutPromise(activityTimeout)
-                ]),
-                Promise.race([
-                    supabase
-                        .from('forms')
-                        .select('form_id, form_number, form_name, created_at')
-                        .gte('created_at', sevenDaysAgo.toISOString())
-                        .order('created_at', { ascending: false })
-                        .limit(limit),
-                    createTimeoutPromise(activityTimeout)
-                ])
+                Promise.race([usersQuery, createTimeoutPromise(activityTimeout)]),
+                Promise.race([subjectsQuery, createTimeoutPromise(activityTimeout)]),
+                Promise.race([classesQuery, createTimeoutPromise(activityTimeout)]),
+                Promise.race([formsQuery, createTimeoutPromise(activityTimeout)])
             ]);
 
             const activities = [];
