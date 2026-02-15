@@ -1,77 +1,76 @@
 import { supabase } from '../config/supabase';
 import { ROLES } from '../constants/roles';
 
+const isUUID = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+
 export const userService = {
     /**
      * Get user profile from users table
-     * Tries both user_id and id (UUID) columns
+     * Uses id (UUID) or user_id (numeric) based on format
      */
     async getUserProfile(userId) {
-        // First try by UUID (id column)
-        let { data, error } = await supabase
+        const col = isUUID(userId) ? 'id' : 'user_id';
+        const { data, error } = await supabase
             .from('users')
             .select('*')
-            .eq('id', userId)
+            .eq(col, userId)
             .maybeSingle();
 
-        // If not found, try by user_id (in case UUID is stored differently)
-        if (error || !data) {
-            const { data: data2, error: error2 } = await supabase
-                .from('users')
-                .select('*')
-                .eq('user_id', userId)
-                .maybeSingle();
-
-            if (error2 && error2.code !== 'PGRST116') throw error2;
-            if (data2) return data2;
-        }
-
         if (error && error.code !== 'PGRST116') throw error;
-        if (!data) throw new Error('User profile not found');
+        if (data) return data;
 
-        return data;
+        // Fallback: try the other column
+        const fallbackCol = col === 'id' ? 'user_id' : 'id';
+        const { data: data2, error: error2 } = await supabase
+            .from('users')
+            .select('*')
+            .eq(fallbackCol, userId)
+            .maybeSingle();
+
+        if (error2 && error2.code !== 'PGRST116') throw error2;
+        if (data2) return data2;
+
+        throw new Error('User profile not found');
     },
 
     /**
      * Update user profile
      */
     async updateUserProfile(userId, updates) {
-        // Try by UUID first
-        let { data, error } = await supabase
+        const col = isUUID(userId) ? 'id' : 'user_id';
+        const { data, error } = await supabase
             .from('users')
             .update(updates)
-            .eq('id', userId)
+            .eq(col, userId)
             .select()
             .maybeSingle();
 
-        // If not found, try by user_id
-        if (error || !data) {
-            const { data: data2, error: error2 } = await supabase
-                .from('users')
-                .update(updates)
-                .eq('user_id', userId)
-                .select()
-                .maybeSingle();
+        if (!error && data) return data;
 
-            if (error2 && error2.code !== 'PGRST116') throw error2;
-            if (data2) return data2;
+        // Fallback: try the other column
+        const fallbackCol = col === 'id' ? 'user_id' : 'id';
+        const { data: data2, error: error2 } = await supabase
+            .from('users')
+            .update(updates)
+            .eq(fallbackCol, userId)
+            .select()
+            .maybeSingle();
 
-            // If still not found, try to insert
-            const { data: data3, error: error3 } = await supabase
-                .from('users')
-                .insert({
-                    id: userId,
-                    ...updates
-                })
-                .select()
-                .single();
+        if (error2 && error2.code !== 'PGRST116') throw error2;
+        if (data2) return data2;
 
-            if (error3) throw error3;
-            return data3;
-        }
+        // If still not found, try to insert
+        const { data: data3, error: error3 } = await supabase
+            .from('users')
+            .insert({
+                ...(isUUID(userId) ? { id: userId } : { user_id: userId }),
+                ...updates
+            })
+            .select()
+            .single();
 
-        if (error && error.code !== 'PGRST116') throw error;
-        return data;
+        if (error3) throw error3;
+        return data3;
     },
 
     /**
@@ -206,18 +205,19 @@ export const userService = {
      * Set force_password_change flag for a user
      */
     async setForcePasswordChange(userId, forceChange) {
-        // Try by UUID first
-        let { error } = await supabase
+        const col = isUUID(userId) ? 'id' : 'user_id';
+        const { error } = await supabase
             .from('users')
             .update({ force_password_change: forceChange })
-            .eq('id', userId);
+            .eq(col, userId);
 
         if (error) {
-            // If failed (maybe not found by id), try user_id
+            // Fallback: try the other column
+            const fallbackCol = col === 'id' ? 'user_id' : 'id';
             const { error: error2 } = await supabase
                 .from('users')
                 .update({ force_password_change: forceChange })
-                .eq('user_id', userId);
+                .eq(fallbackCol, userId);
 
             if (error2) throw error2;
         }
