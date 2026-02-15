@@ -146,7 +146,8 @@ export const dashboardService = {
                 recentUsersResult.value.data.forEach(user => {
                     const roleText = user.role === 'ADMIN' ? 'admin' :
                         user.role === 'INSTRUCTOR' ? 'instructor' :
-                            'student';
+                            user.role === 'PARENT' ? 'parent' :
+                                'student';
                     activities.push({
                         id: `user-${user.user_id}`,
                         type: 'user',

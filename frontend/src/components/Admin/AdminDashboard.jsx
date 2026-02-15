@@ -6,7 +6,8 @@ import {
 import { Link } from 'react-router-dom';
 import {
   FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, FaUserPlus,
-  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaCube, FaUserFriends
+  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaCube, FaUserFriends,
+  FaUserShield
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -27,6 +28,7 @@ function AdminDashboard() {
     totalCourses: 0,
     totalInstructors: 0,
     totalStudents: 0,
+    totalAdmins: 0,
     totalParents: 0,
     totalForms: 0,
     totalClasses: 0,
@@ -47,7 +49,7 @@ function AdminDashboard() {
       // Use Promise.race only to prevent infinite loading, not to replace data
       const statsPromise = supabaseService.getDashboardStats().catch(err => {
         console.warn('[AdminDashboard] Stats fetch error:', err);
-        return { totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalParents: 0, totalForms: 0, totalClasses: 0 };
+        return { totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalAdmins: 0, totalParents: 0, totalForms: 0, totalClasses: 0 };
       });
 
       // Timeout to prevent infinite loading, but don't replace data if it's still loading
@@ -95,6 +97,7 @@ function AdminDashboard() {
         totalCourses: data?.totalSubjects || data?.totalCourses || 0,
         totalInstructors: data?.totalInstructors || 0,
         totalStudents: data?.totalStudents || 0,
+        totalAdmins: data?.totalAdmins || 0,
         totalParents: data?.totalParents || 0,
         totalForms: data?.totalForms || 0,
         totalClasses: data?.totalClasses || 0,
@@ -113,6 +116,7 @@ function AdminDashboard() {
         totalCourses: 0,
         totalInstructors: 0,
         totalStudents: 0,
+        totalAdmins: 0,
         totalParents: 0,
         totalForms: 0,
         totalClasses: 0,
@@ -291,6 +295,15 @@ function AdminDashboard() {
                 <div className="stat-card-title">Parents</div>
                 <div className="stat-value-large" style={{ background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
                   {stats.totalParents}
+                </div>
+              </div>
+              <div className="stat-card-modern">
+                <div className="stat-icon-circle" style={{ background: 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)' }}>
+                  <FaUserShield />
+                </div>
+                <div className="stat-card-title">Admins</div>
+                <div className="stat-value-large" style={{ background: 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                  {stats.totalAdmins}
                 </div>
               </div>
             </div>
