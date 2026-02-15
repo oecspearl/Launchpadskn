@@ -32,34 +32,46 @@ function Curriculum() {
   // Selected curriculum for detailed view
   const [selectedOffering, setSelectedOffering] = useState(null);
   
-  // Fetch curriculum content
+  // Fetch curriculum content (globally — curriculum is shared nationally)
   const fetchCurriculum = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
-      
-      // Get user's school (assuming teacher belongs to a school)
-      // For now, get all curriculum content (teachers can see all schools' curriculum)
-      const schoolId = null; // TODO: Get from user profile if available
+
+      // Fetch all offerings globally, filter client-side by form_number
       const curriculum = await supabaseService.getCurriculumContent(
-        schoolId,
-        selectedForm ? parseInt(selectedForm) : null,
+        null,
+        null,
         selectedSubject ? parseInt(selectedSubject) : null
       );
-      
-      setCurriculumContent(curriculum || []);
-      
+
+      // Filter by form_number if a form is selected (not form_id, since offerings are national)
+      let filtered = curriculum || [];
+      if (selectedForm) {
+        const selectedFormObj = forms.find(f => f.form_id === parseInt(selectedForm));
+        if (selectedFormObj) {
+          filtered = filtered.filter(item => item.form?.form_number === selectedFormObj.form_number);
+        }
+      }
+
+      setCurriculumContent(filtered);
+
       // Also fetch subjects and forms for filters
       if (!subjects.length) {
-        const allSubjects = await supabaseService.getSubjectsBySchool(schoolId);
+        const allSubjects = await supabaseService.getSubjectsBySchool(null);
         setSubjects(allSubjects || []);
       }
-      
+
       if (!forms.length) {
-        const allForms = await supabaseService.getFormsBySchool(schoolId);
-        setForms(allForms || []);
+        const allForms = await supabaseService.getFormsBySchool(null);
+        // Deduplicate forms by form_number for the filter dropdown
+        const seen = new Map();
+        (allForms || []).forEach(f => {
+          if (!seen.has(f.form_number)) seen.set(f.form_number, f);
+        });
+        setForms(Array.from(seen.values()).sort((a, b) => a.form_number - b.form_number));
       }
-      
+
     } catch (err) {
       console.error('[Curriculum] Error fetching curriculum:', err);
       setError('Failed to load curriculum content. Please try again.');
@@ -210,7 +222,7 @@ function Curriculum() {
                 <option value="">All Forms</option>
                 {forms.map(form => (
                   <option key={form.form_id} value={form.form_id}>
-                    {form.form_name} (Form {form.form_number})
+                    Form {form.form_number}
                   </option>
                 ))}
               </Form.Select>

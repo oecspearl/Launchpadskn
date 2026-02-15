@@ -211,6 +211,18 @@ function SubjectManagement() {
     if (editingOffering) {
       updateOfferingMutation.mutate({ id: editingOffering.offering_id, data: offeringData });
     } else {
+      // Prevent duplicate: check if subject already has an offering at this form level
+      const selectedFormObj = forms.find(f => f.form_id === parseInt(offeringData.form_id));
+      if (selectedFormObj) {
+        const duplicate = formOfferings.find(o =>
+          o.subject_id === parseInt(offeringData.subject_id) &&
+          o.form?.form_number === selectedFormObj.form_number
+        );
+        if (duplicate) {
+          setError(`This subject already has a Form ${selectedFormObj.form_number} offering. Edit the existing one instead.`);
+          return;
+        }
+      }
       createOfferingMutation.mutate(offeringData);
     }
   };
@@ -346,6 +358,7 @@ function SubjectManagement() {
                     <th>Subject</th>
                     <th>Periods/Week</th>
                     <th>Type</th>
+                    <th>Curriculum</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -361,6 +374,17 @@ function SubjectManagement() {
                         <Badge bg={offering.is_compulsory ? 'primary' : 'secondary'}>
                           {offering.is_compulsory ? 'Compulsory' : 'Elective'}
                         </Badge>
+                      </td>
+                      <td>
+                        {offering.curriculum_structure ? (
+                          <>
+                            <Badge bg="success" className="me-1">Set</Badge>
+                            {offering.curriculum_version && <small className="text-muted d-block">{offering.curriculum_version}</small>}
+                            {offering.curriculum_updated_at && <small className="text-muted d-block">{new Date(offering.curriculum_updated_at).toLocaleDateString()}</small>}
+                          </>
+                        ) : (
+                          <Badge bg="warning" text="dark">Not set</Badge>
+                        )}
                       </td>
                       <td>
                         <Button
@@ -412,7 +436,7 @@ function SubjectManagement() {
                   ))}
                   {formOfferings.length === 0 && (
                     <tr>
-                      <td colSpan="5" className="text-center py-4">No form assignments found</td>
+                      <td colSpan="6" className="text-center py-4">No form assignments found</td>
                     </tr>
                   )}
                 </tbody>

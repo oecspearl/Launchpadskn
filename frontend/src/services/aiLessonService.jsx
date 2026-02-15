@@ -1,18 +1,16 @@
 /**
  * AI Lesson Planner Service
  * Handles API calls to generate AI-powered lesson plans
+ *
+ * AI calls are routed through the backend proxy (/api/ai/chat)
+ * to keep the OpenAI API key server-side.
  */
 
 import { findBestVideoForLesson, searchEducationalVideos, getVideoDetails } from './youtubeService';
 import { detectVideoType, extractYouTubeVideoId } from '../types/contentTypes';
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-
-// Only log API key status in development (never expose key details)
-if (import.meta.env.DEV) {
-    console.log('[AI Service] API Key configured:', API_KEY ? 'Yes' : 'No');
-}
+// Use backend proxy for AI calls (API key is kept server-side)
+const AI_PROXY_URL = '/api/ai/chat';
 
 /**
  * Generate a lesson plan using AI
@@ -33,9 +31,7 @@ export const generateLessonPlan = async ({
   previousTopics = '',
   learningStyle = ''
 }) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   if (!subject || !topic || !gradeLevel || !duration) {
     throw new Error('Missing required parameters: subject, topic, gradeLevel, and duration are required.');
@@ -81,12 +77,9 @@ Make the lesson plan engaging, age-appropriate for ${gradeLevel}, and aligned wi
     };
     console.log('[AI Service] Request body (excluding API key):', { ...requestBody, messages: requestBody.messages });
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -513,9 +506,7 @@ const extractField = (content, fieldName) => {
  * Uses the OECS-style comprehensive prompt with curriculum standards
  */
 export const generateEnhancedLessonPlan = async (formData) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   const {
     subject,
@@ -794,12 +785,9 @@ Remember: Use ONLY the provided information. Make the lesson plan practical, eng
       max_tokens: 4096 // Maximum supported by GPT-3.5-turbo model
     };
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -894,9 +882,7 @@ export const generateAssignmentRubric = async ({
   totalPoints = 100,
   criteria = []
 }) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   if (!assignmentTitle || !subject || !gradeLevel) {
     throw new Error('Missing required parameters: assignmentTitle, subject, and gradeLevel are required.');
@@ -943,12 +929,9 @@ Respond with ONLY the rubric content, formatted clearly and professionally. Do n
       max_tokens: 2000
     };
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -996,9 +979,7 @@ export const generateCompleteLessonContent = async ({
   lessonPlan = '',
   duration = 45
 }) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   if (!lessonTitle || !topic || !subject || !form) {
     throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
@@ -1256,12 +1237,9 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
       max_tokens: 4000
     };
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -1565,9 +1543,7 @@ export const generateStudentFacingContent = async ({
   quantity = 1,
   additionalPrompt = ''
 }) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   if (!lessonTitle || !topic || !subject || !form) {
     throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
@@ -1788,12 +1764,9 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
       max_tokens: 2000
     };
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -1870,9 +1843,7 @@ export const generateFlashcards = async ({
   difficulty = 'medium',
   context = ''
 }) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   if (!topic) {
     throw new Error('Missing required parameter: topic is required.');
@@ -1940,12 +1911,9 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
       max_tokens: 2000
     };
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -2035,9 +2003,7 @@ export const generateInteractiveVideo = async ({
   videoUrl = '',
   additionalComments = ''
 }) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   if (!topic) {
     throw new Error('Missing required parameter: topic is required.');
@@ -2200,12 +2166,9 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
       max_tokens: 3000
     };
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -2331,9 +2294,7 @@ export const generateInteractiveBook = async ({
   learningOutcomes = '',
   additionalComments = ''
 }) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   if (!topic) {
     throw new Error('Missing required parameter: topic is required.');
@@ -2487,12 +2448,9 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
       max_tokens: 4000
     };
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 
@@ -2712,9 +2670,7 @@ export const generateQuiz = async ({
   bloomLevel = 'mixed',
   lessonPlan = ''
 }) => {
-  if (!API_KEY) {
-    throw new Error('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-  }
+  // API key is now server-side — no client-side check needed
 
   if (!topic || !subject || !form) {
     throw new Error('Missing required parameters: topic, subject, and form are required.');
@@ -2865,12 +2821,9 @@ Remember:
       max_tokens: 4000
     };
 
-    const response = await fetch(OPENAI_API_URL, {
+    const response = await fetch(AI_PROXY_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(requestBody)
     });
 

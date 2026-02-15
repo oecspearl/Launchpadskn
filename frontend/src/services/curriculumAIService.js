@@ -5,24 +5,17 @@
 
 import { searchEducationalVideos } from './youtubeService';
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+// Use backend proxy for AI calls (API key is kept server-side)
+const AI_PROXY_URL = '/api/ai/chat';
 
 /**
- * Generic function to call OpenAI API
+ * Generic function to call OpenAI API via backend proxy
  */
 const callOpenAI = async (systemPrompt, userPrompt, temperature = 0.7) => {
-    if (!API_KEY) {
-        throw new Error('OpenAI API key is not configured.');
-    }
-
     try {
-        const response = await fetch(OPENAI_API_URL, {
+        const response = await fetch(AI_PROXY_URL, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${API_KEY}`
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: 'gpt-3.5-turbo',
                 messages: [

@@ -19,7 +19,10 @@ function EnhancedLessonPlannerForm({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState(null);
   const [curriculumStandards, setCurriculumStandards] = useState('');
-  
+  const [curriculumTopics, setCurriculumTopics] = useState([]);
+  const [selectedTopicIndex, setSelectedTopicIndex] = useState('');
+  const [selectedUnitIndex, setSelectedUnitIndex] = useState('');
+
   const [formData, setFormData] = useState({
     // Basic Info
     subject: subjectName || '',
@@ -85,12 +88,19 @@ function EnhancedLessonPlannerForm({
 
   const fetchCurriculumStandards = async () => {
     if (!classSubjectId) return;
-    
+
     try {
-      // First get the class_subject to find the subject_offering_id
+      // Get the class_subject with its form info to match by form_number
       const { data: classSubjectData, error: csError } = await supabase
         .from('class_subjects')
-        .select('subject_offering_id')
+        .select(`
+          subject_offering_id,
+          subject_offering:subject_form_offerings(
+            subject_id,
+            form:forms(form_number)
+          ),
+          class:classes(form:forms(form_number))
+        `)
         .eq('class_subject_id', classSubjectId)
         .single();
 
@@ -99,54 +109,58 @@ function EnhancedLessonPlannerForm({
         return;
       }
 
-      // Then get the subject_form_offering with curriculum data
-      const { data, error } = await supabase
-        .from('subject_form_offerings')
-        .select(`
-          curriculum_framework,
-          learning_outcomes,
-          curriculum_structure
-        `)
-        .eq('offering_id', classSubjectData.subject_offering_id)
-        .single();
+      // Get the form_number for this class and subject_id
+      const formNumber = classSubjectData.class?.form?.form_number
+        || classSubjectData.subject_offering?.form?.form_number;
+      const subjectId = classSubjectData.subject_offering?.subject_id;
 
-      if (data && !error) {
+      // Find the offering that matches this subject + form_number (national curriculum)
+      let query = supabase
+        .from('subject_form_offerings')
+        .select('*, form:forms(form_number)')
+        .eq('is_active', true);
+
+      if (subjectId) query = query.eq('subject_id', subjectId);
+
+      const { data: offerings, error: ofError } = await query;
+
+      // Find offering matching form_number
+      let offering = offerings?.find(o => o.form?.form_number === formNumber);
+      // Fallback to direct offering_id if form_number match fails
+      if (!offering) {
+        offering = offerings?.find(o => o.offering_id === classSubjectData.subject_offering_id);
+      }
+
+      if (offering) {
         let standards = '';
-        
-        // Extract from JSONB structure if available
-        if (data.curriculum_structure) {
-          try {
-            const structure = typeof data.curriculum_structure === 'string' 
-              ? JSON.parse(data.curriculum_structure) 
-              : data.curriculum_structure;
-            
-            if (structure.topics && Array.isArray(structure.topics)) {
-              standards = structure.topics.map(topic => {
-                let topicText = `Topic ${topic.topicNumber || ''}: ${topic.title || 'Untitled'}\n`;
-                if (topic.overview?.essentialLearningOutcomes) {
-                  const outcomes = Array.isArray(topic.overview.essentialLearningOutcomes)
-                    ? topic.overview.essentialLearningOutcomes.join('\n')
-                    : topic.overview.essentialLearningOutcomes;
-                  topicText += outcomes;
-                }
-                return topicText;
-              }).join('\n\n');
-            }
-          } catch (parseErr) {
-            console.warn('Error parsing curriculum structure:', parseErr);
+        let topics = [];
+
+        if (offering.curriculum_structure) {
+          const structure = typeof offering.curriculum_structure === 'string'
+            ? JSON.parse(offering.curriculum_structure)
+            : offering.curriculum_structure;
+
+          if (structure.topics && Array.isArray(structure.topics)) {
+            topics = structure.topics;
+            standards = topics.map(topic => {
+              let topicText = `Topic ${topic.topicNumber || ''}: ${topic.title || 'Untitled'}\n`;
+              const outcomes = topic.essentialLearningOutcomes || topic.overview?.essentialLearningOutcomes;
+              if (outcomes) {
+                topicText += (Array.isArray(outcomes) ? outcomes.join('\n') : outcomes);
+              }
+              return topicText;
+            }).join('\n\n');
           }
         }
-        
-        // Add curriculum framework
-        if (data.curriculum_framework) {
-          standards += (standards ? '\n\n' : '') + data.curriculum_framework;
+
+        if (offering.curriculum_framework) {
+          standards += (standards ? '\n\n' : '') + offering.curriculum_framework;
         }
-        
-        // Add learning outcomes
-        if (data.learning_outcomes) {
-          standards += (standards ? '\n\n' : '') + data.learning_outcomes;
+        if (offering.learning_outcomes) {
+          standards += (standards ? '\n\n' : '') + offering.learning_outcomes;
         }
-        
+
+        setCurriculumTopics(topics);
         setCurriculumStandards(standards);
       }
     } catch (err) {
@@ -200,6 +214,20 @@ function EnhancedLessonPlannerForm({
         lessonPlanContent = JSON.stringify(lessonPlanContent, null, 2);
       }
 
+      // Build curriculum reference metadata
+      const curriculumRef = {};
+      if (selectedTopicIndex !== '' && curriculumTopics[parseInt(selectedTopicIndex)]) {
+        const topic = curriculumTopics[parseInt(selectedTopicIndex)];
+        curriculumRef.topic_number = topic.topicNumber;
+        curriculumRef.topic_title = topic.title;
+        if (selectedUnitIndex !== '' && topic.instructionalUnits?.[parseInt(selectedUnitIndex)]) {
+          const unit = topic.instructionalUnits[parseInt(selectedUnitIndex)];
+          curriculumRef.sco_number = unit.scoNumber;
+          curriculumRef.unit_number = unit.unitNumber;
+          curriculumRef.sco_title = unit.specificCurriculumOutcomes?.substring(0, 200);
+        }
+      }
+
       // Dispatch event for other components
       window.dispatchEvent(new CustomEvent('lessonPlanGenerated', {
         detail: {
@@ -208,8 +236,10 @@ function EnhancedLessonPlannerForm({
           subject: formData.subject,
           form: formData.form,
           topic: formData.topic,
+          curriculumRef,
           metadata: {
             ...formData,
+            curriculumRef,
             generatedAt: new Date().toISOString()
           }
         }
@@ -321,6 +351,86 @@ function EnhancedLessonPlannerForm({
                   </Form.Group>
                 </Col>
               </Row>
+
+              {/* Curriculum Topic/Unit Selector */}
+              {curriculumTopics.length > 0 && (
+                <Row className="mb-3">
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label><FaBook className="me-1" /> Curriculum Topic</Form.Label>
+                      <Form.Select
+                        value={selectedTopicIndex}
+                        onChange={(e) => {
+                          const idx = e.target.value;
+                          setSelectedTopicIndex(idx);
+                          setSelectedUnitIndex('');
+                          if (idx !== '') {
+                            const topic = curriculumTopics[parseInt(idx)];
+                            setFormData(prev => ({
+                              ...prev,
+                              topic: topic.title || `Topic ${topic.topicNumber}`,
+                              essentialLearningOutcomes: Array.isArray(topic.essentialLearningOutcomes)
+                                ? topic.essentialLearningOutcomes.join('\n')
+                                : (topic.essentialLearningOutcomes || '')
+                            }));
+                          }
+                        }}
+                      >
+                        <option value="">Select from curriculum...</option>
+                        {curriculumTopics.map((topic, idx) => (
+                          <option key={idx} value={idx}>
+                            Topic {topic.topicNumber}: {topic.title}
+                          </option>
+                        ))}
+                      </Form.Select>
+                      <Form.Text className="text-muted">
+                        Auto-fills topic, outcomes, and strategies from curriculum
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group>
+                      <Form.Label>Instructional Unit (SCO)</Form.Label>
+                      <Form.Select
+                        value={selectedUnitIndex}
+                        disabled={selectedTopicIndex === ''}
+                        onChange={(e) => {
+                          const uidx = e.target.value;
+                          setSelectedUnitIndex(uidx);
+                          if (uidx !== '' && selectedTopicIndex !== '') {
+                            const topic = curriculumTopics[parseInt(selectedTopicIndex)];
+                            const unit = topic.instructionalUnits?.[parseInt(uidx)];
+                            if (unit) {
+                              setFormData(prev => ({
+                                ...prev,
+                                topic: `${topic.title} — ${unit.specificCurriculumOutcomes?.substring(0, 80) || `Unit ${unit.unitNumber}`}`,
+                                learningOutcomes: unit.specificCurriculumOutcomes || '',
+                                prerequisiteSkills: unit.inclusiveAssessmentStrategies || ''
+                              }));
+                              // Build focused curriculum standards for this specific SCO
+                              let focused = `Topic ${topic.topicNumber}: ${topic.title}\n`;
+                              focused += `SCO ${unit.scoNumber}: ${unit.specificCurriculumOutcomes}\n`;
+                              focused += `Assessment Strategies: ${unit.inclusiveAssessmentStrategies || 'N/A'}\n`;
+                              focused += `Learning Strategies: ${unit.inclusiveLearningStrategies || 'N/A'}\n`;
+                              if (unit.activities?.length) {
+                                focused += `\nSuggested Activities:\n${unit.activities.map(a => `- ${a.title || a.description}`).join('\n')}`;
+                              }
+                              setCurriculumStandards(focused);
+                            }
+                          }
+                        }}
+                      >
+                        <option value="">{selectedTopicIndex === '' ? 'Select a topic first' : 'Select unit...'}</option>
+                        {selectedTopicIndex !== '' && curriculumTopics[parseInt(selectedTopicIndex)]?.instructionalUnits?.map((unit, uidx) => (
+                          <option key={uidx} value={uidx}>
+                            {unit.scoNumber}: {(unit.specificCurriculumOutcomes || '').substring(0, 60)}...
+                          </option>
+                        ))}
+                      </Form.Select>
+                    </Form.Group>
+                  </Col>
+                </Row>
+              )}
 
               <Form.Group className="mb-3">
                 <Form.Label>Topic *</Form.Label>

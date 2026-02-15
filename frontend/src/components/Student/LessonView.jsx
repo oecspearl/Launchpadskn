@@ -55,10 +55,9 @@ function LessonView() {
   useEffect(() => {
     if (lessonId) {
       fetchLessonData();
-      // Load completed content from localStorage
-      const saved = localStorage.getItem(`lesson_${lessonId}_completed`);
-      if (saved) {
-        setCompletedContent(new Set(JSON.parse(saved)));
+      // Load completed content from database
+      if (user?.id) {
+        loadCompletedFromDB();
       }
     }
     // Fetch all lessons for the student
@@ -109,12 +108,20 @@ function LessonView() {
     }
   };
 
-  useEffect(() => {
-    // Save completed content to localStorage
-    if (lessonId && completedContent.size > 0) {
-      localStorage.setItem(`lesson_${lessonId}_completed`, JSON.stringify([...completedContent]));
+  const loadCompletedFromDB = async () => {
+    try {
+      const { data } = await supabase
+        .from('learner_progress')
+        .select('content_id')
+        .eq('user_id', user.id)
+        .eq('completed', true);
+      if (data && data.length > 0) {
+        setCompletedContent(new Set(data.map(r => r.content_id)));
+      }
+    } catch (err) {
+      console.error('Error loading progress:', err);
     }
-  }, [completedContent, lessonId]);
+  };
 
   const fetchLessonData = async () => {
     try {
@@ -281,16 +288,43 @@ function LessonView() {
     return videoId ? `https://www.youtube.com/embed/${videoId}` : url;
   };
 
-  const toggleContentComplete = (contentId) => {
+  const toggleContentComplete = async (contentId) => {
+    const isCompleted = completedContent.has(contentId);
     setCompletedContent(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(contentId)) {
+      if (isCompleted) {
         newSet.delete(contentId);
       } else {
         newSet.add(contentId);
       }
       return newSet;
     });
+
+    // Persist to database
+    if (user?.id) {
+      try {
+        const { data: existing } = await supabase
+          .from('learner_progress')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('content_id', contentId)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from('learner_progress')
+            .update({ completed: !isCompleted, progress_percentage: isCompleted ? 0 : 100, updated_at: new Date().toISOString() })
+            .eq('user_id', user.id)
+            .eq('content_id', contentId);
+        } else {
+          await supabase
+            .from('learner_progress')
+            .insert([{ user_id: user.id, content_id: contentId, completed: true, progress_percentage: 100, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]);
+        }
+      } catch (err) {
+        console.error('Error saving progress:', err);
+      }
+    }
   };
 
   const toggleSection = (sectionName) => {

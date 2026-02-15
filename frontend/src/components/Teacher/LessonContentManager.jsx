@@ -214,6 +214,7 @@ function LessonContentManager() {
           class_subject:class_subjects(
             *,
             subject_offering:subject_form_offerings(
+              *,
               subject:subjects(*)
             ),
             class:classes(
@@ -495,6 +496,9 @@ function LessonContentManager() {
     const learningObjectives = lessonData.learning_objectives || '';
     const lessonPlan = lessonData.lesson_plan || '';
 
+    const curriculumContext = getCurriculumContext();
+    const enrichedObjectives = learningObjectives + (curriculumContext ? `\n\nCURRICULUM CONTEXT:\n${curriculumContext}` : '');
+
     if (!topic || !subjectName || !formName) {
       setError('Missing lesson information. Please ensure the lesson has a topic, subject, and form assigned.');
       return;
@@ -511,7 +515,7 @@ function LessonContentManager() {
           subject: subjectName,
           form: formName,
           lessonTitle,
-          learningObjectives,
+          learningObjectives: enrichedObjectives,
           numQuestions: perContentAIQuantity || 5,
           bloomLevel: 'mixed',
           lessonPlan
@@ -563,7 +567,7 @@ function LessonContentManager() {
           topic,
           subject: subjectName,
           gradeLevel: formName,
-          learningOutcomes: learningObjectives,
+          learningOutcomes: enrichedObjectives,
           numCheckpoints: perContentAIQuantity || 5,
           checkpointTypes: ['question', 'quiz', 'reflection'],
           videoUrl: '',
@@ -589,7 +593,7 @@ function LessonContentManager() {
           gradeLevel: formName,
           numPages: perContentAIQuantity || 5,
           pageTypes: ['content', 'video', 'quiz'],
-          learningOutcomes: learningObjectives,
+          learningOutcomes: enrichedObjectives,
           additionalComments: perContentAIPrompt || ''
         });
         // Store generated book data and open creator
@@ -629,7 +633,7 @@ function LessonContentManager() {
           assignmentDescription: description || `Complete this assignment on ${topic}`,
           subject: subjectName,
           form: formName,
-          learningObjectives: learningObjectives,
+          learningObjectives: enrichedObjectives,
           topic: topic
         });
         // Populate assignment description with rubric
@@ -646,7 +650,7 @@ function LessonContentManager() {
           subject: subjectName,
           form: formName,
           lessonPlan,
-          learningObjectives,
+          learningObjectives: enrichedObjectives,
           contentType: contentType,
           quantity: perContentAIQuantity || 1,
           additionalPrompt: perContentAIPrompt || ''
@@ -704,6 +708,8 @@ function LessonContentManager() {
     const lessonTitle = lessonData.lesson_title || 'Untitled Lesson';
     const learningObjectives = lessonData.learning_objectives || '';
     const lessonPlan = lessonData.lesson_plan || '';
+    const curriculumCtx = getCurriculumContext();
+    const enrichedObj = learningObjectives + (curriculumCtx ? `\n\nCURRICULUM CONTEXT:\n${curriculumCtx}` : '');
 
     if (!topic || !subjectName || !formName) {
       setError('Missing lesson information. Please ensure the lesson has a topic, subject, and form assigned.');
@@ -724,7 +730,7 @@ function LessonContentManager() {
           subject: subjectName,
           form: formName,
           lessonTitle,
-          learningObjectives,
+          learningObjectives: enrichedObj,
           numQuestions: masterAISelections.QUIZ.quantity,
           bloomLevel: 'mixed',
           lessonPlan
@@ -743,7 +749,7 @@ function LessonContentManager() {
       }
 
       // Generate student-facing content for text types
-      if (selectedTypes.some(([type]) => ['LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'LEARNING_ACTIVITIES', 
+      if (selectedTypes.some(([type]) => ['LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'LEARNING_ACTIVITIES',
           'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(type))) {
         const studentContent = await generateStudentFacingContent({
           lessonTitle,
@@ -751,7 +757,7 @@ function LessonContentManager() {
           subject: subjectName,
           form: formName,
           lessonPlan,
-          learningObjectives
+          learningObjectives: enrichedObj
         });
 
         // Add selected text content types
@@ -852,6 +858,8 @@ function LessonContentManager() {
     const lessonTitle = lessonData.lesson_title || 'Untitled Lesson';
     const learningObjectives = lessonData.learning_objectives || '';
     const lessonPlan = lessonData.lesson_plan || '';
+    const curriculumCtx = getCurriculumContext();
+    const enrichedObj = learningObjectives + (curriculumCtx ? `\n\nCURRICULUM CONTEXT:\n${curriculumCtx}` : '');
 
     if (!topic || !subjectName || !formName) {
       setError('Missing lesson information. Please ensure the lesson has a topic, subject, and form assigned.');
@@ -867,7 +875,7 @@ function LessonContentManager() {
         subject: subjectName,
         form: formName,
         lessonTitle,
-        learningObjectives,
+        learningObjectives: enrichedObj,
         numQuestions: quizParams.numQuestions,
         bloomLevel: quizParams.bloomLevel,
         lessonPlan
@@ -1024,6 +1032,9 @@ function LessonContentManager() {
       ? calculateDuration(lessonData.start_time, lessonData.end_time)
       : 45;
 
+    const curriculumContext = getCurriculumContext();
+    const enrichedObjectives = learningObjectives + (curriculumContext ? `\n\nCURRICULUM CONTEXT:\n${curriculumContext}` : '');
+
     if (!topic || !subjectName || !formName) {
       setError('Missing lesson information. Please ensure the lesson has a topic, subject, and form assigned.');
       return;
@@ -1041,7 +1052,7 @@ function LessonContentManager() {
           topic,
           subject: subjectName,
           form: formName,
-          learningObjectives,
+          learningObjectives: enrichedObjectives,
           lessonPlan,
           duration
         });
@@ -1055,7 +1066,7 @@ function LessonContentManager() {
           subject: subjectName,
           form: formName,
           lessonPlan,
-          learningObjectives
+          learningObjectives: enrichedObjectives
         });
 
         // Convert student content to content items format
@@ -1263,6 +1274,26 @@ function LessonContentManager() {
     } finally {
       setIsGeneratingContent(false);
     }
+  };
+
+  // Extract curriculum context from lesson data for AI alignment
+  const getCurriculumContext = () => {
+    const offering = lessonData?.class_subject?.subject_offering;
+    if (!offering?.curriculum_structure) return '';
+    const structure = typeof offering.curriculum_structure === 'string'
+      ? JSON.parse(offering.curriculum_structure)
+      : offering.curriculum_structure;
+    const topic = lessonData?.topic || '';
+    const scoMatch = topic.match(/^\[([^\]]+)\]/);
+    if (scoMatch && structure.topics) {
+      for (const t of structure.topics) {
+        const unit = t.instructionalUnits?.find(u => u.scoNumber === scoMatch[1]);
+        if (unit) {
+          return `Curriculum Topic: ${t.title}\nSCO ${unit.scoNumber}: ${unit.specificCurriculumOutcomes}\nAssessment Strategies: ${unit.inclusiveAssessmentStrategies || ''}\nLearning Strategies: ${unit.inclusiveLearningStrategies || ''}`;
+        }
+      }
+    }
+    return offering.curriculum_framework || '';
   };
 
   const calculateDuration = (startTime, endTime) => {
@@ -1545,6 +1576,8 @@ function LessonContentManager() {
             try {
               const subjectName = lessonData.class_subject?.subject_offering?.subject?.subject_name || 'General';
               const formName = lessonData.class_subject?.class?.form?.form_name || '';
+              const cCtx = getCurriculumContext();
+              const eObj = (lessonData.learning_objectives || '') + (cCtx ? `\n\nCURRICULUM CONTEXT:\n${cCtx}` : '');
 
               rubricText = await generateAssignmentRubric({
                 assignmentTitle: item.title,
@@ -1552,7 +1585,8 @@ function LessonContentManager() {
                 subject: subjectName,
                 gradeLevel: formName,
                 totalPoints: item.total_points || 100,
-                criteria: item.rubric_criteria?.map(c => `${c.criterion}: ${c.description} (${c.points} points)`) || []
+                criteria: item.rubric_criteria?.map(c => `${c.criterion}: ${c.description} (${c.points} points)`) || [],
+                learningObjectives: eObj
               });
 
               // Store rubric text in instructions field (can be used to generate PDF later)
@@ -3405,13 +3439,16 @@ function LessonContentManager() {
                         try {
                           const subjectName = lessonData?.class_subject?.subject_offering?.subject?.subject_name || 'General';
                           const formName = lessonData?.class_subject?.class?.form?.form_name || 'General';
+                          const cCtx = getCurriculumContext();
+                          const eObj = (lessonData?.learning_objectives || '') + (cCtx ? `\n\nCURRICULUM CONTEXT:\n${cCtx}` : '');
 
                           const rubric = await generateAssignmentRubric({
                             assignmentTitle: title.trim(),
                             assignmentDescription: description?.trim() || instructions?.trim() || '',
                             subject: subjectName,
                             gradeLevel: formName,
-                            totalPoints: 100
+                            totalPoints: 100,
+                            learningObjectives: eObj
                           });
 
                           setGeneratedRubric(rubric);

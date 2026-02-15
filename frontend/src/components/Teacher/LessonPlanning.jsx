@@ -965,10 +965,17 @@ function LessonPlanning() {
                         }
                         
                         setLessonData(prev => {
+                          // Include SCO reference in topic if available
+                          let topicValue = prev.topic || plan.metadata?.topic || '';
+                          const ref = plan.metadata?.curriculumRef;
+                          if (ref?.sco_number && topicValue && !topicValue.startsWith('[')) {
+                            topicValue = `[${ref.sco_number}] ${topicValue}`;
+                          }
+
                           const updated = {
                             ...prev,
                             lesson_title: plan.lesson_title ?? prev.lesson_title,
-                            topic: prev.topic || plan.metadata?.topic || '',
+                            topic: topicValue,
                             learning_objectives: plan.learning_objectives ?? prev.learning_objectives,
                             lesson_plan: lessonPlanText,
                             homework_description: homeworkText || prev.homework_description
@@ -1185,10 +1192,15 @@ function LessonPlanning() {
                 classSubjectId={classSubjectId}
                 onPlanGenerated={(plan) => {
                   // Auto-populate lesson form when plan is generated
+                  let topicValue = plan.metadata?.topic || '';
+                  const ref = plan.metadata?.curriculumRef;
+                  if (ref?.sco_number && topicValue && !topicValue.startsWith('[')) {
+                    topicValue = `[${ref.sco_number}] ${topicValue}`;
+                  }
                   setLessonData(prev => ({
                     ...prev,
                     lesson_title: plan.lesson_title || prev.lesson_title,
-                    topic: prev.topic || plan.metadata?.topic || '',
+                    topic: topicValue || prev.topic,
                     learning_objectives: plan.learning_objectives || prev.learning_objectives,
                     lesson_plan: plan.lesson_plan || prev.lesson_plan,
                     homework_description: plan.homework_description || prev.homework_description
