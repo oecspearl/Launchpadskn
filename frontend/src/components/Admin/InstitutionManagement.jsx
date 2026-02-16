@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge, Spinner } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaBuilding, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGlobe, FaUniversity, FaChevronDown, FaChevronRight, FaCamera } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaBuilding, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGlobe, FaUniversity, FaChevronDown, FaChevronRight, FaCamera, FaUserTie } from 'react-icons/fa';
+import { INSTITUTION_TYPES, INSTITUTION_TYPE_LABELS } from '../../constants/roles';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import Breadcrumb from '../common/Breadcrumb';
@@ -26,7 +27,8 @@ function InstitutionManagement() {
     phone: '',
     website: '',
     establishedYear: '',
-    type: 'UNIVERSITY',
+    type: 'SECONDARY_SCHOOL',
+    principal: '',
     logo_url: ''
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
@@ -72,7 +74,8 @@ function InstitutionManagement() {
         phone: institution.phone || '',
         website: institution.website || '',
         establishedYear: institution.establishedYear || institution.established_year || '',
-        type: institution.institutionType || institution.institution_type || institution.type || 'UNIVERSITY',
+        type: institution.institutionType || institution.institution_type || institution.type || 'SECONDARY_SCHOOL',
+        principal: institution.principal || '',
         logo_url: institution.logo_url || institution.logoUrl || ''
       });
     } else {
@@ -85,7 +88,8 @@ function InstitutionManagement() {
         phone: '',
         website: '',
         establishedYear: '',
-        type: 'UNIVERSITY',
+        type: 'SECONDARY_SCHOOL',
+        principal: '',
         logo_url: ''
       });
     }
@@ -244,10 +248,11 @@ function InstitutionManagement() {
 
   const getTypeColor = (type) => {
     switch (type) {
-      case 'UNIVERSITY': return 'primary';
-      case 'COLLEGE': return 'success';
-      case 'SCHOOL': return 'warning';
-      case 'INSTITUTE': return 'info';
+      case 'SECONDARY_SCHOOL': return 'primary';
+      case 'PRIMARY_SCHOOL': return 'success';
+      case 'TERTIARY_INSTITUTION': return 'info';
+      case 'MINISTRY_OF_EDUCATION': return 'warning';
+      case 'OTHER': return 'secondary';
       default: return 'secondary';
     }
   };
@@ -344,7 +349,7 @@ function InstitutionManagement() {
                       </td>
                       <td>
                         <Badge bg={getTypeColor(institution.institutionType || institution.institution_type)}>
-                          {institution.institutionType || institution.institution_type || 'UNIVERSITY'}
+                          {INSTITUTION_TYPE_LABELS[institution.institutionType || institution.institution_type] || 'Secondary School'}
                         </Badge>
                       </td>
                       <td>
@@ -490,11 +495,9 @@ function InstitutionManagement() {
                     value={formData.type}
                     onChange={handleInputChange}
                   >
-                    <option value="UNIVERSITY">University</option>
-                    <option value="COLLEGE">College</option>
-                    <option value="SECONDARY SCHOOL">Secondary School</option>
-                    <option value="PRIMARY SCHOOL">Primary School</option>
-                    <option value="INSTITUTE">Institute</option>
+                    {Object.entries(INSTITUTION_TYPE_LABELS).map(([value, label]) => (
+                      <option key={value} value={value}>{label}</option>
+                    ))}
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -553,16 +556,32 @@ function InstitutionManagement() {
               </Col>
             </Row>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Website</Form.Label>
-              <Form.Control
-                type="url"
-                name="website"
-                value={formData.website}
-                onChange={handleInputChange}
-                placeholder="https://example.com"
-              />
-            </Form.Group>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Website</Form.Label>
+                  <Form.Control
+                    type="url"
+                    name="website"
+                    value={formData.website}
+                    onChange={handleInputChange}
+                    placeholder="https://example.com"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Principal / Head</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="principal"
+                    value={formData.principal}
+                    onChange={handleInputChange}
+                    placeholder="Name of principal or head of school"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
 
             <Form.Group className="mb-3">
               <Form.Label>Address</Form.Label>

@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Container, Row, Col, Card, Button, Spinner, Alert,
-  Nav, Badge
+  Nav, Badge, Modal, Form
 } from 'react-bootstrap';
 import { Link, useLocation } from 'react-router-dom';
 import {
   FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, FaUserPlus,
   FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaClipboardList,
-  FaCamera, FaMapMarkerAlt
+  FaCamera, FaMapMarkerAlt, FaEdit, FaPhone, FaEnvelope, FaGlobe, FaUserTie
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import { INSTITUTION_TYPE_LABELS } from '../../constants/roles';
 import InstitutionScopedFormManagement from './InstitutionScopedFormManagement';
 import InstitutionScopedClassManagement from './InstitutionScopedClassManagement';
 import InstitutionScopedSubjectManagement from './InstitutionScopedSubjectManagement';
@@ -43,7 +44,15 @@ function SchoolAdminDashboard() {
   const [error, setError] = useState(null);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef(null);
-  
+  const editLogoInputRef = useRef(null);
+
+  // Edit institution modal state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editFormData, setEditFormData] = useState({});
+  const [editError, setEditError] = useState('');
+  const [editSuccess, setEditSuccess] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
   // Determine active tab from route
   const getActiveTabFromRoute = () => {
     const path = location.pathname;
@@ -153,6 +162,81 @@ function SchoolAdminDashboard() {
       setError(err.message || 'Failed to upload logo');
     } finally {
       setUploadingLogo(false);
+    }
+  };
+
+  const openEditModal = () => {
+    setEditFormData({
+      name: institution?.name || '',
+      location: institution?.location || '',
+      address: institution?.address || '',
+      contact: institution?.contact || '',
+      phone: institution?.phone || '',
+      website: institution?.website || '',
+      principal: institution?.principal || '',
+      logo_url: institution?.logo_url || institution?.logoUrl || ''
+    });
+    setEditError('');
+    setEditSuccess('');
+    setShowEditModal(true);
+  };
+
+  const handleEditInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleEditLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setEditError('Please select an image file (JPG, PNG, etc.)');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setEditError('Logo must be less than 2MB');
+      return;
+    }
+
+    setUploadingLogo(true);
+    setEditError('');
+    try {
+      const instId = user.institution_id;
+      const ext = file.name.split('.').pop();
+      const filePath = `institutions/logos/${instId}.${ext}`;
+
+      await supabase.storage.from('lms-files').remove([filePath]);
+      const { error: uploadError } = await supabase.storage
+        .from('lms-files')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('lms-files')
+        .getPublicUrl(filePath);
+      const logoUrl = urlData.publicUrl + '?t=' + Date.now();
+      setEditFormData(prev => ({ ...prev, logo_url: logoUrl }));
+    } catch (err) {
+      setEditError(err.message || 'Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    setSavingEdit(true);
+    setEditError('');
+    setEditSuccess('');
+    try {
+      await supabaseService.updateInstitution(user.institution_id, editFormData);
+      setInstitution(prev => ({ ...prev, ...editFormData }));
+      setEditSuccess('Institution profile updated successfully');
+      setTimeout(() => setShowEditModal(false), 1200);
+    } catch (err) {
+      setEditError(err.message || 'Failed to update institution');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -329,13 +413,18 @@ function SchoolAdminDashboard() {
               </div>
             </div>
 
-            {/* Institution Info */}
+            {/* Institution Profile */}
             <Card className="border-0 shadow-sm mb-4">
               <Card.Body>
-                <h5 className="mb-3">
-                  <FaSchool className="me-2" />
-                  Institution Information
-                </h5>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <h5 className="mb-0">
+                    <FaSchool className="me-2" />
+                    Institution Profile
+                  </h5>
+                  <Button variant="outline-primary" size="sm" onClick={openEditModal}>
+                    <FaEdit className="me-1" /> Edit Profile
+                  </Button>
+                </div>
                 <Row>
                   <Col md={3} className="text-center mb-3 mb-md-0">
                     <div className="position-relative d-inline-block">
@@ -354,41 +443,30 @@ function SchoolAdminDashboard() {
                         </div>
                       )}
                     </div>
-                    <div className="mt-2">
-                      <input
-                        type="file"
-                        ref={logoInputRef}
-                        onChange={handleLogoUpload}
-                        accept="image/*"
-                        style={{ display: 'none' }}
-                      />
-                      <Button
-                        variant="outline-primary"
-                        size="sm"
-                        onClick={() => logoInputRef.current?.click()}
-                        disabled={uploadingLogo}
-                      >
-                        {uploadingLogo ? (
-                          <><Spinner size="sm" className="me-1" /> Uploading...</>
-                        ) : (
-                          <><FaCamera className="me-1" /> {institution?.logo_url ? 'Change Logo' : 'Upload Logo'}</>
-                        )}
-                      </Button>
-                    </div>
+                    <Badge bg="primary" className="mt-2">
+                      {INSTITUTION_TYPE_LABELS[institution?.institution_type || institution?.institutionType] || 'Secondary School'}
+                    </Badge>
                   </Col>
                   <Col md={4}>
-                    <p><strong>Name:</strong> {institution?.name || 'N/A'}</p>
-                    <p><strong>Location:</strong> {institution?.location || 'N/A'}</p>
-                    {institution?.address && (
-                      <p><strong>Address:</strong> {institution.address}</p>
+                    <p className="mb-2"><strong>Name:</strong> {institution?.name || 'N/A'}</p>
+                    {institution?.principal && (
+                      <p className="mb-2"><FaUserTie className="me-1 text-muted" /> <strong>Principal:</strong> {institution.principal}</p>
                     )}
-                    <p><strong>Type:</strong> {institution?.institution_type || 'N/A'}</p>
+                    <p className="mb-2"><FaMapMarkerAlt className="me-1 text-muted" /> <strong>Location:</strong> {institution?.location || 'N/A'}</p>
+                    {institution?.address && (
+                      <p className="mb-2"><strong>Address:</strong> {institution.address}</p>
+                    )}
                   </Col>
                   <Col md={5}>
-                    <p><strong>Contact:</strong> {institution?.contact || 'N/A'}</p>
-                    <p><strong>Phone:</strong> {institution?.phone || 'N/A'}</p>
+                    {institution?.contact && (
+                      <p className="mb-2"><FaEnvelope className="me-1 text-muted" /> <strong>Email:</strong> {institution.contact}</p>
+                    )}
+                    <p className="mb-2"><FaPhone className="me-1 text-muted" /> <strong>Phone:</strong> {institution?.phone || 'N/A'}</p>
                     {institution?.website && (
-                      <p><strong>Website:</strong> <a href={institution.website} target="_blank" rel="noopener noreferrer">{institution.website}</a></p>
+                      <p className="mb-2"><FaGlobe className="me-1 text-muted" /> <strong>Website:</strong> <a href={institution.website} target="_blank" rel="noopener noreferrer">{institution.website}</a></p>
+                    )}
+                    {institution?.established_year && (
+                      <p className="mb-2"><strong>Established:</strong> {institution.established_year}</p>
                     )}
                   </Col>
                 </Row>
@@ -421,6 +499,155 @@ function SchoolAdminDashboard() {
           <InstitutionScopedReports institutionId={user.institution_id} />
         )}
       </Container>
+
+      {/* Edit Institution Profile Modal */}
+      <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>Edit Institution Profile</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={handleEditSubmit}>
+          <Modal.Body>
+            {editError && <Alert variant="danger" dismissible onClose={() => setEditError('')}>{editError}</Alert>}
+            {editSuccess && <Alert variant="success">{editSuccess}</Alert>}
+
+            {/* Logo Upload */}
+            <div className="text-center mb-4">
+              <div className="position-relative d-inline-block">
+                {editFormData.logo_url ? (
+                  <img
+                    src={editFormData.logo_url}
+                    alt="School Logo"
+                    style={{ width: 120, height: 120, objectFit: 'contain', borderRadius: 12, border: '2px solid #dee2e6' }}
+                  />
+                ) : (
+                  <div style={{
+                    width: 120, height: 120, borderRadius: 12, border: '2px dashed #dee2e6',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa'
+                  }}>
+                    <FaSchool size={40} className="text-muted" />
+                  </div>
+                )}
+              </div>
+              <div className="mt-2">
+                <input type="file" ref={editLogoInputRef} onChange={handleEditLogoUpload} accept="image/*" style={{ display: 'none' }} />
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={() => editLogoInputRef.current?.click()}
+                  disabled={uploadingLogo}
+                >
+                  {uploadingLogo ? (
+                    <><Spinner size="sm" className="me-1" /> Uploading...</>
+                  ) : (
+                    <><FaCamera className="me-1" /> {editFormData.logo_url ? 'Change Logo' : 'Upload Logo'}</>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>School Name</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="name"
+                    value={editFormData.name || ''}
+                    onChange={handleEditInputChange}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label><FaUserTie className="me-1" /> Principal / Head</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="principal"
+                    value={editFormData.principal || ''}
+                    onChange={handleEditInputChange}
+                    placeholder="Name of principal or head of school"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label><FaPhone className="me-1" /> Phone Number</Form.Label>
+                  <Form.Control
+                    type="tel"
+                    name="phone"
+                    value={editFormData.phone || ''}
+                    onChange={handleEditInputChange}
+                    placeholder="e.g. +1 (869) 465-1234"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label><FaEnvelope className="me-1" /> Contact Email</Form.Label>
+                  <Form.Control
+                    type="email"
+                    name="contact"
+                    value={editFormData.contact || ''}
+                    onChange={handleEditInputChange}
+                    placeholder="school@example.com"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label><FaMapMarkerAlt className="me-1" /> Location (City/Parish)</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="location"
+                    value={editFormData.location || ''}
+                    onChange={handleEditInputChange}
+                    placeholder="e.g. Basseterre, St. Kitts"
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label><FaGlobe className="me-1" /> Website</Form.Label>
+                  <Form.Control
+                    type="url"
+                    name="website"
+                    value={editFormData.website || ''}
+                    onChange={handleEditInputChange}
+                    placeholder="https://www.school.edu"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Full Address</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                name="address"
+                value={editFormData.address || ''}
+                onChange={handleEditInputChange}
+                placeholder="Street address, parish, country..."
+              />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowEditModal(false)}>
+              Cancel
+            </Button>
+            <Button variant="primary" type="submit" disabled={savingEdit}>
+              {savingEdit ? <><Spinner size="sm" className="me-1" /> Saving...</> : 'Save Changes'}
+            </Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
     </div>
   );
 }

@@ -23,7 +23,8 @@ export const institutionService = {
             institutionId: institution.institution_id || institution.institutionId,
             createdAt: institution.created_at || institution.createdAt,
             institutionType: institution.institution_type || institution.institutionType,
-            logoUrl: institution.logo_url || institution.logoUrl || null
+            logoUrl: institution.logo_url || institution.logoUrl || null,
+            principal: institution.principal || null
         };
     },
 
@@ -44,53 +45,36 @@ export const institutionService = {
             delete transformed.institutionId;
         }
 
+        // Valid DB values for institution_type CHECK constraint
+        const VALID_DB_TYPES = ['SECONDARY_SCHOOL', 'PRIMARY_SCHOOL', 'TERTIARY_INSTITUTION', 'MINISTRY_OF_EDUCATION', 'OTHER'];
+
+        const normalizeType = (val) => {
+            const upper = (val || '').trim().toUpperCase().replace(/\s+/g, '_');
+            if (VALID_DB_TYPES.includes(upper)) return upper;
+            // Map legacy values
+            if (upper.includes('SECONDARY') || upper === 'SCHOOL') return 'SECONDARY_SCHOOL';
+            if (upper.includes('PRIMARY')) return 'PRIMARY_SCHOOL';
+            if (upper.includes('UNIV') || upper.includes('COLL') || upper.includes('TERTIARY')) return 'TERTIARY_INSTITUTION';
+            if (upper.includes('MINISTRY')) return 'MINISTRY_OF_EDUCATION';
+            if (upper.includes('INSTIT')) return 'OTHER';
+            return 'SECONDARY_SCHOOL';
+        };
+
         // Handle institutionType (camelCase) -> institution_type (DB column)
         if (transformed.institutionType !== undefined) {
-            const val = transformed.institutionType.trim().toUpperCase();
-            const allowed = ['UNIVERSITY', 'COLLEGE', 'SECONDARY SCHOOL', 'PRIMARY SCHOOL', 'INSTITUTE'];
-            let normalized = 'UNIVERSITY';
-            if (allowed.includes(val)) {
-                normalized = val;
-            } else if (val.includes('SECONDARY')) {
-                normalized = 'SECONDARY SCHOOL';
-            } else if (val.includes('PRIMARY')) {
-                normalized = 'PRIMARY SCHOOL';
-            } else if (val.includes('UNIV')) {
-                normalized = 'UNIVERSITY';
-            } else if (val.includes('COLL')) {
-                normalized = 'COLLEGE';
-            } else if (val.includes('INSTIT')) {
-                normalized = 'INSTITUTE';
-            }
-            transformed.institution_type = normalized;
+            transformed.institution_type = normalizeType(transformed.institutionType);
             delete transformed.institutionType;
         }
 
         // Legacy 'type' field handling – map to institution_type if present
         if (transformed.type !== undefined) {
-            const val = transformed.type.trim().toUpperCase();
-            const allowed = ['UNIVERSITY', 'COLLEGE', 'SECONDARY SCHOOL', 'PRIMARY SCHOOL', 'INSTITUTE'];
-            let normalized = 'UNIVERSITY';
-            if (allowed.includes(val)) {
-                normalized = val;
-            } else if (val.includes('SECONDARY')) {
-                normalized = 'SECONDARY SCHOOL';
-            } else if (val.includes('PRIMARY')) {
-                normalized = 'PRIMARY SCHOOL';
-            } else if (val.includes('UNIV')) {
-                normalized = 'UNIVERSITY';
-            } else if (val.includes('COLL')) {
-                normalized = 'COLLEGE';
-            } else if (val.includes('INSTIT')) {
-                normalized = 'INSTITUTE';
-            }
-            transformed.institution_type = normalized;
+            transformed.institution_type = normalizeType(transformed.type);
             delete transformed.type;
         }
 
-        // Ensure a valid institution_type is always present
-        if (!transformed.institution_type) {
-            transformed.institution_type = 'UNIVERSITY';
+        // Normalize existing institution_type if present
+        if (transformed.institution_type) {
+            transformed.institution_type = normalizeType(transformed.institution_type);
         }
 
         // Handle logoUrl -> logo_url
