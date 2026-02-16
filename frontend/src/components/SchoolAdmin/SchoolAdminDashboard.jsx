@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Container, Row, Col, Card, Button, Spinner, Alert,
   Nav, Badge
@@ -6,10 +6,12 @@ import {
 import { Link, useLocation } from 'react-router-dom';
 import {
   FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, FaUserPlus,
-  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaClipboardList
+  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaClipboardList,
+  FaCamera, FaMapMarkerAlt
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
+import { supabase } from '../../config/supabase';
 import InstitutionScopedFormManagement from './InstitutionScopedFormManagement';
 import InstitutionScopedClassManagement from './InstitutionScopedClassManagement';
 import InstitutionScopedSubjectManagement from './InstitutionScopedSubjectManagement';
@@ -39,6 +41,8 @@ function SchoolAdminDashboard() {
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef(null);
   
   // Determine active tab from route
   const getActiveTabFromRoute = () => {
@@ -107,6 +111,50 @@ function SchoolAdminDashboard() {
       fetchDashboardStats();
     }
   }, [user, isAuthenticated]);
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file (JPG, PNG, etc.)');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Logo must be less than 2MB');
+      return;
+    }
+
+    setUploadingLogo(true);
+    setError(null);
+    try {
+      const instId = user.institution_id;
+      const ext = file.name.split('.').pop();
+      const filePath = `institutions/logos/${instId}.${ext}`;
+
+      await supabase.storage.from('lms-files').remove([filePath]);
+
+      const { error: uploadError } = await supabase.storage
+        .from('lms-files')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('lms-files')
+        .getPublicUrl(filePath);
+
+      const logoUrl = urlData.publicUrl + '?t=' + Date.now();
+
+      await supabaseService.updateInstitution(instId, { logo_url: logoUrl });
+
+      setInstitution(prev => ({ ...prev, logo_url: logoUrl, logoUrl }));
+    } catch (err) {
+      setError(err.message || 'Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -289,12 +337,54 @@ function SchoolAdminDashboard() {
                   Institution Information
                 </h5>
                 <Row>
-                  <Col md={6}>
+                  <Col md={3} className="text-center mb-3 mb-md-0">
+                    <div className="position-relative d-inline-block">
+                      {(institution?.logo_url || institution?.logoUrl) ? (
+                        <img
+                          src={institution.logo_url || institution.logoUrl}
+                          alt="School Logo"
+                          style={{ width: 100, height: 100, objectFit: 'contain', borderRadius: 8, border: '2px solid #dee2e6' }}
+                        />
+                      ) : (
+                        <div style={{
+                          width: 100, height: 100, borderRadius: 8, border: '2px dashed #dee2e6',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa'
+                        }}>
+                          <FaSchool size={32} className="text-muted" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <input
+                        type="file"
+                        ref={logoInputRef}
+                        onChange={handleLogoUpload}
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                      />
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => logoInputRef.current?.click()}
+                        disabled={uploadingLogo}
+                      >
+                        {uploadingLogo ? (
+                          <><Spinner size="sm" className="me-1" /> Uploading...</>
+                        ) : (
+                          <><FaCamera className="me-1" /> {institution?.logo_url ? 'Change Logo' : 'Upload Logo'}</>
+                        )}
+                      </Button>
+                    </div>
+                  </Col>
+                  <Col md={4}>
                     <p><strong>Name:</strong> {institution?.name || 'N/A'}</p>
                     <p><strong>Location:</strong> {institution?.location || 'N/A'}</p>
+                    {institution?.address && (
+                      <p><strong>Address:</strong> {institution.address}</p>
+                    )}
                     <p><strong>Type:</strong> {institution?.institution_type || 'N/A'}</p>
                   </Col>
-                  <Col md={6}>
+                  <Col md={5}>
                     <p><strong>Contact:</strong> {institution?.contact || 'N/A'}</p>
                     <p><strong>Phone:</strong> {institution?.phone || 'N/A'}</p>
                     {institution?.website && (

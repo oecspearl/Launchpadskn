@@ -22,7 +22,8 @@ export const institutionService = {
             establishedYear: institution.established_year || institution.establishedYear,
             institutionId: institution.institution_id || institution.institutionId,
             createdAt: institution.created_at || institution.createdAt,
-            institutionType: institution.institution_type || institution.institutionType
+            institutionType: institution.institution_type || institution.institutionType,
+            logoUrl: institution.logo_url || institution.logoUrl || null
         };
     },
 
@@ -90,6 +91,12 @@ export const institutionService = {
         // Ensure a valid institution_type is always present
         if (!transformed.institution_type) {
             transformed.institution_type = 'UNIVERSITY';
+        }
+
+        // Handle logoUrl -> logo_url
+        if (transformed.logoUrl !== undefined) {
+            transformed.logo_url = transformed.logoUrl;
+            delete transformed.logoUrl;
         }
 
         // Remove any stray fields that should not be sent

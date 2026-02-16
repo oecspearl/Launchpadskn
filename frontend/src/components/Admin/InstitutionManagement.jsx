@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge } from 'react-bootstrap';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaBuilding, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGlobe, FaUniversity, FaChevronDown, FaChevronRight } from 'react-icons/fa';
+import React, { useState, useEffect, useRef } from 'react';
+import { Container, Row, Col, Card, Button, Table, Modal, Form, Alert, Badge, Spinner } from 'react-bootstrap';
+import { FaPlus, FaEdit, FaTrash, FaEye, FaBuilding, FaMapMarkerAlt, FaEnvelope, FaPhone, FaGlobe, FaUniversity, FaChevronDown, FaChevronRight, FaCamera } from 'react-icons/fa';
 import supabaseService from '../../services/supabaseService';
+import { supabase } from '../../config/supabase';
 import Breadcrumb from '../common/Breadcrumb';
 
 function InstitutionManagement() {
@@ -20,12 +21,16 @@ function InstitutionManagement() {
   const [formData, setFormData] = useState({
     name: '',
     location: '',
+    address: '',
     contact: '',
     phone: '',
     website: '',
     establishedYear: '',
-    type: 'UNIVERSITY'
+    type: 'UNIVERSITY',
+    logo_url: ''
   });
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const logoInputRef = useRef(null);
 
   const [deptFormData, setDeptFormData] = useState({
     name: '',
@@ -62,22 +67,26 @@ function InstitutionManagement() {
       setFormData({
         name: institution.name || '',
         location: institution.location || '',
+        address: institution.address || '',
         contact: institution.contact || '',
         phone: institution.phone || '',
         website: institution.website || '',
         establishedYear: institution.establishedYear || institution.established_year || '',
-        type: institution.institutionType || institution.institution_type || institution.type || 'UNIVERSITY'
+        type: institution.institutionType || institution.institution_type || institution.type || 'UNIVERSITY',
+        logo_url: institution.logo_url || institution.logoUrl || ''
       });
     } else {
       setEditingInstitution(null);
       setFormData({
         name: '',
         location: '',
+        address: '',
         contact: '',
         phone: '',
         website: '',
         establishedYear: '',
-        type: 'UNIVERSITY'
+        type: 'UNIVERSITY',
+        logo_url: ''
       });
     }
     setShowModal(true);
@@ -98,6 +107,40 @@ function InstitutionManagement() {
       ...prev,
       [name]: value
     }));
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please select an image file');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Logo must be less than 2MB');
+      return;
+    }
+
+    setUploadingLogo(true);
+    try {
+      const instId = editingInstitution?.institutionId || editingInstitution?.institution_id || 'new';
+      const ext = file.name.split('.').pop();
+      const filePath = `institutions/logos/${instId}.${ext}`;
+
+      await supabase.storage.from('lms-files').remove([filePath]);
+      const { error: uploadError } = await supabase.storage
+        .from('lms-files')
+        .upload(filePath, file, { cacheControl: '3600', upsert: true });
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage.from('lms-files').getPublicUrl(filePath);
+      const logoUrl = urlData.publicUrl + '?t=' + Date.now();
+      setFormData(prev => ({ ...prev, logo_url: logoUrl }));
+    } catch (err) {
+      setError(err.message || 'Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -519,6 +562,33 @@ function InstitutionManagement() {
                 onChange={handleInputChange}
                 placeholder="https://example.com"
               />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Address</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                name="address"
+                value={formData.address}
+                onChange={handleInputChange}
+                placeholder="Full street address..."
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>School Logo</Form.Label>
+              <div className="d-flex align-items-center gap-3">
+                {formData.logo_url && (
+                  <img src={formData.logo_url} alt="Logo" style={{ height: 48, maxWidth: 60, objectFit: 'contain', borderRadius: 4, border: '1px solid #dee2e6' }} />
+                )}
+                <div>
+                  <input type="file" ref={logoInputRef} onChange={handleLogoUpload} accept="image/*" style={{ display: 'none' }} />
+                  <Button variant="outline-secondary" size="sm" onClick={() => logoInputRef.current?.click()} disabled={uploadingLogo}>
+                    {uploadingLogo ? <><Spinner size="sm" className="me-1" /> Uploading...</> : <><FaCamera className="me-1" /> {formData.logo_url ? 'Change' : 'Upload'}</>}
+                  </Button>
+                </div>
+              </div>
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>

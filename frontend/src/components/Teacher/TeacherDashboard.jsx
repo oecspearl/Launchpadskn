@@ -220,7 +220,12 @@ function TeacherDashboard() {
         <Col>
           <h2>Welcome, {user?.name || 'Teacher'}!</h2>
           {user?.institution_name && (
-            <p className="text-muted mb-0 fw-semibold">{user.institution_name}</p>
+            <p className="text-muted mb-0 fw-semibold d-flex align-items-center gap-2">
+              {user.institution_logo_url && (
+                <img src={user.institution_logo_url} alt="" style={{ height: 28, maxWidth: 36, objectFit: 'contain' }} />
+              )}
+              {user.institution_name}
+            </p>
           )}
           <p className="text-muted mb-0">
             Manage your classes and lessons

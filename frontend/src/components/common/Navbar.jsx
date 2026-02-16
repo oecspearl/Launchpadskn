@@ -84,7 +84,11 @@ function AppNavbar() {
     >
       <Container>
         <Navbar.Brand as={Link} to={isAuthenticated ? getDashboardRoute() : '/'} className="d-flex align-items-center gap-2">
-          <FlagLogo size="small" showText={!user?.institution_name} />
+          {isAuthenticated && user?.institution_logo_url ? (
+            <img src={user.institution_logo_url} alt="" style={{ height: 32, maxWidth: 40, objectFit: 'contain' }} />
+          ) : (
+            <FlagLogo size="small" showText={!user?.institution_name} />
+          )}
           {isAuthenticated && user?.institution_name && (
             <span className="fw-bold small text-dark" style={{ maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {user.institution_name}
