@@ -410,6 +410,15 @@ function SchoolAdminDashboard() {
                     View reports and analytics for your institution.
                   </div>
                 </Link>
+                <Link to="/school-admin/report-cards" className="quick-access-card">
+                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #e65100 0%, #ff9800 100%)' }}>
+                    <FaClipboardList />
+                  </div>
+                  <div className="quick-access-card-title">Report Cards</div>
+                  <div className="quick-access-card-description">
+                    Generate and manage student report cards.
+                  </div>
+                </Link>
               </div>
             </div>
 
