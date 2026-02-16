@@ -11,6 +11,7 @@ const InstitutionScopedSubjectManagement = lazy(() => import('../components/Scho
 const InstitutionScopedStudentManagement = lazy(() => import('../components/SchoolAdmin/InstitutionScopedStudentManagement'));
 const InstitutionScopedInstructorManagement = lazy(() => import('../components/SchoolAdmin/InstitutionScopedInstructorManagement'));
 const InstitutionScopedReports = lazy(() => import('../components/SchoolAdmin/InstitutionScopedReports'));
+const ReportCardManagement = lazy(() => import('../components/SchoolAdmin/ReportCardManagement'));
 
 const SchoolAdminRoutes = () => (
     <>
@@ -69,6 +70,14 @@ const SchoolAdminRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['admin', 'school_admin']}>
                     <InstitutionScopedReports />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/school-admin/report-cards"
+            element={
+                <PrivateRoute allowedRoles={['admin', 'school_admin']}>
+                    <ReportCardManagement />
                 </PrivateRoute>
             }
         />

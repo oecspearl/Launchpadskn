@@ -1,14 +1,16 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Container, Row, Col, Card, Badge, Tab, Tabs, Alert, Table, Form
+  Container, Row, Col, Card, Badge, Tab, Tabs, Alert, Table, Form, Button, Spinner
 } from 'react-bootstrap';
 import {
   FaBook, FaCalendarAlt, FaClipboardList, FaChartBar,
   FaExclamationTriangle, FaCheckCircle, FaTimesCircle,
-  FaClock, FaChild, FaUser, FaUserGraduate
+  FaClock, FaChild, FaUser, FaUserGraduate, FaFileAlt, FaDownload
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useParentData } from '../../hooks/useParentData';
+import { reportCardService } from '../../services/reportCardService';
+import { exportReportCardPDF } from '../../services/ReportCardPDFExporter';
 import Timetable from '../common/Timetable';
 import SkeletonLoader from '../common/SkeletonLoader';
 import EmptyState from '../common/EmptyState';
@@ -693,9 +695,191 @@ function ParentDashboard() {
               </Card.Body>
             </Card>
           </Tab>
+
+          {/* ==================== REPORT CARDS TAB ==================== */}
+          <Tab eventKey="report-cards" title="Report Cards">
+            <ParentReportCards
+              studentId={activeChild?.student?.user_id}
+              institutionName={user?.institution_name}
+            />
+          </Tab>
         </Tabs>
       </Container>
     </div>
+  );
+}
+
+function ParentReportCards({ studentId, institutionName }) {
+  const [reportCards, setReportCards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedCard, setSelectedCard] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (!studentId) return;
+    setLoading(true);
+    reportCardService.getReportCardsByStudent(studentId)
+      .then(setReportCards)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [studentId]);
+
+  const handleView = async (rcId) => {
+    setDetailLoading(true);
+    try {
+      const data = await reportCardService.getReportCard(rcId);
+      setSelectedCard(data);
+    } catch {
+      setSelectedCard(null);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
+  const handleDownload = async (rcId) => {
+    const data = await reportCardService.getReportCard(rcId);
+    exportReportCardPDF(data, institutionName);
+  };
+
+  if (loading) return <div className="text-center py-4"><Spinner animation="border" size="sm" /></div>;
+
+  if (!reportCards.length) {
+    return (
+      <Card className="glass-card border-0">
+        <Card.Body className="text-center py-5">
+          <FaFileAlt size={48} className="text-muted mb-3" />
+          <h5>No Report Cards</h5>
+          <p className="text-muted">No published report cards available yet.</p>
+        </Card.Body>
+      </Card>
+    );
+  }
+
+  if (selectedCard) {
+    return (
+      <Card className="glass-card border-0">
+        <Card.Header className="bg-transparent border-0 d-flex justify-content-between align-items-center">
+          <h5 className="mb-0 fw-bold">
+            <FaFileAlt className="me-2 text-primary" />
+            Report Card — Term {selectedCard.term} ({selectedCard.academic_year})
+          </h5>
+          <div className="d-flex gap-2">
+            <Button variant="outline-success" size="sm" onClick={() => handleDownload(selectedCard.report_card_id)}>
+              <FaDownload className="me-1" /> Download PDF
+            </Button>
+            <Button variant="outline-secondary" size="sm" onClick={() => setSelectedCard(null)}>
+              Back
+            </Button>
+          </div>
+        </Card.Header>
+        <Card.Body>
+          <Row className="mb-3">
+            <Col md={4}><strong>Class:</strong> {selectedCard.class?.class_name}</Col>
+            <Col md={4}><strong>Rank:</strong> {selectedCard.class_rank || '—'}</Col>
+            <Col md={4}><strong>Average:</strong> {selectedCard.overall_average != null ? `${selectedCard.overall_average}%` : '—'}</Col>
+          </Row>
+
+          {selectedCard.grades?.length > 0 && (
+            <Table responsive size="sm" className="mb-3">
+              <thead className="table-light">
+                <tr>
+                  <th>Subject</th>
+                  <th className="text-center">Coursework</th>
+                  <th className="text-center">Exam</th>
+                  <th className="text-center">Final</th>
+                  <th className="text-center">Grade</th>
+                  <th className="text-center">Effort</th>
+                  <th>Comment</th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedCard.grades.map(g => (
+                  <tr key={g.id}>
+                    <td>{g.subject_name}</td>
+                    <td className="text-center">{g.coursework_avg != null ? `${g.coursework_avg}%` : '—'}</td>
+                    <td className="text-center">{g.exam_mark != null ? `${g.exam_mark}%` : '—'}</td>
+                    <td className="text-center">
+                      <Badge bg={g.final_mark >= 70 ? 'success' : g.final_mark >= 50 ? 'warning' : 'danger'}>
+                        {g.final_mark != null ? `${g.final_mark}%` : '—'}
+                      </Badge>
+                    </td>
+                    <td className="text-center">{g.grade_letter || '—'}</td>
+                    <td className="text-center">{g.effort_grade || '—'}</td>
+                    <td className="small">{g.teacher_comment || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+
+          <Row className="mb-2">
+            <Col md={6}>
+              <p className="mb-1"><strong>Attendance:</strong> {selectedCard.attendance_percentage != null ? `${selectedCard.attendance_percentage}%` : '—'}</p>
+              <p className="small text-muted">
+                Present: {selectedCard.days_present} | Absent: {selectedCard.days_absent} | Late: {selectedCard.days_late}
+              </p>
+            </Col>
+            <Col md={6}>
+              <p className="mb-1"><strong>Conduct:</strong> {selectedCard.conduct_grade || '—'}</p>
+            </Col>
+          </Row>
+
+          {selectedCard.form_teacher_comment && <p><strong>Form Teacher:</strong> {selectedCard.form_teacher_comment}</p>}
+          {selectedCard.principal_comment && <p><strong>Principal:</strong> {selectedCard.principal_comment}</p>}
+          {selectedCard.next_term_begins && <p><strong>Next Term:</strong> {new Date(selectedCard.next_term_begins).toLocaleDateString()}</p>}
+        </Card.Body>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="glass-card border-0">
+      <Card.Header className="bg-transparent border-0">
+        <h5 className="mb-0 fw-bold">
+          <FaFileAlt className="me-2 text-primary" />
+          Published Report Cards
+        </h5>
+      </Card.Header>
+      <Card.Body className="p-0">
+        <Table responsive hover className="mb-0">
+          <thead className="table-light">
+            <tr>
+              <th>Academic Year</th>
+              <th>Term</th>
+              <th>Class</th>
+              <th className="text-center">Average</th>
+              <th className="text-center">Rank</th>
+              <th className="text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {reportCards.map(rc => (
+              <tr key={rc.report_card_id}>
+                <td>{rc.academic_year}</td>
+                <td>Term {rc.term}</td>
+                <td>{rc.class?.class_name || '—'}</td>
+                <td className="text-center">
+                  {rc.overall_average != null ? (
+                    <Badge bg={rc.overall_average >= 70 ? 'success' : rc.overall_average >= 50 ? 'warning' : 'danger'}>
+                      {rc.overall_average}%
+                    </Badge>
+                  ) : '—'}
+                </td>
+                <td className="text-center">{rc.class_rank || '—'}</td>
+                <td className="text-center">
+                  <Button variant="outline-primary" size="sm" className="me-1" onClick={() => handleView(rc.report_card_id)}>
+                    View
+                  </Button>
+                  <Button variant="outline-success" size="sm" onClick={() => handleDownload(rc.report_card_id)}>
+                    <FaDownload />
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </Card.Body>
+    </Card>
   );
 }
 

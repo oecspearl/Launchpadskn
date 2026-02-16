@@ -11,6 +11,7 @@ import FlagLogo from './FlagLogo';
 import QuickSearch from './QuickSearch';
 import GlobalSearch from './GlobalSearch';
 import NotificationCenter from './NotificationCenter';
+import MessageIcon from './MessageIcon';
 import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
 import './Navbar.css';
 
@@ -142,6 +143,14 @@ function AppNavbar() {
                     <FaBook size={14} />
                     Curriculum
                   </Nav.Link>
+                  <Nav.Link
+                    as={Link}
+                    to="/teacher/report-cards"
+                    className={`nav-link-custom ${isActive('/teacher/report-cards') ? 'active' : ''}`}
+                  >
+                    <FaBook size={14} />
+                    Report Cards
+                  </Nav.Link>
                 </>
               )}
 
@@ -184,6 +193,7 @@ function AppNavbar() {
                   <NavDropdown.Item as={Link} to="/school-admin/instructors">Instructors</NavDropdown.Item>
                   <NavDropdown.Divider />
                   <NavDropdown.Item as={Link} to="/school-admin/reports">Reports</NavDropdown.Item>
+                  <NavDropdown.Item as={Link} to="/school-admin/report-cards">Report Cards</NavDropdown.Item>
                 </NavDropdown>
               )}
 
@@ -193,6 +203,9 @@ function AppNavbar() {
               )}
 
               <div className="vr mx-2 d-none d-lg-block opacity-25"></div>
+
+              {/* Messages */}
+              <MessageIcon />
 
               {/* Notifications */}
               <NotificationCenter />
