@@ -226,12 +226,13 @@ export function AuthProvider({ children }) {
           try {
             const { data: inst } = await supabase
               .from('institutions')
-              .select('name, logo_url')
+              .select('name, logo_url, can_add_students')
               .eq('institution_id', profile.institution_id)
               .maybeSingle();
             if (inst) {
               userData.institution_name = inst.name;
               userData.institution_logo_url = inst.logo_url || null;
+              userData.can_add_students = inst.can_add_students || false;
             }
           } catch { /* institution info is optional */ }
         }

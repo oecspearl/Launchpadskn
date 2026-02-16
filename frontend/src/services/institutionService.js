@@ -24,7 +24,8 @@ export const institutionService = {
             createdAt: institution.created_at || institution.createdAt,
             institutionType: institution.institution_type || institution.institutionType,
             logoUrl: institution.logo_url || institution.logoUrl || null,
-            principal: institution.principal || null
+            principal: institution.principal || null,
+            canAddStudents: institution.can_add_students ?? institution.canAddStudents ?? false
         };
     },
 
@@ -81,6 +82,12 @@ export const institutionService = {
         if (transformed.logoUrl !== undefined) {
             transformed.logo_url = transformed.logoUrl;
             delete transformed.logoUrl;
+        }
+
+        // Handle canAddStudents -> can_add_students
+        if (transformed.canAddStudents !== undefined) {
+            transformed.can_add_students = transformed.canAddStudents;
+            delete transformed.canAddStudents;
         }
 
         // Remove any stray fields that should not be sent

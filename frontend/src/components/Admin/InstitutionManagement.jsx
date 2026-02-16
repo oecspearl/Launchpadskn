@@ -29,7 +29,8 @@ function InstitutionManagement() {
     establishedYear: '',
     type: 'SECONDARY_SCHOOL',
     principal: '',
-    logo_url: ''
+    logo_url: '',
+    canAddStudents: false
   });
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const logoInputRef = useRef(null);
@@ -76,7 +77,8 @@ function InstitutionManagement() {
         establishedYear: institution.establishedYear || institution.established_year || '',
         type: institution.institutionType || institution.institution_type || institution.type || 'SECONDARY_SCHOOL',
         principal: institution.principal || '',
-        logo_url: institution.logo_url || institution.logoUrl || ''
+        logo_url: institution.logo_url || institution.logoUrl || '',
+        canAddStudents: institution.canAddStudents ?? institution.can_add_students ?? false
       });
     } else {
       setEditingInstitution(null);
@@ -90,7 +92,8 @@ function InstitutionManagement() {
         establishedYear: '',
         type: 'SECONDARY_SCHOOL',
         principal: '',
-        logo_url: ''
+        logo_url: '',
+        canAddStudents: false
       });
     }
     setShowModal(true);
@@ -608,6 +611,21 @@ function InstitutionManagement() {
                   </Button>
                 </div>
               </div>
+            </Form.Group>
+
+            <hr className="my-3" />
+            <h6 className="mb-3">School Admin Permissions</h6>
+            <Form.Group className="mb-3">
+              <Form.Check
+                type="switch"
+                id="canAddStudents"
+                label="Allow School Admin to add students"
+                checked={formData.canAddStudents}
+                onChange={(e) => setFormData(prev => ({ ...prev, canAddStudents: e.target.checked }))}
+              />
+              <Form.Text className="text-muted">
+                When enabled, School Admins at this institution can manually add students and import them via CSV.
+              </Form.Text>
             </Form.Group>
           </Modal.Body>
           <Modal.Footer>

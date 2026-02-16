@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Spinner } from 'react-bootstrap';
-import { FaSearch, FaUserGraduate, FaEye, FaInfoCircle } from 'react-icons/fa';
-import { useQuery } from '@tanstack/react-query';
+import { Container, Row, Col, Card, Table, Form, InputGroup, Badge, Button, Modal, Spinner, Alert } from 'react-bootstrap';
+import { FaSearch, FaUserGraduate, FaEye, FaInfoCircle, FaUserPlus, FaFileUpload } from 'react-icons/fa';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import Papa from 'papaparse';
 import { userService } from '../../services/userService';
 import { classService } from '../../services/classService';
 import { institutionService } from '../../services/institutionService';
 import { ROLES } from '../../constants/roles';
+import { useAuth } from '../../contexts/AuthContextSupabase';
 import Breadcrumb from '../common/Breadcrumb';
 import StudentInformationManagement from './StudentInformationManagement';
 
@@ -19,6 +21,9 @@ import StudentInformationManagement from './StudentInformationManagement';
  */
 function StudentManagement({ institutionId }) {
   const isScoped = !!institutionId;
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const canAddStudents = isScoped && user?.can_add_students;
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,6 +36,17 @@ function StudentManagement({ institutionId }) {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [showInfoModal, setShowInfoModal] = useState(false);
+
+  // Add/Import state (only used when canAddStudents is true)
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showBulkModal, setShowBulkModal] = useState(false);
+  const [newStudent, setNewStudent] = useState({ email: '', password: '', name: '' });
+  const [bulkPreview, setBulkPreview] = useState([]);
+  const [bulkResults, setBulkResults] = useState(null);
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [addLoading, setAddLoading] = useState(false);
+  const [createError, setCreateError] = useState(null);
+  const [createSuccess, setCreateSuccess] = useState(null);
 
   const breadcrumbItems = isScoped
     ? [
@@ -231,6 +247,78 @@ function StudentManagement({ institutionId }) {
     setShowModal(true);
   };
 
+  // ── Add Student / CSV Import handlers ──
+  const handleAddStudent = async () => {
+    setCreateError(null);
+    if (!newStudent.email || !newStudent.password) {
+      setCreateError('Email and password are required');
+      return;
+    }
+    if (newStudent.password.length < 6) {
+      setCreateError('Password must be at least 6 characters');
+      return;
+    }
+    setAddLoading(true);
+    try {
+      await userService.createUser({
+        email: newStudent.email,
+        password: newStudent.password,
+        name: newStudent.name || newStudent.email.split('@')[0],
+        role: 'STUDENT',
+        institution_id: institutionId
+      });
+      setCreateSuccess('Student created successfully!');
+      setNewStudent({ email: '', password: '', name: '' });
+      setShowAddModal(false);
+      queryClient.invalidateQueries({ queryKey: ['students', institutionId] });
+      setTimeout(() => setCreateSuccess(null), 4000);
+    } catch (err) {
+      setCreateError(err.message || 'Failed to create student');
+    } finally {
+      setAddLoading(false);
+    }
+  };
+
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      Papa.parse(file, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => setBulkPreview(results.data),
+        error: (err) => setCreateError('Failed to parse CSV: ' + err.message)
+      });
+    }
+  };
+
+  const processBulkUpload = async () => {
+    if (!bulkPreview.length) return;
+    setBulkLoading(true);
+    setCreateError(null);
+    try {
+      const studentsWithInstitution = bulkPreview.map(s => ({
+        email: s.email,
+        password: s.password,
+        name: s.name || s.email?.split('@')[0] || '',
+        role: 'STUDENT',
+        institution_id: institutionId
+      }));
+      const results = await userService.bulkCreateUsers(studentsWithInstitution);
+      setBulkResults(results);
+      queryClient.invalidateQueries({ queryKey: ['students', institutionId] });
+    } catch (err) {
+      setCreateError(err.message || 'Failed to process bulk upload');
+    } finally {
+      setBulkLoading(false);
+    }
+  };
+
+  const closeBulkModal = () => {
+    setShowBulkModal(false);
+    setBulkResults(null);
+    setBulkPreview([]);
+  };
+
   if (isLoading) {
     return (
       <Container className="py-4 d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
@@ -245,6 +333,9 @@ function StudentManagement({ institutionId }) {
     <Container fluid className="py-4">
       {!isScoped && <Breadcrumb items={breadcrumbItems} />}
 
+      {createError && <Alert variant="danger" dismissible onClose={() => setCreateError(null)} className="mt-2">{createError}</Alert>}
+      {createSuccess && <Alert variant="success" dismissible onClose={() => setCreateSuccess(null)} className="mt-2">{createSuccess}</Alert>}
+
       <div className="d-flex justify-content-between align-items-center mb-4 pt-3">
         <div>
           <h2 className="mb-1">
@@ -257,7 +348,17 @@ function StudentManagement({ institutionId }) {
               : 'View and manage students by school, form, and class'}
           </p>
         </div>
-        <div className="d-flex gap-2">
+        <div className="d-flex gap-2 align-items-center">
+          {canAddStudents && (
+            <>
+              <Button variant="primary" size="sm" onClick={() => setShowAddModal(true)}>
+                <FaUserPlus className="me-1" /> Add Student
+              </Button>
+              <Button variant="outline-success" size="sm" onClick={() => setShowBulkModal(true)}>
+                <FaFileUpload className="me-1" /> Import CSV
+              </Button>
+            </>
+          )}
           <Badge bg="info" className="d-flex align-items-center px-3 py-2">
             Total: {allStudents.length}
           </Badge>
@@ -517,6 +618,143 @@ function StudentManagement({ institutionId }) {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Add Student Modal */}
+      {canAddStudents && (
+        <Modal show={showAddModal} onHide={() => { setShowAddModal(false); setCreateError(null); }}>
+          <Modal.Header closeButton>
+            <Modal.Title>Add New Student</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form onSubmit={(e) => { e.preventDefault(); handleAddStudent(); }}>
+              <Form.Group className="mb-3">
+                <Form.Label>Name</Form.Label>
+                <Form.Control
+                  type="text"
+                  value={newStudent.name}
+                  onChange={(e) => setNewStudent(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="Student's full name (optional)"
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Email <span className="text-danger">*</span></Form.Label>
+                <Form.Control
+                  type="email"
+                  value={newStudent.email}
+                  onChange={(e) => setNewStudent(prev => ({ ...prev, email: e.target.value }))}
+                  placeholder="student@example.com"
+                  required
+                />
+              </Form.Group>
+              <Form.Group className="mb-3">
+                <Form.Label>Password <span className="text-danger">*</span></Form.Label>
+                <Form.Control
+                  type="password"
+                  value={newStudent.password}
+                  onChange={(e) => setNewStudent(prev => ({ ...prev, password: e.target.value }))}
+                  placeholder="Minimum 6 characters"
+                  required
+                  minLength={6}
+                />
+              </Form.Group>
+              <Alert variant="info" className="small mb-0">
+                Student will be automatically assigned to <strong>{scopedSchool?.name || 'your school'}</strong>.
+              </Alert>
+            </Form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setShowAddModal(false)}>Cancel</Button>
+            <Button variant="primary" onClick={handleAddStudent} disabled={addLoading}>
+              {addLoading ? <><Spinner size="sm" className="me-1" /> Creating...</> : 'Create Student'}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
+
+      {/* Bulk CSV Upload Modal */}
+      {canAddStudents && (
+        <Modal show={showBulkModal} onHide={closeBulkModal} size="lg">
+          <Modal.Header closeButton>
+            <Modal.Title>Bulk Student Import</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {!bulkResults ? (
+              <>
+                <Form.Group className="mb-3">
+                  <Form.Label>Upload CSV File</Form.Label>
+                  <Form.Control type="file" accept=".csv" onChange={handleFileUpload} />
+                  <Form.Text className="text-muted">
+                    CSV should have headers: <strong>email, password, name</strong> (name is optional).
+                    <br />
+                    Students will be automatically assigned to <strong>{scopedSchool?.name || 'your school'}</strong> with role STUDENT.
+                  </Form.Text>
+                </Form.Group>
+
+                {bulkPreview.length > 0 && (
+                  <div className="mt-3">
+                    <h6>Preview ({bulkPreview.length} student{bulkPreview.length !== 1 ? 's' : ''})</h6>
+                    <div style={{ maxHeight: 300, overflowY: 'auto' }}>
+                      <Table size="sm" striped bordered>
+                        <thead>
+                          <tr>
+                            <th>#</th>
+                            <th>Email</th>
+                            <th>Name</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {bulkPreview.slice(0, 20).map((row, i) => (
+                            <tr key={i}>
+                              <td>{i + 1}</td>
+                              <td>{row.email}</td>
+                              <td>{row.name || <span className="text-muted">{row.email?.split('@')[0]}</span>}</td>
+                            </tr>
+                          ))}
+                          {bulkPreview.length > 20 && (
+                            <tr>
+                              <td colSpan="3" className="text-center text-muted">
+                                ...and {bulkPreview.length - 20} more
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </Table>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div>
+                {bulkResults.success?.length > 0 && (
+                  <Alert variant="success">
+                    Successfully created {bulkResults.success.length} student{bulkResults.success.length !== 1 ? 's' : ''}.
+                  </Alert>
+                )}
+                {bulkResults.failed?.length > 0 && (
+                  <Alert variant="danger">
+                    Failed to create {bulkResults.failed.length} student{bulkResults.failed.length !== 1 ? 's' : ''}:
+                    <ul className="mb-0 mt-2">
+                      {bulkResults.failed.map((fail, i) => (
+                        <li key={i}><strong>{fail.email}</strong>: {fail.reason}</li>
+                      ))}
+                    </ul>
+                  </Alert>
+                )}
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={closeBulkModal}>
+              {bulkResults ? 'Close' : 'Cancel'}
+            </Button>
+            {!bulkResults && (
+              <Button variant="primary" onClick={processBulkUpload} disabled={!bulkPreview.length || bulkLoading}>
+                {bulkLoading ? <><Spinner size="sm" className="me-1" /> Uploading...</> : `Import ${bulkPreview.length} Student${bulkPreview.length !== 1 ? 's' : ''}`}
+              </Button>
+            )}
+          </Modal.Footer>
+        </Modal>
+      )}
     </Container>
   );
 }
