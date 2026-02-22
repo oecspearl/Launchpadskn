@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
     FaBook, FaClipboardList, FaCheckCircle, FaPlay, FaImage,
-    FaFileAlt, FaRocket, FaGraduationCap, FaLightbulb,
+    FaFileAlt, FaListOl, FaBookOpen, FaLightbulb,
     FaQuestionCircle, FaComments, FaCube, FaLock, FaTrophy, FaVideo, FaDoorOpen
 } from 'react-icons/fa';
 import '../Student/LessonViewStream.css';
@@ -22,7 +22,6 @@ function StudentViewPreview() {
     const [lessonData, setLessonData] = useState(null);
     const [content, setContent] = useState([]);
     const [activeContent, setActiveContent] = useState(null);
-    const [theme, setTheme] = useState('cool-dark');
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -30,11 +29,9 @@ function StudentViewPreview() {
             if (!lessonId) return;
             try {
                 setLoading(true);
-                // Fetch lesson details
                 const lesson = await supabaseService.getLessonById(lessonId);
                 setLessonData(lesson);
 
-                // Fetch lesson content
                 const contentData = await supabaseService.getLessonContent(lessonId);
                 setContent(contentData);
 
@@ -52,13 +49,9 @@ function StudentViewPreview() {
     }, [lessonId]);
 
     const handleExit = () => {
-        // Navigate back to lesson content manager (where users typically come from)
-        // Use plural "lessons" to match the route definition: /teacher/lessons/:lessonId/content
         if (lessonId) {
-            // Try to navigate to content manager first (most common entry point)
             navigate(`/teacher/lessons/${lessonId}/content`, { replace: true });
         } else {
-            // Fallback to teacher dashboard if lessonId is missing
             navigate('/teacher/dashboard', { replace: true });
         }
     };
@@ -82,21 +75,13 @@ function StudentViewPreview() {
             item.discussion_prompts ||
             item.summary ||
             item.description ||
-            item.content_text; // Fallback
+            item.content_text;
 
         return (
-            <div 
-                className="text-content-display"
-                style={{
-                    background: 'var(--theme-glass)',
-                    padding: '2rem',
-                    borderRadius: '12px',
-                    lineHeight: '1.8',
-                    fontSize: '1.1rem',
-                    color: 'var(--theme-text)'
-                }}
-                dangerouslySetInnerHTML={{ 
-                    __html: text ? DOMPurify.sanitize(text) : '<p class="text-muted">No content available.</p>' 
+            <div
+                className="text-content-block"
+                dangerouslySetInnerHTML={{
+                    __html: text ? DOMPurify.sanitize(text) : '<p class="text-muted">No content available.</p>'
                 }}
             />
         );
@@ -104,7 +89,7 @@ function StudentViewPreview() {
 
     if (loading) {
         return (
-            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', background: '#0f172a', color: 'white' }}>
+            <div className="d-flex justify-content-center align-items-center" style={{ height: '100vh', background: '#f8fafc' }}>
                 <div className="spinner-border text-primary" role="status">
                     <span className="visually-hidden">Loading...</span>
                 </div>
@@ -113,72 +98,54 @@ function StudentViewPreview() {
     }
 
     if (!lessonData) return (
-        <div className="lesson-view-container theme-cool-dark" style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '1600px', height: '100%', zIndex: 1050, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--theme-text)' }}>
+        <div className="lesson-view-container" style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '1600px', height: '100%', zIndex: 1050, overflowY: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div>Lesson not found</div>
         </div>
     );
 
     return (
-        <div className={`lesson-view-container theme-${theme}`} style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '1600px', height: '100%', zIndex: 1050, overflowY: 'auto' }}>
+        <div className="lesson-view-container" style={{ position: 'fixed', top: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: '1600px', height: '100%', zIndex: 1050, overflowY: 'auto' }}>
             {/* Header */}
-            <div className="mission-header">
-                <div className="mission-breadcrumbs">
-                    <button className="mission-back-btn" onClick={handleExit}>
+            <div className="lesson-header">
+                <div className="lesson-breadcrumbs">
+                    <button className="lesson-back-btn" onClick={handleExit}>
                         <FaArrowLeft /> Exit Preview
                     </button>
                     <span>/</span>
                     <span>Student View Preview</span>
                 </div>
 
-                <div className="mission-title-row">
+                <div className="lesson-title-row">
                     <div>
-                        <h1 className="mission-title">{lessonData.lesson_title || 'Untitled Lesson'}</h1>
-                        <div className="mission-meta">
+                        <h1 className="lesson-title-text">{lessonData.lesson_title || 'Untitled Lesson'}</h1>
+                        <div className="lesson-meta">
                             <span><FaCalendarAlt className="me-2" />{new Date().toLocaleDateString()}</span>
                             <span><FaClock className="me-2" />45 min</span>
                             <span><FaMapMarkerAlt className="me-2" />Virtual Classroom</span>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        <select
-                            value={theme}
-                            onChange={(e) => setTheme(e.target.value)}
-                            style={{
-                                background: 'var(--theme-glass)',
-                                color: 'var(--theme-text)',
-                                border: '1px solid var(--theme-glass-border)',
-                                padding: '0.5rem',
-                                borderRadius: '8px'
-                            }}
-                        >
-                            <option value="cool-dark">Cool Dark</option>
-                            <option value="warm-dark">Warm Dark</option>
-                            <option value="light">Light</option>
-                            <option value="high-contrast">High Contrast</option>
-                        </select>
-                    </div>
                 </div>
             </div>
 
             {/* Content Grid */}
-            <div className="mission-content-grid">
-                {/* Sidebar: Quest Steps */}
-                <div className="quest-steps-panel">
-                    <div className="quest-steps-header">
-                        <div className="quest-steps-title">
-                            <FaRocket className="text-primary" />
-                            Mission Steps
+            <div className="lesson-content-grid">
+                {/* Sidebar: Lesson Contents */}
+                <div className="content-sidebar">
+                    <div className="sidebar-header">
+                        <div className="sidebar-title">
+                            <FaListOl className="text-primary" />
+                            Lesson Contents
                         </div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--theme-text-muted, #94a3b8)' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--lv-text-muted, #94a3b8)' }}>
                             Preview Mode
                         </span>
                     </div>
 
-                    <div className="quest-steps-list">
+                    <div className="sidebar-list">
                         {content?.map((item, index) => (
                             <div
                                 key={item.content_id || index}
-                                className={`quest-step-item ${activeContent === item ? 'active' : ''}`}
+                                className={`content-item ${activeContent === item ? 'active' : ''}`}
                                 onClick={() => setActiveContent(item)}
                             >
                                 <div className="step-icon">
@@ -197,14 +164,14 @@ function StudentViewPreview() {
                 </div>
 
                 {/* Main Viewer */}
-                <div className="mission-viewer-panel">
+                <div className="lesson-viewer-panel">
                     {activeContent ? (
                         <>
                             <div className="viewer-header">
                                 <div className="viewer-title">{activeContent.title}</div>
                                 <div className="d-flex gap-2">
                                     {activeContent.estimated_minutes && (
-                                        <span className="xp-badge" style={{ background: 'rgba(255,255,255,0.1)', color: '#e2e8f0' }}>
+                                        <span className="xp-badge">
                                             <FaClock className="me-1" /> {activeContent.estimated_minutes} min
                                         </span>
                                     )}
@@ -212,25 +179,24 @@ function StudentViewPreview() {
                             </div>
 
                             <div className="viewer-content">
-                                {/* Render content based on type */}
                                 {activeContent.content_type === 'VIDEO' && (
-                                    <div className="ratio ratio-16x9">
+                                    <div className="ratio ratio-16x9 video-wrapper">
                                         <iframe
                                             src={activeContent.url?.replace('watch?v=', 'embed/')}
                                             title={activeContent.title}
                                             allowFullScreen
-                                            style={{ border: 0, borderRadius: '12px' }}
+                                            style={{ border: 0 }}
                                         />
                                     </div>
                                 )}
 
                                 {activeContent.content_type === 'IMAGE' && (
-                                    <img
-                                        src={activeContent.url || activeContent.signedUrl}
-                                        alt={activeContent.title}
-                                        className="img-fluid rounded"
-                                        style={{ maxHeight: '600px', width: 'auto', display: 'block', margin: '0 auto' }}
-                                    />
+                                    <div className="content-image-container">
+                                        <img
+                                            src={activeContent.url || activeContent.signedUrl}
+                                            alt={activeContent.title}
+                                        />
+                                    </div>
                                 )}
 
                                 {['LEARNING_OUTCOMES', 'LEARNING_ACTIVITIES', 'KEY_CONCEPTS',
@@ -239,27 +205,33 @@ function StudentViewPreview() {
                                 }
 
                                 {activeContent.content_type === 'FLASHCARD' && (
-                                    <FlashcardViewer
-                                        contentId={activeContent.content_id}
-                                        contentData={activeContent.content_data}
-                                        title={activeContent.title}
-                                    />
+                                    <div className="content-flashcard-container">
+                                        <FlashcardViewer
+                                            contentId={activeContent.content_id}
+                                            contentData={activeContent.content_data}
+                                            title={activeContent.title}
+                                        />
+                                    </div>
                                 )}
 
                                 {activeContent.content_type === 'INTERACTIVE_VIDEO' && (
-                                    <InteractiveVideoViewer
-                                        contentId={activeContent.content_id}
-                                        contentData={activeContent.content_data}
-                                        title={activeContent.title}
-                                    />
+                                    <div className="content-interactive-container">
+                                        <InteractiveVideoViewer
+                                            contentId={activeContent.content_id}
+                                            contentData={activeContent.content_data}
+                                            title={activeContent.title}
+                                        />
+                                    </div>
                                 )}
 
                                 {activeContent.content_type === 'INTERACTIVE_BOOK' && (
-                                    <InteractiveBookPlayer
-                                        contentId={activeContent.content_id}
-                                        contentData={activeContent.content_data}
-                                        title={activeContent.title}
-                                    />
+                                    <div className="content-book-container">
+                                        <InteractiveBookPlayer
+                                            contentId={activeContent.content_id}
+                                            contentData={activeContent.content_data}
+                                            title={activeContent.title}
+                                        />
+                                    </div>
                                 )}
 
                                 {activeContent.content_type === 'QUIZ' && (
@@ -271,7 +243,7 @@ function StudentViewPreview() {
                                 )}
 
                                 {activeContent.content_type === '3D_MODEL' && (
-                                    <div style={{ height: '500px', width: '100%' }}>
+                                    <div className="content-3d-container">
                                         <ModelViewerComponent
                                             contentUrl={activeContent.url}
                                             poster={activeContent.thumbnail_url}
@@ -284,10 +256,10 @@ function StudentViewPreview() {
                                 {!['VIDEO', 'IMAGE', 'FLASHCARD', 'INTERACTIVE_VIDEO', 'INTERACTIVE_BOOK', '3D_MODEL', 'QUIZ',
                                     'LEARNING_OUTCOMES', 'LEARNING_ACTIVITIES', 'KEY_CONCEPTS',
                                     'REFLECTION_QUESTIONS', 'DISCUSSION_PROMPTS', 'SUMMARY'].includes(activeContent.content_type) && (
-                                        <div className="text-center py-5">
-                                            <FaFileAlt size={48} className="mb-3 text-muted" />
+                                        <div className="content-fallback">
+                                            <div className="fallback-icon"><FaFileAlt /></div>
                                             <h3>{activeContent.content_type?.replace('_', ' ')}</h3>
-                                            <p className="text-muted">Preview not available for this content type.</p>
+                                            <p>Preview not available for this content type.</p>
                                             {activeContent.url && (
                                                 <a href={activeContent.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary">
                                                     Open Resource
@@ -299,8 +271,8 @@ function StudentViewPreview() {
                         </>
                     ) : (
                         <div className="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
-                            <FaRocket size={48} className="mb-3" />
-                            <h3>Select a mission step to preview</h3>
+                            <FaBookOpen size={48} className="mb-3" />
+                            <h3>Select a content item to preview</h3>
                         </div>
                     )}
                 </div>

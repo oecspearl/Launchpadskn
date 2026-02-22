@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
     FaArrowLeft, FaCalendarAlt, FaClock, FaMapMarkerAlt,
     FaBook, FaClipboardList, FaCheckCircle, FaPlay, FaImage,
-    FaFileAlt, FaRocket, FaGraduationCap, FaLightbulb,
+    FaFileAlt, FaListOl, FaBookOpen, FaLightbulb,
     FaQuestionCircle, FaComments, FaCube, FaLock, FaTrophy, FaVideo, FaDoorOpen,
     FaExpand, FaCompress
 } from 'react-icons/fa';
@@ -32,7 +32,6 @@ function LessonViewStream() {
     const [completedContent, setCompletedContent] = useState(new Set());
     const [activeContent, setActiveContent] = useState(null);
     const [virtualClassroom, setVirtualClassroom] = useState(null);
-    const theme = 'light';
     const [showDiscussionSidebar, setShowDiscussionSidebar] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
     const viewerPanelRef = useRef(null);
@@ -117,7 +116,6 @@ function LessonViewStream() {
                     setVirtualClassroom(classroom);
                 } catch (err) {
                     console.error('Error fetching virtual classroom:', err);
-                    // Virtual classroom might not exist yet, that's okay
                 }
             }
         } catch (err) {
@@ -146,7 +144,6 @@ function LessonViewStream() {
 
     const calculateXP = () => {
         if (!lesson?.content) return 0;
-        // Base XP + Bonus for completion
         const baseXP = completedContent.size * 50;
         const bonusXP = calculateProgress() === 100 ? 500 : 0;
         return baseXP + bonusXP;
@@ -163,7 +160,6 @@ function LessonViewStream() {
         }
     };
 
-    // Helper to render text content
     const renderTextContent = (content) => {
         const text = content.learning_activities ||
             content.learning_outcomes ||
@@ -174,15 +170,7 @@ function LessonViewStream() {
             content.description;
 
         return (
-            <div style={{
-                background: 'var(--theme-glass)',
-                padding: '2rem',
-                borderRadius: '12px',
-                lineHeight: '1.8',
-                fontSize: '1.1rem',
-                color: 'var(--theme-text)',
-                whiteSpace: 'pre-wrap'
-            }}>
+            <div className="text-content-block">
                 {text}
             </div>
         );
@@ -195,7 +183,6 @@ function LessonViewStream() {
 
         try {
             if (!isFullscreen) {
-                // Enter fullscreen
                 if (element.requestFullscreen) {
                     await element.requestFullscreen();
                 } else if (element.webkitRequestFullscreen) {
@@ -206,7 +193,6 @@ function LessonViewStream() {
                     await element.msRequestFullscreen();
                 }
             } else {
-                // Exit fullscreen
                 if (document.exitFullscreen) {
                     await document.exitFullscreen();
                 } else if (document.webkitExitFullscreen) {
@@ -222,27 +208,27 @@ function LessonViewStream() {
         }
     };
 
-    if (isLoading) return <div className={`lesson-view-container theme-${theme}`}>Loading Mission Data...</div>;
-    if (!lesson) return <div className={`lesson-view-container theme-${theme}`}>Mission Not Found</div>;
+    if (isLoading) return <div className="lesson-view-container">Loading lesson...</div>;
+    if (!lesson) return <div className="lesson-view-container">Lesson not found</div>;
 
     const progress = calculateProgress();
 
     return (
-        <div className={`lesson-view-container theme-${theme}`}>
+        <div className="lesson-view-container">
             {/* Header */}
-            <div className="mission-header">
-                <div className="mission-breadcrumbs">
-                    <button className="mission-back-btn" onClick={() => navigate('/student/dashboard')}>
-                        <FaArrowLeft /> Back to Command Center
+            <div className="lesson-header">
+                <div className="lesson-breadcrumbs">
+                    <button className="lesson-back-btn" onClick={() => navigate('/student/dashboard')}>
+                        <FaArrowLeft /> Back to Dashboard
                     </button>
                     <span>/</span>
                     <span>{lesson.class_subject?.subject_offering?.subject?.subject_name}</span>
                 </div>
 
-                <div className="mission-title-row">
+                <div className="lesson-title-row">
                     <div>
-                        <h1 className="mission-title">{lesson.lesson_title}</h1>
-                        <div className="mission-meta">
+                        <h1 className="lesson-title-text">{lesson.lesson_title}</h1>
+                        <div className="lesson-meta">
                             <span><FaCalendarAlt className="me-2" />{new Date(lesson.lesson_date).toLocaleDateString()}</span>
                             <span><FaClock className="me-2" />{lesson.start_time?.substring(0, 5)} - {lesson.end_time?.substring(0, 5)}</span>
                             <span><FaMapMarkerAlt className="me-2" />{lesson.location || 'Virtual Classroom'}</span>
@@ -250,11 +236,10 @@ function LessonViewStream() {
                         {virtualClassroom && (
                             <div style={{ marginTop: '1rem' }}>
                                 <button
-                                    className="btn btn-success btn-join-classroom"
+                                    className="btn btn-success"
                                     onClick={() => {
                                         if (virtualClassroom.meeting_url) {
                                             window.open(virtualClassroom.meeting_url, '_blank', 'width=1200,height=800');
-                                            // Join the session
                                             if (lesson.session_id && user?.user_id) {
                                                 collaborationService.joinSession(lesson.session_id, user.user_id);
                                             }
@@ -277,38 +262,40 @@ function LessonViewStream() {
                             </div>
                         )}
                     </div>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                        <div className="xp-badge" style={{ fontSize: '1rem', padding: '0.5rem 1rem' }}>
-                            <FaTrophy className="me-2" />
-                            {calculateXP()} XP Earned
-                        </div>
+                    <div className="xp-badge">
+                        <FaTrophy className="me-2" />
+                        {calculateXP()} Progress Points
                     </div>
                 </div>
 
-                <div className="mission-progress-container">
-                    <div className="mission-progress-bar" style={{ width: `${progress}%` }} />
+                <div className="lesson-progress-container">
+                    <div className="lesson-progress-bar" style={{ width: `${progress}%` }} />
+                </div>
+                <div className="progress-summary">
+                    <span>{completedContent.size}/{lesson.content?.length || 0} items completed</span>
+                    <span>{progress}%</span>
                 </div>
             </div>
 
             {/* Content Grid */}
-            <div className="mission-content-grid">
-                {/* Sidebar: Quest Steps */}
-                <div className="quest-steps-panel">
-                    <div className="quest-steps-header">
-                        <div className="quest-steps-title">
-                            <FaRocket className="text-primary" />
-                            Mission Steps
+            <div className="lesson-content-grid">
+                {/* Sidebar: Lesson Contents */}
+                <div className="content-sidebar">
+                    <div className="sidebar-header">
+                        <div className="sidebar-title">
+                            <FaListOl className="text-primary" />
+                            Lesson Contents
                         </div>
-                        <span style={{ fontSize: '0.8rem', color: 'var(--theme-text-muted)' }}>
-                            {completedContent.size}/{lesson.content?.length || 0} Complete
+                        <span style={{ fontSize: '0.8rem', color: 'var(--lv-text-muted)' }}>
+                            {completedContent.size}/{lesson.content?.length || 0}
                         </span>
                     </div>
 
-                    <div className="quest-steps-list">
+                    <div className="sidebar-list">
                         {lesson.content?.map((item, index) => (
                             <div
                                 key={item.content_id}
-                                className={`quest-step-item ${activeContent?.content_id === item.content_id ? 'active' : ''} ${completedContent.has(item.content_id) ? 'completed' : ''}`}
+                                className={`content-item ${activeContent?.content_id === item.content_id ? 'active' : ''} ${completedContent.has(item.content_id) ? 'completed' : ''}`}
                                 onClick={() => setActiveContent(item)}
                             >
                                 <div className="step-icon">
@@ -327,14 +314,14 @@ function LessonViewStream() {
                 </div>
 
                 {/* Main Viewer */}
-                <div className="mission-viewer-panel" ref={viewerPanelRef}>
+                <div className="lesson-viewer-panel" ref={viewerPanelRef}>
                     {activeContent ? (
                         <>
                             <div className="viewer-header">
                                 <div className="viewer-title">{activeContent.title}</div>
                                 <div className="d-flex gap-2 align-items-center">
                                     {activeContent.estimated_minutes && (
-                                        <span className="xp-badge" style={{ background: 'var(--theme-glass)', color: 'var(--theme-text-muted)' }}>
+                                        <span className="xp-badge">
                                             <FaClock className="me-1" /> {activeContent.estimated_minutes} min
                                         </span>
                                     )}
@@ -350,16 +337,16 @@ function LessonViewStream() {
                             </div>
 
                             <div className="viewer-content">
-                                {/* Description (only if not text content type) */}
+                                {/* Description */}
                                 {activeContent.description && !['LEARNING_ACTIVITIES', 'KEY_CONCEPTS', 'SUMMARY', 'REFLECTION_QUESTIONS'].includes(activeContent.content_type) && (
-                                    <div style={{ marginBottom: '2rem', color: 'var(--theme-text-muted)', lineHeight: '1.6' }}>
+                                    <div className="content-description">
                                         {activeContent.description}
                                     </div>
                                 )}
 
                                 {/* Content Renderers */}
                                 {activeContent.content_type === 'VIDEO' && (
-                                    <div className="ratio ratio-16x9" style={{ borderRadius: '12px', overflow: 'hidden' }}>
+                                    <div className="ratio ratio-16x9 video-wrapper">
                                         {activeContent.url && /\.(mp4|webm|ogg)(\?|$)/i.test(activeContent.url) ? (
                                             <video controls style={{ width: '100%', height: '100%' }}>
                                                 <source src={activeContent.url} />
@@ -383,23 +370,17 @@ function LessonViewStream() {
                                 )}
 
                                 {activeContent.content_type === 'IMAGE' && (
-                                    <div style={{ textAlign: 'center' }}>
+                                    <div className="content-image-container">
                                         <img
                                             src={activeContent.url || activeContent.content_url}
                                             alt={activeContent.title}
-                                            style={{
-                                                maxWidth: '100%',
-                                                maxHeight: '70vh',
-                                                borderRadius: '12px',
-                                                objectFit: 'contain'
-                                            }}
                                             onError={(e) => { e.target.style.display = 'none'; }}
                                         />
                                     </div>
                                 )}
 
                                 {activeContent.content_type === '3D_MODEL' && (
-                                    <div style={{ height: '500px', width: '100%', borderRadius: '12px', overflow: 'hidden', background: 'var(--theme-bg, #000)' }}>
+                                    <div className="content-3d-container">
                                         <ViewerErrorBoundary>
                                             <ModelViewerComponent
                                                 contentUrl={activeContent.url || activeContent.content_url}
@@ -410,7 +391,7 @@ function LessonViewStream() {
                                 )}
 
                                 {activeContent.content_type === 'FLASHCARD' && activeContent.content_data && (
-                                    <div style={{ height: '600px', width: '100%' }}>
+                                    <div className="content-flashcard-container">
                                         <FlashcardViewer
                                             contentData={activeContent.content_data}
                                             title={activeContent.title}
@@ -422,7 +403,7 @@ function LessonViewStream() {
                                 )}
 
                                 {activeContent.content_type === 'INTERACTIVE_VIDEO' && activeContent.content_data && (
-                                    <div style={{ width: '100%' }}>
+                                    <div className="content-interactive-container">
                                         <InteractiveVideoViewer
                                             contentData={activeContent.content_data}
                                             title={activeContent.title}
@@ -434,7 +415,7 @@ function LessonViewStream() {
                                 )}
 
                                 {activeContent.content_type === 'INTERACTIVE_BOOK' && activeContent.content_data && (
-                                    <div style={{ width: '100%', height: '80vh' }}>
+                                    <div className="content-book-container">
                                         <InteractiveBookPlayer
                                             contentData={activeContent.content_data}
                                             title={activeContent.title}
@@ -452,17 +433,17 @@ function LessonViewStream() {
                                     )}
 
                                 {['QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT', 'SURVEY'].includes(activeContent.content_type) && (
-                                    <div className="text-center py-5" style={{ background: 'var(--theme-glass)', borderRadius: '12px' }}>
-                                        <div style={{ fontSize: '3rem', color: 'var(--theme-primary)', marginBottom: '1rem' }}>
+                                    <div className="content-assessment-placeholder">
+                                        <div className="assessment-icon">
                                             {getContentIcon(activeContent.content_type)}
                                         </div>
-                                        <h3 style={{ color: 'var(--theme-text)' }}>{activeContent.title}</h3>
-                                        <p className="text-muted mb-4" style={{ color: 'var(--theme-text-muted)' }}>
+                                        <h3>{activeContent.title}</h3>
+                                        <p>
                                             {activeContent.content_type === 'QUIZ' ? 'Ready to test your knowledge?' :
-                                             activeContent.content_type === 'TEST' || activeContent.content_type === 'EXAM' ? 'Complete this assessment to earn XP.' :
+                                             activeContent.content_type === 'TEST' || activeContent.content_type === 'EXAM' ? 'Complete this assessment.' :
                                              activeContent.content_type === 'SURVEY' ? 'Share your feedback.' :
                                              activeContent.content_type === 'PROJECT' ? 'Work on your project submission.' :
-                                             'Complete this assignment to earn XP.'}
+                                             'Complete this assignment.'}
                                         </p>
                                         <button
                                             className="btn-play"
@@ -487,11 +468,11 @@ function LessonViewStream() {
                                     'LEARNING_ACTIVITIES', 'LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'REFLECTION_QUESTIONS',
                                     'DISCUSSION_PROMPTS', 'SUMMARY', 'QUIZ', 'ASSIGNMENT', 'TEST', 'EXAM', 'PROJECT',
                                     'SURVEY', 'CHECKPOINT'].includes(activeContent.content_type) && (
-                                        <div className="text-center py-5" style={{ background: 'var(--theme-glass)', borderRadius: '12px' }}>
-                                            <div style={{ fontSize: '3rem', color: 'var(--theme-primary)', marginBottom: '1rem' }}>
+                                        <div className="content-fallback">
+                                            <div className="fallback-icon">
                                                 {getContentIcon(activeContent.content_type)}
                                             </div>
-                                            <h3 style={{ color: 'var(--theme-text)' }}>{activeContent.content_type?.replace('_', ' ')} Content</h3>
+                                            <h3>{activeContent.content_type?.replace('_', ' ')} Content</h3>
                                             {activeContent.url && (
                                                 <a
                                                     href={activeContent.url}
@@ -506,7 +487,7 @@ function LessonViewStream() {
                                         </div>
                                     )}
 
-                                {/* Interactive Checkpoint Demo */}
+                                {/* Interactive Checkpoint */}
                                 {activeContent.content_type === 'CHECKPOINT' && (
                                     <CheckpointRenderer
                                         checkpoint={activeContent.content_data || activeContent.data}
@@ -536,8 +517,8 @@ function LessonViewStream() {
                         </>
                     ) : (
                         <div className="d-flex flex-column align-items-center justify-content-center h-100 text-muted">
-                            <FaRocket style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.2 }} />
-                            <h3>Select a mission step to begin</h3>
+                            <FaBookOpen style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.2 }} />
+                            <h3>Select a content item to begin</h3>
                         </div>
                     )}
                 </div>
@@ -555,7 +536,7 @@ function LessonViewStream() {
             {/* Discussion Sidebar */}
             {showDiscussionSidebar && (
                 <>
-                    <div 
+                    <div
                         className="discussion-sidebar-overlay"
                         onClick={() => setShowDiscussionSidebar(false)}
                     />
@@ -571,7 +552,7 @@ function LessonViewStream() {
                                 aria-label="Close discussion"
                                 style={{ background: 'none', border: 'none', fontSize: '2rem', cursor: 'pointer' }}
                             >
-                                
+
                             </button>
                         </div>
                         <div className="discussion-sidebar-body">
@@ -587,5 +568,3 @@ function LessonViewStream() {
 }
 
 export default LessonViewStream;
-
-

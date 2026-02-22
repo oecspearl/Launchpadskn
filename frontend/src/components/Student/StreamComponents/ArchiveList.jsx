@@ -13,8 +13,8 @@ const ArchiveList = ({ archives, formatDate, calculateXP }) => {
         <div className="quest-section">
             <div className="section-header">
                 <div className="section-title">
-                    <FaHistory className="section-icon" style={{ color: 'var(--stream-primary)' }} />
-                    Completed Missions
+                    <FaHistory className="text-primary" />
+                    Past Lessons
                 </div>
             </div>
 
@@ -30,10 +30,10 @@ const ArchiveList = ({ archives, formatDate, calculateXP }) => {
                         </div>
                         <div className="archive-info">
                             <h4 className="archive-title">{lesson.lesson_title}</h4>
-                            <small className="archive-meta">{formatDate(lesson.lesson_date)} • {calculateXP(lesson.start_time, lesson.end_time)} XP Earned</small>
+                            <small className="archive-meta">{formatDate(lesson.lesson_date)} • {calculateXP(lesson.start_time, lesson.end_time)} min</small>
                         </div>
                         <div className="archive-action">
-                            <Badge bg="secondary">Replay</Badge>
+                            <Badge bg="secondary">Review</Badge>
                         </div>
                     </div>
                 ))}

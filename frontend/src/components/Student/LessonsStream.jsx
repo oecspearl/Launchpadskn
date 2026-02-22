@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaGamepad } from 'react-icons/fa';
+import { FaBookOpen } from 'react-icons/fa';
 import { supabase } from '../../config/supabase';
 import StreamHeader from './StreamComponents/StreamHeader';
 import HeroCard from './StreamComponents/HeroCard';
@@ -13,28 +13,20 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
   const [heroLesson, setHeroLesson] = useState(null);
   const [quests, setQuests] = useState([]);
   const [archives, setArchives] = useState([]);
-  const theme = 'light';
 
-  // Process lessons into Hero, Quests (Upcoming), and Archives (Past)
+  // Process lessons into Hero, Upcoming, and Past
   useEffect(() => {
     if (!lessons || lessons.length === 0) return;
 
     const now = new Date();
     const sortedLessons = [...lessons].sort((a, b) => new Date(a.lesson_date) - new Date(b.lesson_date));
 
-    // Find the "Hero" lesson:
-    // 1. First lesson that is happening NOW (or within 1 hour)
-    // 2. OR the very next upcoming lesson
-    // 3. OR if no upcoming, the most recent past lesson
-
     let hero = null;
     let upcoming = [];
     let past = [];
 
-    // Split into past and upcoming
     sortedLessons.forEach(lesson => {
       const lessonDate = new Date(lesson.lesson_date);
-      // Set end of day for comparison to include today's lessons as upcoming if not passed time
       const endOfLessonDay = new Date(lessonDate);
       endOfLessonDay.setHours(23, 59, 59, 999);
 
@@ -45,21 +37,19 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
       }
     });
 
-    // Determine Hero
     if (upcoming.length > 0) {
-      hero = upcoming[0]; // The immediate next lesson
-      upcoming = upcoming.slice(1); // Remove hero from quests
+      hero = upcoming[0];
+      upcoming = upcoming.slice(1);
     } else if (past.length > 0) {
-      hero = past[past.length - 1]; // Most recent past lesson
-      past = past.slice(0, past.length - 1); // Remove hero from archives
+      hero = past[past.length - 1];
+      past = past.slice(0, past.length - 1);
     }
 
     setHeroLesson(hero);
     setQuests(upcoming);
-    setArchives(past.reverse()); // Show most recent past lessons first
+    setArchives(past.reverse());
   }, [lessons]);
 
-  // Helper to generate deterministic gradient based on string
   const getGradient = (str) => {
     const hash = str.split('').reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
     const hue1 = Math.abs(hash % 360);
@@ -67,29 +57,27 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
     return `linear-gradient(135deg, hsl(${hue1}, 70%, 60%), hsl(${hue2}, 70%, 40%))`;
   };
 
-  // Helper to calculate "XP" (Duration in mins)
-  const calculateXP = (start, end) => {
+  const calculateDuration = (start, end) => {
     if (!start || !end) return 50;
     const [startH, startM] = start.split(':').map(Number);
     const [endH, endM] = end.split(':').map(Number);
     const duration = (endH * 60 + endM) - (startH * 60 + startM);
-    return Math.max(duration, 10); // Min 10 XP
+    return Math.max(duration, 10);
   };
 
   const formatTime = (time) => time ? time.substring(0, 5) : '';
   const formatDate = (date) => new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
-  // Get greeting based on time
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning, Explorer';
-    if (hour < 18) return 'Good Afternoon, Explorer';
-    return 'Good Evening, Explorer';
+    if (hour < 12) return 'Good Morning';
+    if (hour < 18) return 'Good Afternoon';
+    return 'Good Evening';
   };
 
   if (loading) {
     return (
-      <div className={`lessons-stream-container theme-${theme}`}>
+      <div className="lessons-stream-container">
         <div className="skeleton-hero" />
         <div className="skeleton-grid">
           {[1, 2, 3].map(i => <div key={i} className="skeleton-card" />)}
@@ -104,9 +92,9 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
         <StreamHeader greeting={getGreeting()} />
         <div className="hero-card" style={{ minHeight: '300px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="text-center">
-            <FaGamepad style={{ fontSize: '4rem', color: 'var(--stream-text-muted)', opacity: 0.3, marginBottom: '1rem' }} />
-            <h3 style={{ color: 'var(--stream-text)' }}>No Missions Available</h3>
-            <p style={{ color: 'var(--stream-text-muted)' }}>Check back later for new quests!</p>
+            <FaBookOpen style={{ fontSize: '4rem', color: 'var(--ls-text-muted)', opacity: 0.3, marginBottom: '1rem' }} />
+            <h3 style={{ color: 'var(--ls-text)' }}>No Lessons Available</h3>
+            <p style={{ color: 'var(--ls-text-muted)' }}>Check back later for new lessons.</p>
           </div>
         </div>
       </div>
@@ -114,7 +102,7 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
   }
 
   return (
-    <div className={`lessons-stream-container theme-${theme}`}>
+    <div className="lessons-stream-container">
       <StreamHeader greeting={getGreeting()} />
 
       <HeroCard
@@ -129,15 +117,13 @@ function LessonsStream({ lessons = [], classSubjectId, loading = false }) {
         getGradient={getGradient}
         formatDate={formatDate}
         formatTime={formatTime}
-        calculateXP={calculateXP}
-        navigate={navigate}
+        calculateXP={calculateDuration}
       />
 
       <ArchiveList
         archives={archives}
         formatDate={formatDate}
-        calculateXP={calculateXP}
-        navigate={navigate}
+        calculateXP={calculateDuration}
       />
     </div>
   );

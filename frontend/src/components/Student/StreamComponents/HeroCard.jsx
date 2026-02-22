@@ -2,11 +2,9 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     FaPlay, FaInfoCircle, FaCalendarAlt, FaClock, FaMapMarkerAlt,
-    FaFire, FaCube
+    FaGraduationCap
 } from 'react-icons/fa';
-import ModelViewerComponent from '../../InteractiveContent/Viewers/ModelViewerComponent';
-import ViewerErrorBoundary from '../../InteractiveContent/Viewers/ViewerErrorBoundary';
-import '../LessonsStream.css'; // Use parent CSS
+import '../LessonsStream.css';
 
 const HeroCard = ({ heroLesson, getGradient, formatDate, formatTime }) => {
     const navigate = useNavigate();
@@ -17,14 +15,14 @@ const HeroCard = ({ heroLesson, getGradient, formatDate, formatTime }) => {
         <div className="hero-section">
             <div className="hero-label">
                 <div className="live-indicator" />
-                <span>NOW PLAYING / UP NEXT</span>
+                <span>UP NEXT</span>
             </div>
 
             <div className="hero-card">
                 <div className="hero-content">
                     <div className="hero-badge">
-                        <FaFire className="me-2" />
-                        FEATURED MISSION
+                        <FaGraduationCap className="me-2" />
+                        NEXT LESSON
                     </div>
 
                     <h2 className="hero-title">{heroLesson.lesson_title}</h2>
@@ -43,46 +41,18 @@ const HeroCard = ({ heroLesson, getGradient, formatDate, formatTime }) => {
                         )}
                     </div>
 
-                    <p style={{ color: 'var(--stream-text-muted)', marginBottom: '2rem', lineHeight: '1.6', maxWidth: '600px' }}>
-                        {heroLesson.description || "Get ready for your next big learning adventure. Join the session to start earning XP and mastering new skills."}
+                    <p style={{ color: 'var(--ls-text-muted)', marginBottom: '1.5rem', lineHeight: '1.6', maxWidth: '600px' }}>
+                        {heroLesson.description || "Your next lesson is ready. Open it to continue your learning progress."}
                     </p>
 
                     <div className="hero-actions">
                         <button className="btn-play" onClick={() => navigate(`/student/lessons/${heroLesson.lesson_id}`)}>
-                            <FaPlay /> Start Mission
+                            <FaPlay /> Open Lesson
                         </button>
                         <button className="btn-details">
                             <FaInfoCircle className="me-2" /> Details
                         </button>
                     </div>
-                </div>
-
-                <div className="hero-visual">
-                    {heroLesson.content_url ? (
-                        <div style={{ width: '100%', height: '100%', minHeight: '400px' }}>
-                            <ViewerErrorBoundary>
-                                <ModelViewerComponent
-                                    contentUrl={heroLesson.content_url}
-                                    modelProperties={{
-                                        autoRotate: true,
-                                        cameraControls: true,
-                                        shadowIntensity: 1
-                                    }}
-                                />
-                            </ViewerErrorBoundary>
-                        </div>
-                    ) : (
-                        <div style={{
-                            width: '100%',
-                            height: '100%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: getGradient(heroLesson.lesson_title || 'hero')
-                        }}>
-                            <FaCube style={{ fontSize: '8rem', color: 'rgba(255,255,255,0.2)' }} />
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Badge } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { FaGamepad, FaTrophy, FaClock } from 'react-icons/fa';
+import { FaCalendarAlt, FaClock } from 'react-icons/fa';
 import '../LessonsStream.css';
 
 const QuestGrid = ({ quests, getGradient, formatDate, formatTime, calculateXP }) => {
@@ -13,8 +13,8 @@ const QuestGrid = ({ quests, getGradient, formatDate, formatTime, calculateXP })
         <div className="quest-section">
             <div className="section-header">
                 <div className="section-title">
-                    <FaGamepad className="text-primary" />
-                    Quest Log
+                    <FaCalendarAlt className="text-primary" />
+                    Upcoming Lessons
                 </div>
                 <Badge bg="primary" pill>{quests.length} New</Badge>
             </div>
@@ -25,23 +25,19 @@ const QuestGrid = ({ quests, getGradient, formatDate, formatTime, calculateXP })
                         key={lesson.lesson_id}
                         className="quest-card"
                         onClick={() => navigate(`/student/lessons/${lesson.lesson_id}`)}
-                        style={{ cursor: 'pointer' }}
                     >
-                        <div
-                            className="quest-visual"
-                            style={{ background: getGradient(lesson.lesson_title || 'lesson') }}
-                        />
+                        <div className="quest-visual" />
                         <div className="quest-content">
                             <div className="quest-date">{formatDate(lesson.lesson_date)}</div>
                             <h3 className="quest-title">{lesson.lesson_title}</h3>
-                            <p className="quest-desc">{lesson.description || 'No description available for this quest.'}</p>
+                            <p className="quest-desc">{lesson.description || 'No description available.'}</p>
 
                             <div className="quest-footer">
                                 <div className="xp-badge">
-                                    <FaTrophy />
-                                    {calculateXP(lesson.start_time, lesson.end_time)} XP
+                                    <FaClock />
+                                    {calculateXP(lesson.start_time, lesson.end_time)} min
                                 </div>
-                                <div style={{ color: 'var(--stream-text-muted)', fontSize: '0.85rem' }}>
+                                <div style={{ color: 'var(--ls-text-muted)', fontSize: '0.85rem' }}>
                                     <FaClock className="me-1" />
                                     {formatTime(lesson.start_time)}
                                 </div>
