@@ -36,6 +36,7 @@ function StudentDashboard() {
     subjects: mySubjects,
     lessons: weekLessons,
     assignments,
+    grades,
     isLoading,
     error
   } = useStudentData(user);
@@ -289,7 +290,10 @@ function StudentDashboard() {
             {/* Recommendations and Goals */}
             <Row className="mt-4 g-4">
               <Col md={6}>
-                <PersonalizedRecommendations />
+                <PersonalizedRecommendations
+                  grades={grades}
+                  assignments={assignments}
+                />
               </Col>
               <Col md={6}>
                 <GoalSetting />

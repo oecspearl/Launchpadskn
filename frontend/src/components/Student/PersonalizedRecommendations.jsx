@@ -1,38 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, Button, ListGroup, Badge } from 'react-bootstrap';
 import { FaLightbulb, FaArrowRight, FaTimes } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
 import { recommendationService } from '../../services/recommendationService';
+import { getRecentlyViewedByType } from '../../services/recentlyViewedService';
 
-function PersonalizedRecommendations() {
-    const [recommendations, setRecommendations] = useState([]);
-    const [loading, setLoading] = useState(true);
+function PersonalizedRecommendations({ grades, assignments }) {
+    const navigate = useNavigate();
+    const [dismissedIds, setDismissedIds] = useState([]);
 
-    useEffect(() => {
-        loadRecommendations();
-    }, []);
+    const recentlyViewed = useMemo(() => getRecentlyViewedByType('lesson', 5), []);
 
-    const loadRecommendations = async () => {
-        setLoading(true);
-        try {
-            const data = await recommendationService.getRecommendations();
-            setRecommendations(data);
-        } catch (error) {
-            console.error("Failed to load recommendations", error);
-        } finally {
-            setLoading(false);
-        }
+    const recommendations = useMemo(() => {
+        return recommendationService.generateRecommendations({
+            grades: grades || [],
+            assignments: assignments || [],
+            recentlyViewed,
+        });
+    }, [grades, assignments, recentlyViewed, dismissedIds]);
+
+    const handleDismiss = (id) => {
+        recommendationService.dismissRecommendation(id);
+        setDismissedIds(prev => [...prev, id]);
     };
 
-    const handleDismiss = async (id) => {
-        try {
-            await recommendationService.dismissRecommendation(id);
-            setRecommendations(recommendations.filter(rec => rec.id !== id));
-        } catch (error) {
-            console.error("Failed to dismiss recommendation", error);
-        }
+    const handleAction = (link) => {
+        if (link) navigate(link);
     };
-
-    if (loading) return <div>Loading Recommendations...</div>;
 
     if (recommendations.length === 0) {
         return (
@@ -69,7 +63,12 @@ function PersonalizedRecommendations() {
                                         <h6 className="mb-0 fw-bold">{rec.title}</h6>
                                     </div>
                                     <p className="text-muted small mb-2">{rec.reason}</p>
-                                    <Button variant="outline-primary" size="sm" className="rounded-pill">
+                                    <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        className="rounded-pill"
+                                        onClick={() => handleAction(rec.link)}
+                                    >
                                         {rec.action} <FaArrowRight className="ms-1" size={10} />
                                     </Button>
                                 </div>
