@@ -122,8 +122,8 @@ const checkStreak = (recentlyViewed) => {
             title: 'Start Your Learning Streak',
             reason: 'Begin exploring lessons to build your learning habit.',
             priority: 'low',
-            action: 'Browse Lessons',
-            link: '/student/lessons'
+            action: 'Browse Subjects',
+            link: '/student/subjects'
         }];
     }
 
@@ -137,8 +137,8 @@ const checkStreak = (recentlyViewed) => {
             title: 'Keep Your Streak Going!',
             reason: `It's been ${daysSince} days since your last lesson. Jump back in!`,
             priority: 'low',
-            action: 'Browse Lessons',
-            link: '/student/lessons'
+            action: 'Browse Subjects',
+            link: '/student/subjects'
         }];
     }
 
