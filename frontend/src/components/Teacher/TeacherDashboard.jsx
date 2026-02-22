@@ -218,20 +218,20 @@ function TeacherDashboard() {
       {/* Header */}
       <Row className="teacher-dashboard-header mb-4">
         <Col>
-          <h2>Welcome, {user?.name || 'Teacher'}!</h2>
+          <h2 className="text-white">Welcome, {user?.name || 'Teacher'}!</h2>
           {user?.institution_name && (
-            <p className="text-muted mb-0 fw-semibold d-flex align-items-center gap-2">
+            <p className="mb-0 fw-semibold d-flex align-items-center gap-2" style={{ color: 'rgba(255,255,255,0.9)' }}>
               {user.institution_logo_url && (
                 <img src={user.institution_logo_url} alt="" style={{ height: 28, maxWidth: 36, objectFit: 'contain' }} />
               )}
               {user.institution_name}
             </p>
           )}
-          <p className="text-muted mb-0">
+          <p className="mb-0" style={{ color: 'rgba(255,255,255,0.85)' }}>
             Manage your classes and lessons
           </p>
           {formatLastLogin() && (
-            <p className="mb-0 opacity-50 small">
+            <p className="mb-0 small" style={{ color: 'rgba(255,255,255,0.6)' }}>
               <FaClock className="me-1" />
               Last login: {formatLastLogin()}
             </p>
