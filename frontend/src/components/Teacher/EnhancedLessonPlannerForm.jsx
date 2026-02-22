@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, Form, Button, Tab, Tabs, Row, Col, 
-  Alert, Spinner, Badge
+import {
+  Form, Button, Tab, Tabs, Row, Col,
+  Alert, Spinner
 } from 'react-bootstrap';
 import { FaBook, FaUsers, FaCog, FaMagic } from 'react-icons/fa';
 import { generateEnhancedLessonPlan } from '../../services/aiLessonService';
 import { supabase } from '../../config/supabase';
 import TinyMCEEditor from '../Editor/TextEditor';
 
-function EnhancedLessonPlannerForm({ 
+function EnhancedLessonPlannerForm({
   subjectName = '',
   formName = '',
   className = '',
   classSubjectId = null,
-  onPlanGenerated 
+  onPlanGenerated
 }) {
   const [activeTab, setActiveTab] = useState('basic');
   const [isGenerating, setIsGenerating] = useState(false);
@@ -33,7 +33,7 @@ function EnhancedLessonPlannerForm({
     learningOutcomes: '',
     studentCount: 20,
     duration: 45,
-    
+
     // Teaching Strategy
     pedagogicalStrategies: [],
     learningStyles: [],
@@ -41,7 +41,7 @@ function EnhancedLessonPlannerForm({
     multipleIntelligences: [],
     materials: '',
     prerequisiteSkills: '',
-    
+
     // Additional Details
     specialNeeds: false,
     specialNeedsDetails: '',
@@ -65,7 +65,7 @@ function EnhancedLessonPlannerForm({
         const savedTime = new Date(data.timestamp);
         const now = new Date();
         const hoursDiff = (now - savedTime) / (1000 * 60 * 60);
-        
+
         if (hoursDiff < 24) {
           setFormData(prev => ({ ...data.data, ...prev }));
         } else {
@@ -189,7 +189,7 @@ function EnhancedLessonPlannerForm({
 
   const handleGenerate = async (e) => {
     e.preventDefault();
-    
+
     if (!formData.topic || !formData.subject || !formData.form) {
       setError('Please fill in at least Subject, Form, and Topic.');
       return;
@@ -200,7 +200,7 @@ function EnhancedLessonPlannerForm({
 
     try {
       console.log('[EnhancedPlanner] Generating lesson plan with:', formData);
-      
+
       const lessonPlan = await generateEnhancedLessonPlan({
         ...formData,
         curriculumStandards
@@ -283,29 +283,30 @@ function EnhancedLessonPlannerForm({
   };
 
   return (
-    <Card className="h-100">
-      <Card.Header className="bg-primary text-white">
-        <div className="d-flex justify-content-between align-items-center">
-          <div>
-            <FaMagic className="me-2" />
-            <strong>AI Lesson Plan Generator</strong>
-          </div>
-          <Button variant="light" size="sm" onClick={clearForm}>
-            Clear Form
-          </Button>
-        </div>
-      </Card.Header>
-      <Card.Body>
-        {error && (
-          <Alert variant="danger" dismissible onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
+    <div className="d-flex flex-column h-100">
+      {/* Compact header */}
+      <div className="d-flex justify-content-between align-items-center mb-3">
+        <h6 className="mb-0 fw-bold">
+          <FaMagic className="me-2 text-primary" />
+          AI Lesson Plan Generator
+        </h6>
+        <Button variant="outline-secondary" size="sm" onClick={clearForm}>
+          Clear Form
+        </Button>
+      </div>
 
+      {error && (
+        <Alert variant="danger" dismissible onClose={() => setError(null)} className="mb-2 py-2">
+          {error}
+        </Alert>
+      )}
+
+      {/* Scrollable tabs area */}
+      <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
         <Tabs
           activeKey={activeTab}
           onSelect={(k) => setActiveTab(k)}
-          className="mb-3"
+          className="mb-2"
         >
           {/* Tab 1: Basic Info */}
           <Tab eventKey="basic" title={
@@ -314,12 +315,13 @@ function EnhancedLessonPlannerForm({
               Basic Info
             </span>
           }>
-            <div className="mt-3">
+            <div className="mt-2">
               <Row>
                 <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Subject *</Form.Label>
+                  <Form.Group className="mb-2">
+                    <Form.Label className="small fw-semibold mb-1">Subject *</Form.Label>
                     <Form.Control
+                      size="sm"
                       type="text"
                       name="subject"
                       value={formData.subject || ''}
@@ -328,9 +330,10 @@ function EnhancedLessonPlannerForm({
                   </Form.Group>
                 </Col>
                 <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Form *</Form.Label>
+                  <Form.Group className="mb-2">
+                    <Form.Label className="small fw-semibold mb-1">Form *</Form.Label>
                     <Form.Control
+                      size="sm"
                       type="text"
                       name="form"
                       value={formData.form || ''}
@@ -339,9 +342,10 @@ function EnhancedLessonPlannerForm({
                   </Form.Group>
                 </Col>
                 <Col md={3}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Class</Form.Label>
+                  <Form.Group className="mb-2">
+                    <Form.Label className="small fw-semibold mb-1">Class</Form.Label>
                     <Form.Control
+                      size="sm"
                       type="text"
                       name="class"
                       value={formData.class || ''}
@@ -354,11 +358,12 @@ function EnhancedLessonPlannerForm({
 
               {/* Curriculum Topic/Unit Selector */}
               {curriculumTopics.length > 0 && (
-                <Row className="mb-3">
+                <Row className="mb-2">
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label><FaBook className="me-1" /> Curriculum Topic</Form.Label>
+                      <Form.Label className="small fw-semibold mb-1"><FaBook className="me-1" /> Curriculum Topic</Form.Label>
                       <Form.Select
+                        size="sm"
                         value={selectedTopicIndex}
                         onChange={(e) => {
                           const idx = e.target.value;
@@ -383,15 +388,16 @@ function EnhancedLessonPlannerForm({
                           </option>
                         ))}
                       </Form.Select>
-                      <Form.Text className="text-muted">
-                        Auto-fills topic, outcomes, and strategies from curriculum
+                      <Form.Text className="text-muted" style={{ fontSize: '0.75rem' }}>
+                        Auto-fills topic, outcomes, and strategies
                       </Form.Text>
                     </Form.Group>
                   </Col>
                   <Col md={6}>
                     <Form.Group>
-                      <Form.Label>Instructional Unit (SCO)</Form.Label>
+                      <Form.Label className="small fw-semibold mb-1">Instructional Unit (SCO)</Form.Label>
                       <Form.Select
+                        size="sm"
                         value={selectedUnitIndex}
                         disabled={selectedTopicIndex === ''}
                         onChange={(e) => {
@@ -432,9 +438,10 @@ function EnhancedLessonPlannerForm({
                 </Row>
               )}
 
-              <Form.Group className="mb-3">
-                <Form.Label>Topic *</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="small fw-semibold mb-1">Topic *</Form.Label>
                 <Form.Control
+                  size="sm"
                   type="text"
                   name="topic"
                   value={formData.topic || ''}
@@ -443,26 +450,26 @@ function EnhancedLessonPlannerForm({
                 />
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Essential Learning Outcomes</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="small fw-semibold mb-1">Essential Learning Outcomes</Form.Label>
                 <TinyMCEEditor
                   value={formData.essentialLearningOutcomes || ''}
                   onChange={(e) => handleInputChange({ target: { name: 'essentialLearningOutcomes', value: e.target.value } })}
                   placeholder="Key learning outcomes students should achieve..."
-                  height={150}
+                  height={120}
                   toolbar="undo redo | formatselect | bold italic | bullist numlist"
                   plugins="lists"
                   menubar={false}
                 />
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Learning Outcomes</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="small fw-semibold mb-1">Learning Outcomes</Form.Label>
                 <TinyMCEEditor
                   value={formData.learningOutcomes || ''}
                   onChange={(e) => handleInputChange({ target: { name: 'learningOutcomes', value: e.target.value } })}
                   placeholder="Specific curriculum outcomes..."
-                  height={150}
+                  height={120}
                   toolbar="undo redo | formatselect | bold italic | bullist numlist"
                   plugins="lists"
                   menubar={false}
@@ -471,9 +478,10 @@ function EnhancedLessonPlannerForm({
 
               <Row>
                 <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Student Count</Form.Label>
+                  <Form.Group className="mb-2">
+                    <Form.Label className="small fw-semibold mb-1">Student Count</Form.Label>
                     <Form.Control
+                      size="sm"
                       type="number"
                       name="studentCount"
                       value={formData.studentCount || ''}
@@ -483,9 +491,10 @@ function EnhancedLessonPlannerForm({
                   </Form.Group>
                 </Col>
                 <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Duration (minutes)</Form.Label>
+                  <Form.Group className="mb-2">
+                    <Form.Label className="small fw-semibold mb-1">Duration (minutes)</Form.Label>
                     <Form.Select
+                      size="sm"
                       name="duration"
                       value={formData.duration || ''}
                       onChange={handleInputChange}
@@ -505,92 +514,100 @@ function EnhancedLessonPlannerForm({
           <Tab eventKey="strategy" title={
             <span>
               <FaUsers className="me-1" />
-              Teaching Strategy
+              Strategy
             </span>
           }>
-            <div className="mt-3">
+            <div className="mt-2">
               <Form.Group className="mb-3">
-                <Form.Label>Pedagogical Strategies</Form.Label>
-                <div>
-                  {['Inquiry-Based Learning', 'Project-Based Learning', 'Cooperative Learning', 
+                <Form.Label className="small fw-semibold mb-1">Pedagogical Strategies</Form.Label>
+                <Row className="g-1">
+                  {['Inquiry-Based Learning', 'Project-Based Learning', 'Cooperative Learning',
                     'Direct Instruction', 'Discovery Learning', 'Problem-Based Learning'].map(strategy => (
-                    <Form.Check
-                      key={strategy}
-                      type="checkbox"
-                      label={strategy}
-                      checked={formData.pedagogicalStrategies.includes(strategy)}
-                      onChange={() => handleMultiSelect('pedagogicalStrategies', strategy)}
-                    />
+                    <Col xs={6} key={strategy}>
+                      <Form.Check
+                        type="checkbox"
+                        label={<span className="small">{strategy}</span>}
+                        checked={formData.pedagogicalStrategies.includes(strategy)}
+                        onChange={() => handleMultiSelect('pedagogicalStrategies', strategy)}
+                        className="mb-1"
+                      />
+                    </Col>
                   ))}
-                </div>
+                </Row>
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Learning Styles</Form.Label>
-                <div>
+                <Form.Label className="small fw-semibold mb-1">Learning Styles</Form.Label>
+                <Row className="g-1">
                   {['Visual', 'Auditory', 'Kinesthetic', 'Reading/Writing'].map(style => (
-                    <Form.Check
-                      key={style}
-                      type="checkbox"
-                      label={style}
-                      checked={formData.learningStyles.includes(style)}
-                      onChange={() => handleMultiSelect('learningStyles', style)}
-                    />
+                    <Col xs={6} key={style}>
+                      <Form.Check
+                        type="checkbox"
+                        label={<span className="small">{style}</span>}
+                        checked={formData.learningStyles.includes(style)}
+                        onChange={() => handleMultiSelect('learningStyles', style)}
+                        className="mb-1"
+                      />
+                    </Col>
                   ))}
-                </div>
+                </Row>
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Learning Preferences</Form.Label>
-                <div>
+                <Form.Label className="small fw-semibold mb-1">Learning Preferences</Form.Label>
+                <Row className="g-1">
                   {['Group work', 'Individual work', 'Pairs', 'Whole class'].map(pref => (
-                    <Form.Check
-                      key={pref}
-                      type="checkbox"
-                      label={pref}
-                      checked={formData.learningPreferences.includes(pref)}
-                      onChange={() => handleMultiSelect('learningPreferences', pref)}
-                    />
+                    <Col xs={6} key={pref}>
+                      <Form.Check
+                        type="checkbox"
+                        label={<span className="small">{pref}</span>}
+                        checked={formData.learningPreferences.includes(pref)}
+                        onChange={() => handleMultiSelect('learningPreferences', pref)}
+                        className="mb-1"
+                      />
+                    </Col>
                   ))}
-                </div>
+                </Row>
               </Form.Group>
 
               <Form.Group className="mb-3">
-                <Form.Label>Multiple Intelligences</Form.Label>
-                <div>
-                  {['Linguistic', 'Logical-Mathematical', 'Spatial', 'Musical', 
+                <Form.Label className="small fw-semibold mb-1">Multiple Intelligences</Form.Label>
+                <Row className="g-1">
+                  {['Linguistic', 'Logical-Mathematical', 'Spatial', 'Musical',
                     'Bodily-Kinesthetic', 'Interpersonal', 'Intrapersonal', 'Naturalistic'].map(intel => (
-                    <Form.Check
-                      key={intel}
-                      type="checkbox"
-                      label={intel}
-                      checked={formData.multipleIntelligences.includes(intel)}
-                      onChange={() => handleMultiSelect('multipleIntelligences', intel)}
-                    />
+                    <Col xs={6} key={intel}>
+                      <Form.Check
+                        type="checkbox"
+                        label={<span className="small">{intel}</span>}
+                        checked={formData.multipleIntelligences.includes(intel)}
+                        onChange={() => handleMultiSelect('multipleIntelligences', intel)}
+                        className="mb-1"
+                      />
+                    </Col>
                   ))}
-                </div>
+                </Row>
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Materials Needed</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="small fw-semibold mb-1">Materials Needed</Form.Label>
                 <TinyMCEEditor
                   value={formData.materials || ''}
                   onChange={(e) => handleInputChange({ target: { name: 'materials', value: e.target.value } })}
                   placeholder="List required materials and resources..."
-                  height={150}
+                  height={120}
                   toolbar="undo redo | formatselect | bold italic | bullist numlist"
                   plugins="lists"
                   menubar={false}
                 />
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Prerequisite Skills</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="small fw-semibold mb-1">Prerequisite Skills</Form.Label>
                 <TinyMCEEditor
                   value={formData.prerequisiteSkills || ''}
                   onChange={(e) => handleInputChange({ target: { name: 'prerequisiteSkills', value: e.target.value } })}
                   placeholder="Skills or knowledge students should have before this lesson..."
-                  height={120}
+                  height={100}
                   toolbar="undo redo | formatselect | bold italic | bullist numlist"
                   plugins="lists"
                   menubar={false}
@@ -603,10 +620,10 @@ function EnhancedLessonPlannerForm({
           <Tab eventKey="additional" title={
             <span>
               <FaCog className="me-1" />
-              Additional Details
+              Details
             </span>
           }>
-            <div className="mt-3">
+            <div className="mt-2">
               <Form.Group className="mb-3">
                 <Form.Check
                   type="checkbox"
@@ -618,13 +635,13 @@ function EnhancedLessonPlannerForm({
               </Form.Group>
 
               {formData.specialNeeds && (
-                <Form.Group className="mb-3">
-                  <Form.Label>Special Needs Details</Form.Label>
+                <Form.Group className="mb-2">
+                  <Form.Label className="small fw-semibold mb-1">Special Needs Details</Form.Label>
                   <TinyMCEEditor
                     value={formData.specialNeedsDetails || ''}
                     onChange={(e) => handleInputChange({ target: { name: 'specialNeedsDetails', value: e.target.value } })}
                     placeholder="Describe specific accommodations needed..."
-                    height={150}
+                    height={100}
                     toolbar="undo redo | formatselect | bold italic | bullist numlist"
                     plugins="lists"
                     menubar={false}
@@ -632,22 +649,23 @@ function EnhancedLessonPlannerForm({
                 </Form.Group>
               )}
 
-              <Form.Group className="mb-3">
-                <Form.Label>Additional Instructions</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="small fw-semibold mb-1">Additional Instructions</Form.Label>
                 <TinyMCEEditor
                   value={formData.additionalInstructions || ''}
                   onChange={(e) => handleInputChange({ target: { name: 'additionalInstructions', value: e.target.value } })}
                   placeholder="Any additional instructions or context for the AI..."
-                  height={150}
+                  height={120}
                   toolbar="undo redo | formatselect | bold italic | bullist numlist"
                   plugins="lists"
                   menubar={false}
                 />
               </Form.Group>
 
-              <Form.Group className="mb-3">
-                <Form.Label>Reference URL (Optional)</Form.Label>
+              <Form.Group className="mb-2">
+                <Form.Label className="small fw-semibold mb-1">Reference URL (Optional)</Form.Label>
                 <Form.Control
+                  size="sm"
                   type="url"
                   name="referenceUrl"
                   value={formData.referenceUrl || ''}
@@ -658,11 +676,13 @@ function EnhancedLessonPlannerForm({
             </div>
           </Tab>
         </Tabs>
+      </div>
 
-        <div className="d-grid gap-2">
+      {/* Pinned generate button */}
+      <div className="pt-3 mt-auto border-top">
+        <div className="d-grid">
           <Button
             variant="primary"
-            size="lg"
             onClick={handleGenerate}
             disabled={isGenerating}
           >
@@ -686,10 +706,9 @@ function EnhancedLessonPlannerForm({
             )}
           </Button>
         </div>
-      </Card.Body>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 export default EnhancedLessonPlannerForm;
-

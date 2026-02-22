@@ -1181,10 +1181,10 @@ function LessonPlanning() {
             AI Lesson Plan Generator
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body style={{ minHeight: '70vh' }}>
-          <Row className="g-3" style={{ height: '70vh' }}>
+        <Modal.Body style={{ minHeight: '70vh', maxHeight: '80vh', overflow: 'hidden' }}>
+          <Row className="g-3" style={{ height: '100%' }}>
             {/* Left Column - Form */}
-            <Col lg={5} className="d-flex flex-column">
+            <Col lg={5} className="d-flex flex-column" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
               <EnhancedLessonPlannerForm
                 subjectName={classSubject?.subject_offering?.subject?.subject_name || ''}
                 formName={classSubject?.class?.form?.form_name || ''}
@@ -1210,7 +1210,7 @@ function LessonPlanning() {
             </Col>
 
             {/* Right Column - Output */}
-            <Col lg={7} className="d-flex flex-column">
+            <Col lg={7} className="d-flex flex-column" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
               <LessonPlanOutput
                 onSaveLesson={(lessonData) => {
                   // Populate the main lesson form and close enhanced planner
