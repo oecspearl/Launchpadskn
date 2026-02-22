@@ -4,6 +4,10 @@
    ============================================ */
 
 :root {
+  /* Bootstrap Primary Override - align all BS utilities with SKN theme */
+  --bs-primary: #009639;
+  --bs-primary-rgb: 0, 150, 57;
+
   /* Primary Flag Colors */
   --skn-green: #009639;
   --skn-red: #CE1126;

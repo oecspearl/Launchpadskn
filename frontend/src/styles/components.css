@@ -115,6 +115,19 @@
   gap: var(--spacing-1);
 }
 
+/* Stat card accent bar color variants */
+.stat-card.stat-blue::before { background: var(--skn-blue, #2563eb); }
+.stat-card.stat-amber::before { background: #d97706; }
+.stat-card.stat-teal::before { background: #059669; }
+.stat-card.stat-red::before { background: var(--skn-red, #CE1126); }
+.stat-card.stat-purple::before { background: #7c3aed; }
+
+/* Remove icon margin when inside stat cards (horizontal layout) */
+.stat-card .stat-icon-circle {
+  margin-bottom: 0;
+  box-shadow: none;
+}
+
 /* Quick Access Cards */
 .quick-access-grid {
   display: grid;
@@ -430,6 +443,35 @@
 .stat-icon-circle.icon-red {
   background: var(--bg-red-tint, #F5E8E8);
   color: var(--skn-red, #CE1126);
+}
+
+/* ============================================
+   AVATAR UTILITIES
+   ============================================ */
+.teacher-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: var(--gray-200, #e9ecef);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 2px solid var(--border-color, #dee2e6);
+}
+
+.teacher-avatar-lg {
+  width: 64px;
+  height: 64px;
+  border-width: 3px;
+  margin: 0 auto;
+}
+
+.teacher-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ============================================

@@ -122,7 +122,7 @@ function InstructorDashboard() {
   return (
     <div className="instructor-dashboard">
       {/* Top navbar with notifications */}
-      <div className="dashboard-header bg-white py-3 px-4 shadow-sm mb-4 pt-5">
+      <div className="dashboard-header bg-white py-3 px-4 shadow-sm mb-4">
         <Row className="align-items-center">
           <Col>
             <h1 className="mb-0">Instructor Dashboard</h1>

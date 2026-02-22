@@ -1,16 +1,16 @@
 /* InstructorDashboard.css */
 
 .instructor-dashboard {
-    background-color: #f8f9fa;
+    background-color: var(--bg-light, #f8f9fa);
     min-height: 100vh;
   }
-  
-  .dashboard-header {
-    border-bottom: 1px solid #eaedf1;
+
+  .instructor-dashboard .dashboard-header {
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
   }
-  
+
   /* Stats Icons */
-  .stats-icon {
+  .instructor-dashboard .stats-icon {
     width: 48px;
     height: 48px;
     border-radius: 10px;
@@ -19,125 +19,125 @@
     justify-content: center;
     font-size: 1.4rem;
   }
-  
+
   .progress-sm {
     height: 5px;
     border-radius: 10px;
   }
-  
+
   /* Dashboard Tabs */
-  .dashboard-tabs .nav-link {
-    color: #6c757d;
+  .instructor-dashboard .dashboard-tabs .nav-link {
+    color: var(--text-muted, #6c757d);
     font-weight: 500;
     padding: 0.5rem 1rem;
     border: none;
     position: relative;
   }
-  
-  .dashboard-tabs .nav-link.active {
-    color: #0d6efd;
+
+  .instructor-dashboard .dashboard-tabs .nav-link.active {
+    color: var(--primary-color, #009639);
     background-color: transparent;
     border: none;
   }
-  
-  .dashboard-tabs .nav-link.active::after {
+
+  .instructor-dashboard .dashboard-tabs .nav-link.active::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     width: 100%;
     height: 2px;
-    background-color: #0d6efd;
+    background-color: var(--primary-color, #009639);
   }
-  
+
   /* Instructor Profile */
-  .avatar-placeholder {
+  .instructor-dashboard .avatar-placeholder {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background-color: #e9ecef;
+    background-color: var(--bg-gray-200, #e9ecef);
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto;
   }
-  
-  .instructor-stats {
+
+  .instructor-dashboard .instructor-stats {
     display: flex;
     text-align: center;
     margin-top: auto;
-    border-top: 1px solid #eaedf1;
+    border-top: 1px solid var(--border-color, #e2e8f0);
     padding-top: 15px;
   }
-  
-  .stat-item {
+
+  .instructor-dashboard .stat-item {
     flex: 1;
   }
-  
-  .stat-label {
+
+  .instructor-dashboard .stat-label {
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--text-muted, #6c757d);
     margin-bottom: 0.25rem;
   }
-  
-  .stat-value {
+
+  .instructor-dashboard .stat-value {
     font-size: 1.25rem;
     font-weight: 600;
     margin-bottom: 0;
   }
-  
+
   /* Course Grid and Cards */
-  .course-grid {
+  .instructor-dashboard .course-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 20px;
+    gap: var(--spacing-5, 20px);
   }
-  
-  .course-card {
+
+  .instructor-dashboard .course-card {
     transition: transform 0.2s ease;
   }
-  
-  .course-card:hover {
-    transform: translateY(-5px);
+
+  .instructor-dashboard .course-card:hover {
+    transform: translateY(-2px);
   }
-  
-  .course-title {
+
+  .instructor-dashboard .course-title {
     margin-bottom: 5px;
     font-weight: 600;
   }
-  
-  .course-code {
+
+  .instructor-dashboard .course-code {
     font-size: 0.875rem;
     margin-bottom: 15px;
   }
-  
+
   /* Quick Actions */
-  .quick-actions {
+  .instructor-dashboard .quick-actions {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 15px;
   }
-  
-  .quick-action-btn {
+
+  .instructor-dashboard .quick-action-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
     padding: 1.25rem 1rem;
-    border-radius: 10px;
-    background-color: #f8f9fa;
-    color: #495057;
+    border-radius: var(--radius-md, 10px);
+    background-color: var(--bg-light, #f8f9fa);
+    color: var(--gray-700, #495057);
     text-decoration: none;
     transition: all 0.2s;
   }
-  
-  .quick-action-btn:hover {
-    background-color: #e9ecef;
-    color: #212529;
+
+  .instructor-dashboard .quick-action-btn:hover {
+    background-color: var(--bg-gray-200, #e9ecef);
+    color: var(--gray-900, #212529);
     text-decoration: none;
   }
-  
-  .action-icon {
+
+  .instructor-dashboard .action-icon {
     width: 40px;
     height: 40px;
     border-radius: 8px;
@@ -146,7 +146,7 @@
     justify-content: center;
     margin-bottom: 10px;
   }
-  
+
   /* Notification Menu Styling */
   .notification-menu {
     width: 350px;
@@ -154,16 +154,16 @@
     max-height: 450px;
     overflow-y: auto;
   }
-  
+
   .notification-item {
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid #eaedf1;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
   }
-  
+
   .notification-item:hover {
-    background-color: #f8f9fa;
+    background-color: var(--bg-light, #f8f9fa);
   }
-  
+
   .notification-icon {
     width: 36px;
     height: 36px;
@@ -174,7 +174,7 @@
     color: white;
     flex-shrink: 0;
   }
-  
+
   .btn-icon {
     width: 32px;
     height: 32px;
@@ -184,34 +184,34 @@
     justify-content: center;
     border-radius: 4px;
   }
-  
+
   /* Responsive adjustments */
   @media (max-width: 992px) {
-    .course-grid {
+    .instructor-dashboard .course-grid {
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     }
-    
-    .quick-actions {
+
+    .instructor-dashboard .quick-actions {
       grid-template-columns: repeat(2, 1fr);
     }
   }
-  
+
   @media (max-width: 768px) {
-    .course-grid {
+    .instructor-dashboard .course-grid {
       grid-template-columns: 1fr;
     }
-    
+
     .notification-menu {
       width: 300px;
     }
   }
-  
+
   @media (max-width: 576px) {
-    .quick-actions {
+    .instructor-dashboard .quick-actions {
       grid-template-columns: 1fr;
     }
-    
-    .dashboard-header h1 {
+
+    .instructor-dashboard .dashboard-header h1 {
       font-size: 1.5rem;
     }
   }

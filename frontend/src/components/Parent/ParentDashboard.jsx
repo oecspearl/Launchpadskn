@@ -253,56 +253,64 @@ function ParentDashboard() {
               <Col md={4}>
                 <Row className="g-3">
                   <Col xs={12}>
-                    <Card className="stat-card bg-primary text-white">
+                    <Card className="stat-card">
                       <Card.Body className="p-4">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <h2 className="mb-0 fw-bold">{subjects.length}</h2>
-                            <small className="opacity-75 text-uppercase letter-spacing-1">Subjects</small>
+                            <small className="text-muted text-uppercase letter-spacing-1">Subjects</small>
                           </div>
-                          <FaBook size={32} className="opacity-50" />
+                          <div className="stat-icon-circle icon-green">
+                            <FaBook />
+                          </div>
                         </div>
                       </Card.Body>
                     </Card>
                   </Col>
 
                   <Col xs={12}>
-                    <Card className="stat-card bg-success text-white">
+                    <Card className="stat-card stat-teal">
                       <Card.Body className="p-4">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <h2 className="mb-0 fw-bold">{attendanceRate}%</h2>
-                            <small className="opacity-75 text-uppercase letter-spacing-1">Attendance</small>
+                            <small className="text-muted text-uppercase letter-spacing-1">Attendance</small>
                           </div>
-                          <FaCheckCircle size={32} className="opacity-50" />
+                          <div className="stat-icon-circle icon-teal">
+                            <FaCheckCircle />
+                          </div>
                         </div>
                       </Card.Body>
                     </Card>
                   </Col>
 
                   <Col xs={12}>
-                    <Card className="stat-card bg-info text-white">
+                    <Card className="stat-card stat-blue">
                       <Card.Body className="p-4">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <h2 className="mb-0 fw-bold">{gradeAverage != null ? `${gradeAverage}%` : 'N/A'}</h2>
-                            <small className="opacity-75 text-uppercase letter-spacing-1">Avg Grade</small>
+                            <small className="text-muted text-uppercase letter-spacing-1">Avg Grade</small>
                           </div>
-                          <FaChartBar size={32} className="opacity-50" />
+                          <div className="stat-icon-circle icon-blue">
+                            <FaChartBar />
+                          </div>
                         </div>
                       </Card.Body>
                     </Card>
                   </Col>
 
                   <Col xs={12}>
-                    <Card className="stat-card bg-warning text-white">
+                    <Card className="stat-card stat-amber">
                       <Card.Body className="p-4">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <h2 className="mb-0 fw-bold">{assignments.length}</h2>
-                            <small className="opacity-75 text-uppercase letter-spacing-1">Upcoming Assignments</small>
+                            <small className="text-muted text-uppercase letter-spacing-1">Upcoming Assignments</small>
                           </div>
-                          <FaClipboardList size={32} className="opacity-50" />
+                          <div className="stat-icon-circle icon-amber">
+                            <FaClipboardList />
+                          </div>
                         </div>
                       </Card.Body>
                     </Card>
@@ -340,18 +348,12 @@ function ParentDashboard() {
                                 <Card.Body className="p-3">
                                   <div className="d-flex align-items-center gap-2 mb-2">
                                     {teacherPhoto ? (
-                                      <div style={{
-                                        width: 36, height: 36, borderRadius: '50%', overflow: 'hidden',
-                                        border: '2px solid #dee2e6', flexShrink: 0
-                                      }}>
-                                        <img src={teacherPhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                      <div className="teacher-avatar" style={{ width: 36, height: 36 }}>
+                                        <img src={teacherPhoto} alt="" />
                                       </div>
                                     ) : (
-                                      <div style={{
-                                        width: 36, height: 36, borderRadius: '50%', backgroundColor: '#e9ecef',
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                                      }}>
-                                        <FaUser size={14} color="#6c757d" />
+                                      <div className="teacher-avatar" style={{ width: 36, height: 36 }}>
+                                        <FaUser size={14} className="text-muted" />
                                       </div>
                                     )}
                                     <div>

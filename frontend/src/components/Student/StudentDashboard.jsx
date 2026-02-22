@@ -236,42 +236,48 @@ function StudentDashboard() {
               <Col md={4}>
                 <Row className="g-3">
                   <Col xs={12}>
-                    <Card className="stat-card bg-primary text-white">
+                    <Card className="stat-card">
                       <Card.Body className="p-4">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <h2 className="mb-0 fw-bold">{mySubjects.length}</h2>
-                            <small className="opacity-75 text-uppercase letter-spacing-1">My Subjects</small>
+                            <small className="text-muted text-uppercase letter-spacing-1">My Subjects</small>
                           </div>
-                          <FaBook size={32} className="opacity-50" />
+                          <div className="stat-icon-circle icon-green">
+                            <FaBook />
+                          </div>
                         </div>
                       </Card.Body>
                     </Card>
                   </Col>
 
                   <Col xs={12}>
-                    <Card className="stat-card bg-success text-white">
+                    <Card className="stat-card stat-blue">
                       <Card.Body className="p-4">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <h2 className="mb-0 fw-bold">{todayLessons.length}</h2>
-                            <small className="opacity-75 text-uppercase letter-spacing-1">Today's Lessons</small>
+                            <small className="text-muted text-uppercase letter-spacing-1">Today's Lessons</small>
                           </div>
-                          <FaCalendarAlt size={32} className="opacity-50" />
+                          <div className="stat-icon-circle icon-blue">
+                            <FaCalendarAlt />
+                          </div>
                         </div>
                       </Card.Body>
                     </Card>
                   </Col>
 
                   <Col xs={12}>
-                    <Card className="stat-card bg-warning text-white">
+                    <Card className="stat-card stat-amber">
                       <Card.Body className="p-4">
                         <div className="d-flex justify-content-between align-items-center">
                           <div>
                             <h2 className="mb-0 fw-bold">{assignments.length}</h2>
-                            <small className="opacity-75 text-uppercase letter-spacing-1">Assignments</small>
+                            <small className="text-muted text-uppercase letter-spacing-1">Assignments</small>
                           </div>
-                          <FaClipboardList size={32} className="opacity-50" />
+                          <div className="stat-icon-circle icon-amber">
+                            <FaClipboardList />
+                          </div>
                         </div>
                       </Card.Body>
                     </Card>
@@ -317,15 +323,11 @@ function StudentDashboard() {
                           return (
                             <div key={index} className="subject-card">
                               <div className="d-flex align-items-center mb-2">
-                                <div style={{
-                                  width: 40, height: 40, borderRadius: '50%', overflow: 'hidden',
-                                  backgroundColor: '#e9ecef', display: 'flex', alignItems: 'center',
-                                  justifyContent: 'center', flexShrink: 0, border: '2px solid #dee2e6'
-                                }}>
+                                <div className="teacher-avatar">
                                   {teacherPhoto ? (
-                                    <img src={teacherPhoto} alt={teacherName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img src={teacherPhoto} alt={teacherName} />
                                   ) : (
-                                    <FaUser size={16} color="#6c757d" />
+                                    <FaUser size={16} className="text-muted" />
                                   )}
                                 </div>
                                 <small className="text-muted ms-2">{teacherName}</small>
@@ -411,15 +413,11 @@ function StudentDashboard() {
                 return (
                   <div key={index} className="subject-card h-100">
                     <div className="text-center mb-3">
-                      <div style={{
-                        width: 64, height: 64, borderRadius: '50%', overflow: 'hidden',
-                        backgroundColor: '#e9ecef', display: 'flex', alignItems: 'center',
-                        justifyContent: 'center', margin: '0 auto', border: '3px solid #dee2e6'
-                      }}>
+                      <div className="teacher-avatar teacher-avatar-lg">
                         {teacherPhoto ? (
-                          <img src={teacherPhoto} alt={teacherName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <img src={teacherPhoto} alt={teacherName} />
                         ) : (
-                          <FaUser size={24} color="#6c757d" />
+                          <FaUser size={24} className="text-muted" />
                         )}
                       </div>
                       <small className="text-muted d-block mt-1">{teacherName}</small>
