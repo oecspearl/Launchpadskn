@@ -32,9 +32,9 @@ function App() {
                 <div className="App">
                   <OfflineAlert />
                   <Navbar />
-                  <Container className="mt-4">
+                  <div style={{ paddingTop: '70px' }}>
                     <AppRoutes />
-                  </Container>
+                  </div>
                 </div>
               </Router>
             </NotificationsProvider>
