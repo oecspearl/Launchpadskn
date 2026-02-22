@@ -66,6 +66,21 @@
   --border-color-light: #F1F5F9;
   --border-color-dark: #CBD5E0;
   
+  /* Blue (functional UI color - used across dashboards) */
+  --skn-blue: #2563eb;
+  --skn-blue-light: #3b82f6;
+  --skn-blue-lighter: #60a5fa;
+  --skn-blue-dark: #1e40af;
+  --skn-blue-darker: #1e3a8a;
+  --bg-blue-tint: #eff6ff;
+  --bg-blue-light: #f0f7ff;
+
+  /* UI Secondary (neutral slate - for Cancel, Back, secondary actions) */
+  --ui-secondary: #64748b;
+  --ui-secondary-hover: #475569;
+  --ui-secondary-light: #94a3b8;
+  --ui-secondary-bg: #f1f5f9;
+
   /* Shadow Colors */
   --shadow-color: rgba(0, 0, 0, 0.1);
   --shadow-color-primary: rgba(0, 150, 57, 0.15);
@@ -92,6 +107,10 @@
   --bg-red-light: rgba(206, 17, 38, 0.1);
   --bg-yellow-tint: rgba(252, 209, 22, 0.15);
   --bg-yellow-light: rgba(252, 209, 22, 0.1);
+  --bg-blue-tint: rgba(37, 99, 235, 0.15);
+  --bg-blue-light: rgba(37, 99, 235, 0.1);
+  --skn-blue: #3b82f6;
+  --skn-blue-light: #60a5fa;
   
   /* Shadow adjustments for dark mode */
   --shadow-color: rgba(0, 0, 0, 0.3);
@@ -114,16 +133,16 @@
 }
 
 .btn-secondary {
-  background-color: var(--skn-red) !important;
-  border-color: var(--skn-red-dark) !important;
+  background-color: var(--ui-secondary) !important;
+  border-color: var(--ui-secondary) !important;
   color: var(--skn-white) !important;
 }
 
 .btn-secondary:hover,
 .btn-secondary:focus,
 .btn-secondary:active {
-  background-color: var(--skn-red-dark) !important;
-  border-color: var(--skn-red-dark) !important;
+  background-color: var(--ui-secondary-hover) !important;
+  border-color: var(--ui-secondary-hover) !important;
   color: var(--skn-white) !important;
 }
 
@@ -144,16 +163,12 @@ a:hover {
 }
 
 /* Cards */
-.card {
-  border-left: 4px solid var(--skn-green);
-}
-
 .card.border-primary {
   border-color: var(--skn-green) !important;
 }
 
 .card.border-secondary {
-  border-color: var(--skn-red) !important;
+  border-color: var(--ui-secondary) !important;
 }
 
 /* Form Focus */
@@ -161,20 +176,6 @@ a:hover {
 .form-select:focus {
   border-color: var(--skn-green);
   box-shadow: 0 0 0 0.2rem rgba(0, 150, 57, 0.25);
-}
-
-/* Navbar */
-.navbar-dark {
-  background-color: var(--skn-black) !important;
-  border-bottom: 3px solid var(--skn-yellow);
-}
-
-.navbar-dark .nav-link {
-  color: var(--skn-white) !important;
-}
-
-.navbar-dark .nav-link:hover {
-  color: var(--skn-yellow) !important;
 }
 
 /* Alerts */
@@ -202,7 +203,7 @@ a:hover {
 }
 
 .badge.bg-secondary {
-  background-color: var(--skn-red) !important;
+  background-color: var(--ui-secondary) !important;
 }
 
 .badge.bg-warning {

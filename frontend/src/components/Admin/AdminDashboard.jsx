@@ -245,12 +245,12 @@ function AdminDashboard() {
                 <div className="stat-card-title">Total Users</div>
                 <div className="stat-value-large">{stats.totalUsers}</div>
               </div>
-              <div className="stat-card-modern secondary">
-                <div className="stat-icon-circle" style={{ background: 'var(--secondary-gradient)' }}>
+              <div className="stat-card-modern">
+                <div className="stat-icon-circle icon-blue">
                   <FaBook />
                 </div>
                 <div className="stat-card-title">Total Subjects</div>
-                <div className="stat-value-large" style={{ background: 'var(--secondary-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                <div className="stat-value-large">
                   {stats.totalCourses}
                 </div>
               </div>
@@ -261,12 +261,12 @@ function AdminDashboard() {
                 <div className="stat-card-title">Instructors</div>
                 <div className="stat-value-large">{stats.totalInstructors}</div>
               </div>
-              <div className="stat-card-modern accent">
-                <div className="stat-icon-circle" style={{ background: 'var(--accent-gradient)', color: 'var(--skn-black)' }}>
+              <div className="stat-card-modern">
+                <div className="stat-icon-circle icon-amber">
                   <FaUserGraduate />
                 </div>
                 <div className="stat-card-title">Students</div>
-                <div className="stat-value-large" style={{ background: 'var(--accent-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                <div className="stat-value-large">
                   {stats.totalStudents}
                 </div>
               </div>
@@ -289,20 +289,20 @@ function AdminDashboard() {
                 <div className="stat-value-large">{stats.totalClasses}</div>
               </div>
               <div className="stat-card-modern">
-                <div className="stat-icon-circle" style={{ background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' }}>
+                <div className="stat-icon-circle icon-teal">
                   <FaUserFriends />
                 </div>
                 <div className="stat-card-title">Parents</div>
-                <div className="stat-value-large" style={{ background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                <div className="stat-value-large">
                   {stats.totalParents}
                 </div>
               </div>
               <div className="stat-card-modern">
-                <div className="stat-icon-circle" style={{ background: 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)' }}>
+                <div className="stat-icon-circle icon-red">
                   <FaUserShield />
                 </div>
                 <div className="stat-card-title">Admins</div>
-                <div className="stat-value-large" style={{ background: 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                <div className="stat-value-large">
                   {stats.totalAdmins}
                 </div>
               </div>
@@ -331,7 +331,7 @@ function AdminDashboard() {
                   </div>
                 </Link>
                 <Link to="/admin/subjects" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'var(--secondary-gradient)' }}>
+                  <div className="quick-access-card-icon icon-blue">
                     <FaBook />
                   </div>
                   <div className="quick-access-card-title">Manage Subjects</div>
@@ -340,7 +340,7 @@ function AdminDashboard() {
                   </div>
                 </Link>
                 <Link to="/admin/student-assignment" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'var(--accent-gradient)', color: 'var(--skn-black)' }}>
+                  <div className="quick-access-card-icon icon-amber">
                     <FaUserGraduate />
                   </div>
                   <div className="quick-access-card-title">Assign Students</div>
@@ -358,7 +358,7 @@ function AdminDashboard() {
                   </div>
                 </Link>
                 <Link to="/teacher/curriculum" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)' }}>
+                  <div className="quick-access-card-icon icon-purple">
                     <FaBook />
                   </div>
                   <div className="quick-access-card-title">Curriculum</div>
@@ -367,7 +367,7 @@ function AdminDashboard() {
                   </div>
                 </Link>
                 <div className="quick-access-card" onClick={() => setActiveTab('institutions')} style={{ cursor: 'pointer' }}>
-                  <div className="quick-access-card-icon" style={{ background: 'var(--secondary-gradient)' }}>
+                  <div className="quick-access-card-icon icon-red">
                     <FaSchool />
                   </div>
                   <div className="quick-access-card-title">Manage Institutions</div>
@@ -377,7 +377,7 @@ function AdminDashboard() {
                 </div>
 
                 <Link to="/admin/users" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'var(--accent-gradient)', color: 'var(--skn-black)' }}>
+                  <div className="quick-access-card-icon icon-amber">
                     <FaUserPlus />
                   </div>
                   <div className="quick-access-card-title">User Management</div>
@@ -386,7 +386,7 @@ function AdminDashboard() {
                   </div>
                 </Link>
                 <div className="quick-access-card" onClick={() => setActiveTab('students')} style={{ cursor: 'pointer' }}>
-                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #11998e 0%, #38ef7d 100%)' }}>
+                  <div className="quick-access-card-icon icon-teal">
                     <FaUserFriends />
                   </div>
                   <div className="quick-access-card-title">Manage Parents</div>
@@ -395,7 +395,7 @@ function AdminDashboard() {
                   </div>
                 </div>
                 <Link to="/admin/arvr-content" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                  <div className="quick-access-card-icon icon-purple">
                     <FaCube />
                   </div>
                   <div className="quick-access-card-title">AR/VR Content</div>

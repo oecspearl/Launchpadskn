@@ -1,45 +1,6 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Login Component Enhancements - Saint Kitts and Nevis Flag Colors */
 .login-container {
-  background: linear-gradient(135deg, #009639 0%, #CE1126 100%);
+  background: linear-gradient(135deg, #009639 0%, #00702B 50%, #004d1a 100%);
   position: relative;
   overflow: hidden;
 }
@@ -52,15 +13,28 @@
   right: 0;
   bottom: 0;
   background: linear-gradient(-45deg, transparent 44%, #000000 44%, #000000 56%, transparent 56%);
-  opacity: 0.3;
+  opacity: 0.08;
+  z-index: 0;
+}
+
+.login-container::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, rgba(252, 209, 22, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
   z-index: 0;
 }
 
 .login-container .card {
   position: relative;
   z-index: 1;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   border: none;
+  border-radius: 1rem;
 }
 
 .login-type-toggle .btn {

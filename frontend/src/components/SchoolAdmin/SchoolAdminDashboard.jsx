@@ -318,8 +318,8 @@ function SchoolAdminDashboard() {
                 <div className="stat-card-title">Total Students</div>
                 <div className="stat-value-large">{stats.totalStudents}</div>
               </Card>
-              <Card className="stat-card-modern secondary">
-                <div className="stat-icon-circle" style={{ background: 'var(--secondary-gradient)' }}>
+              <Card className="stat-card-modern">
+                <div className="stat-icon-circle icon-blue">
                   <FaChalkboardTeacher />
                 </div>
                 <div className="stat-card-title">Instructors</div>
@@ -332,8 +332,8 @@ function SchoolAdminDashboard() {
                 <div className="stat-card-title">Total Subjects</div>
                 <div className="stat-value-large">{stats.totalSubjects}</div>
               </Card>
-              <Card className="stat-card-modern accent">
-                <div className="stat-icon-circle" style={{ background: 'var(--accent-gradient)', color: 'var(--skn-black)' }}>
+              <Card className="stat-card-modern">
+                <div className="stat-icon-circle icon-amber">
                   <FaUsers />
                 </div>
                 <div className="stat-card-title">Total Classes</div>
@@ -375,7 +375,7 @@ function SchoolAdminDashboard() {
                   </div>
                 </Link>
                 <Link to="/school-admin/subjects" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'var(--secondary-gradient)' }}>
+                  <div className="quick-access-card-icon icon-blue">
                     <FaBook />
                   </div>
                   <div className="quick-access-card-title">Manage Subjects</div>
@@ -384,7 +384,7 @@ function SchoolAdminDashboard() {
                   </div>
                 </Link>
                 <Link to="/school-admin/students" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'var(--accent-gradient)', color: 'var(--skn-black)' }}>
+                  <div className="quick-access-card-icon icon-amber">
                     <FaUserGraduate />
                   </div>
                   <div className="quick-access-card-title">Manage Students</div>
@@ -402,7 +402,7 @@ function SchoolAdminDashboard() {
                   </div>
                 </Link>
                 <Link to="/school-admin/reports" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #6a11cb 0%, #2575fc 100%)' }}>
+                  <div className="quick-access-card-icon icon-purple">
                     <FaChartLine />
                   </div>
                   <div className="quick-access-card-title">Reports</div>
@@ -411,7 +411,7 @@ function SchoolAdminDashboard() {
                   </div>
                 </Link>
                 <Link to="/school-admin/report-cards" className="quick-access-card">
-                  <div className="quick-access-card-icon" style={{ background: 'linear-gradient(135deg, #e65100 0%, #ff9800 100%)' }}>
+                  <div className="quick-access-card-icon icon-orange">
                     <FaClipboardList />
                   </div>
                   <div className="quick-access-card-title">Report Cards</div>
