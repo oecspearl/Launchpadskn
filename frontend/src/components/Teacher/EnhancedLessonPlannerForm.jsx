@@ -451,6 +451,43 @@ function EnhancedLessonPlannerForm({
 
               <Form.Group className="mb-2">
                 <Form.Label className="small fw-semibold mb-1">Essential Learning Outcomes</Form.Label>
+                {curriculumTopics.length > 0 && (() => {
+                  const source = selectedTopicIndex !== ''
+                    ? curriculumTopics[parseInt(selectedTopicIndex)]
+                    : null;
+                  const elos = source
+                    ? (Array.isArray(source.essentialLearningOutcomes) ? source.essentialLearningOutcomes
+                      : Array.isArray(source.overview?.essentialLearningOutcomes) ? source.overview.essentialLearningOutcomes
+                      : source.essentialLearningOutcomes ? [source.essentialLearningOutcomes] : [])
+                    : curriculumTopics.flatMap(t => {
+                      const e = t.essentialLearningOutcomes || t.overview?.essentialLearningOutcomes;
+                      if (Array.isArray(e)) return e.map(v => `[Topic ${t.topicNumber}] ${v}`);
+                      if (e) return [`[Topic ${t.topicNumber}] ${e}`];
+                      return [];
+                    });
+                  if (elos.length === 0) return null;
+                  return (
+                    <Form.Select
+                      size="sm"
+                      className="mb-1"
+                      value=""
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        setFormData(prev => ({
+                          ...prev,
+                          essentialLearningOutcomes: prev.essentialLearningOutcomes
+                            ? `${prev.essentialLearningOutcomes}\n${e.target.value}`
+                            : e.target.value
+                        }));
+                      }}
+                    >
+                      <option value="">Select from curriculum...</option>
+                      {elos.map((elo, i) => (
+                        <option key={i} value={elo}>{elo.length > 90 ? elo.substring(0, 90) + '...' : elo}</option>
+                      ))}
+                    </Form.Select>
+                  );
+                })()}
                 <Form.Control
                   as="textarea"
                   size="sm"
@@ -464,6 +501,41 @@ function EnhancedLessonPlannerForm({
 
               <Form.Group className="mb-2">
                 <Form.Label className="small fw-semibold mb-1">Learning Outcomes</Form.Label>
+                {curriculumTopics.length > 0 && (() => {
+                  const topics = selectedTopicIndex !== ''
+                    ? [curriculumTopics[parseInt(selectedTopicIndex)]]
+                    : curriculumTopics;
+                  const scos = topics.flatMap(t =>
+                    (t.instructionalUnits || []).map(u => ({
+                      label: selectedTopicIndex !== ''
+                        ? `${u.scoNumber}: ${(u.specificCurriculumOutcomes || '').substring(0, 80)}`
+                        : `[${t.topicNumber}] ${u.scoNumber}: ${(u.specificCurriculumOutcomes || '').substring(0, 70)}`,
+                      value: u.specificCurriculumOutcomes || ''
+                    })).filter(s => s.value)
+                  );
+                  if (scos.length === 0) return null;
+                  return (
+                    <Form.Select
+                      size="sm"
+                      className="mb-1"
+                      value=""
+                      onChange={(e) => {
+                        if (!e.target.value) return;
+                        setFormData(prev => ({
+                          ...prev,
+                          learningOutcomes: prev.learningOutcomes
+                            ? `${prev.learningOutcomes}\n${e.target.value}`
+                            : e.target.value
+                        }));
+                      }}
+                    >
+                      <option value="">Select from curriculum...</option>
+                      {scos.map((sco, i) => (
+                        <option key={i} value={sco.value}>{sco.label}...</option>
+                      ))}
+                    </Form.Select>
+                  );
+                })()}
                 <Form.Control
                   as="textarea"
                   size="sm"
