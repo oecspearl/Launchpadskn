@@ -6,7 +6,6 @@ import {
 import { FaBook, FaUsers, FaCog, FaMagic } from 'react-icons/fa';
 import { generateEnhancedLessonPlan } from '../../services/aiLessonService';
 import { supabase } from '../../config/supabase';
-import TinyMCEEditor from '../Editor/TextEditor';
 
 function EnhancedLessonPlannerForm({
   subjectName = '',
@@ -452,27 +451,27 @@ function EnhancedLessonPlannerForm({
 
               <Form.Group className="mb-2">
                 <Form.Label className="small fw-semibold mb-1">Essential Learning Outcomes</Form.Label>
-                <TinyMCEEditor
+                <Form.Control
+                  as="textarea"
+                  size="sm"
+                  rows={3}
+                  name="essentialLearningOutcomes"
                   value={formData.essentialLearningOutcomes || ''}
-                  onChange={(e) => handleInputChange({ target: { name: 'essentialLearningOutcomes', value: e.target.value } })}
+                  onChange={handleInputChange}
                   placeholder="Key learning outcomes students should achieve..."
-                  height={120}
-                  toolbar="undo redo | formatselect | bold italic | bullist numlist"
-                  plugins="lists"
-                  menubar={false}
                 />
               </Form.Group>
 
               <Form.Group className="mb-2">
                 <Form.Label className="small fw-semibold mb-1">Learning Outcomes</Form.Label>
-                <TinyMCEEditor
+                <Form.Control
+                  as="textarea"
+                  size="sm"
+                  rows={3}
+                  name="learningOutcomes"
                   value={formData.learningOutcomes || ''}
-                  onChange={(e) => handleInputChange({ target: { name: 'learningOutcomes', value: e.target.value } })}
+                  onChange={handleInputChange}
                   placeholder="Specific curriculum outcomes..."
-                  height={120}
-                  toolbar="undo redo | formatselect | bold italic | bullist numlist"
-                  plugins="lists"
-                  menubar={false}
                 />
               </Form.Group>
 
@@ -590,27 +589,27 @@ function EnhancedLessonPlannerForm({
 
               <Form.Group className="mb-2">
                 <Form.Label className="small fw-semibold mb-1">Materials Needed</Form.Label>
-                <TinyMCEEditor
+                <Form.Control
+                  as="textarea"
+                  size="sm"
+                  rows={3}
+                  name="materials"
                   value={formData.materials || ''}
-                  onChange={(e) => handleInputChange({ target: { name: 'materials', value: e.target.value } })}
+                  onChange={handleInputChange}
                   placeholder="List required materials and resources..."
-                  height={120}
-                  toolbar="undo redo | formatselect | bold italic | bullist numlist"
-                  plugins="lists"
-                  menubar={false}
                 />
               </Form.Group>
 
               <Form.Group className="mb-2">
                 <Form.Label className="small fw-semibold mb-1">Prerequisite Skills</Form.Label>
-                <TinyMCEEditor
+                <Form.Control
+                  as="textarea"
+                  size="sm"
+                  rows={2}
+                  name="prerequisiteSkills"
                   value={formData.prerequisiteSkills || ''}
-                  onChange={(e) => handleInputChange({ target: { name: 'prerequisiteSkills', value: e.target.value } })}
+                  onChange={handleInputChange}
                   placeholder="Skills or knowledge students should have before this lesson..."
-                  height={100}
-                  toolbar="undo redo | formatselect | bold italic | bullist numlist"
-                  plugins="lists"
-                  menubar={false}
                 />
               </Form.Group>
             </div>
@@ -637,28 +636,28 @@ function EnhancedLessonPlannerForm({
               {formData.specialNeeds && (
                 <Form.Group className="mb-2">
                   <Form.Label className="small fw-semibold mb-1">Special Needs Details</Form.Label>
-                  <TinyMCEEditor
+                  <Form.Control
+                    as="textarea"
+                    size="sm"
+                    rows={2}
+                    name="specialNeedsDetails"
                     value={formData.specialNeedsDetails || ''}
-                    onChange={(e) => handleInputChange({ target: { name: 'specialNeedsDetails', value: e.target.value } })}
+                    onChange={handleInputChange}
                     placeholder="Describe specific accommodations needed..."
-                    height={100}
-                    toolbar="undo redo | formatselect | bold italic | bullist numlist"
-                    plugins="lists"
-                    menubar={false}
                   />
                 </Form.Group>
               )}
 
               <Form.Group className="mb-2">
                 <Form.Label className="small fw-semibold mb-1">Additional Instructions</Form.Label>
-                <TinyMCEEditor
+                <Form.Control
+                  as="textarea"
+                  size="sm"
+                  rows={3}
+                  name="additionalInstructions"
                   value={formData.additionalInstructions || ''}
-                  onChange={(e) => handleInputChange({ target: { name: 'additionalInstructions', value: e.target.value } })}
+                  onChange={handleInputChange}
                   placeholder="Any additional instructions or context for the AI..."
-                  height={120}
-                  toolbar="undo redo | formatselect | bold italic | bullist numlist"
-                  plugins="lists"
-                  menubar={false}
                 />
               </Form.Group>
 
