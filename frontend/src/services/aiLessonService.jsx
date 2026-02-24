@@ -6,7 +6,7 @@
  * to keep the OpenAI API key server-side.
  */
 
-import { findBestVideoForLesson, searchEducationalVideos, getVideoDetails } from './youtubeService';
+import { findBestVideoForLesson, searchEducationalVideos, searchVideosByOutcomes, getVideoDetails } from './youtubeService';
 import { detectVideoType, extractYouTubeVideoId } from '../types/contentTypes';
 
 // Use backend proxy for AI calls (API key is kept server-side)
@@ -985,36 +985,50 @@ export const generateCompleteLessonContent = async ({
     throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
   }
 
-  let prompt = `You are an expert educational content creator. Generate a complete set of lesson content items for a lesson with the following details:
+  let prompt = `You are an expert educational content designer creating a structured, pedagogically sound lesson for ${form} students. Generate a complete set of lesson content items that follows a clear learning progression.
 
+## LESSON DETAILS
 Subject: ${subject}
-Form: ${form}
+Form/Grade: ${form}
 Topic: ${topic}
 Lesson Title: ${lessonTitle}
 Duration: ${duration} minutes
-${learningObjectives ? `Learning Objectives:\n${learningObjectives}\n` : ''}
-${lessonPlan ? `Lesson Plan:\n${lessonPlan.substring(0, 2000)}\n` : ''}
+${learningObjectives ? `Learning Objectives:\n${learningObjectives}` : ''}
+${lessonPlan ? `Lesson Plan Context:\n${lessonPlan.substring(0, 2000)}` : ''}
 
-Generate a comprehensive set of content items that should be included in this lesson. For each content item, provide:
-1. Content type (one of: LEARNING_OUTCOMES, LEARNING_ACTIVITIES, KEY_CONCEPTS, REFLECTION_QUESTIONS, DISCUSSION_PROMPTS, SUMMARY, VIDEO, QUIZ, ASSIGNMENT)
-2. Title
-3. The actual content text (appropriate for ${form} students) - for VIDEO, provide a suggested video URL or embed code; for QUIZ, provide quiz description and suggested questions; for ASSIGNMENT, provide assignment description
-4. Content section (Introduction, Learning, Assessment, Resources, or Closure)
-5. Sequence order (1, 2, 3, etc.)
-6. Whether it's required (true/false)
-7. Estimated minutes to complete (if applicable)
-8. For VIDEO: url field with a suggested YouTube or educational video URL
-9. For QUIZ: quiz_questions array with 3-5 questions (each with question_text, question_type, options array, correct_answer)
-10. For ASSIGNMENT: assignment_description, total_points, and rubric_criteria array
+## PEDAGOGICAL FRAMEWORK
+The lesson MUST follow this learning progression (Engage → Explain → Apply → Assess → Reflect):
 
-IMPORTANT: You must respond with ONLY valid JSON, no additional text, no markdown formatting, no code blocks. The response must be a single JSON array that can be parsed directly.
+### Phase 1: INTRODUCTION (Engage)
+- **LEARNING_OUTCOMES**: State 3–5 measurable outcomes using action verbs (identify, explain, apply, compare, solve). Each outcome should directly map to a learning objective.
 
-Respond with this exact JSON structure (MUST include all required items in this order):
+### Phase 2: LEARNING (Explain & Demonstrate)
+- **KEY_CONCEPTS**: Explain 3–5 core concepts. For each concept include:
+  * A clear definition in age-appropriate language for ${form} students
+  * A concrete, relatable example or analogy
+  * Key vocabulary words highlighted
+- **VIDEO**: An educational video that demonstrates or explains the concept. Include viewing guidance: what students should watch for and a reflection question after watching.
+- **LEARNING_ACTIVITIES**: 2–3 hands-on activities that progress from guided practice to independent practice. Activities should directly exercise the learning outcomes.
+
+### Phase 3: ASSESSMENT (Evaluate)
+- **QUIZ**: 3–5 questions that progress through Bloom's Taxonomy levels:
+  * 1–2 Remember/Understand questions (recall facts, explain concepts)
+  * 1–2 Apply/Analyze questions (use knowledge in new situations)
+  * 1 Evaluate/Create question (judge, design, or synthesize)
+- **ASSIGNMENT**: A meaningful task with step-by-step instructions, clear submission requirements, and a rubric.
+
+### Phase 4: CLOSURE (Reflect & Summarize)
+- **SUMMARY**: Recap the key takeaways tied back to the learning outcomes.
+- **REFLECTION_QUESTIONS**: 2–3 questions that encourage students to think about what they learned and how to apply it.
+
+## RESPONSE FORMAT
+Respond with ONLY a valid JSON array (no markdown, no code blocks, no extra text):
+
 [
   {
     "content_type": "LEARNING_OUTCOMES",
     "title": "Learning Outcomes",
-    "content_text": "By the end of this lesson, ${form} students will be able to:\n1. [Outcome 1 - written in simple language for ${form} students]\n2. [Outcome 2 - age-appropriate for ${form}]\n3. [Outcome 3 - clear and understandable for ${form} level]",
+    "content_text": "By the end of this lesson, you will be able to:\\n1. [Outcome using action verb]\\n2. [Outcome using action verb]\\n3. [Outcome using action verb]",
     "content_section": "Introduction",
     "sequence_order": 1,
     "is_required": true,
@@ -1022,8 +1036,8 @@ Respond with this exact JSON structure (MUST include all required items in this 
   },
   {
     "content_type": "KEY_CONCEPTS",
-    "title": "Key Concepts",
-    "content_text": "Main concepts explained in simple language for ${form} students:\n\n1. [Concept 1 - explained clearly at ${form} level]\n2. [Concept 2 - using age-appropriate vocabulary]\n3. [Concept 3 - easy to understand for ${form} students]",
+    "title": "Key Concepts: ${topic}",
+    "content_text": "Core concepts with definitions, examples, and key vocabulary...",
     "content_section": "Learning",
     "sequence_order": 2,
     "is_required": true,
@@ -1031,19 +1045,19 @@ Respond with this exact JSON structure (MUST include all required items in this 
   },
   {
     "content_type": "VIDEO",
-    "title": "Video: ${topic}",
-    "content_text": "Watch this video to understand ${topic} - designed for ${form} students",
+    "title": "Video: [Descriptive title]",
+    "content_text": "Before watching: Look for... After watching: Think about...",
     "url": "https://www.youtube.com/watch?v=... (use actual URL provided below)",
     "content_section": "Learning",
     "sequence_order": 3,
     "is_required": true,
     "estimated_minutes": 10,
-    "description": "Educational video about ${topic} appropriate for ${form} level"
+    "description": "What this video covers and how it connects to the learning outcomes"
   },
   {
     "content_type": "LEARNING_ACTIVITIES",
     "title": "Learning Activities",
-    "content_text": "Activities for ${form} students to practice ${topic}:\n\n1. [Activity 1 - age-appropriate, clear instructions for ${form} students]\n2. [Activity 2 - simple and engaging for ${form} level]\n3. [Activity 3 - practical and fun for ${form} students]",
+    "content_text": "Guided and independent practice activities...",
     "content_section": "Learning",
     "sequence_order": 4,
     "is_required": true,
@@ -1052,154 +1066,120 @@ Respond with this exact JSON structure (MUST include all required items in this 
   {
     "content_type": "QUIZ",
     "title": "Knowledge Check: ${topic}",
-    "content_text": "Test your understanding with this quiz",
+    "content_text": "Test your understanding of the key concepts",
     "content_section": "Assessment",
     "sequence_order": 5,
     "is_required": true,
-    "estimated_minutes": 15,
+    "estimated_minutes": 10,
     "quiz_questions": [
       {
-        "question_text": "Question about ${topic} written in simple language for ${form} students?",
+        "question_text": "Remember-level question...",
         "question_type": "MULTIPLE_CHOICE",
-        "points": 2,
-        "options": [
-          {"text": "Option A - simple answer for ${form} level", "is_correct": false},
-          {"text": "Option B - correct answer", "is_correct": true},
-          {"text": "Option C - simple answer for ${form} level", "is_correct": false},
-          {"text": "Option D - simple answer for ${form} level", "is_correct": false}
-        ],
-        "explanation": "Explanation written clearly for ${form} students"
-      },
-      {
-        "question_text": "Another question about ${topic} for ${form} students?",
-        "question_type": "TRUE_FALSE",
         "points": 1,
         "options": [
-          {"text": "True", "is_correct": true},
-          {"text": "False", "is_correct": false}
+          {"text": "Correct answer", "is_correct": true},
+          {"text": "Common misconception", "is_correct": false},
+          {"text": "Plausible distractor", "is_correct": false},
+          {"text": "Plausible distractor", "is_correct": false}
         ],
-        "explanation": "Simple explanation for ${form} level"
-      },
-      {
-        "question_text": "A third question about ${topic} appropriate for ${form}?",
-        "question_type": "SHORT_ANSWER",
-        "points": 3,
-        "correct_answer": "Expected answer for ${form} students"
+        "explanation": "Why the correct answer is right and common mistakes"
       }
     ]
   },
   {
     "content_type": "ASSIGNMENT",
     "title": "Assignment: ${topic}",
-    "content_text": "Complete this assignment to demonstrate your understanding of ${topic}",
+    "content_text": "Apply what you learned about ${topic}",
     "content_section": "Assessment",
     "sequence_order": 6,
     "is_required": true,
     "estimated_minutes": 60,
-    "assignment_description": "Detailed assignment instructions written clearly for ${form} students:\n\n1. [Step 1 - clear instructions at ${form} level]\n2. [Step 2 - simple and easy to follow]\n3. [Step 3 - age-appropriate for ${form}]\n\nWhat to submit:\n- [Requirement 1]\n- [Requirement 2]\n- [Requirement 3]\n\nDue date: [Specify due date]\n\nThis assignment is designed for ${form} students and uses language appropriate for your level.",
+    "assignment_description": "Detailed step-by-step instructions (at least 200 characters)...",
     "total_points": 100,
     "rubric_criteria": [
-      {
-        "criterion": "Understanding of Concepts",
-        "points": 30,
-        "description": "Demonstrates clear understanding of key concepts (${form} level)"
-      },
-      {
-        "criterion": "Application",
-        "points": 30,
-        "description": "Applies concepts correctly to solve problems (appropriate for ${form})"
-      },
-      {
-        "criterion": "Presentation",
-        "points": 20,
-        "description": "Clear, organized, and well-presented work (${form} standards)"
-      },
-      {
-        "criterion": "Completeness",
-        "points": 20,
-        "description": "All required components are included (${form} level requirements)"
-      }
+      {"criterion": "Criterion name", "points": 25, "description": "What earns full marks"}
     ]
+  },
+  {
+    "content_type": "REFLECTION_QUESTIONS",
+    "title": "Reflect on Your Learning",
+    "content_text": "Think about what you learned today:\\n1. [Reflection question]\\n2. [Reflection question]\\n3. [Connection to real life question]",
+    "content_section": "Closure",
+    "sequence_order": 7,
+    "is_required": false,
+    "estimated_minutes": 5
   },
   {
     "content_type": "SUMMARY",
     "title": "Lesson Summary",
-    "content_text": "Summary for ${form} students:\n\nToday we learned about ${topic}. Here's what ${form} students should remember:\n1. [Key point 1 - in simple language]\n2. [Key point 2 - easy to understand]\n3. [Key point 3 - age-appropriate]",
+    "content_text": "Today we learned... Key takeaways tied to outcomes...",
     "content_section": "Closure",
-    "sequence_order": 7,
+    "sequence_order": 8,
     "is_required": true,
     "estimated_minutes": 5
   }
 ]
 
-NOTE: The VIDEO must be in the Learning section (content_section: "Learning") and should come before or within the LEARNING_ACTIVITIES section.
+## CRITICAL RULES
 
-Generate content items that provide a complete learning experience. YOU MUST INCLUDE ALL OF THE FOLLOWING:
-
-REQUIRED CONTENT ITEMS (must be included in this exact order):
-1. LEARNING_OUTCOMES - Learning outcomes written clearly at ${form} student level (3-5 outcomes)
-2. KEY_CONCEPTS - Key concepts explained in simple, age-appropriate language for ${form} students (3-5 main concepts)
-3. LEARNING_ACTIVITIES - Must include at least ONE VIDEO in this section, plus 2-3 other learning activities, all written at ${form} level
-4. ASSESSMENT - Assessment activities (can include QUIZ and/or ASSIGNMENT), written at ${form} level
-5. SUMMARY - Lesson summary written clearly at ${form} student level (concise, age-appropriate)
-
-ADDITIONAL CONTENT (optional but recommended):
-- REFLECTION_QUESTIONS - Questions for students to reflect (${form} level)
-- DISCUSSION_PROMPTS - Discussion topics (${form} level)
-
-CRITICAL REQUIREMENTS - STUDENT LEVEL LANGUAGE:
+LANGUAGE LEVEL:
 - ALL content MUST be written at ${form} reading/comprehension level
-- Use age-appropriate vocabulary - imagine you're explaining to ${form} students directly
-- Avoid complex jargon, technical terms, or advanced vocabulary
-- Use simple, clear sentences that ${form} students can easily understand
-- Break down complex ideas into simple explanations
-- Use examples and analogies appropriate for ${form} level
-- Write as if speaking directly to ${form} students
+- Use simple, clear sentences — imagine explaining directly to ${form} students
+- Define technical terms when first used
+- Use concrete examples and relatable analogies
 
-STRUCTURE REQUIREMENTS:
-- The VIDEO MUST be placed in the "Learning" content section (content_section: "Learning")
-- At least 1 VIDEO must be included and it should be part of the Learning Activities
-- The VIDEO should come after KEY_CONCEPTS and before or within LEARNING_ACTIVITIES
-- Include at least 1 QUIZ with 3-5 questions appropriate for ${form} level (use simple language in questions)
-- Include at least 1 ASSIGNMENT with detailed instructions written for ${form} students and rubric criteria (4-5 criteria, totaling 100 points)
-- Content is practical and classroom-ready
-- Sequence makes logical sense (Introduction → Learning → Assessment → Closure)
-- Content is specific to the topic "${topic}" and subject "${subject}"
+CONTENT QUALITY:
+- Every content item must directly support at least one learning outcome
+- KEY_CONCEPTS must include definitions + examples, not just topic names
+- LEARNING_ACTIVITIES must include clear step-by-step instructions students can follow
+- QUIZ questions must have meaningful distractors based on real misconceptions, not obviously wrong options
+- QUIZ explanations must explain WHY the correct answer is right
+- ASSIGNMENT must have detailed instructions (at least 200 characters in assignment_description), not generic text
+- ASSIGNMENT rubric must have 4–5 criteria totaling 100 points
 
-TECHNICAL REQUIREMENTS:
-- For VIDEO: Use the actual YouTube URL provided below (not a placeholder)
-- For QUIZ: Create high-quality quiz questions that:
-  * Directly align with the learning objectives listed above
-  * Use vocabulary and language appropriate for ${form} students (avoid jargon, use clear simple language)
-  * Include meaningful distractors (incorrect options) that represent common misconceptions, not obviously wrong answers
-  * Distribute questions across Bloom's Taxonomy levels (Remember, Understand, Apply, Analyze, Evaluate) to assess different cognitive skills
-  * Each question should include: question_text (clear and grade-appropriate), question_type, points (1-5 based on complexity), options (for MULTIPLE_CHOICE/TRUE_FALSE) or correct_answer (for SHORT_ANSWER/FILL_BLANK), and explanation (brief explanation at ${form} level)
-  * You MUST include the quiz_questions array with 3-5 questions
-- For ASSIGNMENT: Create meaningful assignments with DETAILED instructions written for ${form} students. The assignment_description field MUST contain comprehensive, step-by-step instructions (at least 200 characters). Do NOT use generic text like "Complete this assignment to demonstrate your understanding" - provide actual detailed instructions including: what students need to do, how to do it, what to submit, and any specific requirements. Also include rubric criteria (4-5 criteria, totaling 100 points)
+VIDEO:
+- Must be placed in the "Learning" section (content_section: "Learning")
+- Use the actual YouTube URL provided below — do NOT make up URLs
+- Include viewing guidance in content_text: what to watch for and a post-viewing reflection question
+- The description field should explain how the video connects to the learning outcomes
+
+STRUCTURE:
+- Sequence must follow: Introduction → Learning → Assessment → Closure
+- VIDEO comes after KEY_CONCEPTS and before or within LEARNING_ACTIVITIES
+- Content is specific to "${topic}" in "${subject}" — not generic
 
 Remember: Respond with ONLY the JSON array, nothing else.`;
 
   try {
     console.log('[AI Service] Generating complete lesson content...');
 
-    // Search for relevant YouTube videos first
+    // Search for relevant YouTube videos matched to learning outcomes
     let videoInfo = null;
     let videoOptions = [];
     try {
-      console.log('[AI Service] Searching for YouTube videos...');
+      console.log('[AI Service] Searching for YouTube videos matched to learning outcomes...');
 
-      // Search for multiple videos to give options
-      videoOptions = await searchEducationalVideos({
-        query: topic,
-        subject,
-        form,
-        maxResults: 3
-      });
+      // Use outcome-based video search when learning objectives are provided
+      if (learningObjectives && learningObjectives.trim().length > 10) {
+        videoOptions = await searchVideosByOutcomes({
+          topic,
+          subject,
+          form,
+          learningOutcomes: learningObjectives,
+          maxTotal: 5
+        });
+      } else {
+        videoOptions = await searchEducationalVideos({
+          query: topic,
+          subject,
+          form,
+          maxResults: 5
+        });
+      }
 
       if (videoOptions && videoOptions.length > 0) {
-        // Use the first (most relevant) video
         videoInfo = videoOptions[0];
-        console.log('[AI Service] Found', videoOptions.length, 'videos. Using:', videoInfo.title);
+        console.log('[AI Service] Found', videoOptions.length, 'outcome-matched videos. Primary:', videoInfo.title);
 
         // Update prompt to include the actual video URL
         prompt = prompt.replace(
@@ -1207,26 +1187,32 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
           `"url": "${videoInfo.url}"`
         );
 
-        // Add video information to the prompt for better context
+        // Build rich video context with outcome alignment info
         const videoList = videoOptions.map((v, idx) =>
-          `${idx + 1}. "${v.title}" by ${v.channelTitle} - ${v.url}`
+          `${idx + 1}. "${v.title}" by ${v.channelTitle} - ${v.url}${v.matchedOutcome ? ` [Supports: ${v.matchedOutcome}]` : ''}`
         ).join('\n');
 
-        prompt += `\n\nIMPORTANT: Use this actual YouTube video URL in the VIDEO content item:\n${videoInfo.url}\nVideo Title: ${videoInfo.title}\nChannel: ${videoInfo.channelTitle}\nDescription: ${videoInfo.description?.substring(0, 200) || 'Educational video'}\n\nAdditional video options found:\n${videoList}`;
+        prompt += `\n\nAVAILABLE YOUTUBE VIDEOS (matched to learning outcomes):
+${videoList}
+
+INSTRUCTIONS FOR VIDEO CONTENT ITEMS:
+- Use the PRIMARY video (Video 1) for the main VIDEO content item in the Learning section.
+- If generating additional VIDEO items, choose videos from the list that best align with the specific learning outcome being covered in that section.
+- Each VIDEO must use an actual URL from the list above — do not make up URLs.
+- For each VIDEO, include viewing guidance: what students should observe or look for while watching.`;
       } else {
         console.warn('[AI Service] No YouTube video found, will use placeholder');
       }
     } catch (videoError) {
       console.warn('[AI Service] Error searching for videos, continuing without video:', videoError);
-      // Continue without video if search fails
     }
 
     const requestBody = {
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4',
       messages: [
         {
           role: 'system',
-          content: 'You are an expert educational content creator. You MUST respond with ONLY valid JSON array, no markdown, no code blocks, no additional text. The response must be parseable JSON only.'
+          content: 'You are an expert educational content designer who creates pedagogically structured lesson materials following Bloom\'s Taxonomy and the Engage-Explain-Apply-Assess-Reflect framework. Every piece of content must align with stated learning outcomes. You MUST respond with ONLY a valid JSON array, no markdown, no code blocks, no additional text.'
         },
         {
           role: 'user',
@@ -1337,23 +1323,28 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         estimated_minutes: item.estimated_minutes || null
       };
 
-      // For VIDEO content, ensure we use the actual video URL if available
-      // AND ensure it's in the Learning section
+      // For VIDEO content, match to the best available video from outcome-based search
       if (item.content_type === 'VIDEO') {
-        if (videoInfo) {
+        // Try to match the AI-assigned URL to one of our searched videos
+        const matchedVideo = videoOptions.find(v =>
+          item.url?.includes(v.videoId) || item.title?.toLowerCase().includes(v.title?.toLowerCase()?.substring(0, 20))
+        );
+
+        if (matchedVideo) {
+          mappedItem.url = matchedVideo.url;
+          mappedItem.description = item.description || matchedVideo.description || item.content_text || '';
+          mappedItem.title = item.title || matchedVideo.title;
+        } else if (videoInfo) {
+          // Fallback to primary video
           mappedItem.url = videoInfo.url;
           mappedItem.description = videoInfo.description || item.description || item.content_text || '';
-          mappedItem.title = videoInfo.title || item.title;
+          mappedItem.title = item.title || videoInfo.title;
         } else if (item.url) {
           mappedItem.url = item.url;
           mappedItem.description = item.description || item.content_text || '';
         }
         // Force video to be in Learning section
         mappedItem.content_section = 'Learning';
-        // Ensure description mentions student level
-        if (mappedItem.description && !mappedItem.description.toLowerCase().includes(form.toLowerCase())) {
-          mappedItem.description = `${mappedItem.description} (for ${form} students)`;
-        }
       }
 
       // For QUIZ content, ensure quiz_questions array is preserved
@@ -1372,13 +1363,6 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         if (!mappedItem.assignment_description || mappedItem.assignment_description.trim() === '') {
           console.warn('[AI Service] Assignment has no description:', item.title);
         }
-      }
-
-      // Ensure all text content mentions student level if not already present
-      if (mappedItem.content_text && !mappedItem.content_text.toLowerCase().includes(form.toLowerCase()) &&
-        ['LEARNING_OUTCOMES', 'KEY_CONCEPTS', 'LEARNING_ACTIVITIES', 'SUMMARY'].includes(mappedItem.content_type)) {
-        // Add a note that content is for this form level
-        mappedItem.content_text = `${mappedItem.content_text}\n\n(Content designed for ${form} students)`;
       }
 
       return mappedItem;
@@ -1436,14 +1420,38 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
       contentItems.splice(insertIndex, 0, {
         content_type: 'VIDEO',
         title: videoInfo.title,
-        content_text: `Watch this video to understand ${topic} at ${form} level`,
+        content_text: `Before watching: Pay attention to the key concepts discussed.\nAfter watching: Think about how this connects to ${topic}.`,
         url: videoInfo.url,
-        description: videoInfo.description || `Educational video about ${topic} for ${form} students`,
+        description: videoInfo.description || `Educational video about ${topic}`,
         content_section: 'Learning',
         sequence_order: insertIndex + 1,
         is_required: true,
         estimated_minutes: 10
       });
+    }
+
+    // Add a second video if we have multiple outcome-matched videos and the AI didn't already include one
+    const videoCount = contentItems.filter(item => item.content_type === 'VIDEO').length;
+    if (videoCount < 2 && videoOptions.length >= 2) {
+      const usedVideoIds = contentItems
+        .filter(item => item.content_type === 'VIDEO' && item.url)
+        .map(item => item.url);
+      const secondVideo = videoOptions.find(v => !usedVideoIds.some(url => url.includes(v.videoId)));
+      if (secondVideo) {
+        const activityIndex = contentItems.findIndex(item => item.content_type === 'LEARNING_ACTIVITIES');
+        const insertAt = activityIndex >= 0 ? activityIndex + 1 : contentItems.length - 1;
+        contentItems.splice(insertAt, 0, {
+          content_type: 'VIDEO',
+          title: secondVideo.title,
+          content_text: `Watch this additional video to deepen your understanding.${secondVideo.matchedOutcome ? `\nThis video supports: ${secondVideo.matchedOutcome}` : ''}`,
+          url: secondVideo.url,
+          description: secondVideo.description || `Additional educational video about ${topic}`,
+          content_section: 'Learning',
+          sequence_order: insertAt + 1,
+          is_required: false,
+          estimated_minutes: 8
+        });
+      }
     }
 
     if (!hasLearningActivities) {
@@ -2307,31 +2315,42 @@ export const generateInteractiveBook = async ({
   try {
     console.log('[AI Service] Generating interactive book...');
 
-    // Step 1: Search for videos if video pages are requested
+    // Step 1: Search for videos using learning outcomes for better relevance
     let videoOptions = [];
     let videoInfoMap = {};
     if (pageTypes.includes('video')) {
-      console.log('[AI Service] Searching for YouTube videos...');
+      console.log('[AI Service] Searching for YouTube videos matched to learning outcomes...');
       try {
-        videoOptions = await searchEducationalVideos({
-          query: topic,
-          subject: subject,
-          form: gradeLevel,
-          maxResults: 5
-        });
+        // Use outcome-based search when learning outcomes are provided
+        if (learningOutcomes && learningOutcomes.trim().length > 10) {
+          videoOptions = await searchVideosByOutcomes({
+            topic,
+            subject,
+            form: gradeLevel,
+            learningOutcomes,
+            maxTotal: 6
+          });
+        } else {
+          videoOptions = await searchEducationalVideos({
+            query: topic,
+            subject,
+            form: gradeLevel,
+            maxResults: 5
+          });
+        }
 
         if (videoOptions && videoOptions.length > 0) {
-          // Create a map of video info for the AI to use
           videoOptions.forEach((video, idx) => {
             videoInfoMap[`video_${idx + 1}`] = {
               videoId: video.videoId,
               url: video.url,
               title: video.title,
               description: video.description?.substring(0, 200) || '',
-              channelTitle: video.channelTitle
+              channelTitle: video.channelTitle,
+              matchedOutcome: video.matchedOutcome || ''
             };
           });
-          console.log('[AI Service] Found', videoOptions.length, 'videos for book generation');
+          console.log('[AI Service] Found', videoOptions.length, 'outcome-matched videos for book generation');
         } else {
           console.warn('[AI Service] No YouTube videos found, video pages may not have valid video IDs');
         }
@@ -2343,35 +2362,58 @@ export const generateInteractiveBook = async ({
     // Step 2: Prepare video information for AI prompt
     let videoContext = '';
     if (Object.keys(videoInfoMap).length > 0) {
-      const videoList = Object.entries(videoInfoMap).map(([key, video]) => 
-        `${key}: "${video.title}" by ${video.channelTitle}\n  Video ID: ${video.videoId}\n  URL: ${video.url}\n  Description: ${video.description}`
+      const videoList = Object.entries(videoInfoMap).map(([key, video]) =>
+        `${key}: "${video.title}" by ${video.channelTitle}\n  Video ID: ${video.videoId}\n  URL: ${video.url}\n  Description: ${video.description}${video.matchedOutcome ? `\n  Matched Outcome: ${video.matchedOutcome}` : ''}`
       ).join('\n\n');
-      
-      videoContext = `\n\nAVAILABLE YOUTUBE VIDEOS (use these exact video IDs and URLs for video pages):\n${videoList}\n\nWhen creating video pages, you MUST use one of these video IDs and URLs from the list above. Do not make up video IDs.`;
+
+      videoContext = `\n\nAVAILABLE YOUTUBE VIDEOS (use these exact video IDs and URLs for video pages):\n${videoList}\n\nWhen creating video pages, you MUST use one of these video IDs and URLs from the list above. Do not make up video IDs. Choose the video that best supports the learning outcome for that section of the book.`;
     }
 
     const pageTypesStr = pageTypes.join(', ');
-    const prompt = `You are an expert educational content creator. Generate an interactive book with ${numPages} pages about "${topic}".
+    const prompt = `You are an expert educational content designer who creates pedagogically structured interactive learning materials. Generate an interactive book with ${numPages} pages about "${topic}".
 
 ${subject ? `Subject: ${subject}` : ''}
 ${gradeLevel ? `Grade Level: ${gradeLevel}` : ''}
-${learningOutcomes ? `Learning Outcomes: ${learningOutcomes}` : ''}
+${learningOutcomes ? `Learning Outcomes:\n${learningOutcomes}` : ''}
 ${additionalComments ? `Additional Context: ${additionalComments}` : ''}
 
-Page Types to Use: ${pageTypesStr}
+Page Types Available: ${pageTypesStr}
 
-Generate ${numPages} pages with a mix of the following types:
-- content: Rich text pages with educational content, explanations, examples
-- video: Pages with YouTube video embeds (MUST use video IDs and URLs from the available videos list below)
-- quiz: Pages with interactive quiz questions (multiple choice, true/false, fill-in-the-blank)
-- image: Pages with educational images (provide detailed image descriptions that can be used to generate images)
+## PEDAGOGICAL STRUCTURE (CRITICAL)
+The book MUST follow this learning progression — pages should be ordered to scaffold understanding from foundational to higher-order thinking:
+
+1. **ENGAGE** (Page 1) — A content page that hooks the student. Start with a real-world question, scenario, or problem related to "${topic}" that makes students curious. Include a brief overview of what they will learn and the learning outcomes.
+
+2. **EXPLAIN** (Pages 2–3) — Content pages that teach the core concepts. Break down the topic into clear, digestible sections. Use:
+   - Key vocabulary with simple definitions
+   - Step-by-step explanations
+   - Real-world examples and analogies appropriate for ${gradeLevel || 'the grade level'}
+   - Visual aids described via image pages where helpful
+
+3. **DEMONSTRATE** (Page 3–4) — A video page showing the concept in action. Choose the video that best aligns with the learning outcomes. Follow it with guided viewing instructions: what students should look for, key moments to note, and a reflection question.
+
+4. **PRACTICE** (Page 4–5) — A quiz page for formative assessment. Questions should:
+   - Progress through Bloom's Taxonomy: start with recall (Remember), then understanding (Understand), then application (Apply)
+   - Align directly with the stated learning outcomes
+   - Include meaningful distractors based on common misconceptions
+   - Provide detailed explanations for each answer
+
+5. **EXTEND / REFLECT** (Final page) — A content page that connects the learning to broader ideas. Include reflection questions, suggestions for further exploration, and a brief summary of key takeaways.
+
+## PAGE TYPE SPECIFICATIONS
+- **content**: Rich HTML pages with educational content (<p>, <h2>, <h3>, <ul>, <li>, <strong>, <em>, <blockquote> tags). Each content page should focus on ONE concept or learning step. Use headings to structure the content. Include examples marked with <blockquote>.
+- **video**: Pages with YouTube video embeds. MUST use video IDs from the available list below. Include pre-viewing instructions (what to watch for) and post-viewing reflection questions in the instructions field.
+- **quiz**: Interactive assessment pages. Questions must align with specific learning outcomes and progress through difficulty levels. Include 3–5 questions with detailed explanations.
+- **image**: Pages with educational diagrams or illustrations. Provide detailed descriptions for image generation.
 
 ${videoContext}
 
-IMPORTANT: 
-- For video pages: You MUST use the exact video IDs and URLs from the available videos list above. Do not create fake video IDs.
-- For image pages: Provide detailed, specific image descriptions (e.g., "A diagram showing the water cycle with evaporation, condensation, and precipitation labeled") that can be used to generate educational images.
-- You must respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.
+IMPORTANT RULES:
+- For video pages: MUST use exact video IDs and URLs from the available videos list. Match the video to the learning outcome it supports best.
+- For image pages: Provide detailed, specific image descriptions (e.g., "A labeled diagram showing the water cycle with arrows indicating evaporation from oceans, condensation forming clouds, and precipitation as rain").
+- ALL content must be written at an appropriate level for ${gradeLevel || 'the target grade'} students — use simple, clear language.
+- Each page must build on the previous one — no page should feel disconnected from the learning progression.
+- You must respond with ONLY valid JSON, no markdown, no code blocks, no additional text.
 
 Respond with this exact JSON structure:
 {
@@ -2380,13 +2422,13 @@ Respond with this exact JSON structure:
       "id": "unique-id-1",
       "title": "Page Title",
       "pageType": "content|video|quiz|image",
-      "content": "HTML content for content pages (can include <p>, <h2>, <ul>, <li>, <strong>, <em> tags)",
+      "content": "HTML content for content pages",
       "videoData": {
         "videoId": "youtube-video-id",
         "videoUrl": "https://www.youtube.com/watch?v=...",
         "title": "Video Title",
         "description": "Video description",
-        "instructions": "Instructions for students"
+        "instructions": "Pre-viewing: Watch for... Post-viewing: Reflect on..."
       },
       "quizData": {
         "questions": [
@@ -2396,7 +2438,7 @@ Respond with this exact JSON structure:
             "question": "Question text",
             "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
             "correctAnswer": "Option 1",
-            "explanation": "Explanation of the answer"
+            "explanation": "Detailed explanation of why this is correct and why others are wrong"
           }
         ],
         "settings": {
@@ -2406,8 +2448,8 @@ Respond with this exact JSON structure:
         }
       },
       "imageData": {
-        "imageDescription": "Detailed description of the educational image to generate (e.g., 'A diagram showing the water cycle with evaporation, condensation, and precipitation labeled')",
-        "instructions": "Instructions for viewing the image"
+        "imageDescription": "Detailed description of the educational image",
+        "instructions": "What to observe in this image"
       }
     }
   ],
@@ -2420,16 +2462,6 @@ Respond with this exact JSON structure:
   }
 }
 
-Requirements:
-- Each page must have a unique id (use UUID format or simple unique strings)
-- Content pages should have rich, educational HTML content appropriate for ${gradeLevel || 'the grade level'}
-- Video pages: MUST use one of the video IDs from the available videos list above. Match the video to the page content.
-- Quiz pages should have 2-5 questions relevant to the content
-- Image pages: Provide detailed image descriptions (not URLs) that describe educational diagrams, illustrations, or visual aids related to the content
-- Make content age-appropriate and engaging
-- Ensure pages flow logically from one to the next
-- Use clear, educational language
-
 Remember: Respond with ONLY the JSON object, nothing else.`;
 
     const requestBody = {
@@ -2437,7 +2469,7 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
       messages: [
         {
           role: 'system',
-          content: 'You are an expert educational content creator. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text. The response must be parseable JSON only.'
+          content: 'You are an expert educational content designer who creates pedagogically structured learning materials following the Engage-Explain-Demonstrate-Practice-Reflect framework. Every piece of content you create must align with stated learning outcomes and follow a logical progression from foundational understanding to higher-order thinking. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text.'
         },
         {
           role: 'user',

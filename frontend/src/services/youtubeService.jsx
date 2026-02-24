@@ -178,9 +178,83 @@ export const findBestVideoForLesson = async ({ topic, subject, form }) => {
   }
 };
 
+/**
+ * Search for videos matched to specific learning outcomes.
+ * Runs a targeted search per outcome, then a broader topic search,
+ * and returns deduplicated results with the outcome each video matched.
+ * @param {Object} params
+ * @param {string} params.topic - Lesson topic
+ * @param {string} params.subject - Subject name
+ * @param {string} params.form - Form/grade level
+ * @param {string} params.learningOutcomes - Learning outcomes (newline or semicolon separated)
+ * @param {number} params.maxTotal - Max total videos to return (default: 6)
+ * @returns {Promise<Array>} Deduplicated videos with matchedOutcome field
+ */
+export const searchVideosByOutcomes = async ({
+  topic,
+  subject = '',
+  form = '',
+  learningOutcomes = '',
+  maxTotal = 6
+}) => {
+  const seen = new Set();
+  const results = [];
+
+  // Parse outcomes into individual items
+  const outcomes = learningOutcomes
+    .split(/[\n;]+/)
+    .map(o => o.replace(/^\d+[\.\)]\s*/, '').trim())
+    .filter(o => o.length > 10);
+
+  // Search per outcome (max 2 results each, cap at 3 outcome searches)
+  const outcomesToSearch = outcomes.slice(0, 3);
+  for (const outcome of outcomesToSearch) {
+    if (results.length >= maxTotal) break;
+    try {
+      const videos = await searchEducationalVideos({
+        query: `${topic} ${outcome}`,
+        subject,
+        form,
+        maxResults: 2
+      });
+      for (const v of videos) {
+        if (!seen.has(v.videoId) && results.length < maxTotal) {
+          seen.add(v.videoId);
+          results.push({ ...v, matchedOutcome: outcome });
+        }
+      }
+    } catch {
+      // continue with other outcomes
+    }
+  }
+
+  // Fill remaining slots with a broader topic search
+  if (results.length < maxTotal) {
+    try {
+      const topicVideos = await searchEducationalVideos({
+        query: topic,
+        subject,
+        form,
+        maxResults: maxTotal - results.length
+      });
+      for (const v of topicVideos) {
+        if (!seen.has(v.videoId) && results.length < maxTotal) {
+          seen.add(v.videoId);
+          results.push({ ...v, matchedOutcome: topic });
+        }
+      }
+    } catch {
+      // already have some results
+    }
+  }
+
+  return results;
+};
+
 export default {
   searchEducationalVideos,
   getVideoDetails,
-  findBestVideoForLesson
+  findBestVideoForLesson,
+  searchVideosByOutcomes
 };
 
