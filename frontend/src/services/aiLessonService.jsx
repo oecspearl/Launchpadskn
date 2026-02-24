@@ -985,7 +985,7 @@ export const generateCompleteLessonContent = async ({
     throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
   }
 
-  let prompt = `You are an expert educational content designer creating a structured, pedagogically sound lesson for ${form} students. Generate a complete set of lesson content items that follows a clear learning progression.
+  let prompt = `You are an expert online lesson designer. Generate a complete set of lesson content items for an online lesson following the Gradual Release of Responsibility (GRR) model: I Do → We Do → You Do, with embedded assessment at each phase.
 
 ## LESSON DETAILS
 Subject: ${subject}
@@ -996,48 +996,100 @@ Duration: ${duration} minutes
 ${learningObjectives ? `Learning Objectives:\n${learningObjectives}` : ''}
 ${lessonPlan ? `Lesson Plan Context:\n${lessonPlan.substring(0, 2000)}` : ''}
 
-## PEDAGOGICAL FRAMEWORK
-The lesson MUST follow this learning progression (Engage → Explain → Apply → Assess → Reflect):
+## INSTRUCTIONAL SEQUENCE (GRR Model with Embedded Assessment)
 
-### Phase 1: INTRODUCTION (Engage)
-- **LEARNING_OUTCOMES**: State 3–5 measurable outcomes using action verbs (identify, explain, apply, compare, solve). Each outcome should directly map to a learning objective.
+### Phase 1: OPENING / HOOK (5–10 min) — content_section: "Introduction"
+**LEARNING_OUTCOMES** (sequence_order: 1)
+- State 3–5 SMART learning objectives using Bloom's Taxonomy action verbs
+- Format each as: "By the end of this lesson, students will be able to [action verb] + [content] + [condition]"
+- Span multiple Bloom's levels (Remember, Understand, Apply, Analyse, Evaluate, Create)
+- Include an essential question that frames the lesson's intellectual purpose
+- Include 2–3 guiding questions that scaffold toward the essential question
+- Reference prior knowledge students need and how it connects to this lesson
 
-### Phase 2: LEARNING (Explain & Demonstrate)
-- **KEY_CONCEPTS**: Explain 3–5 core concepts. For each concept include:
+### Phase 2: DIRECT INSTRUCTION — I DO (10–15 min) — content_section: "Learning"
+**KEY_CONCEPTS** (sequence_order: 2)
+- Explain 3–5 core concepts, chunked into digestible segments
+- For each concept provide:
   * A clear definition in age-appropriate language for ${form} students
-  * A concrete, relatable example or analogy
-  * Key vocabulary words highlighted
-- **VIDEO**: An educational video that demonstrates or explains the concept. Include viewing guidance: what students should watch for and a reflection question after watching.
-- **LEARNING_ACTIVITIES**: 2–3 hands-on activities that progress from guided practice to independent practice. Activities should directly exercise the learning outcomes.
+  * A concrete, relatable real-world example or analogy
+  * Key vocabulary words defined in context
+- Structure content for ${form} reading level — simple sentences, no jargon without definition
+- End with 1–2 embedded formative check questions ("Think About It: Can you explain...?")
 
-### Phase 3: ASSESSMENT (Evaluate)
-- **QUIZ**: 3–5 questions that progress through Bloom's Taxonomy levels:
-  * 1–2 Remember/Understand questions (recall facts, explain concepts)
-  * 1–2 Apply/Analyze questions (use knowledge in new situations)
-  * 1 Evaluate/Create question (judge, design, or synthesize)
-- **ASSIGNMENT**: A meaningful task with step-by-step instructions, clear submission requirements, and a rubric.
+**VIDEO** (sequence_order: 3)
+- Educational video demonstrating the concept in action
+- Include pre-viewing guidance: "Before watching, look for..."
+- Include post-viewing reflection: "After watching, think about..."
+- Explain how the video connects to specific learning outcomes
+- Use ONLY actual YouTube URLs from the provided list
 
-### Phase 4: CLOSURE (Reflect & Summarize)
-- **SUMMARY**: Recap the key takeaways tied back to the learning outcomes.
-- **REFLECTION_QUESTIONS**: 2–3 questions that encourage students to think about what they learned and how to apply it.
+### Phase 3: GUIDED PRACTICE — WE DO (10–15 min) — content_section: "Learning"
+**LEARNING_ACTIVITIES** (sequence_order: 4)
+- 2–3 structured activities that progress from guided to collaborative practice
+- Each activity must:
+  * State which learning outcome it addresses
+  * Provide step-by-step instructions clear enough for ${form} students to follow independently online
+  * Include expected time to complete
+  * Suggest collaboration tools or methods (e.g., shared docs, discussion forums, breakout rooms)
+- Activities should vary modalities: reading, writing, problem-solving, discussion, creation
+- Include formative checkpoint: How the teacher can monitor understanding during this phase
+
+### Phase 4: INDEPENDENT PRACTICE — YOU DO (15–20 min) — content_section: "Assessment"
+**QUIZ** (sequence_order: 5)
+- 3–5 questions progressing through Bloom's Taxonomy:
+  * 1–2 Remember/Understand (recall facts, explain concepts) — 1–2 points each
+  * 1–2 Apply/Analyse (use knowledge in new situations, compare/contrast) — 2–3 points each
+  * 1 Evaluate/Create (justify, critique, design, formulate) — 3–5 points
+- CRITICAL quiz quality rules:
+  * Every question MUST align to a specific learning objective
+  * Multiple-choice distractors MUST be based on real student misconceptions, NOT obviously wrong
+  * Each question MUST include an explanation: why the answer is correct AND why common wrong answers are wrong
+  * Use age-appropriate vocabulary for ${form} students
+  * Include a mix of question types: MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER
+
+**ASSIGNMENT** (sequence_order: 6)
+- A meaningful performance task that requires students to apply learning to a real-world scenario
+- assignment_description MUST contain detailed, step-by-step instructions (minimum 200 characters):
+  * What students need to do (clear task description)
+  * How to do it (step-by-step process)
+  * What to submit (specific deliverables)
+  * Quality expectations
+- Include rubric_criteria with 4–5 criteria totaling 100 points
+- Each criterion must describe what earns full marks at ${form} level
+- DO NOT use generic text like "Complete this assignment to demonstrate understanding"
+
+### Phase 5: REFLECTION & CLOSURE (5–10 min) — content_section: "Closure"
+**REFLECTION_QUESTIONS** (sequence_order: 7)
+- Self-assessment using "I can" statements matching each learning outcome:
+  * "I can [learning outcome 1]" — Rate: Not Yet / Getting There / Got It / Could Teach It
+- 2–3 metacognitive reflection questions:
+  * "What was the most important thing you learned today?"
+  * "What concept are you still unsure about?"
+  * "How does this connect to [prior knowledge or real life]?"
+- Goal-setting prompt: "What is one step you will take to strengthen your understanding?"
+
+**SUMMARY** (sequence_order: 8)
+- Concise recap of key takeaways, each tied to a specific learning outcome
+- Revisit the essential question from the opening with a model answer or discussion prompt
+- Preview of what comes next in the learning sequence
 
 ## RESPONSE FORMAT
 Respond with ONLY a valid JSON array (no markdown, no code blocks, no extra text):
-
 [
   {
     "content_type": "LEARNING_OUTCOMES",
-    "title": "Learning Outcomes",
-    "content_text": "By the end of this lesson, you will be able to:\\n1. [Outcome using action verb]\\n2. [Outcome using action verb]\\n3. [Outcome using action verb]",
+    "title": "Learning Outcomes & Essential Questions",
+    "content_text": "Essential Question: [Open-ended question that frames the lesson]\\n\\nBy the end of this lesson, you will be able to:\\n1. [Bloom's verb] + [content] (Remember/Understand)\\n2. [Bloom's verb] + [content] (Apply)\\n3. [Bloom's verb] + [content] (Analyse/Evaluate)\\n\\nGuiding Questions:\\n- [Question 1]\\n- [Question 2]\\n\\nPrior Knowledge: [What you should already know]",
     "content_section": "Introduction",
     "sequence_order": 1,
     "is_required": true,
-    "estimated_minutes": null
+    "estimated_minutes": 5
   },
   {
     "content_type": "KEY_CONCEPTS",
     "title": "Key Concepts: ${topic}",
-    "content_text": "Core concepts with definitions, examples, and key vocabulary...",
+    "content_text": "Concept 1: [Name]\\nDefinition: [Clear definition]\\nExample: [Real-world example]\\nKey Vocabulary: [term] — [definition]\\n\\nConcept 2: [Name]\\n...\\n\\nThink About It: [Embedded formative check question]",
     "content_section": "Learning",
     "sequence_order": 2,
     "is_required": true,
@@ -1045,74 +1097,89 @@ Respond with ONLY a valid JSON array (no markdown, no code blocks, no extra text
   },
   {
     "content_type": "VIDEO",
-    "title": "Video: [Descriptive title]",
-    "content_text": "Before watching: Look for... After watching: Think about...",
-    "url": "https://www.youtube.com/watch?v=... (use actual URL provided below)",
+    "title": "Watch: [Descriptive title related to learning outcome]",
+    "content_text": "Before watching: [What to look for]\\nAfter watching: [Reflection question]",
+    "url": "https://www.youtube.com/watch?v=...",
     "content_section": "Learning",
     "sequence_order": 3,
     "is_required": true,
     "estimated_minutes": 10,
-    "description": "What this video covers and how it connects to the learning outcomes"
+    "description": "How this video connects to: [specific learning outcome]"
   },
   {
     "content_type": "LEARNING_ACTIVITIES",
-    "title": "Learning Activities",
-    "content_text": "Guided and independent practice activities...",
+    "title": "Guided & Independent Practice Activities",
+    "content_text": "Activity 1 (Guided — We Do): [Name]\\nLearning Outcome: [Which outcome this addresses]\\nInstructions:\\n1. [Step 1]\\n2. [Step 2]\\nTime: [X minutes]\\n\\nActivity 2 (Independent — You Do): [Name]\\nLearning Outcome: [Which outcome this addresses]\\nInstructions:\\n1. [Step 1]\\n2. [Step 2]\\nTime: [X minutes]",
     "content_section": "Learning",
     "sequence_order": 4,
     "is_required": true,
-    "estimated_minutes": 20
+    "estimated_minutes": 15
   },
   {
     "content_type": "QUIZ",
     "title": "Knowledge Check: ${topic}",
-    "content_text": "Test your understanding of the key concepts",
+    "content_text": "Test your understanding — questions progress from recall to application",
     "content_section": "Assessment",
     "sequence_order": 5,
     "is_required": true,
     "estimated_minutes": 10,
     "quiz_questions": [
       {
-        "question_text": "Remember-level question...",
+        "question_text": "[Remember-level question aligned to Objective 1]",
         "question_type": "MULTIPLE_CHOICE",
         "points": 1,
         "options": [
-          {"text": "Correct answer", "is_correct": true},
-          {"text": "Common misconception", "is_correct": false},
-          {"text": "Plausible distractor", "is_correct": false},
-          {"text": "Plausible distractor", "is_correct": false}
+          {"text": "[Correct answer]", "is_correct": true},
+          {"text": "[Misconception-based distractor]", "is_correct": false},
+          {"text": "[Plausible distractor]", "is_correct": false},
+          {"text": "[Plausible distractor]", "is_correct": false}
         ],
-        "explanation": "Why the correct answer is right and common mistakes"
+        "explanation": "[Why correct. Common mistake: why wrong answer X seems right but is wrong]"
+      },
+      {
+        "question_text": "[Apply-level question aligned to Objective 2]",
+        "question_type": "MULTIPLE_CHOICE",
+        "points": 3,
+        "options": [
+          {"text": "[Option]", "is_correct": false},
+          {"text": "[Correct answer]", "is_correct": true},
+          {"text": "[Option]", "is_correct": false},
+          {"text": "[Option]", "is_correct": false}
+        ],
+        "explanation": "[Detailed explanation]"
       }
     ]
   },
   {
     "content_type": "ASSIGNMENT",
-    "title": "Assignment: ${topic}",
-    "content_text": "Apply what you learned about ${topic}",
+    "title": "Performance Task: ${topic}",
+    "content_text": "Apply what you learned to a real-world scenario",
     "content_section": "Assessment",
     "sequence_order": 6,
     "is_required": true,
-    "estimated_minutes": 60,
-    "assignment_description": "Detailed step-by-step instructions (at least 200 characters)...",
+    "estimated_minutes": 30,
+    "assignment_description": "[Detailed task description with context]\\n\\nInstructions:\\n1. [Step 1]\\n2. [Step 2]\\n3. [Step 3]\\n\\nWhat to Submit:\\n- [Deliverable 1]\\n- [Deliverable 2]\\n\\nQuality Expectations:\\n- [Expectation 1]\\n- [Expectation 2]",
     "total_points": 100,
     "rubric_criteria": [
-      {"criterion": "Criterion name", "points": 25, "description": "What earns full marks"}
+      {"criterion": "Understanding of Concepts", "points": 25, "description": "[What earns full marks]"},
+      {"criterion": "Application & Analysis", "points": 25, "description": "[What earns full marks]"},
+      {"criterion": "Communication & Presentation", "points": 25, "description": "[What earns full marks]"},
+      {"criterion": "Completeness & Effort", "points": 25, "description": "[What earns full marks]"}
     ]
   },
   {
     "content_type": "REFLECTION_QUESTIONS",
-    "title": "Reflect on Your Learning",
-    "content_text": "Think about what you learned today:\\n1. [Reflection question]\\n2. [Reflection question]\\n3. [Connection to real life question]",
+    "title": "Self-Assessment & Reflection",
+    "content_text": "Rate your understanding:\\n- I can [Outcome 1]: Not Yet / Getting There / Got It / Could Teach It\\n- I can [Outcome 2]: Not Yet / Getting There / Got It / Could Teach It\\n- I can [Outcome 3]: Not Yet / Getting There / Got It / Could Teach It\\n\\nReflection:\\n1. What was the most important thing you learned today?\\n2. What concept are you still unsure about?\\n3. How might you use this knowledge outside of class?\\n\\nGoal: What is one step you will take to strengthen your understanding?",
     "content_section": "Closure",
     "sequence_order": 7,
-    "is_required": false,
+    "is_required": true,
     "estimated_minutes": 5
   },
   {
     "content_type": "SUMMARY",
     "title": "Lesson Summary",
-    "content_text": "Today we learned... Key takeaways tied to outcomes...",
+    "content_text": "Key Takeaways:\\n1. [Takeaway tied to Outcome 1]\\n2. [Takeaway tied to Outcome 2]\\n3. [Takeaway tied to Outcome 3]\\n\\nEssential Question Revisited: [Prompt to answer the opening question]\\n\\nNext Steps: [What comes next in the learning sequence]",
     "content_section": "Closure",
     "sequence_order": 8,
     "is_required": true,
@@ -1120,33 +1187,25 @@ Respond with ONLY a valid JSON array (no markdown, no code blocks, no extra text
   }
 ]
 
+## BLOOM'S TAXONOMY ACTION VERBS (use these for objectives and quiz questions)
+- Remember: define, list, recall, identify, name, recognise, state, match
+- Understand: explain, summarise, paraphrase, classify, compare, interpret, discuss
+- Apply: demonstrate, calculate, solve, use, implement, illustrate, execute
+- Analyse: differentiate, organise, compare, contrast, examine, categorise, deconstruct
+- Evaluate: justify, critique, assess, judge, argue, defend, prioritise, recommend
+- Create: design, construct, develop, compose, formulate, produce, propose, invent
+
 ## CRITICAL RULES
-
-LANGUAGE LEVEL:
-- ALL content MUST be written at ${form} reading/comprehension level
-- Use simple, clear sentences — imagine explaining directly to ${form} students
-- Define technical terms when first used
-- Use concrete examples and relatable analogies
-
-CONTENT QUALITY:
+- ALL content MUST be written at ${form} reading/comprehension level — simple, clear language
 - Every content item must directly support at least one learning outcome
-- KEY_CONCEPTS must include definitions + examples, not just topic names
-- LEARNING_ACTIVITIES must include clear step-by-step instructions students can follow
-- QUIZ questions must have meaningful distractors based on real misconceptions, not obviously wrong options
-- QUIZ explanations must explain WHY the correct answer is right
-- ASSIGNMENT must have detailed instructions (at least 200 characters in assignment_description), not generic text
+- KEY_CONCEPTS must include definition + example + vocabulary for each concept
+- QUIZ distractors MUST be based on real student misconceptions, NOT obviously wrong
+- QUIZ explanations MUST explain WHY correct AND why common wrong answers are wrong
+- ASSIGNMENT assignment_description MUST be detailed (min 200 chars) with step-by-step instructions — NO generic text
 - ASSIGNMENT rubric must have 4–5 criteria totaling 100 points
-
-VIDEO:
-- Must be placed in the "Learning" section (content_section: "Learning")
-- Use the actual YouTube URL provided below — do NOT make up URLs
-- Include viewing guidance in content_text: what to watch for and a post-viewing reflection question
-- The description field should explain how the video connects to the learning outcomes
-
-STRUCTURE:
-- Sequence must follow: Introduction → Learning → Assessment → Closure
-- VIDEO comes after KEY_CONCEPTS and before or within LEARNING_ACTIVITIES
-- Content is specific to "${topic}" in "${subject}" — not generic
+- VIDEO must be in the "Learning" section, use actual YouTube URLs from list below
+- Sequence: Introduction → Learning → Assessment → Closure
+- Content must be specific to "${topic}" in "${subject}" — NOT generic
 
 Remember: Respond with ONLY the JSON array, nothing else.`;
 
@@ -1212,7 +1271,7 @@ INSTRUCTIONS FOR VIDEO CONTENT ITEMS:
       messages: [
         {
           role: 'system',
-          content: 'You are an expert educational content designer who creates pedagogically structured lesson materials following Bloom\'s Taxonomy and the Engage-Explain-Apply-Assess-Reflect framework. Every piece of content must align with stated learning outcomes. You MUST respond with ONLY a valid JSON array, no markdown, no code blocks, no additional text.'
+          content: 'You are an expert online lesson designer who creates content following the Gradual Release of Responsibility model (I Do → We Do → You Do) with embedded formative assessment at each phase. You align all objectives to Bloom\'s Taxonomy and embed diagnostic, formative, and self-assessment throughout the lesson. You MUST respond with ONLY a valid JSON array, no markdown, no code blocks, no additional text.'
         },
         {
           role: 'user',
@@ -2370,50 +2429,86 @@ export const generateInteractiveBook = async ({
     }
 
     const pageTypesStr = pageTypes.join(', ');
-    const prompt = `You are an expert educational content designer who creates pedagogically structured interactive learning materials. Generate an interactive book with ${numPages} pages about "${topic}".
+    const prompt = `You are an expert online lesson designer. Generate an interactive book with ${numPages} pages about "${topic}" following the Gradual Release of Responsibility (GRR) instructional model.
 
 ${subject ? `Subject: ${subject}` : ''}
 ${gradeLevel ? `Grade Level: ${gradeLevel}` : ''}
-${learningOutcomes ? `Learning Outcomes:\n${learningOutcomes}` : ''}
+${learningOutcomes ? `Learning Outcomes (SMART-aligned):\n${learningOutcomes}` : ''}
 ${additionalComments ? `Additional Context: ${additionalComments}` : ''}
 
 Page Types Available: ${pageTypesStr}
 
-## PEDAGOGICAL STRUCTURE (CRITICAL)
-The book MUST follow this learning progression — pages should be ordered to scaffold understanding from foundational to higher-order thinking:
+## INSTRUCTIONAL SEQUENCE (Gradual Release of Responsibility)
+The book MUST follow the GRR model. Pages should scaffold learning through these phases:
 
-1. **ENGAGE** (Page 1) — A content page that hooks the student. Start with a real-world question, scenario, or problem related to "${topic}" that makes students curious. Include a brief overview of what they will learn and the learning outcomes.
+### Phase 1: OPENING / HOOK (Page 1) — content page
+- Engage students with a provocative essential question, real-world scenario, or problem linked to "${topic}"
+- State the learning outcomes using Bloom's Taxonomy action verbs (identify, explain, apply, analyse, evaluate, create)
+- Activate prior knowledge: briefly reference what students should already know
+- Include a guiding question that frames the intellectual purpose of the lesson
+- Format: Use <h2> for the essential question, <p> for context, <ul> for learning outcomes
 
-2. **EXPLAIN** (Pages 2–3) — Content pages that teach the core concepts. Break down the topic into clear, digestible sections. Use:
-   - Key vocabulary with simple definitions
-   - Step-by-step explanations
-   - Real-world examples and analogies appropriate for ${gradeLevel || 'the grade level'}
-   - Visual aids described via image pages where helpful
+### Phase 2: DIRECT INSTRUCTION — I DO (Pages 2–3) — content + image pages
+- Deliver core concepts in chunked segments (one concept per page, max 7–8 min reading per page)
+- For each concept include:
+  * <h3> for the concept name
+  * A clear definition in age-appropriate language for ${gradeLevel || 'the grade level'} students
+  * A concrete, relatable example or analogy (use <blockquote> for examples)
+  * Key vocabulary highlighted with <strong>
+- Use image pages for educational diagrams that support visual learners
+- Include an embedded formative check: a brief question at the end of each content page (in a <blockquote> tagged "Think About It")
 
-3. **DEMONSTRATE** (Page 3–4) — A video page showing the concept in action. Choose the video that best aligns with the learning outcomes. Follow it with guided viewing instructions: what students should look for, key moments to note, and a reflection question.
+### Phase 3: GUIDED PRACTICE — WE DO (Pages 3–4) — video + quiz pages
+- Video page: Select the video that best aligns with the learning outcomes
+  * Include pre-viewing instructions: "Before watching, look for..."
+  * Include post-viewing reflection: "After watching, consider..."
+  * Explain how the video connects to the learning outcomes
+- Formative quiz page (2–3 questions):
+  * Questions aligned to Remember and Understand levels of Bloom's Taxonomy
+  * Meaningful distractors based on common student misconceptions (not obviously wrong)
+  * Immediate feedback with explanations for correct and incorrect answers
+  * Purpose: Check understanding before independent practice
 
-4. **PRACTICE** (Page 4–5) — A quiz page for formative assessment. Questions should:
-   - Progress through Bloom's Taxonomy: start with recall (Remember), then understanding (Understand), then application (Apply)
-   - Align directly with the stated learning outcomes
-   - Include meaningful distractors based on common misconceptions
-   - Provide detailed explanations for each answer
+### Phase 4: INDEPENDENT PRACTICE — YOU DO (Pages 4–5) — quiz page
+- Application quiz (3–5 questions) progressing through Bloom's Taxonomy:
+  * 1–2 Apply questions (use knowledge in new situations, solve problems)
+  * 1–2 Analyse/Evaluate questions (compare, contrast, justify, critique)
+  * Higher cognitive demand than Phase 3 quiz
+  * Detailed explanations that reference the key concepts from Phase 2
 
-5. **EXTEND / REFLECT** (Final page) — A content page that connects the learning to broader ideas. Include reflection questions, suggestions for further exploration, and a brief summary of key takeaways.
+### Phase 5: REFLECTION & CLOSURE (Final page) — content page
+- Summary of key takeaways tied directly back to each learning outcome
+- Self-assessment: "I can" statements matching each learning outcome with a confidence prompt
+- Reflection questions:
+  * "What was the most important thing you learned today?"
+  * "How does this connect to what you already knew?"
+  * "How might you use this knowledge outside of class?"
+- Essential question revisited: Prompt students to answer the opening question with their new understanding
 
 ## PAGE TYPE SPECIFICATIONS
-- **content**: Rich HTML pages with educational content (<p>, <h2>, <h3>, <ul>, <li>, <strong>, <em>, <blockquote> tags). Each content page should focus on ONE concept or learning step. Use headings to structure the content. Include examples marked with <blockquote>.
-- **video**: Pages with YouTube video embeds. MUST use video IDs from the available list below. Include pre-viewing instructions (what to watch for) and post-viewing reflection questions in the instructions field.
-- **quiz**: Interactive assessment pages. Questions must align with specific learning outcomes and progress through difficulty levels. Include 3–5 questions with detailed explanations.
-- **image**: Pages with educational diagrams or illustrations. Provide detailed descriptions for image generation.
+- **content**: Rich HTML using <p>, <h2>, <h3>, <ul>, <li>, <strong>, <em>, <blockquote>. One concept per page. Use headings to structure. Use <blockquote> for examples and reflection prompts.
+- **video**: YouTube embeds. MUST use video IDs from the available list. Include pre/post-viewing instructions in the instructions field.
+- **quiz**: Assessment pages. Phase 3 quizzes = formative (Remember/Understand). Phase 4 quizzes = application (Apply/Analyse/Evaluate). Include 3–5 questions with explanations.
+- **image**: Educational diagrams/illustrations. Provide detailed descriptions for image generation.
 
 ${videoContext}
 
-IMPORTANT RULES:
-- For video pages: MUST use exact video IDs and URLs from the available videos list. Match the video to the learning outcome it supports best.
+## CRITICAL RULES
+- For video pages: MUST use exact video IDs and URLs from the available videos list. Match video to the learning outcome it supports best.
 - For image pages: Provide detailed, specific image descriptions (e.g., "A labeled diagram showing the water cycle with arrows indicating evaporation from oceans, condensation forming clouds, and precipitation as rain").
-- ALL content must be written at an appropriate level for ${gradeLevel || 'the target grade'} students — use simple, clear language.
-- Each page must build on the previous one — no page should feel disconnected from the learning progression.
-- You must respond with ONLY valid JSON, no markdown, no code blocks, no additional text.
+- ALL content MUST be written at ${gradeLevel || 'the target grade'} reading level — use simple, clear sentences.
+- Each page MUST build on the previous one — no page should feel disconnected from the learning progression.
+- Quiz distractors must be based on real student misconceptions, not obviously wrong answers.
+- Quiz explanations must explain WHY the correct answer is right AND why common wrong answers are wrong.
+- Respond with ONLY valid JSON, no markdown, no code blocks, no additional text.
+
+## BLOOM'S TAXONOMY REFERENCE (use these verbs)
+- Remember: define, list, recall, identify, name, recognise, state
+- Understand: explain, summarise, paraphrase, classify, compare, interpret
+- Apply: demonstrate, calculate, solve, use, implement, illustrate
+- Analyse: differentiate, organise, compare, contrast, examine, categorise
+- Evaluate: justify, critique, assess, judge, argue, defend, recommend
+- Create: design, construct, develop, compose, formulate, produce
 
 Respond with this exact JSON structure:
 {
@@ -2427,7 +2522,7 @@ Respond with this exact JSON structure:
         "videoId": "youtube-video-id",
         "videoUrl": "https://www.youtube.com/watch?v=...",
         "title": "Video Title",
-        "description": "Video description",
+        "description": "How this video connects to the learning outcomes",
         "instructions": "Pre-viewing: Watch for... Post-viewing: Reflect on..."
       },
       "quizData": {
@@ -2435,10 +2530,10 @@ Respond with this exact JSON structure:
           {
             "id": "question-id",
             "type": "multiple-choice|true-false|fill-blank",
-            "question": "Question text",
-            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-            "correctAnswer": "Option 1",
-            "explanation": "Detailed explanation of why this is correct and why others are wrong"
+            "question": "Question text aligned to a specific Bloom's level",
+            "options": ["Correct answer", "Misconception-based distractor", "Plausible distractor", "Plausible distractor"],
+            "correctAnswer": "Correct answer",
+            "explanation": "Why this is correct. Common mistake: [why wrong answer seems right but is wrong]"
           }
         ],
         "settings": {
@@ -2449,7 +2544,7 @@ Respond with this exact JSON structure:
       },
       "imageData": {
         "imageDescription": "Detailed description of the educational image",
-        "instructions": "What to observe in this image"
+        "instructions": "What to observe in this image and how it relates to the concept"
       }
     }
   ],
@@ -2469,7 +2564,7 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
       messages: [
         {
           role: 'system',
-          content: 'You are an expert educational content designer who creates pedagogically structured learning materials following the Engage-Explain-Demonstrate-Practice-Reflect framework. Every piece of content you create must align with stated learning outcomes and follow a logical progression from foundational understanding to higher-order thinking. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text.'
+          content: 'You are an expert online lesson designer who creates pedagogically structured learning materials following the Gradual Release of Responsibility model (I Do → We Do → You Do) with embedded formative assessment at each phase. You align all content to Bloom\'s Taxonomy and stated learning outcomes. You MUST respond with ONLY valid JSON, no markdown, no code blocks, no additional text.'
         },
         {
           role: 'user',
