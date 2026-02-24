@@ -1007,173 +1007,35 @@ export const generateCompleteLessonContent = async ({
   if (questionTypes.fillInTheBlank) allowedTypes.push('FILL_IN_THE_BLANK');
   const allowedTypesStr = allowedTypes.length > 0 ? allowedTypes.join(', ') : 'MULTIPLE_CHOICE';
 
-  // Build the JSON template dynamically based on options
-  const templateItems = [];
-  let seqOrder = 1;
+  // Build content type list for the prompt (only enabled sections)
+  const contentTypesNeeded = ['LEARNING_OUTCOMES', 'KEY_CONCEPTS'];
+  if (numVideos > 0) contentTypesNeeded.push('VIDEO');
+  contentTypesNeeded.push('LEARNING_ACTIVITIES', 'QUIZ');
+  if (includeAssignment) contentTypesNeeded.push('ASSIGNMENT');
+  if (includeReflectionQuestions) contentTypesNeeded.push('REFLECTION_QUESTIONS');
+  if (includeDiscussionPrompts) contentTypesNeeded.push('DISCUSSION_PROMPTS');
+  contentTypesNeeded.push('SUMMARY');
 
-  // Always include: LEARNING_OUTCOMES
-  templateItems.push(`  {
-    "content_type": "LEARNING_OUTCOMES",
-    "title": "Learning Outcomes & Essential Questions",
-    "content_text": "Essential Question: [Open-ended question framing the lesson]\\n\\nBy the end of this lesson, you will be able to:\\n1. [Bloom's verb + content] (Remember/Understand)\\n2. [Bloom's verb + content] (Apply)\\n3. [Bloom's verb + content] (Analyse/Evaluate)\\n\\nGuiding Questions:\\n- [Question 1]\\n- [Question 2]\\n\\nPrior Knowledge: [What you should already know]",
-    "content_section": "Introduction",
-    "sequence_order": ${seqOrder++},
-    "is_required": true,
-    "estimated_minutes": 5
-  }`);
+  let prompt = `Generate lesson content (GRR model) as a JSON array. Subject: ${subject} | Form: ${form} | Topic: ${topic} | Title: ${lessonTitle} | Duration: ${duration} min
+${learningObjectives ? `Objectives: ${learningObjectives.substring(0, 500)}` : ''}
+${lessonPlan ? `Plan: ${lessonPlan.substring(0, 600)}` : ''}
 
-  // Always include: KEY_CONCEPTS
-  templateItems.push(`  {
-    "content_type": "KEY_CONCEPTS",
-    "title": "Key Concepts: ${topic}",
-    "content_text": "Concept 1: [Name]\\nDefinition: [Clear definition for ${form}]\\nExample: [Real-world example]\\nKey Vocabulary: [term] — [definition]\\n\\nConcept 2: ...\\n\\nThink About It: [Formative check question]",
-    "content_section": "Learning",
-    "sequence_order": ${seqOrder++},
-    "is_required": true,
-    "estimated_minutes": 10
-  }`);
+Return ONLY a JSON array with these content_type items in order: ${contentTypesNeeded.join(', ')}
 
-  // VIDEO (include based on numVideos)
-  if (numVideos > 0) {
-    const videoGuideText = includeViewingGuide
-      ? '"content_text": "Before watching: [What to look for]\\nAfter watching: [Reflection question]",'
-      : '"content_text": "",'
-    templateItems.push(`  {
-    "content_type": "VIDEO",
-    "title": "Watch: [Title related to learning outcome]",
-    ${videoGuideText}
-    "url": "https://www.youtube.com/watch?v=...",
-    "content_section": "Learning",
-    "sequence_order": ${seqOrder++},
-    "is_required": true,
-    "estimated_minutes": 10,
-    "description": "Connects to: [specific learning outcome]"
-  }`);
-  }
+Each item has: content_type, title, content_text, content_section (Introduction/Learning/Assessment/Closure), sequence_order (1,2,3...), is_required (true), estimated_minutes.
 
-  // Always include: LEARNING_ACTIVITIES
-  templateItems.push(`  {
-    "content_type": "LEARNING_ACTIVITIES",
-    "title": "Guided & Independent Practice",
-    "content_text": "${Array.from({ length: numActivities }, (_, i) => `Activity ${i + 1} (${i === 0 ? 'Guided' : 'Independent'}): [Name]\\nOutcome: [Which outcome]\\n1. [Step 1]\\n2. [Step 2]\\nTime: [X min]`).join('\\n\\n')}",
-    "content_section": "Learning",
-    "sequence_order": ${seqOrder++},
-    "is_required": true,
-    "estimated_minutes": 15
-  }`);
+STRUCTURE PER TYPE:
+- LEARNING_OUTCOMES (section:Introduction): essential question, 3-5 Bloom's objectives, guiding questions, prior knowledge
+- KEY_CONCEPTS (section:Learning): each concept with definition, example, vocabulary. End with formative check
+${numVideos > 0 ? `- VIDEO (section:Learning): ${includeViewingGuide ? 'content_text has pre/post viewing guide.' : ''} Must include "url" and "description" fields. Use ONLY YouTube URLs from list below` : ''}
+- LEARNING_ACTIVITIES (section:Learning): exactly ${numActivities} activities, guided→independent, each tied to an outcome with steps
+- QUIZ (section:Assessment): "quiz_questions" array with exactly ${numQuizQuestions} questions. Types: ${allowedTypesStr} only. Each question: {question_text, question_type, points, options:[{text,is_correct}], explanation}. Progress Remember→Apply→Evaluate. Misconception-based distractors
+${includeAssignment ? '- ASSIGNMENT (section:Assessment): "assignment_description" (min 200 chars, real-world task with steps), "total_points":100, "rubric_criteria":[{criterion,points,description}] 4 criteria' : ''}
+${includeReflectionQuestions ? '- REFLECTION_QUESTIONS (section:Closure): "I can" self-assessment per outcome + metacognitive questions' : ''}
+${includeDiscussionPrompts ? '- DISCUSSION_PROMPTS (section:Closure): 3 open-ended critical thinking questions' : ''}
+- SUMMARY (section:Closure): takeaways tied to outcomes, revisit essential question
 
-  // Always include: QUIZ
-  templateItems.push(`  {
-    "content_type": "QUIZ",
-    "title": "Knowledge Check: ${topic}",
-    "content_text": "Questions progress from recall to application",
-    "content_section": "Assessment",
-    "sequence_order": ${seqOrder++},
-    "is_required": true,
-    "estimated_minutes": 10,
-    "quiz_questions": [
-      {
-        "question_text": "[Remember-level question]",
-        "question_type": "${allowedTypes[0] || 'MULTIPLE_CHOICE'}",
-        "points": 1,
-        "options": [
-          {"text": "[Correct]", "is_correct": true},
-          {"text": "[Misconception distractor]", "is_correct": false},
-          {"text": "[Plausible distractor]", "is_correct": false},
-          {"text": "[Plausible distractor]", "is_correct": false}
-        ],
-        "explanation": "[Why correct + why common wrong answer is wrong]"
-      }
-    ]
-  }`);
-
-  // ASSIGNMENT (optional)
-  if (includeAssignment) {
-    templateItems.push(`  {
-    "content_type": "ASSIGNMENT",
-    "title": "Performance Task: ${topic}",
-    "content_text": "Apply learning to a real-world scenario",
-    "content_section": "Assessment",
-    "sequence_order": ${seqOrder++},
-    "is_required": true,
-    "estimated_minutes": 30,
-    "assignment_description": "[Detailed task with context]\\n\\nInstructions:\\n1. [Step 1]\\n2. [Step 2]\\n3. [Step 3]\\n\\nSubmit: [Deliverables]\\nExpectations: [Quality standards]",
-    "total_points": 100,
-    "rubric_criteria": [
-      {"criterion": "Understanding", "points": 25, "description": "[Full marks criteria]"},
-      {"criterion": "Application", "points": 25, "description": "[Full marks criteria]"},
-      {"criterion": "Communication", "points": 25, "description": "[Full marks criteria]"},
-      {"criterion": "Completeness", "points": 25, "description": "[Full marks criteria]"}
-    ]
-  }`);
-  }
-
-  // REFLECTION_QUESTIONS (optional)
-  if (includeReflectionQuestions) {
-    templateItems.push(`  {
-    "content_type": "REFLECTION_QUESTIONS",
-    "title": "Self-Assessment & Reflection",
-    "content_text": "Rate yourself:\\n- I can [Outcome 1]: Not Yet / Getting There / Got It / Could Teach It\\n- I can [Outcome 2]: ...\\n\\nReflect:\\n1. Most important thing learned today?\\n2. What are you still unsure about?\\n3. How will you use this knowledge?\\n\\nGoal: One step to strengthen your understanding?",
-    "content_section": "Closure",
-    "sequence_order": ${seqOrder++},
-    "is_required": true,
-    "estimated_minutes": 5
-  }`);
-  }
-
-  // DISCUSSION_PROMPTS (optional)
-  if (includeDiscussionPrompts) {
-    templateItems.push(`  {
-    "content_type": "DISCUSSION_PROMPTS",
-    "title": "Discussion Prompts",
-    "content_text": "1. [Open-ended discussion question connecting to real life]\\n2. [Question requiring students to defend a position]\\n3. [Question encouraging peer collaboration]",
-    "content_section": "Closure",
-    "sequence_order": ${seqOrder++},
-    "is_required": false,
-    "estimated_minutes": 10
-  }`);
-  }
-
-  // Always include: SUMMARY
-  templateItems.push(`  {
-    "content_type": "SUMMARY",
-    "title": "Lesson Summary",
-    "content_text": "Key Takeaways:\\n1. [Tied to Outcome 1]\\n2. [Tied to Outcome 2]\\n3. [Tied to Outcome 3]\\n\\nEssential Question Revisited: [Answer prompt]\\nNext: [What comes next]",
-    "content_section": "Closure",
-    "sequence_order": ${seqOrder++},
-    "is_required": true,
-    "estimated_minutes": 5
-  }`);
-
-  let prompt = `Generate lesson content for an online lesson using the Gradual Release of Responsibility (GRR) model with embedded assessment.
-
-Subject: ${subject} | Form: ${form} | Topic: ${topic} | Title: ${lessonTitle} | Duration: ${duration} min
-${learningObjectives ? `Learning Objectives: ${learningObjectives}` : ''}
-${lessonPlan ? `Lesson Plan: ${lessonPlan.substring(0, 1000)}` : ''}
-
-Follow this GRR instructional sequence. Respond with ONLY a valid JSON array:
-
-[
-${templateItems.join(',\n')}
-]
-
-RULES:
-- Write ALL content at ${form} reading level — simple, clear language, define technical terms
-- LEARNING_OUTCOMES: 3-5 SMART objectives using Bloom's verbs spanning multiple levels. Include essential question, guiding questions, prior knowledge
-- KEY_CONCEPTS: Each concept needs definition + real-world example + vocabulary. End with formative check question
-${numVideos > 0 ? `- VIDEO: ${includeViewingGuide ? 'Include pre-viewing guidance + post-viewing reflection.' : 'No viewing instructions needed.'} Use ONLY YouTube URLs from the list provided below` : ''}
-- LEARNING_ACTIVITIES: Generate exactly ${numActivities} activities progressing guided→independent. Each states which outcome it addresses with step-by-step instructions
-- QUIZ: Generate exactly ${numQuizQuestions} questions progressing through Bloom's (Remember→Apply→Evaluate). Distractors based on real misconceptions. Explanations explain why correct AND why wrong answers are wrong. Use ONLY these question types: ${allowedTypesStr}
-${includeAssignment ? '- ASSIGNMENT: Detailed step-by-step instructions (min 200 chars). Real-world application task. 4 rubric criteria totaling 100 points. NO generic text' : ''}
-${includeReflectionQuestions ? '- REFLECTION: "I can" self-assessment for each outcome + metacognitive questions + goal-setting' : ''}
-${includeDiscussionPrompts ? '- DISCUSSION: Open-ended questions encouraging critical thinking and peer dialogue' : ''}
-- SUMMARY: Takeaways tied to outcomes + revisit essential question
-- Sequence: Introduction → Learning → Assessment → Closure
-- Content specific to "${topic}" in "${subject}" — not generic
-
-Bloom's verbs: Remember(define,list,identify) Understand(explain,compare,classify) Apply(solve,demonstrate,use) Analyse(compare,contrast,examine) Evaluate(justify,critique,argue) Create(design,develop,compose)
-
-Respond with ONLY the JSON array.`;
+RULES: Write at ${form} level. Content specific to "${topic}" in "${subject}". Bloom verbs: Remember(define,list) Understand(explain,compare) Apply(solve,use) Analyse(contrast,examine) Evaluate(justify,critique) Create(design,develop). JSON only, no markdown.`;
 
   try {
     console.log('[AI Service] Generating complete lesson content...');
@@ -1209,18 +1071,12 @@ Respond with ONLY the JSON array.`;
         videoInfo = videoOptions[0];
         console.log('[AI Service] Found', videoOptions.length, 'outcome-matched videos. Primary:', videoInfo.title);
 
-        // Replace placeholder URL in the prompt template with the actual primary video URL
-        prompt = prompt.replace(
-          '"url": "https://www.youtube.com/watch?v=..."',
-          `"url": "${videoInfo.url}"`
-        );
-
-        // Build video list with outcome alignment info
-        const videoList = videoOptions.map((v, idx) =>
-          `${idx + 1}. "${v.title}" - ${v.url}${v.matchedOutcome ? ` [Supports: ${v.matchedOutcome}]` : ''}`
+        // Append video list to prompt so the AI uses real URLs
+        const videoList = videoOptions.slice(0, numVideos + 2).map((v, idx) =>
+          `${idx + 1}. "${v.title}" - ${v.url}${v.matchedOutcome ? ` [${v.matchedOutcome}]` : ''}`
         ).join('\n');
 
-        prompt += `\n\nAVAILABLE YOUTUBE VIDEOS:\n${videoList}\n\nUse Video 1 for the main VIDEO item. Use actual URLs from this list only.`;
+        prompt += `\n\nYOUTUBE VIDEOS:\n${videoList}\nUse these URLs for VIDEO items.`;
       } else {
         console.warn('[AI Service] No YouTube video found, will use placeholder');
       }
@@ -1233,7 +1089,7 @@ Respond with ONLY the JSON array.`;
       messages: [
         {
           role: 'system',
-          content: 'You are an expert online lesson designer who creates content following the Gradual Release of Responsibility model (I Do → We Do → You Do) with embedded formative assessment at each phase. You align all objectives to Bloom\'s Taxonomy and embed diagnostic, formative, and self-assessment throughout the lesson. You MUST respond with ONLY a valid JSON array, no markdown, no code blocks, no additional text.'
+          content: 'You are an expert lesson designer using GRR model (I Do→We Do→You Do) with Bloom\'s Taxonomy alignment and embedded assessment. Respond with ONLY a valid JSON array. No markdown, no code blocks, no extra text.'
         },
         {
           role: 'user',
