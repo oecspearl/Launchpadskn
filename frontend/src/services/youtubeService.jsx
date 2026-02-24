@@ -19,7 +19,8 @@ export const searchEducationalVideos = async ({
   query,
   subject = '',
   form = '',
-  maxResults = 5
+  maxResults = 5,
+  videoDuration = null
 }) => {
   if (!YOUTUBE_API_KEY) {
     throw new Error('YouTube API key is not configured. Please set REACT_APP_YOUTUBE_API_KEY in your .env file.');
@@ -64,6 +65,11 @@ export const searchEducationalVideos = async ({
       safeSearch: 'strict',
       key: YOUTUBE_API_KEY
     });
+
+    // Filter by video duration if specified (short: <4min, medium: 4-20min, long: >20min)
+    if (videoDuration && ['short', 'medium', 'long'].includes(videoDuration)) {
+      params.append('videoDuration', videoDuration);
+    }
 
     const response = await fetch(`${YOUTUBE_API_URL}?${params.toString()}`);
 
@@ -195,7 +201,8 @@ export const searchVideosByOutcomes = async ({
   subject = '',
   form = '',
   learningOutcomes = '',
-  maxTotal = 6
+  maxTotal = 6,
+  videoDuration = null
 }) => {
   const seen = new Set();
   const results = [];
@@ -215,7 +222,8 @@ export const searchVideosByOutcomes = async ({
         query: `${topic} ${outcome}`,
         subject,
         form,
-        maxResults: 2
+        maxResults: 2,
+        videoDuration
       });
       for (const v of videos) {
         if (!seen.has(v.videoId) && results.length < maxTotal) {
@@ -235,7 +243,8 @@ export const searchVideosByOutcomes = async ({
         query: topic,
         subject,
         form,
-        maxResults: maxTotal - results.length
+        maxResults: maxTotal - results.length,
+        videoDuration
       });
       for (const v of topicVideos) {
         if (!seen.has(v.videoId) && results.length < maxTotal) {

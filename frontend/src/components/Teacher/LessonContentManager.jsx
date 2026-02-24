@@ -113,7 +113,21 @@ function LessonContentManager() {
   // Unified AI Assistant state
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [aiAssistantTab, setAiAssistantTab] = useState('quick'); // 'quick', 'custom', 'quiz', 'wizard'
-  
+
+  // Complete Lesson configuration options
+  const [showCompleteLessonOptions, setShowCompleteLessonOptions] = useState(false);
+  const [completeLessonConfig, setCompleteLessonConfig] = useState({
+    numVideos: 2,
+    videoDuration: 'any',
+    includeViewingGuide: true,
+    numQuizQuestions: 5,
+    questionTypes: { multipleChoice: true, trueFalse: true, shortAnswer: false, fillInTheBlank: false },
+    numActivities: 2,
+    includeAssignment: true,
+    includeReflectionQuestions: true,
+    includeDiscussionPrompts: false,
+  });
+
   // Master AI Generation state (used in custom tab)
   const [masterAISelections, setMasterAISelections] = useState({
     LEARNING_OUTCOMES: { selected: false, quantity: 1 },
@@ -1054,7 +1068,8 @@ function LessonContentManager() {
           form: formName,
           learningObjectives: enrichedObjectives,
           lessonPlan,
-          duration
+          duration,
+          options: completeLessonConfig
         });
         setGeneratedContentItems(contentItems);
         setShowAIContentModal(true);
@@ -5309,13 +5324,10 @@ function LessonContentManager() {
                 </p>
                 <Row className="g-3">
                   <Col md={6}>
-                    <Card 
-                      className="quick-option-card h-100 border-0 shadow-sm"
-                      onClick={() => {
-                        handleGenerateAIContent('complete');
-                        setShowAIAssistant(false);
-                      }}
-                      style={{ cursor: 'pointer' }}
+                    <Card
+                      className={`quick-option-card h-100 border-0 shadow-sm ${showCompleteLessonOptions ? 'border-primary' : ''}`}
+                      onClick={() => setShowCompleteLessonOptions(!showCompleteLessonOptions)}
+                      style={{ cursor: 'pointer', borderWidth: showCompleteLessonOptions ? 2 : 1 }}
                     >
                       <Card.Body className="text-center p-4">
                         <FaMagic className="option-icon text-primary mb-3" size={32} />
@@ -5323,11 +5335,14 @@ function LessonContentManager() {
                         <p className="text-muted small mb-0">
                           Generate all content types including outcomes, concepts, activities, and summary
                         </p>
+                        <small className="text-primary mt-2 d-block">
+                          {showCompleteLessonOptions ? 'Click to collapse options' : 'Click to configure options'}
+                        </small>
                       </Card.Body>
                     </Card>
                   </Col>
                   <Col md={6}>
-                    <Card 
+                    <Card
                       className="quick-option-card h-100 border-0 shadow-sm"
                       onClick={() => {
                         handleGenerateAIContent('student');
@@ -5345,6 +5360,173 @@ function LessonContentManager() {
                     </Card>
                   </Col>
                 </Row>
+
+                {/* Complete Lesson Configuration Panel */}
+                {showCompleteLessonOptions && (
+                  <div className="mt-4 p-3 border rounded bg-light">
+                    {/* Videos Section */}
+                    <div className="mb-3">
+                      <h6 className="fw-semibold mb-2"><FaVideo className="me-2 text-primary" />Videos</h6>
+                      <Row className="align-items-center g-2">
+                        <Col xs={4} sm={3}>
+                          <Form.Label className="small mb-0">Count</Form.Label>
+                          <Form.Select
+                            size="sm"
+                            value={completeLessonConfig.numVideos}
+                            onChange={(e) => setCompleteLessonConfig({ ...completeLessonConfig, numVideos: parseInt(e.target.value) })}
+                          >
+                            <option value={0}>None</option>
+                            <option value={1}>1</option>
+                            <option value={2}>2</option>
+                            <option value={3}>3</option>
+                          </Form.Select>
+                        </Col>
+                        <Col xs={4} sm={3}>
+                          <Form.Label className="small mb-0">Length</Form.Label>
+                          <Form.Select
+                            size="sm"
+                            value={completeLessonConfig.videoDuration}
+                            onChange={(e) => setCompleteLessonConfig({ ...completeLessonConfig, videoDuration: e.target.value })}
+                            disabled={completeLessonConfig.numVideos === 0}
+                          >
+                            <option value="any">Any</option>
+                            <option value="short">&lt; 4 min</option>
+                            <option value="medium">4-20 min</option>
+                            <option value="long">&gt; 20 min</option>
+                          </Form.Select>
+                        </Col>
+                        <Col xs={4} sm={6}>
+                          <Form.Check
+                            type="checkbox"
+                            label="Include viewing guide"
+                            className="mt-3"
+                            checked={completeLessonConfig.includeViewingGuide}
+                            onChange={(e) => setCompleteLessonConfig({ ...completeLessonConfig, includeViewingGuide: e.target.checked })}
+                            disabled={completeLessonConfig.numVideos === 0}
+                          />
+                        </Col>
+                      </Row>
+                    </div>
+
+                    <hr className="my-2" />
+
+                    {/* Quiz Section */}
+                    <div className="mb-3">
+                      <h6 className="fw-semibold mb-2"><FaPoll className="me-2 text-warning" />Quiz</h6>
+                      <Row className="align-items-start g-2">
+                        <Col xs={4} sm={3}>
+                          <Form.Label className="small mb-0">Questions</Form.Label>
+                          <Form.Control
+                            type="number"
+                            size="sm"
+                            min={3}
+                            max={10}
+                            value={completeLessonConfig.numQuizQuestions}
+                            onChange={(e) => setCompleteLessonConfig({ ...completeLessonConfig, numQuizQuestions: Math.min(10, Math.max(3, parseInt(e.target.value) || 5)) })}
+                          />
+                        </Col>
+                        <Col xs={8} sm={9}>
+                          <Form.Label className="small mb-0">Question Types</Form.Label>
+                          <div className="d-flex flex-wrap gap-2 mt-1">
+                            <Form.Check
+                              type="checkbox"
+                              label="Multiple Choice"
+                              size="sm"
+                              checked={completeLessonConfig.questionTypes.multipleChoice}
+                              onChange={(e) => setCompleteLessonConfig({
+                                ...completeLessonConfig,
+                                questionTypes: { ...completeLessonConfig.questionTypes, multipleChoice: e.target.checked }
+                              })}
+                            />
+                            <Form.Check
+                              type="checkbox"
+                              label="True/False"
+                              checked={completeLessonConfig.questionTypes.trueFalse}
+                              onChange={(e) => setCompleteLessonConfig({
+                                ...completeLessonConfig,
+                                questionTypes: { ...completeLessonConfig.questionTypes, trueFalse: e.target.checked }
+                              })}
+                            />
+                            <Form.Check
+                              type="checkbox"
+                              label="Short Answer"
+                              checked={completeLessonConfig.questionTypes.shortAnswer}
+                              onChange={(e) => setCompleteLessonConfig({
+                                ...completeLessonConfig,
+                                questionTypes: { ...completeLessonConfig.questionTypes, shortAnswer: e.target.checked }
+                              })}
+                            />
+                            <Form.Check
+                              type="checkbox"
+                              label="Fill in the Blank"
+                              checked={completeLessonConfig.questionTypes.fillInTheBlank}
+                              onChange={(e) => setCompleteLessonConfig({
+                                ...completeLessonConfig,
+                                questionTypes: { ...completeLessonConfig.questionTypes, fillInTheBlank: e.target.checked }
+                              })}
+                            />
+                          </div>
+                        </Col>
+                      </Row>
+                    </div>
+
+                    <hr className="my-2" />
+
+                    {/* Content Section */}
+                    <div className="mb-3">
+                      <h6 className="fw-semibold mb-2"><FaBook className="me-2 text-success" />Content</h6>
+                      <Row className="align-items-center g-2">
+                        <Col xs={4} sm={3}>
+                          <Form.Label className="small mb-0">Activities</Form.Label>
+                          <Form.Control
+                            type="number"
+                            size="sm"
+                            min={1}
+                            max={5}
+                            value={completeLessonConfig.numActivities}
+                            onChange={(e) => setCompleteLessonConfig({ ...completeLessonConfig, numActivities: Math.min(5, Math.max(1, parseInt(e.target.value) || 2)) })}
+                          />
+                        </Col>
+                        <Col xs={8} sm={9}>
+                          <Form.Label className="small mb-0">Optional Sections</Form.Label>
+                          <div className="d-flex flex-wrap gap-2 mt-1">
+                            <Form.Check
+                              type="checkbox"
+                              label="Assignment"
+                              checked={completeLessonConfig.includeAssignment}
+                              onChange={(e) => setCompleteLessonConfig({ ...completeLessonConfig, includeAssignment: e.target.checked })}
+                            />
+                            <Form.Check
+                              type="checkbox"
+                              label="Reflection"
+                              checked={completeLessonConfig.includeReflectionQuestions}
+                              onChange={(e) => setCompleteLessonConfig({ ...completeLessonConfig, includeReflectionQuestions: e.target.checked })}
+                            />
+                            <Form.Check
+                              type="checkbox"
+                              label="Discussion"
+                              checked={completeLessonConfig.includeDiscussionPrompts}
+                              onChange={(e) => setCompleteLessonConfig({ ...completeLessonConfig, includeDiscussionPrompts: e.target.checked })}
+                            />
+                          </div>
+                        </Col>
+                      </Row>
+                    </div>
+
+                    {/* Generate Button */}
+                    <Button
+                      variant="primary"
+                      className="w-100 mt-2"
+                      onClick={() => {
+                        handleGenerateAIContent('complete');
+                        setShowAIAssistant(false);
+                        setShowCompleteLessonOptions(false);
+                      }}
+                    >
+                      <FaMagic className="me-2" /> Generate Complete Lesson
+                    </Button>
+                  </div>
+                )}
               </div>
             </Tab>
 

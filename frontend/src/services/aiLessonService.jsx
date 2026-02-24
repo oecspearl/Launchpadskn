@@ -977,7 +977,8 @@ export const generateCompleteLessonContent = async ({
   form,
   learningObjectives,
   lessonPlan = '',
-  duration = 45
+  duration = 45,
+  options = {}
 }) => {
   // API key is now server-side — no client-side check needed
 
@@ -985,234 +986,200 @@ export const generateCompleteLessonContent = async ({
     throw new Error('Missing required parameters: lessonTitle, topic, subject, and form are required.');
   }
 
-  let prompt = `You are an expert online lesson designer. Generate a complete set of lesson content items for an online lesson following the Gradual Release of Responsibility (GRR) model: I Do → We Do → You Do, with embedded assessment at each phase.
+  // Destructure options with defaults
+  const {
+    numVideos = 2,
+    videoDuration = 'any',
+    includeViewingGuide = true,
+    numQuizQuestions = 5,
+    questionTypes = { multipleChoice: true, trueFalse: true, shortAnswer: false, fillInTheBlank: false },
+    numActivities = 2,
+    includeAssignment = true,
+    includeReflectionQuestions = true,
+    includeDiscussionPrompts = false,
+  } = options;
 
-## LESSON DETAILS
-Subject: ${subject}
-Form/Grade: ${form}
-Topic: ${topic}
-Lesson Title: ${lessonTitle}
-Duration: ${duration} minutes
-${learningObjectives ? `Learning Objectives:\n${learningObjectives}` : ''}
-${lessonPlan ? `Lesson Plan Context:\n${lessonPlan.substring(0, 2000)}` : ''}
+  // Build allowed quiz question types string
+  const allowedTypes = [];
+  if (questionTypes.multipleChoice) allowedTypes.push('MULTIPLE_CHOICE');
+  if (questionTypes.trueFalse) allowedTypes.push('TRUE_FALSE');
+  if (questionTypes.shortAnswer) allowedTypes.push('SHORT_ANSWER');
+  if (questionTypes.fillInTheBlank) allowedTypes.push('FILL_IN_THE_BLANK');
+  const allowedTypesStr = allowedTypes.length > 0 ? allowedTypes.join(', ') : 'MULTIPLE_CHOICE';
 
-## INSTRUCTIONAL SEQUENCE (GRR Model with Embedded Assessment)
+  // Build the JSON template dynamically based on options
+  const templateItems = [];
+  let seqOrder = 1;
 
-### Phase 1: OPENING / HOOK (5–10 min) — content_section: "Introduction"
-**LEARNING_OUTCOMES** (sequence_order: 1)
-- State 3–5 SMART learning objectives using Bloom's Taxonomy action verbs
-- Format each as: "By the end of this lesson, students will be able to [action verb] + [content] + [condition]"
-- Span multiple Bloom's levels (Remember, Understand, Apply, Analyse, Evaluate, Create)
-- Include an essential question that frames the lesson's intellectual purpose
-- Include 2–3 guiding questions that scaffold toward the essential question
-- Reference prior knowledge students need and how it connects to this lesson
-
-### Phase 2: DIRECT INSTRUCTION — I DO (10–15 min) — content_section: "Learning"
-**KEY_CONCEPTS** (sequence_order: 2)
-- Explain 3–5 core concepts, chunked into digestible segments
-- For each concept provide:
-  * A clear definition in age-appropriate language for ${form} students
-  * A concrete, relatable real-world example or analogy
-  * Key vocabulary words defined in context
-- Structure content for ${form} reading level — simple sentences, no jargon without definition
-- End with 1–2 embedded formative check questions ("Think About It: Can you explain...?")
-
-**VIDEO** (sequence_order: 3)
-- Educational video demonstrating the concept in action
-- Include pre-viewing guidance: "Before watching, look for..."
-- Include post-viewing reflection: "After watching, think about..."
-- Explain how the video connects to specific learning outcomes
-- Use ONLY actual YouTube URLs from the provided list
-
-### Phase 3: GUIDED PRACTICE — WE DO (10–15 min) — content_section: "Learning"
-**LEARNING_ACTIVITIES** (sequence_order: 4)
-- 2–3 structured activities that progress from guided to collaborative practice
-- Each activity must:
-  * State which learning outcome it addresses
-  * Provide step-by-step instructions clear enough for ${form} students to follow independently online
-  * Include expected time to complete
-  * Suggest collaboration tools or methods (e.g., shared docs, discussion forums, breakout rooms)
-- Activities should vary modalities: reading, writing, problem-solving, discussion, creation
-- Include formative checkpoint: How the teacher can monitor understanding during this phase
-
-### Phase 4: INDEPENDENT PRACTICE — YOU DO (15–20 min) — content_section: "Assessment"
-**QUIZ** (sequence_order: 5)
-- 3–5 questions progressing through Bloom's Taxonomy:
-  * 1–2 Remember/Understand (recall facts, explain concepts) — 1–2 points each
-  * 1–2 Apply/Analyse (use knowledge in new situations, compare/contrast) — 2–3 points each
-  * 1 Evaluate/Create (justify, critique, design, formulate) — 3–5 points
-- CRITICAL quiz quality rules:
-  * Every question MUST align to a specific learning objective
-  * Multiple-choice distractors MUST be based on real student misconceptions, NOT obviously wrong
-  * Each question MUST include an explanation: why the answer is correct AND why common wrong answers are wrong
-  * Use age-appropriate vocabulary for ${form} students
-  * Include a mix of question types: MULTIPLE_CHOICE, TRUE_FALSE, SHORT_ANSWER
-
-**ASSIGNMENT** (sequence_order: 6)
-- A meaningful performance task that requires students to apply learning to a real-world scenario
-- assignment_description MUST contain detailed, step-by-step instructions (minimum 200 characters):
-  * What students need to do (clear task description)
-  * How to do it (step-by-step process)
-  * What to submit (specific deliverables)
-  * Quality expectations
-- Include rubric_criteria with 4–5 criteria totaling 100 points
-- Each criterion must describe what earns full marks at ${form} level
-- DO NOT use generic text like "Complete this assignment to demonstrate understanding"
-
-### Phase 5: REFLECTION & CLOSURE (5–10 min) — content_section: "Closure"
-**REFLECTION_QUESTIONS** (sequence_order: 7)
-- Self-assessment using "I can" statements matching each learning outcome:
-  * "I can [learning outcome 1]" — Rate: Not Yet / Getting There / Got It / Could Teach It
-- 2–3 metacognitive reflection questions:
-  * "What was the most important thing you learned today?"
-  * "What concept are you still unsure about?"
-  * "How does this connect to [prior knowledge or real life]?"
-- Goal-setting prompt: "What is one step you will take to strengthen your understanding?"
-
-**SUMMARY** (sequence_order: 8)
-- Concise recap of key takeaways, each tied to a specific learning outcome
-- Revisit the essential question from the opening with a model answer or discussion prompt
-- Preview of what comes next in the learning sequence
-
-## RESPONSE FORMAT
-Respond with ONLY a valid JSON array (no markdown, no code blocks, no extra text):
-[
-  {
+  // Always include: LEARNING_OUTCOMES
+  templateItems.push(`  {
     "content_type": "LEARNING_OUTCOMES",
     "title": "Learning Outcomes & Essential Questions",
-    "content_text": "Essential Question: [Open-ended question that frames the lesson]\\n\\nBy the end of this lesson, you will be able to:\\n1. [Bloom's verb] + [content] (Remember/Understand)\\n2. [Bloom's verb] + [content] (Apply)\\n3. [Bloom's verb] + [content] (Analyse/Evaluate)\\n\\nGuiding Questions:\\n- [Question 1]\\n- [Question 2]\\n\\nPrior Knowledge: [What you should already know]",
+    "content_text": "Essential Question: [Open-ended question framing the lesson]\\n\\nBy the end of this lesson, you will be able to:\\n1. [Bloom's verb + content] (Remember/Understand)\\n2. [Bloom's verb + content] (Apply)\\n3. [Bloom's verb + content] (Analyse/Evaluate)\\n\\nGuiding Questions:\\n- [Question 1]\\n- [Question 2]\\n\\nPrior Knowledge: [What you should already know]",
     "content_section": "Introduction",
-    "sequence_order": 1,
+    "sequence_order": ${seqOrder++},
     "is_required": true,
     "estimated_minutes": 5
-  },
-  {
+  }`);
+
+  // Always include: KEY_CONCEPTS
+  templateItems.push(`  {
     "content_type": "KEY_CONCEPTS",
     "title": "Key Concepts: ${topic}",
-    "content_text": "Concept 1: [Name]\\nDefinition: [Clear definition]\\nExample: [Real-world example]\\nKey Vocabulary: [term] — [definition]\\n\\nConcept 2: [Name]\\n...\\n\\nThink About It: [Embedded formative check question]",
+    "content_text": "Concept 1: [Name]\\nDefinition: [Clear definition for ${form}]\\nExample: [Real-world example]\\nKey Vocabulary: [term] — [definition]\\n\\nConcept 2: ...\\n\\nThink About It: [Formative check question]",
     "content_section": "Learning",
-    "sequence_order": 2,
+    "sequence_order": ${seqOrder++},
     "is_required": true,
     "estimated_minutes": 10
-  },
-  {
+  }`);
+
+  // VIDEO (include based on numVideos)
+  if (numVideos > 0) {
+    const videoGuideText = includeViewingGuide
+      ? '"content_text": "Before watching: [What to look for]\\nAfter watching: [Reflection question]",'
+      : '"content_text": "",'
+    templateItems.push(`  {
     "content_type": "VIDEO",
-    "title": "Watch: [Descriptive title related to learning outcome]",
-    "content_text": "Before watching: [What to look for]\\nAfter watching: [Reflection question]",
+    "title": "Watch: [Title related to learning outcome]",
+    ${videoGuideText}
     "url": "https://www.youtube.com/watch?v=...",
     "content_section": "Learning",
-    "sequence_order": 3,
+    "sequence_order": ${seqOrder++},
     "is_required": true,
     "estimated_minutes": 10,
-    "description": "How this video connects to: [specific learning outcome]"
-  },
-  {
+    "description": "Connects to: [specific learning outcome]"
+  }`);
+  }
+
+  // Always include: LEARNING_ACTIVITIES
+  templateItems.push(`  {
     "content_type": "LEARNING_ACTIVITIES",
-    "title": "Guided & Independent Practice Activities",
-    "content_text": "Activity 1 (Guided — We Do): [Name]\\nLearning Outcome: [Which outcome this addresses]\\nInstructions:\\n1. [Step 1]\\n2. [Step 2]\\nTime: [X minutes]\\n\\nActivity 2 (Independent — You Do): [Name]\\nLearning Outcome: [Which outcome this addresses]\\nInstructions:\\n1. [Step 1]\\n2. [Step 2]\\nTime: [X minutes]",
+    "title": "Guided & Independent Practice",
+    "content_text": "${Array.from({ length: numActivities }, (_, i) => `Activity ${i + 1} (${i === 0 ? 'Guided' : 'Independent'}): [Name]\\nOutcome: [Which outcome]\\n1. [Step 1]\\n2. [Step 2]\\nTime: [X min]`).join('\\n\\n')}",
     "content_section": "Learning",
-    "sequence_order": 4,
+    "sequence_order": ${seqOrder++},
     "is_required": true,
     "estimated_minutes": 15
-  },
-  {
+  }`);
+
+  // Always include: QUIZ
+  templateItems.push(`  {
     "content_type": "QUIZ",
     "title": "Knowledge Check: ${topic}",
-    "content_text": "Test your understanding — questions progress from recall to application",
+    "content_text": "Questions progress from recall to application",
     "content_section": "Assessment",
-    "sequence_order": 5,
+    "sequence_order": ${seqOrder++},
     "is_required": true,
     "estimated_minutes": 10,
     "quiz_questions": [
       {
-        "question_text": "[Remember-level question aligned to Objective 1]",
-        "question_type": "MULTIPLE_CHOICE",
+        "question_text": "[Remember-level question]",
+        "question_type": "${allowedTypes[0] || 'MULTIPLE_CHOICE'}",
         "points": 1,
         "options": [
-          {"text": "[Correct answer]", "is_correct": true},
-          {"text": "[Misconception-based distractor]", "is_correct": false},
+          {"text": "[Correct]", "is_correct": true},
+          {"text": "[Misconception distractor]", "is_correct": false},
           {"text": "[Plausible distractor]", "is_correct": false},
           {"text": "[Plausible distractor]", "is_correct": false}
         ],
-        "explanation": "[Why correct. Common mistake: why wrong answer X seems right but is wrong]"
-      },
-      {
-        "question_text": "[Apply-level question aligned to Objective 2]",
-        "question_type": "MULTIPLE_CHOICE",
-        "points": 3,
-        "options": [
-          {"text": "[Option]", "is_correct": false},
-          {"text": "[Correct answer]", "is_correct": true},
-          {"text": "[Option]", "is_correct": false},
-          {"text": "[Option]", "is_correct": false}
-        ],
-        "explanation": "[Detailed explanation]"
+        "explanation": "[Why correct + why common wrong answer is wrong]"
       }
     ]
-  },
-  {
+  }`);
+
+  // ASSIGNMENT (optional)
+  if (includeAssignment) {
+    templateItems.push(`  {
     "content_type": "ASSIGNMENT",
     "title": "Performance Task: ${topic}",
-    "content_text": "Apply what you learned to a real-world scenario",
+    "content_text": "Apply learning to a real-world scenario",
     "content_section": "Assessment",
-    "sequence_order": 6,
+    "sequence_order": ${seqOrder++},
     "is_required": true,
     "estimated_minutes": 30,
-    "assignment_description": "[Detailed task description with context]\\n\\nInstructions:\\n1. [Step 1]\\n2. [Step 2]\\n3. [Step 3]\\n\\nWhat to Submit:\\n- [Deliverable 1]\\n- [Deliverable 2]\\n\\nQuality Expectations:\\n- [Expectation 1]\\n- [Expectation 2]",
+    "assignment_description": "[Detailed task with context]\\n\\nInstructions:\\n1. [Step 1]\\n2. [Step 2]\\n3. [Step 3]\\n\\nSubmit: [Deliverables]\\nExpectations: [Quality standards]",
     "total_points": 100,
     "rubric_criteria": [
-      {"criterion": "Understanding of Concepts", "points": 25, "description": "[What earns full marks]"},
-      {"criterion": "Application & Analysis", "points": 25, "description": "[What earns full marks]"},
-      {"criterion": "Communication & Presentation", "points": 25, "description": "[What earns full marks]"},
-      {"criterion": "Completeness & Effort", "points": 25, "description": "[What earns full marks]"}
+      {"criterion": "Understanding", "points": 25, "description": "[Full marks criteria]"},
+      {"criterion": "Application", "points": 25, "description": "[Full marks criteria]"},
+      {"criterion": "Communication", "points": 25, "description": "[Full marks criteria]"},
+      {"criterion": "Completeness", "points": 25, "description": "[Full marks criteria]"}
     ]
-  },
-  {
+  }`);
+  }
+
+  // REFLECTION_QUESTIONS (optional)
+  if (includeReflectionQuestions) {
+    templateItems.push(`  {
     "content_type": "REFLECTION_QUESTIONS",
     "title": "Self-Assessment & Reflection",
-    "content_text": "Rate your understanding:\\n- I can [Outcome 1]: Not Yet / Getting There / Got It / Could Teach It\\n- I can [Outcome 2]: Not Yet / Getting There / Got It / Could Teach It\\n- I can [Outcome 3]: Not Yet / Getting There / Got It / Could Teach It\\n\\nReflection:\\n1. What was the most important thing you learned today?\\n2. What concept are you still unsure about?\\n3. How might you use this knowledge outside of class?\\n\\nGoal: What is one step you will take to strengthen your understanding?",
+    "content_text": "Rate yourself:\\n- I can [Outcome 1]: Not Yet / Getting There / Got It / Could Teach It\\n- I can [Outcome 2]: ...\\n\\nReflect:\\n1. Most important thing learned today?\\n2. What are you still unsure about?\\n3. How will you use this knowledge?\\n\\nGoal: One step to strengthen your understanding?",
     "content_section": "Closure",
-    "sequence_order": 7,
+    "sequence_order": ${seqOrder++},
     "is_required": true,
     "estimated_minutes": 5
-  },
-  {
+  }`);
+  }
+
+  // DISCUSSION_PROMPTS (optional)
+  if (includeDiscussionPrompts) {
+    templateItems.push(`  {
+    "content_type": "DISCUSSION_PROMPTS",
+    "title": "Discussion Prompts",
+    "content_text": "1. [Open-ended discussion question connecting to real life]\\n2. [Question requiring students to defend a position]\\n3. [Question encouraging peer collaboration]",
+    "content_section": "Closure",
+    "sequence_order": ${seqOrder++},
+    "is_required": false,
+    "estimated_minutes": 10
+  }`);
+  }
+
+  // Always include: SUMMARY
+  templateItems.push(`  {
     "content_type": "SUMMARY",
     "title": "Lesson Summary",
-    "content_text": "Key Takeaways:\\n1. [Takeaway tied to Outcome 1]\\n2. [Takeaway tied to Outcome 2]\\n3. [Takeaway tied to Outcome 3]\\n\\nEssential Question Revisited: [Prompt to answer the opening question]\\n\\nNext Steps: [What comes next in the learning sequence]",
+    "content_text": "Key Takeaways:\\n1. [Tied to Outcome 1]\\n2. [Tied to Outcome 2]\\n3. [Tied to Outcome 3]\\n\\nEssential Question Revisited: [Answer prompt]\\nNext: [What comes next]",
     "content_section": "Closure",
-    "sequence_order": 8,
+    "sequence_order": ${seqOrder++},
     "is_required": true,
     "estimated_minutes": 5
-  }
+  }`);
+
+  let prompt = `Generate lesson content for an online lesson using the Gradual Release of Responsibility (GRR) model with embedded assessment.
+
+Subject: ${subject} | Form: ${form} | Topic: ${topic} | Title: ${lessonTitle} | Duration: ${duration} min
+${learningObjectives ? `Learning Objectives: ${learningObjectives}` : ''}
+${lessonPlan ? `Lesson Plan: ${lessonPlan.substring(0, 1000)}` : ''}
+
+Follow this GRR instructional sequence. Respond with ONLY a valid JSON array:
+
+[
+${templateItems.join(',\n')}
 ]
 
-## BLOOM'S TAXONOMY ACTION VERBS (use these for objectives and quiz questions)
-- Remember: define, list, recall, identify, name, recognise, state, match
-- Understand: explain, summarise, paraphrase, classify, compare, interpret, discuss
-- Apply: demonstrate, calculate, solve, use, implement, illustrate, execute
-- Analyse: differentiate, organise, compare, contrast, examine, categorise, deconstruct
-- Evaluate: justify, critique, assess, judge, argue, defend, prioritise, recommend
-- Create: design, construct, develop, compose, formulate, produce, propose, invent
-
-## CRITICAL RULES
-- ALL content MUST be written at ${form} reading/comprehension level — simple, clear language
-- Every content item must directly support at least one learning outcome
-- KEY_CONCEPTS must include definition + example + vocabulary for each concept
-- QUIZ distractors MUST be based on real student misconceptions, NOT obviously wrong
-- QUIZ explanations MUST explain WHY correct AND why common wrong answers are wrong
-- ASSIGNMENT assignment_description MUST be detailed (min 200 chars) with step-by-step instructions — NO generic text
-- ASSIGNMENT rubric must have 4–5 criteria totaling 100 points
-- VIDEO must be in the "Learning" section, use actual YouTube URLs from list below
+RULES:
+- Write ALL content at ${form} reading level — simple, clear language, define technical terms
+- LEARNING_OUTCOMES: 3-5 SMART objectives using Bloom's verbs spanning multiple levels. Include essential question, guiding questions, prior knowledge
+- KEY_CONCEPTS: Each concept needs definition + real-world example + vocabulary. End with formative check question
+${numVideos > 0 ? `- VIDEO: ${includeViewingGuide ? 'Include pre-viewing guidance + post-viewing reflection.' : 'No viewing instructions needed.'} Use ONLY YouTube URLs from the list provided below` : ''}
+- LEARNING_ACTIVITIES: Generate exactly ${numActivities} activities progressing guided→independent. Each states which outcome it addresses with step-by-step instructions
+- QUIZ: Generate exactly ${numQuizQuestions} questions progressing through Bloom's (Remember→Apply→Evaluate). Distractors based on real misconceptions. Explanations explain why correct AND why wrong answers are wrong. Use ONLY these question types: ${allowedTypesStr}
+${includeAssignment ? '- ASSIGNMENT: Detailed step-by-step instructions (min 200 chars). Real-world application task. 4 rubric criteria totaling 100 points. NO generic text' : ''}
+${includeReflectionQuestions ? '- REFLECTION: "I can" self-assessment for each outcome + metacognitive questions + goal-setting' : ''}
+${includeDiscussionPrompts ? '- DISCUSSION: Open-ended questions encouraging critical thinking and peer dialogue' : ''}
+- SUMMARY: Takeaways tied to outcomes + revisit essential question
 - Sequence: Introduction → Learning → Assessment → Closure
-- Content must be specific to "${topic}" in "${subject}" — NOT generic
+- Content specific to "${topic}" in "${subject}" — not generic
 
-Remember: Respond with ONLY the JSON array, nothing else.`;
+Bloom's verbs: Remember(define,list,identify) Understand(explain,compare,classify) Apply(solve,demonstrate,use) Analyse(compare,contrast,examine) Evaluate(justify,critique,argue) Create(design,develop,compose)
+
+Respond with ONLY the JSON array.`;
 
   try {
     console.log('[AI Service] Generating complete lesson content...');
 
     // Search for relevant YouTube videos matched to learning outcomes
+    const effectiveVideoDuration = videoDuration === 'any' ? null : videoDuration;
     let videoInfo = null;
     let videoOptions = [];
     try {
@@ -1225,14 +1192,16 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
           subject,
           form,
           learningOutcomes: learningObjectives,
-          maxTotal: 5
+          maxTotal: Math.max(numVideos * 2, 4),
+          videoDuration: effectiveVideoDuration
         });
       } else {
         videoOptions = await searchEducationalVideos({
           query: topic,
           subject,
           form,
-          maxResults: 5
+          maxResults: Math.max(numVideos * 2, 4),
+          videoDuration: effectiveVideoDuration
         });
       }
 
@@ -1240,25 +1209,18 @@ Remember: Respond with ONLY the JSON array, nothing else.`;
         videoInfo = videoOptions[0];
         console.log('[AI Service] Found', videoOptions.length, 'outcome-matched videos. Primary:', videoInfo.title);
 
-        // Update prompt to include the actual video URL
+        // Replace placeholder URL in the prompt template with the actual primary video URL
         prompt = prompt.replace(
-          '"url": "https://www.youtube.com/watch?v=... or embed code"',
+          '"url": "https://www.youtube.com/watch?v=..."',
           `"url": "${videoInfo.url}"`
         );
 
-        // Build rich video context with outcome alignment info
+        // Build video list with outcome alignment info
         const videoList = videoOptions.map((v, idx) =>
-          `${idx + 1}. "${v.title}" by ${v.channelTitle} - ${v.url}${v.matchedOutcome ? ` [Supports: ${v.matchedOutcome}]` : ''}`
+          `${idx + 1}. "${v.title}" - ${v.url}${v.matchedOutcome ? ` [Supports: ${v.matchedOutcome}]` : ''}`
         ).join('\n');
 
-        prompt += `\n\nAVAILABLE YOUTUBE VIDEOS (matched to learning outcomes):
-${videoList}
-
-INSTRUCTIONS FOR VIDEO CONTENT ITEMS:
-- Use the PRIMARY video (Video 1) for the main VIDEO content item in the Learning section.
-- If generating additional VIDEO items, choose videos from the list that best align with the specific learning outcome being covered in that section.
-- Each VIDEO must use an actual URL from the list above — do not make up URLs.
-- For each VIDEO, include viewing guidance: what students should observe or look for while watching.`;
+        prompt += `\n\nAVAILABLE YOUTUBE VIDEOS:\n${videoList}\n\nUse Video 1 for the main VIDEO item. Use actual URLs from this list only.`;
       } else {
         console.warn('[AI Service] No YouTube video found, will use placeholder');
       }
@@ -1406,9 +1368,14 @@ INSTRUCTIONS FOR VIDEO CONTENT ITEMS:
         mappedItem.content_section = 'Learning';
       }
 
-      // For QUIZ content, ensure quiz_questions array is preserved
+      // For QUIZ content, ensure quiz_questions array is preserved and filter by allowed types
       if (item.content_type === 'QUIZ') {
-        mappedItem.quiz_questions = item.quiz_questions || [];
+        let questions = item.quiz_questions || [];
+        // Filter to only allowed question types
+        const allowedSet = new Set(allowedTypesStr.split(', '));
+        questions = questions.filter(q => allowedSet.has(q.question_type));
+        // If filtering removed all questions, keep originals (better than empty)
+        mappedItem.quiz_questions = questions.length > 0 ? questions : (item.quiz_questions || []);
         if (mappedItem.quiz_questions.length === 0) {
           console.warn('[AI Service] Quiz has no questions:', item.title);
         }
@@ -1489,22 +1456,26 @@ INSTRUCTIONS FOR VIDEO CONTENT ITEMS:
       });
     }
 
-    // Add a second video if we have multiple outcome-matched videos and the AI didn't already include one
-    const videoCount = contentItems.filter(item => item.content_type === 'VIDEO').length;
-    if (videoCount < 2 && videoOptions.length >= 2) {
+    // Add additional videos up to numVideos if we have outcome-matched videos
+    const currentVideoCount = contentItems.filter(item => item.content_type === 'VIDEO').length;
+    if (currentVideoCount < numVideos && videoOptions.length > 1) {
       const usedVideoIds = contentItems
         .filter(item => item.content_type === 'VIDEO' && item.url)
         .map(item => item.url);
-      const secondVideo = videoOptions.find(v => !usedVideoIds.some(url => url.includes(v.videoId)));
-      if (secondVideo) {
+      const unusedVideos = videoOptions.filter(v => !usedVideoIds.some(url => url.includes(v.videoId)));
+
+      for (let i = 0; i < unusedVideos.length && contentItems.filter(it => it.content_type === 'VIDEO').length < numVideos; i++) {
+        const extraVideo = unusedVideos[i];
         const activityIndex = contentItems.findIndex(item => item.content_type === 'LEARNING_ACTIVITIES');
-        const insertAt = activityIndex >= 0 ? activityIndex + 1 : contentItems.length - 1;
+        const insertAt = activityIndex >= 0 ? activityIndex + 1 + i : contentItems.length - 1;
         contentItems.splice(insertAt, 0, {
           content_type: 'VIDEO',
-          title: secondVideo.title,
-          content_text: `Watch this additional video to deepen your understanding.${secondVideo.matchedOutcome ? `\nThis video supports: ${secondVideo.matchedOutcome}` : ''}`,
-          url: secondVideo.url,
-          description: secondVideo.description || `Additional educational video about ${topic}`,
+          title: extraVideo.title,
+          content_text: includeViewingGuide
+            ? `Watch this additional video to deepen your understanding.${extraVideo.matchedOutcome ? `\nThis video supports: ${extraVideo.matchedOutcome}` : ''}`
+            : '',
+          url: extraVideo.url,
+          description: extraVideo.description || `Additional educational video about ${topic}`,
           content_section: 'Learning',
           sequence_order: insertAt + 1,
           is_required: false,
@@ -1572,6 +1543,29 @@ INSTRUCTIONS FOR VIDEO CONTENT ITEMS:
         sequence_order: contentItems.length + 1,
         is_required: true,
         estimated_minutes: 5
+      });
+    }
+
+    // Filter out disabled optional sections
+    const disabledTypes = [];
+    if (!includeAssignment) disabledTypes.push('ASSIGNMENT');
+    if (!includeReflectionQuestions) disabledTypes.push('REFLECTION_QUESTIONS');
+    if (!includeDiscussionPrompts) disabledTypes.push('DISCUSSION_PROMPTS');
+    if (disabledTypes.length > 0) {
+      contentItems = contentItems.filter(item => !disabledTypes.includes(item.content_type));
+    }
+
+    // Cap videos at numVideos
+    if (numVideos === 0) {
+      contentItems = contentItems.filter(item => item.content_type !== 'VIDEO');
+    } else {
+      let videosSeen = 0;
+      contentItems = contentItems.filter(item => {
+        if (item.content_type === 'VIDEO') {
+          videosSeen++;
+          return videosSeen <= numVideos;
+        }
+        return true;
       });
     }
 
