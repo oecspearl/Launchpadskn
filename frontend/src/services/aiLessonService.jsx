@@ -1267,7 +1267,7 @@ INSTRUCTIONS FOR VIDEO CONTENT ITEMS:
     }
 
     const requestBody = {
-      model: 'gpt-4o-mini',
+      model: 'gpt-3.5-turbo',
       messages: [
         {
           role: 'system',
