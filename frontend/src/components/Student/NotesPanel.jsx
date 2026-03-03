@@ -2,8 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Card, Form, Button, Offcanvas } from 'react-bootstrap';
 import { FaStickyNote, FaSave, FaTrash, FaTimes } from 'react-icons/fa';
 
-function NotesPanel({ lessonId }) {
-    const [show, setShow] = useState(false);
+function NotesPanel({ lessonId, show: controlledShow, onToggle }) {
+    const [internalShow, setInternalShow] = useState(false);
+    const isControlled = onToggle !== undefined;
+    const show = isControlled ? controlledShow : internalShow;
+    const setShow = isControlled ? (val) => onToggle(val) : setInternalShow;
+
     const [note, setNote] = useState('');
     const [savedTime, setSavedTime] = useState(null);
 
@@ -30,14 +34,17 @@ function NotesPanel({ lessonId }) {
 
     return (
         <>
-            <Button
-                variant="primary"
-                className="position-fixed bottom-0 end-0 m-4 rounded-circle shadow-lg d-flex align-items-center justify-content-center"
-                style={{ width: '60px', height: '60px', zIndex: 1050 }}
-                onClick={() => setShow(true)}
-            >
-                <FaStickyNote size={24} />
-            </Button>
+            {/* Standalone FAB — hidden when parent controls show/hide via speed dial */}
+            {!isControlled && (
+                <Button
+                    variant="primary"
+                    className="position-fixed bottom-0 end-0 m-4 rounded-circle shadow-lg d-flex align-items-center justify-content-center"
+                    style={{ width: '60px', height: '60px', zIndex: 1050 }}
+                    onClick={() => setShow(true)}
+                >
+                    <FaStickyNote size={24} />
+                </Button>
+            )}
 
             <Offcanvas show={show} onHide={() => setShow(false)} placement="end" backdrop={false} scroll={true}>
                 <Offcanvas.Header closeButton>

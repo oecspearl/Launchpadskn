@@ -10,7 +10,7 @@ import './AITutorWidget.css';
 function AITutorWidget() {
   const { user } = useAuth();
   const {
-    isOpen, isEnabled, isSending, error,
+    isOpen, isEnabled, isSending, error, hideFab,
     currentContext, messages, conversationHistory,
     toggleTutor, closeTutor,
     sendMessage, loadConversation, loadConversationHistory, startNewConversation
@@ -184,8 +184,8 @@ function AITutorWidget() {
 
   return (
     <>
-      {/* FAB Button */}
-      {!isOpen && (
+      {/* FAB Button — hidden when LessonViewStream provides its own speed dial */}
+      {!isOpen && !hideFab && (
         <button className="tutor-fab" onClick={toggleTutor} title="Open AI Tutor">
           <FaRobot size={24} />
         </button>

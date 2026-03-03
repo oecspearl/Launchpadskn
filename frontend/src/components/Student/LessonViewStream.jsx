@@ -5,9 +5,10 @@ import {
     FaBook, FaClipboardList, FaCheckCircle, FaPlay, FaImage,
     FaFileAlt, FaListOl, FaBookOpen, FaLightbulb,
     FaQuestionCircle, FaComments, FaCube, FaLock, FaTrophy, FaVideo, FaDoorOpen,
-    FaExpand, FaCompress
+    FaExpand, FaCompress, FaRobot, FaStickyNote, FaPlus, FaTimes
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useTutor } from '../../contexts/TutorContext';
 import supabaseService from '../../services/supabaseService';
 import collaborationService from '../../services/collaborationService';
 import { supabase } from '../../config/supabase';
@@ -27,6 +28,7 @@ function LessonViewStream() {
     const { lessonId } = useParams();
     const { user } = useAuth();
     const navigate = useNavigate();
+    const { toggleTutor, isEnabled: tutorEnabled, setHideFab } = useTutor();
 
     const [isLoading, setIsLoading] = useState(true);
     const [lesson, setLesson] = useState(null);
@@ -35,7 +37,15 @@ function LessonViewStream() {
     const [virtualClassroom, setVirtualClassroom] = useState(null);
     const [showDiscussionSidebar, setShowDiscussionSidebar] = useState(false);
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const [toolMenuOpen, setToolMenuOpen] = useState(false);
+    const [notesOpen, setNotesOpen] = useState(false);
     const viewerPanelRef = useRef(null);
+
+    // Hide the standalone tutor FAB — this page uses the speed dial instead
+    useEffect(() => {
+        setHideFab(true);
+        return () => setHideFab(false);
+    }, [setHideFab]);
 
     useEffect(() => {
         if (lessonId) {
@@ -571,15 +581,52 @@ function LessonViewStream() {
                     )}
                 </div>
             </div>
-            {/* Floating Discussion Button */}
-            <button
-                className="floating-discussion-btn"
-                onClick={() => setShowDiscussionSidebar(!showDiscussionSidebar)}
-                title="Class Discussion"
-                aria-label="Toggle class discussion"
-            >
-                <FaComments />
-            </button>
+            {/* Speed Dial — combines Tutor, Discussion, and Notes into one menu */}
+            <div className="lesson-speed-dial">
+                {toolMenuOpen && (
+                    <div className="speed-dial-items">
+                        {tutorEnabled && (
+                            <button
+                                className="speed-dial-item speed-dial-tutor"
+                                onClick={() => { toggleTutor(); setToolMenuOpen(false); }}
+                                title="AI Tutor"
+                            >
+                                <FaRobot size={18} />
+                                <span className="speed-dial-label">Tutor</span>
+                            </button>
+                        )}
+                        <button
+                            className="speed-dial-item speed-dial-discussion"
+                            onClick={() => { setShowDiscussionSidebar(!showDiscussionSidebar); setToolMenuOpen(false); }}
+                            title="Class Discussion"
+                        >
+                            <FaComments size={18} />
+                            <span className="speed-dial-label">Discussion</span>
+                        </button>
+                        <button
+                            className="speed-dial-item speed-dial-notes"
+                            onClick={() => { setNotesOpen(true); setToolMenuOpen(false); }}
+                            title="My Notes"
+                        >
+                            <FaStickyNote size={18} />
+                            <span className="speed-dial-label">Notes</span>
+                        </button>
+                    </div>
+                )}
+                <button
+                    className={`speed-dial-toggle ${toolMenuOpen ? 'open' : ''}`}
+                    onClick={() => setToolMenuOpen(prev => !prev)}
+                    title="Tools"
+                    aria-label="Toggle tools menu"
+                >
+                    {toolMenuOpen ? <FaTimes size={22} /> : <FaPlus size={22} />}
+                </button>
+            </div>
+
+            {/* Backdrop to close speed dial when clicking outside */}
+            {toolMenuOpen && (
+                <div className="speed-dial-backdrop" onClick={() => setToolMenuOpen(false)} />
+            )}
 
             {/* Discussion Sidebar */}
             {showDiscussionSidebar && (
@@ -610,7 +657,7 @@ function LessonViewStream() {
                 </>
             )}
 
-            <NotesPanel lessonId={lessonId} />
+            <NotesPanel lessonId={lessonId} show={notesOpen} onToggle={setNotesOpen} />
         </div>
     );
 }

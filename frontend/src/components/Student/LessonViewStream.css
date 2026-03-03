@@ -537,36 +537,117 @@
   }
 }
 
-/* ===== Discussion Sidebar ===== */
-.floating-discussion-btn {
+/* ===== Speed Dial Menu ===== */
+.lesson-speed-dial {
   position: fixed;
-  right: 2rem;
-  bottom: 6rem;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1050;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 12px;
+}
+
+.speed-dial-toggle {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: var(--lv-primary);
-  color: white;
   border: none;
-  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.2));
-  cursor: pointer;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
-  transition: all 150ms ease;
-  z-index: 300;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  transition: transform 0.25s, box-shadow 0.2s;
 }
 
-.floating-discussion-btn:hover {
-  background: var(--lv-primary-dark);
+.speed-dial-toggle:hover {
   transform: scale(1.08);
-  box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.5);
 }
 
-.floating-discussion-btn:active {
-  transform: scale(1.02);
+.speed-dial-toggle.open {
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
+
+.speed-dial-toggle.open:hover {
+  transform: rotate(45deg) scale(1.08);
+}
+
+.speed-dial-items {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+  align-items: center;
+  animation: speedDialIn 0.2s ease;
+}
+
+@keyframes speedDialIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.speed-dial-item {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.speed-dial-item:hover {
+  transform: scale(1.12);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.25);
+}
+
+.speed-dial-item:active {
+  transform: scale(0.95);
+}
+
+.speed-dial-tutor { background: linear-gradient(135deg, #667eea, #764ba2); }
+.speed-dial-discussion { background: linear-gradient(135deg, #3b82f6, #2563eb); }
+.speed-dial-notes { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+.speed-dial-label {
+  position: absolute;
+  right: 56px;
+  white-space: nowrap;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.speed-dial-item:hover .speed-dial-label {
+  opacity: 1;
+}
+
+.speed-dial-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1049;
+}
+
+/* ===== Discussion Sidebar ===== */
 
 .discussion-sidebar-overlay {
   position: fixed;

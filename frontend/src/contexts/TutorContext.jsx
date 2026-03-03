@@ -19,6 +19,7 @@ export function TutorProvider({ children }) {
   const [studentProfile, setStudentProfile] = useState(null);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState(null);
+  const [hideFab, setHideFab] = useState(false);
 
   const isStudent = user?.role?.toUpperCase() === 'STUDENT';
   const studentId = user?.user_id;
@@ -221,9 +222,9 @@ export function TutorProvider({ children }) {
   }, []);
 
   const contextValue = {
-    isOpen, isEnabled, isSending, error,
+    isOpen, isEnabled, isSending, error, hideFab,
     currentContext, activeConversation, messages, conversationHistory, studentProfile,
-    toggleTutor, closeTutor,
+    toggleTutor, closeTutor, setHideFab,
     sendMessage, loadConversation, loadConversationHistory, startNewConversation
   };
 
