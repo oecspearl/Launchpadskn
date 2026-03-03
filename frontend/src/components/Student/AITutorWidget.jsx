@@ -1,5 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaRobot, FaTimes, FaPaperPlane, FaHistory, FaArrowLeft, FaBook, FaPlay, FaExternalLinkAlt } from 'react-icons/fa';
+import {
+  FaRobot, FaTimes, FaPaperPlane, FaHistory, FaArrowLeft, FaBook, FaPlay, FaExternalLinkAlt,
+  FaVideo, FaLightbulb, FaGlobe, FaClipboardList, FaPencilAlt
+} from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useTutor } from '../../contexts/TutorContext';
 import './AITutorWidget.css';
@@ -19,6 +22,30 @@ function AITutorWidget() {
   const inputRef = useRef(null);
 
   const isStudent = user?.role?.toUpperCase() === 'STUDENT';
+
+  const QUICK_ACTIONS = [
+    { id: 'videos',     label: 'Videos',     icon: FaVideo,         color: '#e74c3c',
+      getMessage: (topic) => `Find me a video that explains ${topic}` },
+    { id: 'explain',    label: 'Explain',    icon: FaLightbulb,     color: '#f39c12',
+      getMessage: (topic) => `Can you explain ${topic} to me step by step?` },
+    { id: 'websites',   label: 'Websites',   icon: FaGlobe,         color: '#3498db',
+      getMessage: (topic) => `Find me helpful websites about ${topic}` },
+    { id: 'worksheets', label: 'Worksheets', icon: FaClipboardList, color: '#27ae60',
+      getMessage: (topic) => `Find me practice worksheets or exercises for ${topic}` },
+    { id: 'examples',   label: 'Examples',   icon: FaPencilAlt,     color: '#8e44ad',
+      getMessage: (topic) => `Show me worked examples for ${topic}` },
+  ];
+
+  const getContextTopic = () => {
+    if (currentContext?.lessonTitle) return currentContext.lessonTitle;
+    if (currentContext?.subjectName) return currentContext.subjectName;
+    return 'this topic';
+  };
+
+  const handleQuickAction = (action) => {
+    if (isSending) return;
+    sendMessage(action.getMessage(getContextTopic()));
+  };
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -257,6 +284,21 @@ function AITutorWidget() {
                 <p style={{ fontSize: '0.78rem', color: '#adb5bd', marginTop: '8px' }}>
                   I won't give you answers directly — I'll help you figure them out yourself!
                 </p>
+                <div className="tutor-welcome-actions">
+                  {QUICK_ACTIONS.map((action) => (
+                    <button
+                      key={action.id}
+                      className="tutor-welcome-action-card"
+                      onClick={() => handleQuickAction(action)}
+                      disabled={isSending}
+                    >
+                      <div className="tutor-welcome-action-icon" style={{ color: action.color }}>
+                        <action.icon size={18} />
+                      </div>
+                      <span className="tutor-welcome-action-label">{action.label}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -295,6 +337,24 @@ function AITutorWidget() {
 
           {/* Error */}
           {error && <div className="tutor-error">{error}</div>}
+
+          {/* Quick Action Chips */}
+          {messages.length > 0 && (
+            <div className="tutor-quick-actions">
+              {QUICK_ACTIONS.map((action) => (
+                <button
+                  key={action.id}
+                  className="tutor-quick-action-chip"
+                  onClick={() => handleQuickAction(action)}
+                  disabled={isSending}
+                  title={action.getMessage(getContextTopic())}
+                >
+                  <action.icon size={11} />
+                  <span>{action.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Input */}
           <div className="tutor-input-area">

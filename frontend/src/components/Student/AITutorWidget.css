@@ -526,6 +526,104 @@
   margin: 3px 0 0;
 }
 
+/* Welcome Action Cards */
+.tutor-welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+  padding: 0 8px;
+}
+
+.tutor-welcome-action-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 10px;
+  width: 90px;
+  border: 1.5px solid #e9ecef;
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+}
+
+.tutor-welcome-action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  border-color: #667eea;
+}
+
+.tutor-welcome-action-card:active {
+  transform: translateY(0);
+}
+
+.tutor-welcome-action-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.tutor-welcome-action-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #f8f9fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tutor-welcome-action-label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #495057;
+}
+
+/* Quick Action Chips (above input) */
+.tutor-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 12px 4px;
+  border-top: 1px solid #f0f0f0;
+  flex-shrink: 0;
+}
+
+.tutor-quick-action-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1.5px solid #e2e6ea;
+  border-radius: 16px;
+  background: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #667eea;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  white-space: nowrap;
+}
+
+.tutor-quick-action-chip:hover {
+  background: #f0f0ff;
+  border-color: #667eea;
+}
+
+.tutor-quick-action-chip:active {
+  transform: scale(0.96);
+}
+
+.tutor-quick-action-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
 /* Mobile */
 @media (max-width: 575.98px) {
   .tutor-panel {
@@ -539,5 +637,23 @@
   .tutor-fab {
     bottom: 16px;
     right: 16px;
+  }
+
+  .tutor-welcome-actions {
+    gap: 6px;
+  }
+
+  .tutor-welcome-action-card {
+    width: 80px;
+    padding: 10px 8px;
+  }
+
+  .tutor-quick-actions {
+    gap: 4px;
+  }
+
+  .tutor-quick-action-chip {
+    font-size: 0.68rem;
+    padding: 3px 8px;
   }
 }
