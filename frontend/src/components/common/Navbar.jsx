@@ -261,21 +261,9 @@ function AppNavbar() {
                   <FaCog size={14} /> Settings
                 </NavDropdown.Item>
                 <NavDropdown.Divider />
-                {user.role?.toLowerCase() === 'admin' && (
-                  <NavDropdown.Item as={Link} to="/admin/help" className="d-flex align-items-center gap-2">
-                    <FaQuestionCircle size={14} /> Help
-                  </NavDropdown.Item>
-                )}
-                {user.role?.toLowerCase() === 'instructor' && (
-                  <NavDropdown.Item as={Link} to="/teacher/help" className="d-flex align-items-center gap-2">
-                    <FaQuestionCircle size={14} /> Help
-                  </NavDropdown.Item>
-                )}
-                {user.role?.toLowerCase() === 'student' && (
-                  <NavDropdown.Item as={Link} to="/student/help" className="d-flex align-items-center gap-2">
-                    <FaQuestionCircle size={14} /> Help
-                  </NavDropdown.Item>
-                )}
+                <NavDropdown.Item as={Link} to="/help" className="d-flex align-items-center gap-2">
+                  <FaQuestionCircle size={14} /> Help
+                </NavDropdown.Item>
                 <NavDropdown.Divider />
                 <NavDropdown.Item onClick={handleLogout} className="text-danger d-flex align-items-center gap-2">
                   <FaSignOutAlt size={14} /> Logout
