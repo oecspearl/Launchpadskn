@@ -90,14 +90,17 @@ const tutorService = {
     return data || [];
   },
 
-  async saveMessage(conversationId, role, content) {
+  async saveMessage(conversationId, role, content, metadata = null) {
+    const insertData = {
+      conversation_id: conversationId,
+      role,
+      content
+    };
+    if (metadata) insertData.metadata = metadata;
+
     const { data, error } = await supabase
       .from('tutor_messages')
-      .insert({
-        conversation_id: conversationId,
-        role,
-        content
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -164,8 +167,9 @@ const tutorService = {
     const data = await response.json();
     const assistantContent = data.choices?.[0]?.message?.content || 'I apologize, I could not generate a response. Please try again.';
 
-    // 4. Save assistant response
-    const assistantMsg = await this.saveMessage(conversationId, 'assistant', assistantContent);
+    // 4. Save assistant response (with resources metadata if present)
+    const metadata = data.resources ? { resources: data.resources } : null;
+    const assistantMsg = await this.saveMessage(conversationId, 'assistant', assistantContent, metadata);
 
     return assistantMsg;
   },

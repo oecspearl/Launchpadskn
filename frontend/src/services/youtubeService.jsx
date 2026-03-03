@@ -3,7 +3,7 @@
  * Handles YouTube video searches using the YouTube Data API v3
  */
 
-const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || 'AIzaSyD6apl0ugvvTRl4_7g02mRuwVuA-vRnmyU';
+const YOUTUBE_API_KEY = import.meta.env.VITE_YOUTUBE_API_KEY || '';
 const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3/search';
 
 /**

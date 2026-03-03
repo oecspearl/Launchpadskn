@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { FaRobot, FaTimes, FaPaperPlane, FaHistory, FaArrowLeft, FaBook } from 'react-icons/fa';
+import { FaRobot, FaTimes, FaPaperPlane, FaHistory, FaArrowLeft, FaBook, FaPlay, FaExternalLinkAlt } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useTutor } from '../../contexts/TutorContext';
 import './AITutorWidget.css';
@@ -104,6 +104,55 @@ function AITutorWidget() {
     if (subject) return subject;
     if (conv.title) return conv.title;
     return 'General Help';
+  };
+
+  const renderResources = (metadata) => {
+    const resources = metadata?.resources;
+    if (!resources) return null;
+    const youtubeVideos = resources.youtube || [];
+    const webResults = resources.web || [];
+    if (youtubeVideos.length === 0 && webResults.length === 0) return null;
+
+    return (
+      <div className="tutor-resources">
+        {youtubeVideos.map((video) => (
+          <a
+            key={video.videoId}
+            href={video.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="tutor-youtube-card"
+          >
+            <div className="tutor-youtube-thumb">
+              {video.thumbnail && <img src={video.thumbnail} alt="" />}
+              <div className="tutor-youtube-play"><FaPlay size={14} /></div>
+            </div>
+            <div className="tutor-youtube-info">
+              <p className="tutor-youtube-title">{video.title}</p>
+              <p className="tutor-youtube-channel">{video.channelTitle}</p>
+            </div>
+          </a>
+        ))}
+        {webResults.map((item, idx) => (
+          <a
+            key={idx}
+            href={item.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="tutor-web-card"
+          >
+            <div className="tutor-web-info">
+              <p className="tutor-web-title">
+                <FaExternalLinkAlt size={10} className="me-1" />
+                {item.title}
+              </p>
+              {item.snippet && <p className="tutor-web-snippet">{item.snippet}</p>}
+              <p className="tutor-web-source">{item.source}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -218,6 +267,7 @@ function AITutorWidget() {
                 </div>
                 <div>
                   <div className="tutor-msg-bubble">{msg.content}</div>
+                  {msg.role === 'assistant' && renderResources(msg.metadata)}
                   <div className="tutor-msg-time">{formatTime(msg.created_at)}</div>
                 </div>
               </div>

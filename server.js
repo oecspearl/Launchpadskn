@@ -7,6 +7,167 @@ const PORT = process.env.PORT || 3000;
 // Parse JSON bodies for the AI proxy
 app.use(express.json({ limit: '50kb' }));
 
+// ─── Search result cache (30-min TTL) ─────────────────────────────────
+const searchCache = new Map();
+const CACHE_TTL = 30 * 60 * 1000;
+
+function getCachedSearch(key) {
+  const entry = searchCache.get(key);
+  if (entry && Date.now() - entry.time < CACHE_TTL) return entry.data;
+  if (entry) searchCache.delete(key);
+  return null;
+}
+
+function setCachedSearch(key, data) {
+  searchCache.set(key, { data, time: Date.now() });
+  // Evict old entries if cache grows too large
+  if (searchCache.size > 200) {
+    const oldest = searchCache.keys().next().value;
+    searchCache.delete(oldest);
+  }
+}
+
+// ─── YouTube Search (server-side) ─────────────────────────────────────
+async function searchYouTubeVideos(query, maxResults = 2) {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey || !query) return [];
+
+  const cacheKey = `yt:${query.toLowerCase().trim()}:${maxResults}`;
+  const cached = getCachedSearch(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const params = new URLSearchParams({
+      part: 'snippet',
+      q: `${query} educational tutorial`,
+      type: 'video',
+      videoCategoryId: '27',
+      maxResults: String(Math.min(maxResults, 5)),
+      order: 'relevance',
+      safeSearch: 'strict',
+      key: apiKey
+    });
+
+    const response = await fetch(`https://www.googleapis.com/youtube/v3/search?${params}`);
+    if (!response.ok) {
+      console.error('[Tutor Search] YouTube API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    const videos = (data.items || []).map(item => ({
+      videoId: item.id.videoId,
+      title: item.snippet.title,
+      description: item.snippet.description,
+      thumbnail: item.snippet.thumbnails?.medium?.url || '',
+      channelTitle: item.snippet.channelTitle,
+      url: `https://www.youtube.com/watch?v=${item.id.videoId}`
+    }));
+
+    setCachedSearch(cacheKey, videos);
+    return videos;
+  } catch (err) {
+    console.error('[Tutor Search] YouTube error:', err.message);
+    return [];
+  }
+}
+
+// ─── Google Custom Search (server-side) ───────────────────────────────
+async function searchWebResources(query, maxResults = 2) {
+  const apiKey = process.env.GOOGLE_SEARCH_API_KEY;
+  const engineId = process.env.GOOGLE_SEARCH_ENGINE_ID;
+  if (!apiKey || !engineId || !query) return [];
+
+  const cacheKey = `web:${query.toLowerCase().trim()}:${maxResults}`;
+  const cached = getCachedSearch(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const params = new URLSearchParams({
+      key: apiKey,
+      cx: engineId,
+      q: `${query} educational`,
+      num: String(Math.min(maxResults, 5)),
+      safe: 'active'
+    });
+
+    const response = await fetch(`https://www.googleapis.com/customsearch/v1?${params}`);
+    if (!response.ok) {
+      console.error('[Tutor Search] Google Search API error:', response.status);
+      return [];
+    }
+
+    const data = await response.json();
+    const results = (data.items || []).map(item => ({
+      title: item.title,
+      url: item.link,
+      snippet: item.snippet || '',
+      source: new URL(item.link).hostname.replace('www.', '')
+    }));
+
+    setCachedSearch(cacheKey, results);
+    return results;
+  } catch (err) {
+    console.error('[Tutor Search] Google Search error:', err.message);
+    return [];
+  }
+}
+
+// ─── OpenAI Tool Definitions for Tutor ────────────────────────────────
+const TUTOR_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'search_youtube_videos',
+      description: 'Search YouTube for educational videos. Use when: the student asks for a video, needs a visual explanation, is stuck and a video would help, or seeing the concept demonstrated would benefit them.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query — include the topic and subject for best results' },
+          max_results: { type: 'integer', description: 'Number of results (1-3)' }
+        },
+        required: ['query']
+      }
+    }
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_web_resources',
+      description: 'Search the web for educational articles, tutorials, and interactive tools. Use when: the student needs written explanations, practice exercises, or reference material beyond what you can provide in chat.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'Search query — include the topic and educational context' },
+          max_results: { type: 'integer', description: 'Number of results (1-3)' }
+        },
+        required: ['query']
+      }
+    }
+  }
+];
+
+// Execute a tool call from OpenAI
+async function executeTutorToolCall(toolCall) {
+  const { name, arguments: argsStr } = toolCall.function;
+  let args;
+  try {
+    args = JSON.parse(argsStr);
+  } catch {
+    return { result: '[]', type: null, data: [] };
+  }
+
+  if (name === 'search_youtube_videos') {
+    const results = await searchYouTubeVideos(args.query, args.max_results || 2);
+    return { result: JSON.stringify(results), type: 'youtube', data: results };
+  }
+  if (name === 'search_web_resources') {
+    const results = await searchWebResources(args.query, args.max_results || 2);
+    return { result: JSON.stringify(results), type: 'web', data: results };
+  }
+  return { result: '[]', type: null, data: [] };
+}
+
 // Shared retry logic for OpenAI API calls
 async function callOpenAIWithRetry(apiKey, requestBody) {
   const MAX_RETRIES = 3;
@@ -117,7 +278,20 @@ Use your judgement. Not every situation needs the same response:
 - When the student is stuck, give HINTS not answers.
 - Celebrate correct work warmly, then move to the next step.
 - After correcting an error, give a similar practice problem so they can try again with the right method.
-- If a student asks for a video or other resource, acknowledge that different people learn differently. Say something like: "That's a great idea — watching a video can really help! Ask your teacher if they have any video resources on this topic. In the meantime, let me try explaining it a different way..."
+## RESOURCES AND TOOLS
+You have tools that can search for educational videos and web resources. Use them wisely:
+
+**When to search:**
+- The student asks for a video, link, or extra help
+- The student is stuck and a visual explanation or tutorial would help
+- You think a video would make the concept clearer
+- The student needs practice exercises or reference material
+
+**How to use results:**
+- Introduce resources naturally: "I found a great video that explains this!" — don't just dump links
+- If no results come back, don't mention the failed search — just keep helping normally
+- Don't search on every message — only when it would genuinely help
+- Include the subject and grade level in your search queries for better results
 
 ## STUDENT PROFILE
 - Name: ${name}
@@ -168,7 +342,7 @@ app.post('/api/ai/chat', async (req, res) => {
   return res.json(result.data);
 });
 
-// AI Tutor endpoint — constructs system prompt server-side
+// AI Tutor endpoint — constructs system prompt server-side, supports tool calling
 app.post('/api/ai/tutor', async (req, res) => {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -188,8 +362,17 @@ app.post('/api/ai/tutor', async (req, res) => {
     ...messages.slice(-20)
   ];
 
+  // Check if any search tools are available (keys configured)
+  const hasYouTube = !!process.env.YOUTUBE_API_KEY;
+  const hasWebSearch = !!(process.env.GOOGLE_SEARCH_API_KEY && process.env.GOOGLE_SEARCH_ENGINE_ID);
+  const availableTools = TUTOR_TOOLS.filter(t => {
+    if (t.function.name === 'search_youtube_videos') return hasYouTube;
+    if (t.function.name === 'search_web_resources') return hasWebSearch;
+    return false;
+  });
+
   const requestBody = {
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o-mini',
     messages: openAIMessages,
     temperature: 0.7,
     max_tokens: 800,
@@ -197,11 +380,66 @@ app.post('/api/ai/tutor', async (req, res) => {
     frequency_penalty: 0.2
   };
 
-  const result = await callOpenAIWithRetry(apiKey, requestBody);
+  // Only include tools if at least one search API is configured
+  if (availableTools.length > 0) {
+    requestBody.tools = availableTools;
+    requestBody.tool_choice = 'auto';
+  }
+
+  let result = await callOpenAIWithRetry(apiKey, requestBody);
   if (result.error) {
     return res.status(result.status).json({ error: result.error });
   }
-  return res.json(result.data);
+
+  // Handle tool calls (function calling loop)
+  const collectedResources = { youtube: [], web: [] };
+  const choice = result.data?.choices?.[0];
+
+  if (choice?.finish_reason === 'tool_calls' && choice.message?.tool_calls) {
+    // Execute all tool calls in parallel
+    const toolResults = await Promise.all(
+      choice.message.tool_calls.map(async (tc) => {
+        const execResult = await executeTutorToolCall(tc);
+        if (execResult.type === 'youtube') collectedResources.youtube.push(...execResult.data);
+        if (execResult.type === 'web') collectedResources.web.push(...execResult.data);
+        return {
+          role: 'tool',
+          tool_call_id: tc.id,
+          content: execResult.result
+        };
+      })
+    );
+
+    // Send tool results back to OpenAI for final response
+    const followUpMessages = [
+      ...openAIMessages,
+      choice.message,
+      ...toolResults
+    ];
+
+    const followUpBody = {
+      model: 'gpt-4o-mini',
+      messages: followUpMessages,
+      temperature: 0.7,
+      max_tokens: 800,
+      presence_penalty: 0.3,
+      frequency_penalty: 0.2
+    };
+
+    result = await callOpenAIWithRetry(apiKey, followUpBody);
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+  }
+
+  // Attach resources if any were found
+  const hasResources = collectedResources.youtube.length > 0 || collectedResources.web.length > 0;
+  const responseData = { ...result.data };
+  if (hasResources) {
+    responseData.resources = collectedResources;
+  }
+
+  return res.json(responseData);
 });
 
 // Serve static frontend files
