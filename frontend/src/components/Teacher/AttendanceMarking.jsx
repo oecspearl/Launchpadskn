@@ -4,8 +4,8 @@ import {
   Table, Form, Badge
 } from 'react-bootstrap';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  FaCheckCircle, FaTimesCircle, FaClock, FaUserCheck, FaSave
+import {
+  FaCheckCircle, FaTimesCircle, FaClock, FaUserCheck, FaSave, FaSearch
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
@@ -26,6 +26,7 @@ function AttendanceMarking() {
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({});
   const [attendanceNotes, setAttendanceNotes] = useState({});
+  const [searchFilter, setSearchFilter] = useState('');
   
   useEffect(() => {
     if (lessonId) {
@@ -108,7 +109,26 @@ function AttendanceMarking() {
       [studentId]: note
     }));
   };
-  
+
+  const getFilteredStudents = () => {
+    if (!searchFilter.trim()) return students;
+    const query = searchFilter.toLowerCase();
+    return students.filter(student =>
+      (student.name || student.email || '').toLowerCase().includes(query)
+    );
+  };
+
+  const handleBulkAttendance = (status) => {
+    const visible = getFilteredStudents();
+    const updates = {};
+    visible.forEach(student => {
+      updates[student.user_id] = status;
+    });
+    setAttendance(prev => ({ ...prev, ...updates }));
+  };
+
+  const filteredStudents = getFilteredStudents();
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -242,7 +262,46 @@ function AttendanceMarking() {
           </Card>
         </Col>
       </Row>
-      
+
+      {/* Bulk Actions Toolbar */}
+      {students.length > 0 && (
+        <Row className="mb-3">
+          <Col>
+            <Card className="border-0 shadow-sm">
+              <Card.Body className="d-flex flex-wrap align-items-center gap-3 py-2">
+                <div className="d-flex gap-2">
+                  <Button variant="success" size="sm" onClick={() => handleBulkAttendance('PRESENT')}>
+                    <FaCheckCircle className="me-1" /> Mark All Present
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => handleBulkAttendance('ABSENT')}>
+                    <FaTimesCircle className="me-1" /> Mark All Absent
+                  </Button>
+                  <Button variant="warning" size="sm" onClick={() => handleBulkAttendance('LATE')}>
+                    <FaClock className="me-1" /> Mark All Late
+                  </Button>
+                </div>
+                <div className="ms-auto d-flex align-items-center gap-3">
+                  <Badge bg="secondary" className="py-2 px-3">
+                    {totalMarked} of {students.length} marked
+                  </Badge>
+                  <div className="position-relative">
+                    <FaSearch className="position-absolute text-muted" style={{ left: 10, top: '50%', transform: 'translateY(-50%)' }} />
+                    <Form.Control
+                      type="text"
+                      size="sm"
+                      placeholder="Search students..."
+                      value={searchFilter}
+                      onChange={(e) => setSearchFilter(e.target.value)}
+                      style={{ width: '200px', paddingLeft: '30px' }}
+                    />
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      )}
+
       {/* Attendance Table */}
       <Card className="border-0 shadow-sm">
         <Card.Header className="bg-white border-0 py-3">
@@ -255,6 +314,10 @@ function AttendanceMarking() {
           {students.length === 0 ? (
             <div className="text-center py-5">
               <p className="text-muted mb-0">No students in this class</p>
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="text-center py-5">
+              <p className="text-muted mb-0">No students match "{searchFilter}"</p>
             </div>
           ) : (
             <Table responsive hover>
@@ -269,7 +332,7 @@ function AttendanceMarking() {
                 </tr>
               </thead>
               <tbody>
-                {students.map((student) => {
+                {filteredStudents.map((student) => {
                   const currentStatus = attendance[student.user_id] || 'ABSENT';
                   return (
                     <tr key={student.user_id}>

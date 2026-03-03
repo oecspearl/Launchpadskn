@@ -21,6 +21,7 @@ import InteractiveBookPlayer from './InteractiveBookPlayer';
 import NotesPanel from './NotesPanel';
 import DiscussionBoard from './DiscussionBoard';
 import CheckpointRenderer from './CheckpointRenderer';
+import learnerProgressService from '../../services/learnerProgressService';
 
 function LessonViewStream() {
     const { lessonId } = useParams();
@@ -39,10 +40,6 @@ function LessonViewStream() {
     useEffect(() => {
         if (lessonId) {
             fetchLessonData();
-            const saved = localStorage.getItem(`lesson_${lessonId}_completed`);
-            if (saved) {
-                setCompletedContent(new Set(JSON.parse(saved)));
-            }
         }
     }, [lessonId]);
 
@@ -109,6 +106,35 @@ function LessonViewStream() {
 
             setLesson(lessonData);
 
+            // Load completion progress from Supabase, fall back to localStorage
+            if (user?.id && lessonData.content && lessonData.content.length > 0) {
+                const contentIds = lessonData.content.map(c => c.content_id);
+                try {
+                    const dbCompleted = await learnerProgressService.loadCompletedContentIds(user.id, contentIds);
+                    if (dbCompleted.size > 0) {
+                        setCompletedContent(dbCompleted);
+                        localStorage.setItem(`lesson_${lessonId}_completed`, JSON.stringify([...dbCompleted]));
+                    } else {
+                        // Fall back to localStorage (offline cache / legacy data)
+                        const saved = localStorage.getItem(`lesson_${lessonId}_completed`);
+                        if (saved) {
+                            setCompletedContent(new Set(JSON.parse(saved)));
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error loading progress from Supabase:', err);
+                    const saved = localStorage.getItem(`lesson_${lessonId}_completed`);
+                    if (saved) {
+                        setCompletedContent(new Set(JSON.parse(saved)));
+                    }
+                }
+            } else {
+                const saved = localStorage.getItem(`lesson_${lessonId}_completed`);
+                if (saved) {
+                    setCompletedContent(new Set(JSON.parse(saved)));
+                }
+            }
+
             // Fetch virtual classroom if session_id exists
             if (lessonData?.session_id) {
                 try {
@@ -128,11 +154,19 @@ function LessonViewStream() {
     const toggleContentComplete = (contentId) => {
         setCompletedContent(prev => {
             const newSet = new Set(prev);
-            if (newSet.has(contentId)) {
+            const wasCompleted = newSet.has(contentId);
+
+            if (wasCompleted) {
                 newSet.delete(contentId);
             } else {
                 newSet.add(contentId);
             }
+
+            // Persist to Supabase (fire-and-forget)
+            if (user?.id) {
+                learnerProgressService.toggleContentCompletion(user.id, contentId, !wasCompleted);
+            }
+
             return newSet;
         });
     };
@@ -219,10 +253,24 @@ function LessonViewStream() {
             <div className="lesson-header">
                 <div className="lesson-breadcrumbs">
                     <button className="lesson-back-btn" onClick={() => navigate('/student/dashboard')}>
-                        <FaArrowLeft /> Back to Dashboard
+                        <FaArrowLeft /> Dashboard
                     </button>
                     <span>/</span>
-                    <span>{lesson.class_subject?.subject_offering?.subject?.subject_name}</span>
+                    <button
+                        className="lesson-back-btn"
+                        onClick={() => {
+                            const csId = lesson.class_subject?.class_subject_id;
+                            if (csId) {
+                                navigate(`/student/subjects/${csId}`);
+                            } else {
+                                navigate('/student/subjects');
+                            }
+                        }}
+                    >
+                        {lesson.class_subject?.subject_offering?.subject?.subject_name || 'Subject'}
+                    </button>
+                    <span>/</span>
+                    <span style={{ fontWeight: 600 }}>{lesson.lesson_title}</span>
                 </div>
 
                 <div className="lesson-title-row">

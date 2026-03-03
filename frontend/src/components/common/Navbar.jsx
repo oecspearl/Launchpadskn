@@ -3,7 +3,8 @@ import { Navbar, Nav, Container, NavDropdown, Button, Badge } from 'react-bootst
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaUser, FaBell, FaBook, FaUserGraduate, FaChalkboardTeacher,
-  FaCog, FaSignOutAlt, FaBars, FaQuestionCircle
+  FaCog, FaSignOutAlt, FaBars, FaQuestionCircle,
+  FaClipboardList, FaChartLine
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import FlagLogo from './FlagLogo';
@@ -114,14 +115,32 @@ function AppNavbar() {
 
               {/* Student Navigation */}
               {user.role?.toLowerCase() === 'student' && (
-                <Nav.Link
-                  as={Link}
-                  to="/student/subjects"
-                  className={`nav-link-custom ${isActive('/student/subjects') ? 'active' : ''}`}
-                >
-                  <FaBook size={14} />
-                  My Subjects
-                </Nav.Link>
+                <>
+                  <Nav.Link
+                    as={Link}
+                    to="/student/subjects"
+                    className={`nav-link-custom ${isActive('/student/subjects') ? 'active' : ''}`}
+                  >
+                    <FaBook size={14} />
+                    My Subjects
+                  </Nav.Link>
+                  <Nav.Link
+                    as={Link}
+                    to="/student/dashboard"
+                    className={`nav-link-custom ${location.pathname === '/student/dashboard' && !isActive('/student/subjects') ? 'active' : ''}`}
+                  >
+                    <FaClipboardList size={14} />
+                    Assignments
+                  </Nav.Link>
+                  <Nav.Link
+                    as={Link}
+                    to="/student/progress"
+                    className={`nav-link-custom ${isActive('/student/progress') ? 'active' : ''}`}
+                  >
+                    <FaChartLine size={14} />
+                    Progress
+                  </Nav.Link>
+                </>
               )}
 
               {/* Instructor Navigation */}
