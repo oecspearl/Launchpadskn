@@ -2567,7 +2567,7 @@ function LessonContentManager() {
         {/* Header */}
         <div className="content-header">
           <div className="breadcrumb-nav">
-            <span onClick={() => navigate('/teacher/lessons')} className="breadcrumb-link">Lessons</span>
+            <span onClick={() => navigate(-1)} className="breadcrumb-link">Lessons</span>
             <span className="breadcrumb-separator">›</span>
             <span className="breadcrumb-current">Content Manager</span>
           </div>

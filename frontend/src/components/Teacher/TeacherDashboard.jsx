@@ -178,7 +178,7 @@ function TeacherDashboard() {
     {
       icon: <FaEdit />,
       label: 'Grade Work',
-      onClick: () => navigate('/teacher/grading'),
+      onClick: () => setActiveTab('classes'),
       variant: 'success'
     },
     {
@@ -190,7 +190,7 @@ function TeacherDashboard() {
     {
       icon: <FaTasks />,
       label: 'Assignments',
-      onClick: () => navigate('/teacher/assignments'),
+      onClick: () => setActiveTab('classes'),
       variant: 'warning'
     }
   ];
@@ -266,7 +266,7 @@ function TeacherDashboard() {
                           <span className="fw-bold">Grading</span>
                         </div>
                         <p className="small mb-2 opacity-75">5 assignments pending review</p>
-                        <Button variant="light" size="sm" className="w-100 text-primary" onClick={() => navigate('/teacher/grading')}>
+                        <Button variant="light" size="sm" className="w-100 text-primary" onClick={() => setActiveTab('classes')}>
                           Review Now
                         </Button>
                       </div>

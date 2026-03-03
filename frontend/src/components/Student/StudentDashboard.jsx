@@ -79,7 +79,7 @@ function StudentDashboard() {
   // Register keyboard shortcuts
   useEffect(() => {
     registerShortcutHandler('dashboard', () => {
-      navigate('/student');
+      navigate('/student/dashboard');
       showSuccess('Navigated to Dashboard');
     });
 
