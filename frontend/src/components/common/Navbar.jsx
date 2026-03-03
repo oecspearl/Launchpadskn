@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   FaUser, FaBell, FaBook, FaUserGraduate, FaChalkboardTeacher,
   FaCog, FaSignOutAlt, FaBars, FaQuestionCircle,
-  FaClipboardList, FaChartLine
+  FaClipboardList, FaChartLine, FaRobot
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import FlagLogo from './FlagLogo';
@@ -169,6 +169,14 @@ function AppNavbar() {
                   >
                     <FaBook size={14} />
                     Report Cards
+                  </Nav.Link>
+                  <Nav.Link
+                    as={Link}
+                    to="/teacher/tutor-settings"
+                    className={`nav-link-custom ${isActive('/teacher/tutor-settings') ? 'active' : ''}`}
+                  >
+                    <FaRobot size={14} />
+                    AI Tutor
                   </Nav.Link>
                 </>
               )}

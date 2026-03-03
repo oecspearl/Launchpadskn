@@ -49,6 +49,7 @@ const StudentProfileView = lazy(() => import('../components/Teacher/StudentProfi
 const StudentViewPreview = lazy(() => import('../components/Teacher/StudentViewPreview'));
 const TeacherHelpPage = lazy(() => import('../components/Help/TeacherHelpPage'));
 const TeacherReportCardComments = lazy(() => import('../components/Teacher/TeacherReportCardComments'));
+const TutorSettings = lazy(() => import('../components/Teacher/TutorSettings'));
 
 const InstructorRoutes = () => (
     <>
@@ -219,6 +220,14 @@ const InstructorRoutes = () => (
             element={
                 <PrivateRoute allowedRoles={['instructor']}>
                     <TeacherReportCardComments />
+                </PrivateRoute>
+            }
+        />
+        <Route
+            path="/teacher/tutor-settings"
+            element={
+                <PrivateRoute allowedRoles={['instructor']}>
+                    <TutorSettings />
                 </PrivateRoute>
             }
         />
