@@ -1,10 +1,9 @@
 /* Breadcrumb Navigation Styles */
 .breadcrumb-nav {
-    margin-bottom: 1.5rem;
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    padding: 12px 20px;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    margin-bottom: 1rem;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+    background: transparent;
 }
 
 .breadcrumb-list {
@@ -37,8 +36,8 @@
 }
 
 .breadcrumb-link:hover {
-    color: #0d6efd;
-    background: rgba(13, 110, 253, 0.08);
+    color: var(--primary-color, #009639);
+    background: var(--primary-light-bg, #E8F5ED);
 }
 
 .breadcrumb-link:active {
@@ -68,7 +67,7 @@
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .breadcrumb-nav {
-        padding: 10px 16px;
+        padding: 8px 12px;
     }
 
     .breadcrumb-list {
@@ -103,8 +102,7 @@
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
     .breadcrumb-nav {
-        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        border-bottom-color: #334155;
     }
 
     .breadcrumb-link {
@@ -112,8 +110,8 @@
     }
 
     .breadcrumb-link:hover {
-        color: #60a5fa;
-        background: rgba(96, 165, 250, 0.1);
+        color: var(--primary-color, #009639);
+        background: rgba(0, 150, 57, 0.1);
     }
 
     .breadcrumb-separator {

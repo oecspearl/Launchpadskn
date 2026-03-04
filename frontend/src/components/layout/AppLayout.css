@@ -1,0 +1,27 @@
+/* ===== App Layout ===== */
+.app-layout {
+  min-height: 100vh;
+}
+
+/* ===== Content Area ===== */
+.app-content {
+  padding-top: var(--topbar-height);
+  min-height: 100vh;
+  transition: margin-left 0.25s ease;
+}
+
+.app-content.with-sidebar {
+  margin-left: var(--sidebar-width);
+}
+
+.app-content.with-sidebar.sidebar-collapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* Mobile: no margin, sidebar is overlay */
+@media (max-width: 991.98px) {
+  .app-content.with-sidebar,
+  .app-content.with-sidebar.sidebar-collapsed {
+    margin-left: 0;
+  }
+}
