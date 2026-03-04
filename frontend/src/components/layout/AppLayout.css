@@ -5,7 +5,7 @@
 
 /* ===== Content Area ===== */
 .app-content {
-  padding-top: var(--topbar-height);
+  padding-top: calc(var(--topbar-height) + 4px);
   min-height: 100vh;
   transition: margin-left 0.25s ease;
 }
