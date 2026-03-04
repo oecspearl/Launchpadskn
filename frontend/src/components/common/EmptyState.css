@@ -14,11 +14,10 @@
 }
 
 .empty-state-icon {
-    font-size: 80px;
-    margin-bottom: 24px;
-    opacity: 0.3;
-    color: #6b7280;
-    animation: float 3s ease-in-out infinite;
+    font-size: 56px;
+    margin-bottom: 20px;
+    opacity: 0.5;
+    color: var(--skn-green, #009639);
 }
 
 @keyframes float {
@@ -36,8 +35,22 @@
 .empty-state-title {
     font-size: 24px;
     font-weight: 700;
-    color: #111827;
-    margin-bottom: 12px;
+    color: var(--text-primary, #1c1917);
+    margin-bottom: 16px;
+    position: relative;
+    display: inline-block;
+}
+
+.empty-state-title::after {
+    content: '';
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: var(--skn-yellow, #FCD116);
+    border-radius: 2px;
 }
 
 .empty-state-message {

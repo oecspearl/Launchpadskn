@@ -96,7 +96,7 @@
 }
 
 .lesson-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-gradient);
   color: white;
   padding: 8px;
   border-radius: 6px;
@@ -181,7 +181,7 @@
 .date-badge {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-gradient);
   color: white;
   border-radius: 8px;
   display: flex;
@@ -225,7 +225,7 @@
   margin-bottom: 0.75rem;
   background: #f8f9fa;
   border-radius: 8px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid var(--skn-green);
   transition: all 0.2s ease;
 }
 

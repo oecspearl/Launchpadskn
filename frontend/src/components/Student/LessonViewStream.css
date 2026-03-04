@@ -554,24 +554,24 @@
   height: 56px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--primary-gradient);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 150, 57, 0.3);
   transition: transform 0.25s, box-shadow 0.2s;
 }
 
 .speed-dial-toggle:hover {
   transform: scale(1.08);
-  box-shadow: 0 6px 24px rgba(102, 126, 234, 0.5);
+  box-shadow: 0 6px 24px rgba(0, 150, 57, 0.4);
 }
 
 .speed-dial-toggle.open {
   transform: rotate(45deg);
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  background: linear-gradient(135deg, var(--skn-green-dark) 0%, var(--skn-green) 100%);
 }
 
 .speed-dial-toggle.open:hover {
@@ -615,7 +615,7 @@
   transform: scale(0.95);
 }
 
-.speed-dial-tutor { background: linear-gradient(135deg, #667eea, #764ba2); }
+.speed-dial-tutor { background: var(--primary-gradient); }
 .speed-dial-discussion { background: linear-gradient(135deg, #3b82f6, #2563eb); }
 .speed-dial-notes { background: linear-gradient(135deg, #f59e0b, #d97706); }
 

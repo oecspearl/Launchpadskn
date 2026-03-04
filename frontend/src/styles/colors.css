@@ -52,11 +52,11 @@
   --text-muted: #718096;
   
   /* Background Colors */
-  --bg-light: #F7FAFC;
+  --bg-light: #FAFAF9;
   --bg-white: #FFFFFF;
-  --bg-gray-50: #F9FAFB;
-  --bg-gray-100: #F3F4F6;
-  --bg-gray-200: #E5E7EB;
+  --bg-gray-50: #FAFAF9;
+  --bg-gray-100: #F5F5F4;
+  --bg-gray-200: #E7E5E4;
   
   --bg-green-tint: #E8F5ED;
   --bg-green-light: #F0F9F5;
@@ -66,9 +66,9 @@
   --bg-yellow-light: #FEFBF0;
   
   /* Border Colors */
-  --border-color: #E2E8F0;
-  --border-color-light: #F1F5F9;
-  --border-color-dark: #CBD5E0;
+  --border-color: #E7E5E4;
+  --border-color-light: #F5F5F4;
+  --border-color-dark: #D6D3D1;
   
   /* Blue (functional UI color - used across dashboards) */
   --skn-blue: #2563eb;
@@ -79,11 +79,11 @@
   --bg-blue-tint: #eff6ff;
   --bg-blue-light: #f0f7ff;
 
-  /* UI Secondary (neutral slate - for Cancel, Back, secondary actions) */
-  --ui-secondary: #64748b;
-  --ui-secondary-hover: #475569;
-  --ui-secondary-light: #94a3b8;
-  --ui-secondary-bg: #f1f5f9;
+  /* UI Secondary (neutral stone - for Cancel, Back, secondary actions) */
+  --ui-secondary: #78716c;
+  --ui-secondary-hover: #57534e;
+  --ui-secondary-light: #a8a29e;
+  --ui-secondary-bg: #f5f5f4;
 
   /* Shadow Colors */
   --shadow-color: rgba(0, 0, 0, 0.1);

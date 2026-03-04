@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  FaRobot, FaTimes, FaPaperPlane, FaHistory, FaArrowLeft, FaBook, FaPlay, FaExternalLinkAlt,
+  FaGraduationCap, FaTimes, FaPaperPlane, FaHistory, FaArrowLeft, FaBook, FaPlay, FaExternalLinkAlt,
   FaVideo, FaLightbulb, FaGlobe, FaClipboardList, FaPencilAlt
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
@@ -121,7 +121,7 @@ function AITutorWidget() {
     if (currentContext?.subjectName) {
       return `I'm ready to help with ${currentContext.subjectName}. What topic are you working on?`;
     }
-    return `Hi ${name}! I'm your LaunchPad Tutor. Ask me about any of your subjects and I'll help guide you to the answers.`;
+    return `Hi ${name}! I'm your Study Guide. Ask me about any of your subjects and I'll help guide you to the answers.`;
   };
 
   const getConversationTitle = (conv) => {
@@ -186,8 +186,8 @@ function AITutorWidget() {
     <>
       {/* FAB Button — hidden when LessonViewStream provides its own speed dial */}
       {!isOpen && !hideFab && (
-        <button className="tutor-fab" onClick={toggleTutor} title="Open AI Tutor">
-          <FaRobot size={24} />
+        <button className="tutor-fab" onClick={toggleTutor} title="Ask your Study Guide">
+          <FaGraduationCap size={24} />
         </button>
       )}
 
@@ -197,12 +197,12 @@ function AITutorWidget() {
           {/* Header */}
           <div className="tutor-header">
             <div className="tutor-header-avatar">
-              <FaRobot size={18} />
+              <FaGraduationCap size={18} />
             </div>
             <div className="tutor-header-info">
-              <p className="tutor-header-title">LaunchPad Tutor</p>
+              <p className="tutor-header-title">Study Guide</p>
               <p className="tutor-header-subtitle">
-                {isSending ? 'Thinking...' : 'Ask me anything — I\'ll guide you'}
+                {isSending ? 'Looking into it...' : 'Your study companion'}
               </p>
             </div>
             <div className="tutor-header-actions">
@@ -240,8 +240,8 @@ function AITutorWidget() {
                   onClick={handleNewConversation}
                   style={{
                     width: '100%', padding: '8px 12px', borderRadius: '8px',
-                    border: '1.5px dashed #667eea', background: '#f8f9ff',
-                    color: '#667eea', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500
+                    border: '1.5px dashed var(--skn-green)', background: 'var(--bg-green-tint)',
+                    color: 'var(--skn-green-dark)', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500
                   }}
                 >
                   + New Conversation
@@ -277,7 +277,7 @@ function AITutorWidget() {
             {messages.length === 0 && !isSending && (
               <div className="tutor-welcome">
                 <div className="tutor-welcome-icon">
-                  <FaRobot size={24} />
+                  <FaGraduationCap size={24} />
                 </div>
                 <h6>Welcome!</h6>
                 <p>{getWelcomeMessage()}</p>
@@ -305,7 +305,7 @@ function AITutorWidget() {
             {messages.map((msg) => (
               <div key={msg.message_id} className={`tutor-msg tutor-msg-${msg.role}`}>
                 <div className="tutor-msg-avatar">
-                  {msg.role === 'assistant' ? <FaRobot size={12} /> : (user?.name?.[0]?.toUpperCase() || 'S')}
+                  {msg.role === 'assistant' ? <FaGraduationCap size={12} /> : (user?.name?.[0]?.toUpperCase() || 'S')}
                 </div>
                 <div>
                   <div className="tutor-msg-bubble">{msg.content}</div>
@@ -317,17 +317,11 @@ function AITutorWidget() {
 
             {isSending && (
               <div className="tutor-typing">
-                <div className="tutor-msg-avatar" style={{
-                  width: 28, height: 28, borderRadius: '50%', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center',
-                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white'
-                }}>
-                  <FaRobot size={12} />
+                <div className="tutor-msg-avatar tutor-msg-assistant">
+                  <FaGraduationCap size={12} />
                 </div>
-                <div className="tutor-typing-dots">
-                  <div className="tutor-typing-dot" />
-                  <div className="tutor-typing-dot" />
-                  <div className="tutor-typing-dot" />
+                <div className="tutor-typing-indicator">
+                  <div className="tutor-typing-bar" />
                 </div>
               </div>
             )}
