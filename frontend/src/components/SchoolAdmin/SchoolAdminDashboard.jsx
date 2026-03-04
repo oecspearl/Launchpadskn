@@ -1,29 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Container, Row, Col, Card, Button, Spinner, Alert,
-  Nav, Badge, Modal, Form
+  Badge, Modal, Form
 } from 'react-bootstrap';
-import { Link, useLocation } from 'react-router-dom';
 import {
-  FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, FaUserPlus,
-  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaClipboardList,
+  FaUsers, FaBook, FaChalkboardTeacher,
+  FaCalendarAlt, FaSchool,
   FaCamera, FaMapMarkerAlt, FaEdit, FaPhone, FaEnvelope, FaGlobe, FaUserTie
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import { INSTITUTION_TYPE_LABELS } from '../../constants/roles';
-import InstitutionScopedFormManagement from './InstitutionScopedFormManagement';
-import InstitutionScopedClassManagement from './InstitutionScopedClassManagement';
-import InstitutionScopedSubjectManagement from './InstitutionScopedSubjectManagement';
-import InstitutionScopedStudentManagement from './InstitutionScopedStudentManagement';
-import InstitutionScopedInstructorManagement from './InstitutionScopedInstructorManagement';
-import InstitutionScopedReports from './InstitutionScopedReports';
 import './SchoolAdminDashboard.css';
 
 function SchoolAdminDashboard() {
   const { user, isAuthenticated } = useAuth();
-  const location = useLocation();
 
   // State to store dashboard statistics
   const [stats, setStats] = useState({
@@ -53,24 +45,6 @@ function SchoolAdminDashboard() {
   const [editSuccess, setEditSuccess] = useState('');
   const [savingEdit, setSavingEdit] = useState(false);
 
-  // Determine active tab from route
-  const getActiveTabFromRoute = () => {
-    const path = location.pathname;
-    if (path.includes('/forms')) return 'forms';
-    if (path.includes('/classes')) return 'classes';
-    if (path.includes('/subjects')) return 'subjects';
-    if (path.includes('/students')) return 'students';
-    if (path.includes('/instructors')) return 'instructors';
-    if (path.includes('/reports')) return 'reports';
-    return 'overview';
-  };
-  
-  const [activeTab, setActiveTab] = useState(getActiveTabFromRoute());
-  
-  // Update active tab when route changes
-  useEffect(() => {
-    setActiveTab(getActiveTabFromRoute());
-  }, [location.pathname]);
 
   // Function to fetch dashboard statistics
   const fetchDashboardStats = async () => {
@@ -272,241 +246,116 @@ function SchoolAdminDashboard() {
 
   return (
     <div className="school-admin-dashboard">
-      {/* Hero Header */}
-      <div className="dashboard-hero fade-in">
-        <div className="dashboard-hero-content">
-          <h1>Welcome back, {user?.name || user?.email || 'School Admin'}</h1>
-          <p>Managing: <strong>{institution?.name || 'Your Institution'}</strong></p>
+      <Container className="pt-4 px-4">
+        {/* Header */}
+        <div className="mb-4">
+          <h4 className="mb-1">Welcome back, {user?.name || user?.email || 'School Admin'}</h4>
+          <p className="text-muted mb-0">
+            Managing: <strong>{institution?.name || 'Your Institution'}</strong>
+          </p>
         </div>
-      </div>
 
-      <Container className="px-4">
-        {/* Navigation tabs */}
-        <Nav variant="tabs" className="nav-tabs mb-4" activeKey={activeTab} onSelect={setActiveTab}>
-          <Nav.Item>
-            <Nav.Link eventKey="overview">Overview</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="forms">Forms</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="classes">Classes</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="subjects">Subjects</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="students">Students</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="instructors">Instructors</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="reports">Reports</Nav.Link>
-          </Nav.Item>
-        </Nav>
-
-        {/* Dashboard content based on active tab */}
-        {activeTab === 'overview' && (
-          <div className="dashboard-overview">
-            {/* Stats Cards */}
-            <div className="grid-responsive mb-5 slide-up">
-              <Card className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaUsers />
-                </div>
-                <div className="stat-card-title">Total Students</div>
-                <div className="stat-value-large">{stats.totalStudents}</div>
-              </Card>
-              <Card className="stat-card-modern">
-                <div className="stat-icon-circle icon-blue">
-                  <FaChalkboardTeacher />
-                </div>
-                <div className="stat-card-title">Instructors</div>
-                <div className="stat-value-large">{stats.totalInstructors}</div>
-              </Card>
-              <Card className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaBook />
-                </div>
-                <div className="stat-card-title">Total Subjects</div>
-                <div className="stat-value-large">{stats.totalSubjects}</div>
-              </Card>
-              <Card className="stat-card-modern">
-                <div className="stat-icon-circle icon-amber">
-                  <FaUsers />
-                </div>
-                <div className="stat-card-title">Total Classes</div>
-                <div className="stat-value-large">{stats.totalClasses}</div>
-              </Card>
+        {/* Stats Cards */}
+        <div className="grid-responsive mb-4 slide-up">
+          <Card className="stat-card-modern">
+            <div className="stat-icon-circle">
+              <FaUsers />
             </div>
-
-            {/* Additional Stats */}
-            <div className="grid-responsive mb-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
-              <Card className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaCalendarAlt />
-                </div>
-                <div className="stat-card-title">Total Forms</div>
-                <div className="stat-value-large">{stats.totalForms}</div>
-              </Card>
+            <div className="stat-card-title">Total Students</div>
+            <div className="stat-value-large">{stats.totalStudents}</div>
+          </Card>
+          <Card className="stat-card-modern">
+            <div className="stat-icon-circle icon-blue">
+              <FaChalkboardTeacher />
             </div>
-
-            {/* Quick Access */}
-            <div className="mb-5">
-              <h4 className="section-title mb-4">Quick Access</h4>
-              <div className="quick-access-grid">
-                <Link to="/school-admin/forms" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaCalendarAlt />
-                  </div>
-                  <div className="quick-access-card-title">Manage Forms</div>
-                  <div className="quick-access-card-description">
-                    Create and manage Forms (year groups) for your institution.
-                  </div>
-                </Link>
-                <Link to="/school-admin/classes" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaUsers />
-                  </div>
-                  <div className="quick-access-card-title">Manage Classes</div>
-                  <div className="quick-access-card-description">
-                    Create classes within Forms and assign tutors.
-                  </div>
-                </Link>
-                <Link to="/school-admin/subjects" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-blue">
-                    <FaBook />
-                  </div>
-                  <div className="quick-access-card-title">Manage Subjects</div>
-                  <div className="quick-access-card-description">
-                    Create subjects and assign to Forms.
-                  </div>
-                </Link>
-                <Link to="/school-admin/students" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-amber">
-                    <FaUserGraduate />
-                  </div>
-                  <div className="quick-access-card-title">Manage Students</div>
-                  <div className="quick-access-card-description">
-                    View and manage students in your institution.
-                  </div>
-                </Link>
-                <Link to="/school-admin/instructors" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaChalkboardTeacher />
-                  </div>
-                  <div className="quick-access-card-title">Manage Instructors</div>
-                  <div className="quick-access-card-description">
-                    View and manage instructors in your institution.
-                  </div>
-                </Link>
-                <Link to="/school-admin/reports" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-purple">
-                    <FaChartLine />
-                  </div>
-                  <div className="quick-access-card-title">Reports</div>
-                  <div className="quick-access-card-description">
-                    View reports and analytics for your institution.
-                  </div>
-                </Link>
-                <Link to="/school-admin/report-cards" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-orange">
-                    <FaClipboardList />
-                  </div>
-                  <div className="quick-access-card-title">Report Cards</div>
-                  <div className="quick-access-card-description">
-                    Generate and manage student report cards.
-                  </div>
-                </Link>
-              </div>
+            <div className="stat-card-title">Instructors</div>
+            <div className="stat-value-large">{stats.totalInstructors}</div>
+          </Card>
+          <Card className="stat-card-modern">
+            <div className="stat-icon-circle">
+              <FaBook />
             </div>
+            <div className="stat-card-title">Total Subjects</div>
+            <div className="stat-value-large">{stats.totalSubjects}</div>
+          </Card>
+          <Card className="stat-card-modern">
+            <div className="stat-icon-circle icon-amber">
+              <FaUsers />
+            </div>
+            <div className="stat-card-title">Total Classes</div>
+            <div className="stat-value-large">{stats.totalClasses}</div>
+          </Card>
+        </div>
 
-            {/* Institution Profile */}
-            <Card className="border-0 shadow-sm mb-4">
-              <Card.Body>
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <h5 className="mb-0">
-                    <FaSchool className="me-2" />
-                    Institution Profile
-                  </h5>
-                  <Button variant="outline-primary" size="sm" onClick={openEditModal}>
-                    <FaEdit className="me-1" /> Edit Profile
-                  </Button>
-                </div>
-                <Row>
-                  <Col md={3} className="text-center mb-3 mb-md-0">
-                    <div className="position-relative d-inline-block">
-                      {(institution?.logo_url || institution?.logoUrl) ? (
-                        <img
-                          src={institution.logo_url || institution.logoUrl}
-                          alt="School Logo"
-                          style={{ width: 100, height: 100, objectFit: 'contain', borderRadius: 8, border: '2px solid #dee2e6' }}
-                        />
-                      ) : (
-                        <div style={{
-                          width: 100, height: 100, borderRadius: 8, border: '2px dashed #dee2e6',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa'
-                        }}>
-                          <FaSchool size={32} className="text-muted" />
-                        </div>
-                      )}
+        <div className="grid-responsive mb-4" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
+          <Card className="stat-card-modern">
+            <div className="stat-icon-circle">
+              <FaCalendarAlt />
+            </div>
+            <div className="stat-card-title">Total Forms</div>
+            <div className="stat-value-large">{stats.totalForms}</div>
+          </Card>
+        </div>
+
+        {/* Institution Profile */}
+        <Card className="border-0 shadow-sm mb-4">
+          <Card.Body>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0">
+                <FaSchool className="me-2" />
+                Institution Profile
+              </h5>
+              <Button variant="outline-primary" size="sm" onClick={openEditModal}>
+                <FaEdit className="me-1" /> Edit Profile
+              </Button>
+            </div>
+            <Row>
+              <Col md={3} className="text-center mb-3 mb-md-0">
+                <div className="position-relative d-inline-block">
+                  {(institution?.logo_url || institution?.logoUrl) ? (
+                    <img
+                      src={institution.logo_url || institution.logoUrl}
+                      alt="School Logo"
+                      style={{ width: 100, height: 100, objectFit: 'contain', borderRadius: 8, border: '2px solid #dee2e6' }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: 100, height: 100, borderRadius: 8, border: '2px dashed #dee2e6',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f8f9fa'
+                    }}>
+                      <FaSchool size={32} className="text-muted" />
                     </div>
-                    <Badge bg="primary" className="mt-2">
-                      {INSTITUTION_TYPE_LABELS[institution?.institution_type || institution?.institutionType] || 'Secondary School'}
-                    </Badge>
-                  </Col>
-                  <Col md={4}>
-                    <p className="mb-2"><strong>Name:</strong> {institution?.name || 'N/A'}</p>
-                    {institution?.principal && (
-                      <p className="mb-2"><FaUserTie className="me-1 text-muted" /> <strong>Principal:</strong> {institution.principal}</p>
-                    )}
-                    <p className="mb-2"><FaMapMarkerAlt className="me-1 text-muted" /> <strong>Location:</strong> {institution?.location || 'N/A'}</p>
-                    {institution?.address && (
-                      <p className="mb-2"><strong>Address:</strong> {institution.address}</p>
-                    )}
-                  </Col>
-                  <Col md={5}>
-                    {institution?.contact && (
-                      <p className="mb-2"><FaEnvelope className="me-1 text-muted" /> <strong>Email:</strong> {institution.contact}</p>
-                    )}
-                    <p className="mb-2"><FaPhone className="me-1 text-muted" /> <strong>Phone:</strong> {institution?.phone || 'N/A'}</p>
-                    {institution?.website && (
-                      <p className="mb-2"><FaGlobe className="me-1 text-muted" /> <strong>Website:</strong> <a href={institution.website} target="_blank" rel="noopener noreferrer">{institution.website}</a></p>
-                    )}
-                    {institution?.established_year && (
-                      <p className="mb-2"><strong>Established:</strong> {institution.established_year}</p>
-                    )}
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'forms' && (
-          <InstitutionScopedFormManagement institutionId={user.institution_id} />
-        )}
-
-        {activeTab === 'classes' && (
-          <InstitutionScopedClassManagement institutionId={user.institution_id} />
-        )}
-
-        {activeTab === 'subjects' && (
-          <InstitutionScopedSubjectManagement institutionId={user.institution_id} />
-        )}
-
-        {activeTab === 'students' && (
-          <InstitutionScopedStudentManagement institutionId={user.institution_id} />
-        )}
-
-        {activeTab === 'instructors' && (
-          <InstitutionScopedInstructorManagement institutionId={user.institution_id} />
-        )}
-
-        {activeTab === 'reports' && (
-          <InstitutionScopedReports institutionId={user.institution_id} />
-        )}
+                  )}
+                </div>
+                <Badge bg="primary" className="mt-2">
+                  {INSTITUTION_TYPE_LABELS[institution?.institution_type || institution?.institutionType] || 'Secondary School'}
+                </Badge>
+              </Col>
+              <Col md={4}>
+                <p className="mb-2"><strong>Name:</strong> {institution?.name || 'N/A'}</p>
+                {institution?.principal && (
+                  <p className="mb-2"><FaUserTie className="me-1 text-muted" /> <strong>Principal:</strong> {institution.principal}</p>
+                )}
+                <p className="mb-2"><FaMapMarkerAlt className="me-1 text-muted" /> <strong>Location:</strong> {institution?.location || 'N/A'}</p>
+                {institution?.address && (
+                  <p className="mb-2"><strong>Address:</strong> {institution.address}</p>
+                )}
+              </Col>
+              <Col md={5}>
+                {institution?.contact && (
+                  <p className="mb-2"><FaEnvelope className="me-1 text-muted" /> <strong>Email:</strong> {institution.contact}</p>
+                )}
+                <p className="mb-2"><FaPhone className="me-1 text-muted" /> <strong>Phone:</strong> {institution?.phone || 'N/A'}</p>
+                {institution?.website && (
+                  <p className="mb-2"><FaGlobe className="me-1 text-muted" /> <strong>Website:</strong> <a href={institution.website} target="_blank" rel="noopener noreferrer">{institution.website}</a></p>
+                )}
+                {institution?.established_year && (
+                  <p className="mb-2"><strong>Established:</strong> {institution.established_year}</p>
+                )}
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
       </Container>
 
       {/* Edit Institution Profile Modal */}

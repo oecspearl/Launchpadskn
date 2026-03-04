@@ -8,26 +8,6 @@
     padding-bottom: 3rem;
 }
 
-/* Header Section */
-.teacher-dashboard-header {
-    background: var(--primary-gradient, linear-gradient(135deg, #009639 0%, #00702B 100%));
-    color: white;
-    padding: 2rem 0;
-    margin-bottom: 2rem;
-    border-radius: 0 0 24px 24px;
-    box-shadow: var(--shadow-lg);
-}
-
-.teacher-dashboard-header h2 {
-    font-weight: 700;
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-}
-
-.teacher-dashboard-header p {
-    opacity: 0.9;
-    font-size: 1.1rem;
-}
 
 /* Teacher Stat Cards (gradient style) */
 .teacher-dashboard-container .stat-card {
@@ -182,15 +162,6 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-    .teacher-dashboard-header {
-        padding: 1.5rem 0;
-        border-radius: 0 0 16px 16px;
-    }
-
-    .teacher-dashboard-header h2 {
-        font-size: 1.5rem;
-    }
-
     .teacher-dashboard-container .stat-card h3 {
         font-size: 2rem;
     }

@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container, Row, Col, Card, Button, Spinner, Alert,
-  Nav, Badge, Dropdown
+  Container, Spinner, Alert
 } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
 import {
-  FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate, FaUserPlus,
-  FaBell, FaChartLine, FaCalendarAlt, FaSchool, FaCube, FaUserFriends,
+  FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate,
+  FaBell, FaCalendarAlt, FaUserFriends,
   FaUserShield
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
-import InstitutionManagement from './InstitutionManagement';
-import StudentManagement from './StudentManagement';
-import ManageInstructors from './ManageInstructors';
-import ReportsTab from './ReportsTab';
-import EnhancedCourseManagement from './EnhancedCourseManagement';
-import ClassesTab from './ClassesTab';
 import './AdminDashboard.css';
 
 function AdminDashboard() {
@@ -38,7 +30,6 @@ function AdminDashboard() {
   // Loading and error states
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
 
   // Function to fetch dashboard statistics using Supabase
   const fetchDashboardStats = async () => {
@@ -202,303 +193,124 @@ function AdminDashboard() {
 
   return (
     <div className="admin-dashboard">
-      {/* Modern Hero Header */}
-      <div className="dashboard-hero fade-in">
-        <div className="dashboard-hero-content">
-          <h1>Welcome back, {user?.name || user?.email || 'Admin'}</h1>
-          <p>Manage your institutions, students, and educational content</p>
+      <Container className="pt-4 px-4">
+        {/* Header */}
+        <div className="mb-4">
+          <h4 className="mb-1">Welcome back, {user?.name || user?.email || 'Admin'}</h4>
+          <p className="text-muted mb-0">System overview and recent activity</p>
         </div>
-      </div>
 
-      <Container className="px-4">
-        {/* Navigation tabs - Mobile Friendly */}
-        <Nav variant="tabs" className="nav-tabs mb-4" activeKey={activeTab} onSelect={setActiveTab}>
-          <Nav.Item>
-            <Nav.Link eventKey="overview">Overview</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="institutions">Institutions</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="students">Students</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="instructors">Instructors</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="classes">Classes</Nav.Link>
-          </Nav.Item>
-          <Nav.Item>
-            <Nav.Link eventKey="reports">Reports</Nav.Link>
-          </Nav.Item>
-        </Nav>
-
-        {/* Dashboard content based on active tab */}
-        {activeTab === 'overview' && (
-          <div className="dashboard-overview">
-            {/* Modern Stats Cards */}
-            <div className="grid-responsive mb-5 slide-up">
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaUsers />
-                </div>
-                <div className="stat-card-title">Total Users</div>
-                <div className="stat-value-large">{stats.totalUsers}</div>
-              </div>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle icon-blue">
-                  <FaBook />
-                </div>
-                <div className="stat-card-title">Total Subjects</div>
-                <div className="stat-value-large">
-                  {stats.totalCourses}
-                </div>
-              </div>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaChalkboardTeacher />
-                </div>
-                <div className="stat-card-title">Instructors</div>
-                <div className="stat-value-large">{stats.totalInstructors}</div>
-              </div>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle icon-amber">
-                  <FaUserGraduate />
-                </div>
-                <div className="stat-card-title">Students</div>
-                <div className="stat-value-large">
-                  {stats.totalStudents}
-                </div>
-              </div>
+        {/* Stats Cards */}
+        <div className="grid-responsive mb-4 slide-up">
+          <div className="stat-card-modern">
+            <div className="stat-icon-circle">
+              <FaUsers />
             </div>
-
-            {/* Additional Stats */}
-            <div className="grid-responsive mb-5" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))' }}>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaCalendarAlt />
-                </div>
-                <div className="stat-card-title">Total Forms</div>
-                <div className="stat-value-large">{stats.totalForms}</div>
-              </div>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle">
-                  <FaUsers />
-                </div>
-                <div className="stat-card-title">Total Classes</div>
-                <div className="stat-value-large">{stats.totalClasses}</div>
-              </div>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle icon-teal">
-                  <FaUserFriends />
-                </div>
-                <div className="stat-card-title">Parents</div>
-                <div className="stat-value-large">
-                  {stats.totalParents}
-                </div>
-              </div>
-              <div className="stat-card-modern">
-                <div className="stat-icon-circle icon-red">
-                  <FaUserShield />
-                </div>
-                <div className="stat-card-title">Admins</div>
-                <div className="stat-value-large">
-                  {stats.totalAdmins}
-                </div>
-              </div>
+            <div className="stat-card-title">Total Users</div>
+            <div className="stat-value-large">{stats.totalUsers}</div>
+          </div>
+          <div className="stat-card-modern">
+            <div className="stat-icon-circle icon-blue">
+              <FaBook />
             </div>
-
-            {/* Quick Access - Modern Cards */}
-            <div className="mb-5">
-              <h4 className="section-title mb-4">Quick Access</h4>
-              <div className="quick-access-grid">
-                <Link to="/admin/forms" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaCalendarAlt />
-                  </div>
-                  <div className="quick-access-card-title">Manage Forms</div>
-                  <div className="quick-access-card-description">
-                    Create and manage Forms (year groups) for schools.
-                  </div>
-                </Link>
-                <Link to="/admin/classes" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaUsers />
-                  </div>
-                  <div className="quick-access-card-title">Manage Classes</div>
-                  <div className="quick-access-card-description">
-                    Create classes within Forms and assign tutors.
-                  </div>
-                </Link>
-                <Link to="/admin/subjects" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-blue">
-                    <FaBook />
-                  </div>
-                  <div className="quick-access-card-title">Manage Subjects</div>
-                  <div className="quick-access-card-description">
-                    Create subjects and assign to Forms.
-                  </div>
-                </Link>
-                <Link to="/admin/student-assignment" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-amber">
-                    <FaUserGraduate />
-                  </div>
-                  <div className="quick-access-card-title">Assign Students</div>
-                  <div className="quick-access-card-description">
-                    Assign students to classes.
-                  </div>
-                </Link>
-                <Link to="/admin/class-subject-assignment" className="quick-access-card">
-                  <div className="quick-access-card-icon">
-                    <FaChalkboardTeacher />
-                  </div>
-                  <div className="quick-access-card-title">Assign Subjects</div>
-                  <div className="quick-access-card-description">
-                    Assign subjects to classes and assign teachers.
-                  </div>
-                </Link>
-                <Link to="/teacher/curriculum" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-purple">
-                    <FaBook />
-                  </div>
-                  <div className="quick-access-card-title">Curriculum</div>
-                  <div className="quick-access-card-description">
-                    View curriculum frameworks and learning outcomes for all subjects.
-                  </div>
-                </Link>
-                <div className="quick-access-card" onClick={() => setActiveTab('institutions')} style={{ cursor: 'pointer' }}>
-                  <div className="quick-access-card-icon icon-red">
-                    <FaSchool />
-                  </div>
-                  <div className="quick-access-card-title">Manage Institutions</div>
-                  <div className="quick-access-card-description">
-                    Add, edit, or manage educational institutions.
-                  </div>
-                </div>
-
-                <Link to="/admin/users" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-amber">
-                    <FaUserPlus />
-                  </div>
-                  <div className="quick-access-card-title">User Management</div>
-                  <div className="quick-access-card-description">
-                    Add, edit, assign roles, and manage users across institutions.
-                  </div>
-                </Link>
-                <div className="quick-access-card" onClick={() => setActiveTab('students')} style={{ cursor: 'pointer' }}>
-                  <div className="quick-access-card-icon icon-teal">
-                    <FaUserFriends />
-                  </div>
-                  <div className="quick-access-card-title">Manage Parents</div>
-                  <div className="quick-access-card-description">
-                    Link parents to students via the Students tab &gt; Parents section.
-                  </div>
-                </div>
-                <Link to="/admin/arvr-content" className="quick-access-card">
-                  <div className="quick-access-card-icon icon-purple">
-                    <FaCube />
-                  </div>
-                  <div className="quick-access-card-title">AR/VR Content</div>
-                  <div className="quick-access-card-description">
-                    Manage 3D models, VR experiences, and AR overlays for interactive learning.
-                  </div>
-                </Link>
-              </div>
+            <div className="stat-card-title">Total Subjects</div>
+            <div className="stat-value-large">{stats.totalCourses}</div>
+          </div>
+          <div className="stat-card-modern">
+            <div className="stat-icon-circle">
+              <FaChalkboardTeacher />
             </div>
+            <div className="stat-card-title">Instructors</div>
+            <div className="stat-value-large">{stats.totalInstructors}</div>
+          </div>
+          <div className="stat-card-modern">
+            <div className="stat-icon-circle icon-amber">
+              <FaUserGraduate />
+            </div>
+            <div className="stat-card-title">Students</div>
+            <div className="stat-value-large">{stats.totalStudents}</div>
+          </div>
+        </div>
 
-            {/* Recent Activity - Modern Design */}
-            <div className="mb-5">
-              <h4 className="section-title mb-4">Recent Activity</h4>
-              <div className="card-modern">
-                <div className="card-body">
-                  {stats.recentActivity && stats.recentActivity.length > 0 ? (
-                    <div>
-                      {stats.recentActivity.map((activity, index) => (
-                        <div key={activity.id || index} className="activity-item">
-                          <div className={`activity-icon ${activity.type === 'user' ? 'user' :
-                            activity.type === 'subject' ? 'subject' :
-                              activity.type === 'class' ? 'class' :
-                                activity.type === 'form' ? 'form' :
-                                  'user'
-                            }`}>
-                            {activity.type === 'user' ? <FaUserGraduate /> :
-                              activity.type === 'subject' ? <FaBook /> :
-                                activity.type === 'class' ? <FaUsers /> :
-                                  activity.type === 'form' ? <FaChalkboardTeacher /> :
-                                    <FaBell />}
-                          </div>
-                          <div className="activity-content">
-                            <div className="activity-text">
-                              <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
-                            </div>
-                            <div className="activity-time">
-                              <FaCalendarAlt className="me-1" />
-                              {activity.time}
-                            </div>
-                          </div>
+        <div className="grid-responsive mb-4">
+          <div className="stat-card-modern">
+            <div className="stat-icon-circle">
+              <FaCalendarAlt />
+            </div>
+            <div className="stat-card-title">Total Forms</div>
+            <div className="stat-value-large">{stats.totalForms}</div>
+          </div>
+          <div className="stat-card-modern">
+            <div className="stat-icon-circle">
+              <FaUsers />
+            </div>
+            <div className="stat-card-title">Total Classes</div>
+            <div className="stat-value-large">{stats.totalClasses}</div>
+          </div>
+          <div className="stat-card-modern">
+            <div className="stat-icon-circle icon-teal">
+              <FaUserFriends />
+            </div>
+            <div className="stat-card-title">Parents</div>
+            <div className="stat-value-large">{stats.totalParents}</div>
+          </div>
+          <div className="stat-card-modern">
+            <div className="stat-icon-circle icon-red">
+              <FaUserShield />
+            </div>
+            <div className="stat-card-title">Admins</div>
+            <div className="stat-value-large">{stats.totalAdmins}</div>
+          </div>
+        </div>
+
+        {/* Recent Activity */}
+        <div className="mb-5">
+          <h5 className="section-title mb-3">Recent Activity</h5>
+          <div className="card-modern">
+            <div className="card-body">
+              {stats.recentActivity && stats.recentActivity.length > 0 ? (
+                <div>
+                  {stats.recentActivity.map((activity, index) => (
+                    <div key={activity.id || index} className="activity-item">
+                      <div className={`activity-icon ${activity.type === 'user' ? 'user' :
+                        activity.type === 'subject' ? 'subject' :
+                          activity.type === 'class' ? 'class' :
+                            activity.type === 'form' ? 'form' : 'user'
+                        }`}>
+                        {activity.type === 'user' ? <FaUserGraduate /> :
+                          activity.type === 'subject' ? <FaBook /> :
+                            activity.type === 'class' ? <FaUsers /> :
+                              activity.type === 'form' ? <FaChalkboardTeacher /> :
+                                <FaBell />}
+                      </div>
+                      <div className="activity-content">
+                        <div className="activity-text">
+                          <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="empty-state">
-                      <div className="empty-state-icon">
-                        <FaBell />
-                      </div>
-                      <div className="empty-state-text">
-                        <p className="mb-1">No recent activity</p>
-                        <small>Start by creating forms, classes, and subjects</small>
+                        <div className="activity-time">
+                          <FaCalendarAlt className="me-1" />
+                          {activity.time}
+                        </div>
                       </div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-state-icon">
+                    <FaBell />
+                  </div>
+                  <div className="empty-state-text">
+                    <p className="mb-1">No recent activity</p>
+                    <small>Start by creating forms, classes, and subjects</small>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        )
-        }
-
-        {
-          activeTab === 'institutions' && (
-            <div className="institutions-tab">
-              <InstitutionManagement />
-            </div>
-          )
-        }
-
-        {
-          activeTab === 'students' && (
-            <div className="students-tab">
-              <StudentManagement />
-            </div>
-          )
-        }
-
-        {
-          activeTab === 'instructors' && (
-            <div className="instructors-tab">
-              <ManageInstructors />
-            </div>
-          )
-        }
-
-        {
-          activeTab === 'classes' && (
-            <div className="classes-tab">
-              <ClassesTab />
-            </div>
-          )
-        }
-
-        {
-          activeTab === 'reports' && (
-            <div className="reports-tab">
-              <ReportsTab />
-            </div>
-          )
-        }
-
-      </Container >
-    </div >
+        </div>
+      </Container>
+    </div>
   );
 }
 

@@ -131,37 +131,22 @@ function StudentDashboard() {
     <div className="student-dashboard">
       <Container className="pt-4">
         {/* Header */}
-        <div className="dashboard-header-section">
-          <Row className="align-items-center">
-            <Col md={8}>
-              <h2>Welcome back, {user?.name || 'Student'}!</h2>
-              {user?.institution_name && (
-                <p className="mb-1 opacity-75 fw-semibold d-flex align-items-center gap-2">
-                  {user.institution_logo_url && (
-                    <img src={user.institution_logo_url} alt="" style={{ height: 28, maxWidth: 36, objectFit: 'contain' }} />
-                  )}
-                  {user.institution_name}
-                </p>
-              )}
-              {myClass && (
-                <p className="mb-0 opacity-75">
-                  {myClass.form?.form_name || 'Form'} - {myClass.class_name || 'Class'}
-                  {myClass.form_tutor && ` • Form Tutor: ${myClass.form_tutor.name} `}
-                </p>
-              )}
-              {formatLastLogin() && (
-                <p className="mb-0 opacity-50 small">
-                  <FaClock className="me-1" />
-                  Last login: {formatLastLogin()}
-                </p>
-              )}
-            </Col>
-            <Col md={4} className="text-md-end mt-3 mt-md-0">
-              <Badge bg="light" text="dark" className="p-2 px-3 rounded-pill">
-                Student Portal
-              </Badge>
-            </Col>
-          </Row>
+        <div className="mb-4">
+          <h4 className="mb-1">Welcome back, {user?.name || 'Student'}!</h4>
+          <p className="text-muted mb-0">
+            {myClass && (
+              <span>
+                {myClass.form?.form_name || 'Form'} - {myClass.class_name || 'Class'}
+                {myClass.form_tutor && ` • Form Tutor: ${myClass.form_tutor.name}`}
+              </span>
+            )}
+            {formatLastLogin() && (
+              <span className="ms-3 small">
+                <FaClock className="me-1" />
+                Last login: {formatLastLogin()}
+              </span>
+            )}
+          </p>
         </div>
 
         <Tabs
@@ -309,7 +294,7 @@ function StudentDashboard() {
                       <FaBook className="me-2 text-primary" />
                       My Subjects
                     </h5>
-                    <Button variant="link" className="text-decoration-none" onClick={() => setActiveTab('subjects')}>
+                    <Button variant="link" className="text-decoration-none" onClick={() => navigate('/student/subjects')}>
                       View All
                     </Button>
                   </Card.Header>
@@ -406,46 +391,6 @@ function StudentDashboard() {
                 showAllUpcoming={true}
               />
             </Card>
-          </Tab>
-
-          <Tab eventKey="subjects" title="Subjects">
-            <div className="subjects-grid">
-              {mySubjects.map((classSubject, index) => {
-                const subjectName = getSubjectName(classSubject);
-                const teacherName = classSubject.teacher?.name || 'TBD';
-                const teacherPhoto = classSubject.teacher?.profile_image_url;
-                return (
-                  <div key={index} className="subject-card h-100">
-                    <div className="text-center mb-3">
-                      <div className="teacher-avatar teacher-avatar-lg">
-                        {teacherPhoto ? (
-                          <img src={teacherPhoto} alt={teacherName} />
-                        ) : (
-                          <FaUser size={24} className="text-muted" />
-                        )}
-                      </div>
-                      <small className="text-muted d-block mt-1">{teacherName}</small>
-                    </div>
-                    <h5 className="subject-card-title">{subjectName}</h5>
-                    <p className="subject-card-meta mb-4">
-                      <strong>Class:</strong> {classSubject.class?.class_name || myClass?.class_name}
-                    </p>
-                    <Button
-                      variant="primary"
-                      className="w-100 rounded-pill"
-                      onClick={() => navigate(`/student/subjects/${classSubject.class_subject_id}`)}
-                    >
-                      View Subject Details
-                    </Button>
-                  </div>
-                );
-              })}
-            </div>
-            {mySubjects.length === 0 && (
-              <div className="empty-state">
-                <p className="mb-0">No subjects assigned to your class</p>
-              </div>
-            )}
           </Tab>
 
           <Tab eventKey="gamification" title="Gamification">

@@ -5,7 +5,7 @@ import {
 import {
   FaBook, FaCalendarAlt, FaClipboardList, FaChartBar,
   FaExclamationTriangle, FaCheckCircle, FaTimesCircle,
-  FaClock, FaChild, FaUser, FaUserGraduate, FaFileAlt, FaDownload
+  FaClock, FaChild, FaUser, FaFileAlt, FaDownload
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useParentData } from '../../hooks/useParentData';
@@ -156,37 +156,17 @@ function ParentDashboard() {
     <div className="parent-dashboard">
       <Container className="pt-4">
         {/* Header */}
-        <div className="dashboard-header-section">
-          <Row className="align-items-center">
-            <Col md={8}>
-              <h2>
-                <FaUserGraduate className="me-2" />
-                Parent Portal
-              </h2>
-              {user?.institution_name && (
-                <p className="mb-1 opacity-75 fw-semibold d-flex align-items-center gap-2">
-                  {user.institution_logo_url && (
-                    <img src={user.institution_logo_url} alt="" style={{ height: 28, maxWidth: 36, objectFit: 'contain' }} />
-                  )}
-                  {user.institution_name}
-                </p>
-              )}
-              <p className="mb-0 opacity-75">
-                Viewing: <strong>{childName}</strong>
-                {myClass && (
-                  <span>
-                    {' '} — {myClass.form?.form_name || 'Form'} - {myClass.class_name || 'Class'}
-                    {myClass.form_tutor && ` • Form Tutor: ${myClass.form_tutor.name}`}
-                  </span>
-                )}
-              </p>
-            </Col>
-            <Col md={4} className="text-md-end mt-3 mt-md-0">
-              <Badge bg="light" text="dark" className="p-2 px-3 rounded-pill">
-                Parent Portal
-              </Badge>
-            </Col>
-          </Row>
+        <div className="mb-4">
+          <h4 className="mb-1">Welcome back, {user?.name || 'Parent'}!</h4>
+          <p className="text-muted mb-0">
+            Viewing: <strong>{childName}</strong>
+            {myClass && (
+              <span>
+                {' '} — {myClass.form?.form_name || 'Form'} - {myClass.class_name || 'Class'}
+                {myClass.form_tutor && ` • Form Tutor: ${myClass.form_tutor.name}`}
+              </span>
+            )}
+          </p>
         </div>
 
         {/* Child Selector */}
