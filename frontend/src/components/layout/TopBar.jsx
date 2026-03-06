@@ -74,11 +74,14 @@ function TopBar() {
             {isAuthenticated && user?.institution_logo_url ? (
               <img src={user.institution_logo_url} alt="" className="topbar-brand-logo" />
             ) : (
-              <FlagLogo size="small" showText={!user?.institution_name} />
+              <FlagLogo size="small" showText={false} />
             )}
-            {isAuthenticated && user?.institution_name && (
-              <span className="topbar-brand-name">{user.institution_name}</span>
-            )}
+            <div className="topbar-brand-text">
+              <span className="topbar-brand-name">
+                {isAuthenticated && user?.institution_name ? user.institution_name : 'LaunchPad'}
+              </span>
+              <span className="topbar-brand-sub">SKN · Student Portal</span>
+            </div>
           </Link>
         </div>
 
@@ -107,11 +110,11 @@ function TopBar() {
                 className="topbar-profile-dropdown"
               >
                 <div className="px-3 py-2">
-                  <p className="mb-0 fw-bold small text-dark">{user.name}</p>
-                  <p className="mb-0 small text-muted">{user.email}</p>
-                  <Badge bg="light" text="dark" className="mt-1 border">{user.role}</Badge>
+                  <p className="mb-0 fw-bold small" style={{ color: 'white' }}>{user.name}</p>
+                  <p className="mb-0 small" style={{ color: 'rgba(255,255,255,0.5)' }}>{user.email}</p>
+                  <Badge style={{ background: 'rgba(0,158,96,0.15)', color: 'var(--skn-green)', border: '1px solid rgba(0,158,96,0.3)' }} className="mt-1">{user.role}</Badge>
                   {user.institution_name && (
-                    <p className="mb-0 mt-1 small text-muted">{user.institution_name}</p>
+                    <p className="mb-0 mt-1 small" style={{ color: 'rgba(255,255,255,0.4)' }}>{user.institution_name}</p>
                   )}
                 </div>
                 <NavDropdown.Divider />

@@ -35,11 +35,18 @@
   padding: 0 16px;
 }
 
-/* ===== Left Section ===== */
+/* ===== Left Section — Brand Block (spans sidebar width) ===== */
 .topbar-left {
+  width: var(--sidebar-width, 250px);
   display: flex;
   align-items: center;
   gap: 12px;
+  padding: 0 20px;
+  flex-shrink: 0;
+  background: var(--ink, #0f0f0f);
+  border-right: 1px solid rgba(255,255,255,0.08);
+  height: 100%;
+  margin-left: -16px; /* counteract topbar-inner padding */
 }
 
 .topbar-hamburger {
@@ -79,17 +86,32 @@
   object-fit: contain;
 }
 
+.topbar-brand-text {
+  display: flex;
+  flex-direction: column;
+}
+
 .topbar-brand-name {
   font-family: var(--font-condensed, 'Barlow Condensed', sans-serif);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 2px;
+  font-weight: 800;
+  font-size: 17px;
+  letter-spacing: 3px;
   text-transform: uppercase;
   color: white;
+  line-height: 1;
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.topbar-brand-sub {
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
 /* ===== Right Section ===== */
@@ -216,6 +238,14 @@
 
 /* ===== Mobile ===== */
 @media (max-width: 991.98px) {
+  .topbar-left {
+    width: auto;
+    background: transparent;
+    border-right: none;
+    margin-left: 0;
+    padding: 0;
+  }
+
   .topbar-hamburger {
     display: flex;
   }
