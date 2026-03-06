@@ -1,260 +1,1029 @@
 /* ============================================
-   Student Dashboard - Modern Responsive Design
+   Student Dashboard — Brutalist + SKN Identity
    ============================================ */
 
-.student-dashboard {
+/* Brutalist Reset (scoped to student dashboard) */
+.student-brutalist *,
+.student-brutalist *::before,
+.student-brutalist *::after {
+  border-radius: 0 !important;
+}
+
+.student-brutalist {
   min-height: 100vh;
-  background: var(--bg-light);
-  padding-bottom: var(--spacing-8);
+  background: var(--stone);
+  font-family: var(--font-serif);
+  color: var(--ink);
 }
 
-/* Card */
-.glass-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-primary);
-  box-shadow: var(--shadow-sm);
-  border-radius: var(--radius-lg);
-  transition: box-shadow var(--transition-base);
+/* Fade-up entrance animation */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.glass-card:hover {
-  box-shadow: var(--shadow-md);
+.student-brutalist .fade-up {
+  animation: fadeUp 0.4s ease-out both;
 }
 
-/* Class Info Card */
-.class-info-card {
-  background: var(--bg-white);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-5);
-  margin-bottom: var(--spacing-6);
-  box-shadow: var(--shadow-md);
-  border-left: 4px solid var(--primary-color);
+.student-brutalist .fade-up-1 { animation-delay: 0.05s; }
+.student-brutalist .fade-up-2 { animation-delay: 0.10s; }
+.student-brutalist .fade-up-3 { animation-delay: 0.15s; }
+.student-brutalist .fade-up-4 { animation-delay: 0.20s; }
+.student-brutalist .fade-up-5 { animation-delay: 0.25s; }
+.student-brutalist .fade-up-6 { animation-delay: 0.30s; }
+
+/* Custom scrollbar */
+.student-brutalist ::-webkit-scrollbar { width: 4px; }
+.student-brutalist ::-webkit-scrollbar-track { background: var(--parchment); }
+.student-brutalist ::-webkit-scrollbar-thumb { background: var(--fog); }
+.student-brutalist ::-webkit-scrollbar-thumb:hover { background: var(--skn-green); }
+
+/* ============================================
+   Page Layout
+   ============================================ */
+.brutalist-page {
+  padding: 24px 32px 40px;
 }
 
-.class-info-title {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
+/* ============================================
+   Section Headers
+   ============================================ */
+.brutalist-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.brutalist-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-condensed);
+  font-size: 20px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: var(--spacing-2);
+  letter-spacing: 1px;
+  color: var(--ink);
+  margin: 0;
 }
 
-.class-info-value {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-dark);
-}
-
-/* Subjects Grid */
-.subjects-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--spacing-4);
-  margin-bottom: var(--spacing-6);
-}
-
-@media (min-width: 640px) {
-  .subjects-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1024px) {
-  .subjects-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-.subject-card {
-  background: var(--bg-white);
-  border-radius: var(--radius-lg);
-  padding: var(--spacing-5);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  transition: all var(--transition-base);
-  text-decoration: none;
-  color: inherit;
+.brutalist-section-title::before {
+  content: '';
   display: block;
-  height: 100%;
+  width: 4px;
+  height: 20px;
+  background: var(--skn-green);
+  flex-shrink: 0;
 }
 
-.subject-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--primary-color);
+.brutalist-section-link {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  color: rgba(0,0,0,0.3);
   text-decoration: none;
-  color: inherit;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
 }
 
-.subject-card-icon {
-  width: 48px;
-  height: 48px;
-  background: var(--primary-gradient);
-  border-radius: var(--radius-lg);
+.brutalist-section-link:hover {
+  color: var(--skn-green);
+}
+
+/* ============================================
+   Hero Component
+   ============================================ */
+.brutalist-hero {
+  position: relative;
+  background: var(--slate);
+  overflow: hidden;
+  padding: 32px;
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+}
+
+.brutalist-hero__bg-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 40px);
+}
+
+.brutalist-hero__bg-green {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(150deg, rgba(0,158,96,0.18) 0%, transparent 35%);
+}
+
+.brutalist-hero__bg-ink {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to right, rgba(15,15,15,0.8) 0%, rgba(15,15,15,0.2) 100%);
+}
+
+.brutalist-hero__bg-diag-red {
+  position: absolute; top: -20%; right: 15%; width: 120px; height: 160%;
+  background: rgba(200,0,30,0.12);
+  transform: skewX(-15deg);
+  pointer-events: none;
+}
+
+.brutalist-hero__bg-diag-yellow {
+  position: absolute; top: -20%; right: 25%; width: 60px; height: 160%;
+  background: rgba(252,209,22,0.08);
+  transform: skewX(-15deg);
+  pointer-events: none;
+}
+
+.brutalist-hero__content {
+  position: relative; z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 32px;
+}
+
+.brutalist-hero__left { flex: 1; }
+
+.brutalist-hero__rule {
+  width: 18px;
+  height: 3px;
+  background: var(--skn-green);
+  margin-bottom: 10px;
+}
+
+.brutalist-hero__greeting {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--skn-green);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.brutalist-hero__name {
+  font-family: var(--font-condensed);
+  font-size: 44px;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+  margin: 0 0 10px;
+}
+
+.brutalist-hero__name-first {
+  color: var(--skn-yellow);
+}
+
+.brutalist-hero__meta {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-style: italic;
+  color: rgba(255,255,255,0.4);
+}
+
+.brutalist-hero__right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
+}
+
+.brutalist-hero__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.brutalist-hero__date-num {
+  font-family: var(--font-condensed);
+  font-size: 34px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+}
+
+.brutalist-hero__date-month {
+  font-family: var(--font-condensed);
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.brutalist-hero__date-day {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 6px;
+}
+
+.brutalist-hero__divider {
+  width: 1px;
+  height: 50px;
+  background: rgba(255,255,255,0.12);
+}
+
+.brutalist-hero__streak {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.brutalist-hero__streak-icon { font-size: 20px; }
+
+.brutalist-hero__streak-num {
+  font-family: var(--font-condensed);
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--skn-yellow);
+  line-height: 1;
+}
+
+.brutalist-hero__streak-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.3);
+  margin-top: 4px;
+}
+
+/* ============================================
+   Breadcrumb Bar
+   ============================================ */
+.brutalist-breadcrumb {
+  height: 36px;
+  background: var(--mist);
+  border-bottom: 1px solid var(--fog);
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.brutalist-breadcrumb__item {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.35);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.brutalist-breadcrumb__item:hover { color: var(--skn-green); }
+
+.brutalist-breadcrumb__item--active {
+  color: var(--ink);
+  font-weight: 500;
+  cursor: default;
+}
+
+.brutalist-breadcrumb__item--active:hover { color: var(--ink); }
+
+.brutalist-breadcrumb__sep {
+  padding: 0 10px;
+  color: rgba(0,0,0,0.2);
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+}
+
+.brutalist-breadcrumb__pill {
+  margin-left: 12px;
+  background: rgba(0,158,96,0.12);
+  color: var(--forest);
+  border: 1px solid rgba(0,158,96,0.2);
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 9px;
+}
+
+/* ============================================
+   Stat Row (4 cells)
+   ============================================ */
+.brutalist-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--fog);
+  background: white;
+}
+
+.brutalist-stat {
+  position: relative;
+  padding: 20px 24px;
+  border-right: 1px solid var(--fog);
+  overflow: hidden;
+}
+
+.brutalist-stat:last-child { border-right: none; }
+
+.brutalist-stat::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--mist);
+  transition: background 0.15s;
+}
+
+.brutalist-stat:hover::after { background: var(--stat-accent, var(--mist)); }
+
+.brutalist-stat__label {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.35);
+  margin-bottom: 6px;
+}
+
+.brutalist-stat__value {
+  font-family: var(--font-condensed);
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.brutalist-stat__delta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.brutalist-stat__delta--up { color: var(--forest); }
+.brutalist-stat__delta--warn { color: var(--amber); }
+.brutalist-stat__delta--down { color: var(--skn-red); }
+
+/* ============================================
+   AI Study Guide Banner
+   ============================================ */
+.brutalist-ai-banner {
+  position: relative;
+  background: var(--ink);
+  cursor: pointer;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+  transition: background 0.15s;
+}
+
+.brutalist-ai-banner:hover { background: var(--charcoal); }
+
+.brutalist-ai-banner__pattern {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(0,158,96,0.04) 0px,
+    rgba(0,158,96,0.04) 1px,
+    transparent 1px,
+    transparent 12px
+  );
+}
+
+.brutalist-ai-banner__accent {
+  width: 6px;
+  background: linear-gradient(180deg, var(--skn-green), var(--skn-yellow));
+  flex-shrink: 0;
+}
+
+.brutalist-ai-banner__icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: var(--spacing-4);
-  color: var(--skn-white);
-  font-size: var(--font-size-xl);
+  padding: 0 20px;
+  font-size: 28px;
 }
 
-.subject-card-title {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  margin-bottom: var(--spacing-2);
-  color: var(--text-dark);
+.brutalist-ai-banner__body {
+  flex: 1;
+  padding: 16px 0;
 }
 
-.subject-card-meta {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
+.brutalist-ai-banner__available {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--skn-green);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
 }
 
-/* Today's Lessons */
-.todays-lessons-section {
-  margin-bottom: var(--spacing-6);
+.brutalist-ai-banner__title {
+  font-family: var(--font-condensed);
+  font-size: 22px;
+  font-weight: 700;
+  color: white;
+  text-transform: uppercase;
+  margin: 0;
 }
 
-.lesson-item {
+.brutalist-ai-banner__desc {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  font-style: italic;
+  color: rgba(255,255,255,0.35);
+  margin-top: 4px;
+}
+
+.brutalist-ai-banner__cta {
   display: flex;
   align-items: center;
-  gap: var(--spacing-4);
-  padding: var(--spacing-4);
-  background: var(--bg-white);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  margin-bottom: var(--spacing-3);
-  transition: all var(--transition-base);
+  gap: 16px;
+  padding: 16px 24px;
+  flex-shrink: 0;
 }
 
-.lesson-item.clickable-lesson {
-  cursor: pointer;
-}
-
-.lesson-item.clickable-lesson:hover {
-  border-color: var(--primary-color);
-  box-shadow: var(--shadow-md);
-  transform: translateX(4px);
-  background: var(--primary-50);
-}
-
-.lesson-time {
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-semibold);
-  color: var(--primary-color);
-  min-width: 80px;
-  background: var(--primary-50);
-  padding: var(--spacing-1) var(--spacing-2);
-  border-radius: var(--radius-sm);
-  text-align: center;
-}
-
-.lesson-content {
-  flex: 1;
-}
-
-.lesson-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-dark);
-  margin-bottom: var(--spacing-1);
-}
-
-.lesson-subtitle {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-}
-
-/* Upcoming Assignments */
-.assignments-list {
-  margin-top: var(--spacing-4);
-}
-
-.assignment-item {
-  padding: var(--spacing-4);
-  background: var(--bg-white);
-  border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  margin-bottom: var(--spacing-3);
-  transition: all var(--transition-base);
-}
-
-.assignment-item:hover {
-  border-color: var(--accent-color);
-  box-shadow: var(--shadow-md);
-  transform: translateX(4px);
-}
-
-.assignment-title {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  color: var(--text-dark);
-  margin-bottom: var(--spacing-2);
-}
-
-.assignment-meta {
+.brutalist-ai-banner__chips {
   display: flex;
-  gap: var(--spacing-4);
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
+  flex-direction: column;
+  gap: 4px;
 }
 
-/* Loading State */
-.dashboard-loading {
+.brutalist-ai-banner__chip {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: rgba(255,255,255,0.35);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.brutalist-ai-banner__btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  background: var(--skn-green);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.brutalist-ai-banner__btn:hover { background: var(--forest); }
+
+/* ============================================
+   Two Column Layout
+   ============================================ */
+.brutalist-two-col {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 24px;
+}
+
+/* ============================================
+   Timetable Card
+   ============================================ */
+.brutalist-timetable {
+  border: 1px solid var(--fog);
+  background: white;
+}
+
+.brutalist-timetable__header {
+  background: var(--ink);
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brutalist-timetable__title {
+  font-family: var(--font-condensed);
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.brutalist-timetable__subtitle {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--skn-yellow);
+}
+
+.brutalist-timetable__slot {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  transition: background 0.1s;
+}
+
+.brutalist-timetable__slot:last-child { border-bottom: none; }
+
+.brutalist-timetable__slot:hover { background: var(--parchment); }
+
+.brutalist-timetable__slot--active {
+  background: rgba(0,158,96,0.04);
+  border-left: 3px solid var(--skn-green);
+}
+
+.brutalist-timetable__time {
+  width: 72px;
+  padding: 12px 10px;
+  border-right: 1px solid var(--fog);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 50vh;
-  gap: var(--spacing-4);
+  flex-shrink: 0;
 }
 
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: var(--spacing-8) var(--spacing-4);
-  color: var(--text-muted);
-  background: var(--bg-white);
-  border-radius: var(--radius-lg);
-  border: 1px dashed var(--border-color);
+.brutalist-timetable__time-hour {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
 }
 
-/* Stats Cards */
-.stat-card {
-  border: none;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  transition: transform var(--transition-base);
-  overflow: hidden;
+.brutalist-timetable__time-ampm {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  color: rgba(0,0,0,0.3);
+}
+
+.brutalist-timetable__band {
+  width: 5px;
+  flex-shrink: 0;
+}
+
+.brutalist-timetable__body {
+  flex: 1;
+  padding: 10px 14px;
+}
+
+.brutalist-timetable__subject {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.brutalist-timetable__teacher {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(0,0,0,0.35);
+}
+
+.brutalist-timetable__room {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(0,0,0,0.25);
+  text-transform: uppercase;
+}
+
+.brutalist-timetable__aside {
+  min-width: 100px;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+}
+
+.brutalist-timetable__duration {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(0,0,0,0.25);
+}
+
+/* Status chips (shared) */
+.brutalist-chip {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  padding: 3px 9px;
+  display: inline-block;
+}
+
+.brutalist-chip--live {
+  background: rgba(0,158,96,0.12);
+  color: var(--forest);
+  border: 1px solid rgba(0,158,96,0.25);
+}
+
+.brutalist-chip--next {
+  background: rgba(252,209,22,0.15);
+  color: var(--amber);
+  border: 1px solid rgba(252,209,22,0.3);
+}
+
+.brutalist-chip--done {
+  background: rgba(0,0,0,0.05);
+  color: rgba(0,0,0,0.3);
+  border: 1px solid transparent;
+}
+
+.brutalist-chip--free {
+  background: transparent;
+  color: rgba(0,0,0,0.2);
+  border: 1px solid transparent;
+}
+
+.brutalist-chip--pending {
+  background: rgba(252,209,22,0.12);
+  color: var(--amber);
+  border: 1px solid rgba(252,209,22,0.25);
+}
+
+.brutalist-chip--overdue {
+  background: rgba(200,0,30,0.08);
+  color: var(--crimson);
+  border: 1px solid rgba(200,0,30,0.2);
+}
+
+.brutalist-chip--submitted {
+  background: rgba(44,49,64,0.08);
+  color: var(--slate);
+  border: 1px solid rgba(44,49,64,0.15);
+}
+
+.brutalist-chip--completed {
+  background: rgba(0,158,96,0.08);
+  color: var(--forest);
+  border: 1px solid rgba(0,158,96,0.15);
+}
+
+/* ============================================
+   Assignment Horizontal Cards
+   ============================================ */
+.brutalist-assignments {
+  border: 1px solid var(--fog);
+  background: white;
+}
+
+.brutalist-assignment {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  transition: background 0.1s;
   position: relative;
 }
 
-.stat-card:hover {
-  transform: translateY(-2px);
+.brutalist-assignment:last-child { border-bottom: none; }
+
+.brutalist-assignment:hover {
+  background: var(--parchment);
 }
 
-/* Mobile Optimizations */
-@media (max-width: 767px) {
-  .subjects-grid {
+.brutalist-assignment:hover::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--skn-green);
+}
+
+.brutalist-assignment__band {
+  width: 5px;
+  flex-shrink: 0;
+}
+
+.brutalist-assignment__icon {
+  width: 76px;
+  border-right: 1px solid var(--fog);
+  background: var(--parchment);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.brutalist-assignment__body {
+  flex: 1;
+  padding: 14px 18px;
+}
+
+.brutalist-assignment__eyebrow {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--skn-green);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.brutalist-assignment__title {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 4px;
+}
+
+.brutalist-assignment__desc {
+  font-family: var(--font-serif);
+  font-size: 11.5px;
+  font-weight: 300;
+  font-style: italic;
+  color: rgba(0,0,0,0.4);
+  margin: 0 0 8px;
+}
+
+.brutalist-assignment__tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.brutalist-assignment__tag {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  border: 1px solid rgba(0,0,0,0.1);
+  color: rgba(0,0,0,0.4);
+  padding: 2px 8px;
+}
+
+.brutalist-assignment__aside {
+  min-width: 140px;
+  border-left: 1px solid var(--fog);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.brutalist-assignment__due {
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.brutalist-assignment__due--urgent { color: var(--skn-red); }
+.brutalist-assignment__due--soon { color: var(--amber); }
+.brutalist-assignment__due--ok { color: rgba(0,0,0,0.35); }
+
+.brutalist-assignment__points {
+  font-family: var(--font-condensed);
+  font-size: 32px;
+  font-weight: 700;
+  color: rgba(0,0,0,0.08);
+  line-height: 1;
+}
+
+/* ============================================
+   Lesson Continue Cards (3-col)
+   ============================================ */
+.brutalist-lessons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--fog);
+  background: white;
+}
+
+.brutalist-lesson {
+  border-right: 1px solid var(--fog);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.brutalist-lesson:last-child { border-right: none; }
+.brutalist-lesson:hover { background: var(--parchment); }
+
+.brutalist-lesson__image {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+}
+
+.brutalist-lesson__progress {
+  height: 2px;
+  background: var(--mist);
+}
+
+.brutalist-lesson__progress-fill {
+  height: 100%;
+  background: var(--skn-green);
+}
+
+.brutalist-lesson__body {
+  padding: 12px 16px;
+}
+
+.brutalist-lesson__subject {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--skn-green);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.brutalist-lesson__title {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+
+.brutalist-lesson__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brutalist-lesson__pct {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(0,0,0,0.35);
+}
+
+.brutalist-lesson__continue {
+  font-family: var(--font-mono);
+  font-size: 8.5px;
+  color: var(--skn-green);
+  text-decoration: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.brutalist-lesson__continue:hover { text-decoration: underline; }
+
+/* ============================================
+   Panel Shell (Grades, Dues)
+   ============================================ */
+.brutalist-panel {
+  border: 1px solid var(--fog);
+  background: white;
+  margin-bottom: 24px;
+}
+
+.brutalist-panel__header {
+  background: var(--mist);
+  border-bottom: 1px solid var(--fog);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.brutalist-panel__title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(0,0,0,0.5);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.brutalist-panel__body {
+  padding: 12px 16px;
+}
+
+/* Grade rows */
+.brutalist-grade-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.brutalist-grade-row:last-child { border-bottom: none; }
+
+.brutalist-grade-row__subject {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.brutalist-grade-row__track {
+  width: 70px;
+  height: 3px;
+  background: var(--mist);
+  flex-shrink: 0;
+}
+
+.brutalist-grade-row__fill {
+  height: 100%;
+}
+
+.brutalist-grade-row__grade {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+/* Due rows */
+.brutalist-due-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.brutalist-due-row:last-child { border-bottom: none; }
+
+.brutalist-due-row__dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+}
+
+.brutalist-due-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.brutalist-due-row__title {
+  font-family: var(--font-serif);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.brutalist-due-row__subject {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: rgba(0,0,0,0.3);
+}
+
+.brutalist-due-row__date {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  flex-shrink: 0;
+}
+
+/* ============================================
+   Section Spacing
+   ============================================ */
+.brutalist-section {
+  margin-bottom: 28px;
+}
+
+/* ============================================
+   Mobile Responsive
+   ============================================ */
+@media (max-width: 1024px) {
+  .brutalist-two-col {
     grid-template-columns: 1fr;
   }
 
-  .lesson-item {
-    flex-direction: column;
-    align-items: flex-start;
+  .brutalist-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .lesson-time {
-    width: 100%;
-    margin-bottom: var(--spacing-2);
-    text-align: left;
-    padding: 0;
-    background: none;
+  .brutalist-stat:nth-child(2) { border-right: none; }
+  .brutalist-stat:nth-child(1),
+  .brutalist-stat:nth-child(2) { border-bottom: 1px solid var(--fog); }
+
+  .brutalist-lessons {
+    grid-template-columns: 1fr;
   }
 
-  .assignment-meta {
-    flex-direction: column;
-    gap: var(--spacing-1);
-  }
+  .brutalist-lesson { border-right: none; border-bottom: 1px solid var(--fog); }
+  .brutalist-lesson:last-child { border-bottom: none; }
+}
+
+@media (max-width: 768px) {
+  .brutalist-page { padding: 16px; }
+
+  .brutalist-hero { padding: 20px 16px; }
+  .brutalist-hero__name { font-size: 32px; }
+  .brutalist-hero__content { flex-direction: column; align-items: flex-start; }
+  .brutalist-hero__right { margin-top: 16px; }
+
+  .brutalist-stats { grid-template-columns: 1fr 1fr; }
+  .brutalist-stat__value { font-size: 28px; }
+
+  .brutalist-assignment { flex-direction: column; }
+  .brutalist-assignment__icon { width: 100%; height: 48px; border-right: none; border-bottom: 1px solid var(--fog); }
+  .brutalist-assignment__aside { min-width: auto; border-left: none; border-top: 1px solid var(--fog); flex-direction: row; align-items: center; gap: 12px; }
+
+  .brutalist-ai-banner { flex-direction: column; }
+  .brutalist-ai-banner__cta { flex-direction: column; align-items: stretch; }
+  .brutalist-ai-banner__chips { flex-direction: row; }
 }

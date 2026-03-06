@@ -82,4 +82,22 @@
   --sidebar-width: 250px;
   --sidebar-collapsed-width: 64px;
   --topbar-height: 60px;
+
+  /* Brutalist Design Tokens */
+  --forest:       #006b40;
+  --crimson:      #9a0017;
+  --amber:        #c9a500;
+  --ink:          #0f0f0f;
+  --charcoal:     #1e2028;
+  --slate:        #2c3140;
+  --stone:        #f2ede4;
+  --parchment:    #faf7f2;
+  --mist:         #e8e2d8;
+  --fog:          #d4cec4;
+  --tribar-h:     5px;
+
+  /* Brutalist Typography */
+  --font-serif:      'Source Serif 4', Georgia, serif;
+  --font-mono:       'IBM Plex Mono', monospace;
+  --font-condensed:  'Barlow Condensed', sans-serif;
 }
