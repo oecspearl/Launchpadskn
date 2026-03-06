@@ -19,14 +19,17 @@ function AppLayout({ children }) {
 
   const showSidebar = isAuthenticated && !isPublicPage;
 
+  // Homepage and other public pages render their own navigation
+  const hideChrome = isPublicPage && !isAuthenticated;
+
   return (
     <div className="app-layout">
-      <TopBar />
+      {!hideChrome && <TopBar />}
 
       {showSidebar && <Sidebar />}
 
       <main
-        className={`app-content ${showSidebar ? 'with-sidebar' : ''} ${showSidebar && isCollapsed ? 'sidebar-collapsed' : ''}`}
+        className={`app-content ${showSidebar ? 'with-sidebar' : ''} ${showSidebar && isCollapsed ? 'sidebar-collapsed' : ''} ${hideChrome ? 'no-chrome' : ''}`}
       >
         {showSidebar && <Breadcrumb />}
         {children}

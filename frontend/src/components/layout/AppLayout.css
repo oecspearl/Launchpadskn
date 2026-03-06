@@ -10,6 +10,10 @@
   transition: margin-left 0.25s ease;
 }
 
+.app-content.no-chrome {
+  padding-top: 0;
+}
+
 .app-content.with-sidebar {
   margin-left: var(--sidebar-width);
 }
