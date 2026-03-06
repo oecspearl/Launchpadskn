@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Container, Row, Col, Card, Alert, InputGroup, ButtonGroup } from 'react-bootstrap';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import { FaEnvelope, FaLock, FaSignInAlt, FaBuilding, FaDatabase } from 'react-icons/fa';
+import { FaEnvelope, FaLock, FaBuilding, FaDatabase, FaBook, FaChartLine, FaUsers, FaGraduationCap } from 'react-icons/fa';
+import SKNFlagLogo from '../common/SKNFlagLogo';
+import './Auth.css';
 
 function getDashboardPath(role) {
   switch (role) {
@@ -135,185 +136,176 @@ function Login() {
   };
 
   return (
-    <Container className="py-5 login-container min-vh-100 d-flex align-items-center">
-      <Row className="justify-content-center w-100">
-        <Col md={8} lg={6} xl={5}>
-          <Card className="shadow border-0 rounded-lg overflow-hidden">
-            <Card.Header className="text-white text-center py-4" style={{
-              background: 'linear-gradient(135deg, #009639 0%, #CE1126 100%)',
-              borderBottom: '3px solid #FCD116'
-            }}>
-              <h2 className="fw-bold mb-0">
-                <FaSignInAlt className="me-2" />
-                Login to LaunchPad SKN
-              </h2>
-              <p className="text-white-50 mt-2 mb-0">Access your learning dashboard</p>
+    <div className="auth-page">
+      {/* Left Panel — Brand */}
+      <div className="auth-left">
+        <div className="auth-left-border" />
+        <div className="auth-left-content">
+          <div className="auth-brand-logo">
+            <SKNFlagLogo width={56} height={38} />
+          </div>
+          <h1 className="auth-brand-name">
+            Launch<span className="skn-highlight">Pad</span>
+          </h1>
+          <p className="auth-brand-tagline">
+            SKN Learning Management System
+          </p>
 
-              {/* Login Type Toggle */}
-              <div className="mt-3 login-type-toggle">
-                <ButtonGroup size="sm">
-                  <Button
-                    variant={loginType === 'database' ? 'light' : 'outline-light'}
-                    onClick={() => setLoginType('database')}
-                    className="px-3"
-                  >
-                    <FaDatabase className="me-1" />
-                    Database Login
-                  </Button>
-                  <Button
-                    variant={loginType === 'ad' ? 'light' : 'outline-light'}
-                    onClick={() => setLoginType('ad')}
-                    className="px-3"
-                  >
-                    <FaBuilding className="me-1" />
-                    Active Directory
-                  </Button>
-                </ButtonGroup>
+          <ul className="auth-features">
+            <li className="auth-feature-item">
+              <div className="auth-feature-icon"><FaBook /></div>
+              <div className="auth-feature-text">
+                <strong>Course Management</strong>
+                Access and manage your courses, assignments, and resources
               </div>
-            </Card.Header>
+            </li>
+            <li className="auth-feature-item">
+              <div className="auth-feature-icon"><FaChartLine /></div>
+              <div className="auth-feature-text">
+                <strong>Progress Tracking</strong>
+                Monitor performance with real-time analytics and insights
+              </div>
+            </li>
+            <li className="auth-feature-item">
+              <div className="auth-feature-icon"><FaUsers /></div>
+              <div className="auth-feature-text">
+                <strong>Collaboration</strong>
+                Connect with instructors and peers through integrated tools
+              </div>
+            </li>
+            <li className="auth-feature-item">
+              <div className="auth-feature-icon"><FaGraduationCap /></div>
+              <div className="auth-feature-text">
+                <strong>AI-Powered Learning</strong>
+                Personalized tutoring and adaptive content delivery
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
 
-            <Card.Body className="px-4 py-5">
-              {message && (
-                <Alert variant="success" className="animate__animated animate__fadeIn">
-                  {message}
-                </Alert>
-              )}
+      {/* Right Panel — Form */}
+      <div className="auth-right">
+        <div className="auth-form-container">
+          <h2 className="auth-form-title">Sign In</h2>
+          <p className="auth-form-subtitle">Access your learning dashboard</p>
 
-              {error && (
-                <Alert variant="danger" className="animate__animated animate__shakeX">
-                  {error}
-                </Alert>
-              )}
+          {/* Login Type Toggle */}
+          <div className="auth-login-toggle">
+            <button
+              type="button"
+              className={`auth-login-toggle-btn ${loginType === 'database' ? 'active' : ''}`}
+              onClick={() => setLoginType('database')}
+            >
+              <FaDatabase size={12} />
+              Database
+            </button>
+            <button
+              type="button"
+              className={`auth-login-toggle-btn ${loginType === 'ad' ? 'active' : ''}`}
+              onClick={() => setLoginType('ad')}
+            >
+              <FaBuilding size={12} />
+              Active Directory
+            </button>
+          </div>
 
-              {/* Login Type Info */}
-              <Alert
-                variant={loginType === 'ad' ? 'info' : 'success'}
-                className={`mb-4 ${loginType === 'ad' ? 'ad-login-info' : 'database-login-info'}`}
-              >
-                <div className="d-flex align-items-center">
-                  {loginType === 'ad' ? <FaBuilding className="me-2" /> : <FaDatabase className="me-2" />}
-                  <div>
-                    <strong>
-                      {loginType === 'ad' ? 'Active Directory Login' : 'Database Login'}
-                    </strong>
-                    <div className="small mt-1">
-                      {loginType === 'ad'
-                        ? 'Use your domain credentials (e.g., jadmin@mylab.local)'
-                        : 'Use your LaunchPad SKN account credentials'
-                      }
-                    </div>
-                  </div>
-                </div>
-              </Alert>
+          {/* Login type info */}
+          <div className="auth-type-info">
+            <div className="auth-type-info-icon">
+              {loginType === 'ad' ? <FaBuilding /> : <FaDatabase />}
+            </div>
+            <div className="auth-type-info-text">
+              {loginType === 'ad'
+                ? 'Use your domain credentials (e.g., jadmin@mylab.local)'
+                : 'Use your LaunchPad SKN account credentials'}
+            </div>
+          </div>
 
-              <Form onSubmit={handleSubmit} className={`login-form-transition ${loginType === 'ad' ? 'ad-login' : 'database-login'}`}>
-                <Form.Group className="mb-4">
-                  <Form.Label>
-                    {loginType === 'ad' ? 'Domain Email' : 'Email address'}
-                  </Form.Label>
-                  <InputGroup>
-                    <InputGroup.Text>
-                      <FaEnvelope />
-                    </InputGroup.Text>
-                    <Form.Control
-                      type="email"
-                      placeholder={loginType === 'ad'
-                        ? 'Enter your domain email (e.g., jadmin@mylab.local)'
-                        : 'Enter your email'
-                      }
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="py-2"
-                    />
-                  </InputGroup>
-                </Form.Group>
+          {message && (
+            <div className="auth-alert auth-alert--success">{message}</div>
+          )}
 
-                <Form.Group className="mb-4">
-                  <div className="d-flex justify-content-between">
-                    <Form.Label>Password</Form.Label>
-                    {loginType === 'database' && (
-                      <Link to="/forgot-password" className="text-decoration-none small">
-                        Forgot password?
-                      </Link>
-                    )}
-                  </div>
-                  <InputGroup>
-                    <InputGroup.Text>
-                      <FaLock />
-                    </InputGroup.Text>
-                    <Form.Control
-                      type="password"
-                      placeholder="Enter your password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="py-2"
-                    />
-                  </InputGroup>
-                </Form.Group>
+          {error && (
+            <div className="auth-alert auth-alert--error">{error}</div>
+          )}
 
-                <Button
-                  variant="primary"
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-100 py-2 mt-3 fw-bold"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      {loginType === 'ad' ? 'Authenticating with AD...' : 'Logging in...'}
-                    </>
-                  ) : (
-                    <>
-                      {loginType === 'ad' ? <FaBuilding className="me-2" /> : <FaDatabase className="me-2" />}
-                      {loginType === 'ad' ? 'Login with AD' : 'Login'}
-                    </>
-                  )}
-                </Button>
-              </Form>
-            </Card.Body>
+          <form onSubmit={handleSubmit}>
+            <div className="auth-field">
+              <label className="auth-label">
+                {loginType === 'ad' ? 'Domain Email' : 'Email Address'}
+              </label>
+              <input
+                type="email"
+                className="auth-input"
+                placeholder={loginType === 'ad'
+                  ? 'jadmin@mylab.local'
+                  : 'Enter your email'}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
 
-            <Card.Footer className="text-center py-4 bg-light">
-              {loginType === 'database' && (
+            <div className="auth-field">
+              <div className="auth-field-header">
+                <label className="auth-label">Password</label>
+                {loginType === 'database' && (
+                  <Link to="/forgot-password" className="auth-forgot-link">
+                    Forgot password?
+                  </Link>
+                )}
+              </div>
+              <input
+                type="password"
+                className="auth-input"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={isLoading}
+            >
+              {isLoading ? (
                 <>
-                  <div className="border-bottom pb-3 mb-3">
-                    <small className="text-muted">Admin or Instructor?</small>
-                    <div className="mt-1">
-                      <small>Contact your institution administrator for account setup</small>
-                    </div>
-                  </div>
-
-                  <div className="d-flex align-items-center justify-content-center">
-                    <span className="text-muted me-2">🎓</span>
-                    <span className="me-2">New Student?</span>
-                    <Link to="/register" className="btn btn-outline-primary btn-sm fw-bold">
-                      Create Student Account
-                    </Link>
-                  </div>
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  {loginType === 'ad' ? 'Authenticating...' : 'Signing in...'}
+                </>
+              ) : (
+                <>
+                  {loginType === 'ad' ? 'Login with AD' : 'Sign In'}
                 </>
               )}
+            </button>
+          </form>
 
-              {loginType === 'ad' && (
-                <div className="text-muted">
-                  <small>
-                    <FaBuilding className="me-1" />
-                    Active Directory users are managed by your system administrator
-                  </small>
-                  {import.meta.env.DEV && (
-                    <div className="mt-2">
-                      <small className="text-info">
-                        Test Users: jadmin@mylab.local, sinstructor@mylab.local, mstudent@mylab.local
-                      </small>
-                    </div>
-                  )}
-                </div>
-              )}
-            </Card.Footer>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+          <div className="auth-footer">
+            {loginType === 'database' ? (
+              <>
+                <p className="auth-footer-text">
+                  New student? <Link to="/register" className="auth-footer-link">Create Account</Link>
+                </p>
+                <p className="auth-footer-note">
+                  Admin or Instructor? Contact your institution administrator for account setup.
+                </p>
+              </>
+            ) : (
+              <p className="auth-footer-note">
+                Active Directory users are managed by your system administrator.
+                {import.meta.env.DEV && (
+                  <><br />Test: jadmin@mylab.local, sinstructor@mylab.local, mstudent@mylab.local</>
+                )}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -5,6 +5,7 @@ import { useSidebar } from '../../contexts/SidebarContext';
 import TopBar from './TopBar';
 import Sidebar from './Sidebar';
 import Breadcrumb from '../common/Breadcrumb';
+import SKNTribar from '../common/SKNTribar';
 import './AppLayout.css';
 
 const PUBLIC_PATHS = ['/', '/login', '/register', '/forgot-password', '/reset-password'];
@@ -24,6 +25,7 @@ function AppLayout({ children }) {
 
   return (
     <div className="app-layout">
+      {!hideChrome && <SKNTribar />}
       {!hideChrome && <TopBar />}
 
       {showSidebar && <Sidebar />}

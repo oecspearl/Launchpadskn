@@ -1,14 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import {
-  Container, Row, Col, Card, Button, Alert,
-  Badge, Tab, Tabs, ListGroup
-} from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import {
-  FaChalkboardTeacher, FaCalendarAlt, FaClock, FaUsers,
-  FaBook, FaClipboardList, FaMapMarkerAlt, FaPlus, FaEdit, FaTasks,
-  FaLightbulb, FaArrowUp, FaCheckCircle
-} from 'react-icons/fa';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -16,10 +7,25 @@ import { classService } from '../../services/classService';
 import { studentService } from '../../services/studentService';
 import Timetable from '../common/Timetable';
 import SkeletonLoader from '../common/SkeletonLoader';
-import EmptyState from '../common/EmptyState';
 import KeyboardShortcutsModal from '../common/KeyboardShortcutsModal';
 import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
 import './TeacherDashboard.css';
+
+const SUBJECT_COLORS = [
+  'var(--skn-green)', 'var(--skn-red)', 'var(--skn-yellow)',
+  '#3b82f6', '#8b5cf6', '#f59e0b', '#06b6d4', '#ec4899',
+];
+
+function getSubjectColor(index) {
+  return SUBJECT_COLORS[index % SUBJECT_COLORS.length];
+}
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'GOOD MORNING';
+  if (h < 17) return 'GOOD AFTERNOON';
+  return 'GOOD EVENING';
+}
 
 function TeacherDashboard() {
   const { user, lastLoginTime } = useAuth();
@@ -131,7 +137,6 @@ function TeacherDashboard() {
     return timeStr.substring(0, 5);
   };
 
-  // Format last login time
   const formatLastLogin = () => {
     if (!lastLoginTime) return null;
     const date = new Date(lastLoginTime);
@@ -166,370 +171,340 @@ function TeacherDashboard() {
     };
   }, [navigate, showSuccess]);
 
+  const today = new Date();
+
   if (!isValidTeacherId) {
     return (
-      <Container className="mt-4">
-        <Alert variant="warning">
-          Loading user information...
-        </Alert>
-      </Container>
+      <div className="teacher-brutalist">
+        <div className="teacher-alert">Loading user information...</div>
+      </div>
     );
   }
 
   if (isLoading) {
     return (
-      <Container className="mt-4">
-        <SkeletonLoader variant="dashboard" />
-      </Container>
+      <div className="teacher-brutalist">
+        <div style={{ padding: 32 }}>
+          <SkeletonLoader variant="dashboard" />
+        </div>
+      </div>
     );
   }
 
   return (
-    <Container className="teacher-dashboard-container mt-4">
-      {/* Header */}
-      <div className="mb-4">
-        <h4 className="mb-1">Welcome back, {user?.name || 'Teacher'}!</h4>
-        <p className="text-muted mb-0">
-          {uniqueClasses.length} class{uniqueClasses.length !== 1 ? 'es' : ''} · {myClasses.length} subject{myClasses.length !== 1 ? 's' : ''}
-          {formatLastLogin() && (
-            <span className="ms-3 small">
-              <FaClock className="me-1" />
-              Last login: {formatLastLogin()}
-            </span>
-          )}
-        </p>
+    <div className="teacher-brutalist">
+      {/* Hero */}
+      <div className="teacher-hero">
+        <div className="teacher-hero__bg-grid" />
+        <div className="teacher-hero__bg-green" />
+        <div className="teacher-hero__bg-ink" />
+        <div className="teacher-hero__bg-diag-red" />
+        <div className="teacher-hero__bg-diag-yellow" />
+
+        <div className="teacher-hero__content">
+          <div className="teacher-hero__left">
+            <div className="teacher-hero__rule" />
+            <div className="teacher-hero__greeting">{getGreeting()}</div>
+            <h1 className="teacher-hero__name">{user?.name || 'Teacher'}</h1>
+            <div className="teacher-hero__meta">
+              {uniqueClasses.length} class{uniqueClasses.length !== 1 ? 'es' : ''} · {myClasses.length} subject{myClasses.length !== 1 ? 's' : ''}
+              {formatLastLogin() && <> · Last login: {formatLastLogin()}</>}
+            </div>
+          </div>
+          <div className="teacher-hero__right">
+            <div className="teacher-hero__date">
+              <span className="teacher-hero__date-num">{today.getDate()}</span>
+              <span className="teacher-hero__date-month">
+                {today.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}
+              </span>
+              <span className="teacher-hero__date-day">
+                {today.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <Tabs
-        activeKey={activeTab}
-        onSelect={(k) => setActiveTab(k)}
-        className="mb-4"
-      >
-        <Tab eventKey="overview" title="Overview">
-          <Row className="g-4">
-            {/* Actionable Insights & Today's Lessons */}
-            <Col md={8}>
-              {/* Actionable Insights */}
-              <Card className="border-0 shadow-sm mb-4 bg-primary text-white">
-                <Card.Body className="p-4">
-                  <h5 className="mb-3 fw-bold">
-                    <FaLightbulb className="me-2" />
-                    At a Glance
-                  </h5>
-                  <Row className="g-3">
-                    <Col md={4}>
-                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
-                        <div className="d-flex align-items-center mb-2">
-                          <FaClipboardList className="me-2" />
-                          <span className="fw-bold">Grading</span>
-                        </div>
-                        <p className="small mb-0 opacity-75">{upcomingAssessments.length} upcoming assessment{upcomingAssessments.length !== 1 ? 's' : ''}</p>
-                      </div>
-                    </Col>
-                    <Col md={4}>
-                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
-                        <div className="d-flex align-items-center mb-2">
-                          <FaCalendarAlt className="me-2" />
-                          <span className="fw-bold">Today</span>
-                        </div>
-                        <p className="small mb-0 opacity-75">{todayLessons.length} lesson{todayLessons.length !== 1 ? 's' : ''} scheduled</p>
-                      </div>
-                    </Col>
-                    <Col md={4}>
-                      <div className="p-3 rounded bg-white bg-opacity-10 h-100">
-                        <div className="d-flex align-items-center mb-2">
-                          <FaUsers className="me-2" />
-                          <span className="fw-bold">Classes</span>
-                        </div>
-                        <p className="small mb-0 opacity-75">{uniqueClasses.length} active class{uniqueClasses.length !== 1 ? 'es' : ''}</p>
-                      </div>
-                    </Col>
-                  </Row>
-                </Card.Body>
-              </Card>
+      {/* Tab Navigation */}
+      <div className="teacher-tabs">
+        <button
+          className={`teacher-tab ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          Overview
+        </button>
+        <button
+          className={`teacher-tab ${activeTab === 'timetable' ? 'active' : ''}`}
+          onClick={() => setActiveTab('timetable')}
+        >
+          Timetable
+        </button>
+        <button
+          className={`teacher-tab ${activeTab === 'classes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('classes')}
+        >
+          My Classes
+        </button>
+      </div>
 
-              <Card className="border-0 shadow-sm">
-                <Card.Header className="bg-white border-0 py-3">
-                  <h5 className="mb-0">
-                    <FaCalendarAlt className="me-2" />
-                    Today's Lessons
-                  </h5>
-                </Card.Header>
-                <Card.Body>
+      {/* Page Content */}
+      <div className="teacher-page">
+        {activeTab === 'overview' && (
+          <>
+            {/* Stat Row */}
+            <div className="teacher-section fade-up fade-up-1">
+              <div className="teacher-stats">
+                <div className="teacher-stat" style={{ '--stat-accent': 'var(--skn-green)' }}>
+                  <div className="teacher-stat__label">Classes</div>
+                  <div className="teacher-stat__value">{uniqueClasses.length}</div>
+                  <div className="teacher-stat__delta teacher-stat__delta--up">Active this term</div>
+                </div>
+                <div className="teacher-stat" style={{ '--stat-accent': 'var(--skn-yellow)' }}>
+                  <div className="teacher-stat__label">Today's Lessons</div>
+                  <div className="teacher-stat__value">{todayLessons.length}</div>
+                  <div className="teacher-stat__delta teacher-stat__delta--up">Scheduled</div>
+                </div>
+                <div className="teacher-stat" style={{ '--stat-accent': '#3b82f6' }}>
+                  <div className="teacher-stat__label">Subjects</div>
+                  <div className="teacher-stat__value">{myClasses.length}</div>
+                  <div className="teacher-stat__delta teacher-stat__delta--up">Assigned</div>
+                </div>
+                <div className="teacher-stat" style={{ '--stat-accent': 'var(--skn-red)' }}>
+                  <div className="teacher-stat__label">Assessments</div>
+                  <div className="teacher-stat__value">{upcomingAssessments.length}</div>
+                  <div className="teacher-stat__delta teacher-stat__delta--warn">Upcoming</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Two Column: Lessons + Side Panels */}
+            <div className="teacher-section fade-up fade-up-2">
+              <div className="teacher-section-header">
+                <h2 className="teacher-section-title">Today's Schedule</h2>
+                <button className="teacher-section-link" onClick={() => setActiveTab('timetable')}>
+                  Full Timetable →
+                </button>
+              </div>
+
+              <div className="teacher-two-col">
+                {/* Today's Lessons */}
+                <div className="teacher-lessons-panel">
+                  <div className="teacher-lessons-panel__header">
+                    <h3 className="teacher-lessons-panel__title">
+                      {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </h3>
+                    <span className="teacher-lessons-panel__count">
+                      {todayLessons.length} lesson{todayLessons.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+
                   {todayLessons.length === 0 ? (
-                    <EmptyState
-                      variant="no-lessons"
-                      title="No Lessons Today"
-                      message="No classes scheduled for today. Enjoy your break!"
-                    />
+                    <div className="teacher-empty">No lessons scheduled today</div>
                   ) : (
-                    <ListGroup variant="flush">
-                      {todayLessons.map((lesson, index) => {
-                        const subjectName = lesson.class_subject?.subject_offering?.subject?.subject_name || 'Lesson';
-                        const className = lesson.class_subject?.class?.class_name || '';
-                        return (
-                          <ListGroup.Item key={index} className="lesson-item border-0 px-0 py-3">
-                            <div className="d-flex justify-content-between align-items-start">
-                              <div className="flex-grow-1">
-                                <h6 className="mb-1">{subjectName}</h6>
-                                <div className="text-muted small mb-2">
-                                  <FaUsers className="me-1" />
-                                  {className}
-                                </div>
-                                <div className="text-muted small">
-                                  <FaClock className="me-1" />
-                                  {formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}
-                                  {lesson.location && (
-                                    <>
-                                      <span className="ms-3">
-                                        <FaMapMarkerAlt className="me-1" />
-                                        {lesson.location}
-                                      </span>
-                                    </>
-                                  )}
-                                </div>
-                                {lesson.lesson_title && (
-                                  <p className="mb-0 mt-2 small">{lesson.lesson_title}</p>
-                                )}
+                    todayLessons.map((lesson, idx) => {
+                      const subjectName = lesson.class_subject?.subject_offering?.subject?.subject_name || 'Lesson';
+                      const className = lesson.class_subject?.class?.class_name || '';
+
+                      return (
+                        <div key={idx} className="teacher-lesson-slot">
+                          <div className="teacher-lesson-slot__time">
+                            <span className="teacher-lesson-slot__time-hour">{formatTime(lesson.start_time)}</span>
+                            <span className="teacher-lesson-slot__time-end">{formatTime(lesson.end_time)}</span>
+                          </div>
+                          <div className="teacher-lesson-slot__band" style={{ background: getSubjectColor(idx) }} />
+                          <div className="teacher-lesson-slot__body">
+                            <div className="teacher-lesson-slot__subject">{subjectName}</div>
+                            <div className="teacher-lesson-slot__class">{className}</div>
+                            {lesson.location && (
+                              <div className="teacher-lesson-slot__room">{lesson.location}</div>
+                            )}
+                            {lesson.lesson_title && (
+                              <div style={{ fontFamily: 'var(--font-serif)', fontSize: 12, fontStyle: 'italic', color: 'rgba(0,0,0,0.4)', marginTop: 4 }}>
+                                {lesson.lesson_title}
                               </div>
-                              <div className="text-end">
-                                <Button
-                                  variant="outline-primary"
-                                  size="sm"
-                                  onClick={() => navigate(`/teacher/lessons/${lesson.lesson_id}`)}
-                                >
-                                  View
-                                </Button>
-                              </div>
-                            </div>
-                          </ListGroup.Item>
-                        );
-                      })}
-                    </ListGroup>
+                            )}
+                          </div>
+                          <div className="teacher-lesson-slot__action">
+                            <button
+                              className="teacher-lesson-slot__btn"
+                              onClick={() => navigate(`/teacher/lessons/${lesson.lesson_id}`)}
+                            >
+                              View →
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
                   )}
-                </Card.Body>
-              </Card>
-            </Col>
+                </div>
 
-            {/* Quick Stats */}
-            <Col md={4}>
-              <Row className="g-3">
-                <Col xs={12}>
-                  <Card className="stat-card stat-primary">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <h3 className="mb-0">{uniqueClasses.length}</h3>
-                          <small>Classes</small>
-                          <div className="mt-2 small text-success">
-                            <FaArrowUp className="me-1" />
-                            Active this term
-                          </div>
-                        </div>
-                        <FaChalkboardTeacher size={40} opacity={0.5} />
+                {/* Side Panels */}
+                <div>
+                  {/* Upcoming Assessments */}
+                  {upcomingAssessments.length > 0 && (
+                    <div className="teacher-panel">
+                      <div className="teacher-panel__header">
+                        <h4 className="teacher-panel__title">Upcoming Assessments</h4>
                       </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
+                      <div className="teacher-panel__body">
+                        {upcomingAssessments.map((assessment, idx) => {
+                          const dueDate = new Date(assessment.due_date);
+                          const daysLeft = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
+                          const dueLabel = daysLeft <= 0 ? 'Overdue' : daysLeft === 1 ? 'Tomorrow' : `${daysLeft}d left`;
+                          const dotColor = daysLeft <= 0 ? 'var(--skn-red)' : daysLeft <= 3 ? 'var(--skn-yellow)' : 'var(--fog)';
+                          const dueClass = daysLeft <= 0 ? 'teacher-assess-row__due--urgent' : daysLeft <= 3 ? 'teacher-assess-row__due--soon' : 'teacher-assess-row__due--ok';
 
-                <Col xs={12}>
-                  <Card className="stat-card stat-success">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <h3 className="mb-0">{todayLessons.length}</h3>
-                          <small>Today's Lessons</small>
-                          <div className="mt-2 small text-muted">
-                            <FaClock className="me-1" />
-                            Next: 10:00 AM
-                          </div>
-                        </div>
-                        <FaCalendarAlt size={40} opacity={0.5} />
+                          return (
+                            <div key={idx} className="teacher-assess-row">
+                              <div className="teacher-assess-row__dot" style={{ background: dotColor }} />
+                              <div className="teacher-assess-row__info">
+                                <div className="teacher-assess-row__name">{assessment.assessment_name}</div>
+                                <div className="teacher-assess-row__type">{assessment.assessment_type}</div>
+                              </div>
+                              <span className={`teacher-assess-row__due ${dueClass}`}>{dueLabel}</span>
+                            </div>
+                          );
+                        })}
                       </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
+                    </div>
+                  )}
 
-                <Col xs={12}>
-                  <Card className="stat-card stat-warning">
-                    <Card.Body>
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div>
-                          <h3 className="mb-0">{myClasses.length}</h3>
-                          <small>Subjects</small>
-                          <div className="mt-2 small text-success">
-                            <FaCheckCircle className="me-1" />
-                            All on track
-                          </div>
-                        </div>
-                        <FaBook size={40} opacity={0.5} />
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-
-              </Row>
-            </Col>
-          </Row>
-
-          {/* My Classes */}
-          <Row className="mt-4">
-            <Col>
-              <Card className="border-0 shadow-sm">
-                <Card.Header className="bg-white border-0 py-3">
-                  <h5 className="mb-0">
-                    <FaChalkboardTeacher className="me-2" />
-                    My Classes
-                  </h5>
-                </Card.Header>
-                <Card.Body>
-                  {uniqueClasses.length === 0 ? (
-                    <p className="text-muted text-center py-3 mb-0">No classes assigned</p>
-                  ) : (
-                    <Row className="g-3">
-                      {uniqueClasses.slice(0, 6).map((classSubject, index) => {
-                        const className = getClassName(classSubject);
-                        const formName = getFormName(classSubject);
-                        const classId = classSubject.class?.class_id;
-
-                        // Get all subjects for this class
-                        const subjectsForClass = myClasses.filter(cs => cs.class?.class_id === classId);
-
-                        return (
-                          <Col md={4} key={index}>
-                            <Card className="class-card h-100">
-                              <Card.Body>
-                                <h6 className="mb-2">{formName} - {className}</h6>
-                                <small className="text-muted">
+                  {/* Quick Classes Panel */}
+                  <div className="teacher-panel">
+                    <div className="teacher-panel__header">
+                      <h4 className="teacher-panel__title">My Classes</h4>
+                      <button className="teacher-section-link" onClick={() => setActiveTab('classes')}>
+                        View All →
+                      </button>
+                    </div>
+                    <div className="teacher-panel__body">
+                      {uniqueClasses.length === 0 ? (
+                        <div className="teacher-empty">No classes assigned</div>
+                      ) : (
+                        uniqueClasses.slice(0, 4).map((cs, idx) => {
+                          const classId = cs.class?.class_id;
+                          const subjectsForClass = myClasses.filter(s => s.class?.class_id === classId);
+                          return (
+                            <div
+                              key={idx}
+                              className="teacher-assess-row"
+                              style={{ cursor: 'pointer' }}
+                              onClick={() => navigate(`/teacher/classes/${classId}`)}
+                            >
+                              <div className="teacher-assess-row__dot" style={{ background: getSubjectColor(idx) }} />
+                              <div className="teacher-assess-row__info">
+                                <div className="teacher-assess-row__name">
+                                  {getFormName(cs)} - {getClassName(cs)}
+                                </div>
+                                <div className="teacher-assess-row__type">
                                   {subjectsForClass.length} subject{subjectsForClass.length !== 1 ? 's' : ''}
-                                </small>
-                                <div className="mt-2">
-                                  <Button
-                                    variant="outline-primary"
-                                    size="sm"
-                                    className="w-100"
-                                    onClick={() => navigate(`/teacher/classes/${classId}`)}
-                                  >
-                                    Manage Class
-                                  </Button>
                                 </div>
-                              </Card.Body>
-                            </Card>
-                          </Col>
-                        );
-                      })}
-                    </Row>
-                  )}
-                </Card.Body>
-              </Card>
-            </Col>
-          </Row>
-
-          {/* Upcoming Assessments */}
-          {upcomingAssessments.length > 0 && (
-            <Row className="mt-4">
-              <Col>
-                <Card className="border-0 shadow-sm">
-                  <Card.Header className="bg-white border-0 py-3">
-                    <h5 className="mb-0">
-                      <FaClipboardList className="me-2" />
-                      Upcoming Assessments
-                    </h5>
-                  </Card.Header>
-                  <Card.Body>
-                    <ListGroup variant="flush">
-                      {upcomingAssessments.map((assessment, index) => {
-                        const dueDate = new Date(assessment.due_date);
-                        const daysLeft = Math.ceil((dueDate - new Date()) / (1000 * 60 * 60 * 24));
-                        return (
-                          <ListGroup.Item key={index} className="assessment-item border-0 px-0 py-3">
-                            <div className="d-flex justify-content-between align-items-start">
-                              <div>
-                                <h6 className="mb-1">{assessment.assessment_name}</h6>
-                                <small className="text-muted">
-                                  Due: {dueDate.toLocaleDateString()}
-                                  {daysLeft > 0 && (
-                                    <Badge bg={daysLeft <= 3 ? 'danger' : 'warning'} className="ms-2">
-                                      {daysLeft} day{daysLeft !== 1 ? 's' : ''} left
-                                    </Badge>
-                                  )}
-                                </small>
                               </div>
-                              <Badge bg="secondary">{assessment.assessment_type}</Badge>
                             </div>
-                          </ListGroup.Item>
-                        );
-                      })}
-                    </ListGroup>
-                  </Card.Body>
-                </Card>
-              </Col>
-            </Row>
-          )}
-        </Tab>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-        <Tab eventKey="timetable" title="Timetable">
-          <Row>
-            <Col>
-              <Timetable lessons={weekLessons} />
-            </Col>
-          </Row>
-        </Tab>
+            {/* Classes Grid */}
+            <div className="teacher-section fade-up fade-up-3">
+              <div className="teacher-section-header">
+                <h2 className="teacher-section-title">All Classes</h2>
+              </div>
 
-        <Tab eventKey="classes" title="My Classes">
-          <Row className="g-4">
-            {uniqueClasses.map((classSubject, index) => {
-              const className = getClassName(classSubject);
-              const formName = getFormName(classSubject);
-              const classId = classSubject.class?.class_id;
-              const subjectsForClass = myClasses.filter(cs => cs.class?.class_id === classId);
+              {uniqueClasses.length === 0 ? (
+                <div className="teacher-panel">
+                  <div className="teacher-empty">No classes assigned to you</div>
+                </div>
+              ) : (
+                <div className="teacher-classes-grid">
+                  {uniqueClasses.map((classSubject, index) => {
+                    const className = getClassName(classSubject);
+                    const formName = getFormName(classSubject);
+                    const classId = classSubject.class?.class_id;
+                    const subjectsForClass = myClasses.filter(cs => cs.class?.class_id === classId);
 
-              return (
-                <Col md={6} lg={4} key={index}>
-                  <Card className="h-100 border-0 shadow-sm">
-                    <Card.Body>
-                      <h5 className="mb-3">{formName} - {className}</h5>
-                      <p className="text-muted small mb-2">
-                        <strong>Subjects:</strong> {subjectsForClass.length}
-                      </p>
-                      <div className="mb-3">
+                    return (
+                      <div key={index} className="teacher-class-card" onClick={() => navigate(`/teacher/classes/${classId}`)}>
+                        <div className="teacher-class-card__name">{className}</div>
+                        <div className="teacher-class-card__form">{formName}</div>
+                        <div className="teacher-class-card__subjects">
+                          {subjectsForClass.map((cs, idx) => (
+                            <span key={idx} className="teacher-class-card__subject-tag">
+                              {getSubjectName(cs)}
+                            </span>
+                          ))}
+                        </div>
+                        <button
+                          className="teacher-class-card__btn"
+                          onClick={(e) => { e.stopPropagation(); navigate(`/teacher/classes/${classId}`); }}
+                        >
+                          Manage Class
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === 'timetable' && (
+          <div className="teacher-section fade-up fade-up-1">
+            <Timetable lessons={weekLessons} />
+          </div>
+        )}
+
+        {activeTab === 'classes' && (
+          <div className="teacher-section fade-up fade-up-1">
+            {uniqueClasses.length === 0 ? (
+              <div className="teacher-panel">
+                <div className="teacher-empty">No classes assigned to you</div>
+              </div>
+            ) : (
+              <div className="teacher-classes-grid">
+                {uniqueClasses.map((classSubject, index) => {
+                  const className = getClassName(classSubject);
+                  const formName = getFormName(classSubject);
+                  const classId = classSubject.class?.class_id;
+                  const subjectsForClass = myClasses.filter(cs => cs.class?.class_id === classId);
+
+                  return (
+                    <div key={index} className="teacher-class-card" onClick={() => navigate(`/teacher/classes/${classId}`)}>
+                      <div className="teacher-class-card__name">{className}</div>
+                      <div className="teacher-class-card__form">{formName}</div>
+                      <div className="teacher-class-card__subjects">
                         {subjectsForClass.map((cs, idx) => (
-                          <Badge key={idx} bg="light" text="dark" className="me-2 mb-2">
+                          <span key={idx} className="teacher-class-card__subject-tag">
                             {getSubjectName(cs)}
-                          </Badge>
+                          </span>
                         ))}
                       </div>
-                      <Button
-                        variant="primary"
-                        className="w-100"
-                        onClick={() => navigate(`/teacher/classes/${classId}`)}
+                      <button
+                        className="teacher-class-card__btn"
+                        onClick={(e) => { e.stopPropagation(); navigate(`/teacher/classes/${classId}`); }}
                       >
                         Manage Class
-                      </Button>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              );
-            })}
-            {uniqueClasses.length === 0 && (
-              <Col>
-                <Card className="border-0 shadow-sm">
-                  <Card.Body className="text-center py-5">
-                    <p className="text-muted mb-0">No classes assigned to you</p>
-                  </Card.Body>
-                </Card>
-              </Col>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             )}
-          </Row>
-        </Tab>
-      </Tabs>
+          </div>
+        )}
+      </div>
 
-      {/* Keyboard Shortcuts Modal */}
       <KeyboardShortcutsModal
         show={showShortcutsModal}
         onHide={() => setShowShortcutsModal(false)}
       />
-    </Container>
+    </div>
   );
 }
 

@@ -8,7 +8,6 @@ import SkeletonLoader from '../common/SkeletonLoader';
 import KeyboardShortcutsModal from '../common/KeyboardShortcutsModal';
 import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
 import { getRecentlyViewedByType } from '../../services/recentlyViewedService';
-import SKNTribar from './SKNTribar';
 import StudentPageHero from './StudentPageHero';
 import './StudentDashboard.css';
 
@@ -132,8 +131,6 @@ function StudentDashboard() {
 
   return (
     <div className="student-brutalist">
-      <SKNTribar />
-
       {/* Breadcrumb */}
       <div className="brutalist-breadcrumb">
         <button className="brutalist-breadcrumb__item" onClick={() => navigate('/student/dashboard')}>Home</button>

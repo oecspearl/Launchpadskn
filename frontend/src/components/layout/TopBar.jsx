@@ -6,7 +6,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useSidebar } from '../../contexts/SidebarContext';
-import FlagLogo from '../common/FlagLogo';
+import SKNFlagLogo from '../common/SKNFlagLogo';
 import QuickSearch from '../common/QuickSearch';
 import GlobalSearch from '../common/GlobalSearch';
 import NotificationCenter from '../common/NotificationCenter';
@@ -74,7 +74,7 @@ function TopBar() {
             {isAuthenticated && user?.institution_logo_url ? (
               <img src={user.institution_logo_url} alt="" className="topbar-brand-logo" />
             ) : (
-              <FlagLogo size="small" showText={false} />
+              <SKNFlagLogo width={36} height={24} />
             )}
             <div className="topbar-brand-text">
               <span className="topbar-brand-name">

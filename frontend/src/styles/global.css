@@ -1,16 +1,34 @@
 /* ============================================
    LaunchPad SKN - Global Design System
-   Modern, Professional, Mobile-First Design
+   Hybrid Brutalist + SKN National Identity
    ============================================ */
+
+/* ============================================
+   0. BRUTALIST RESET & GLOBAL OVERRIDES
+   ============================================ */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 0 !important;
+}
+
+/* Override Bootstrap radius classes */
+.btn, .card, .badge, .form-control,
+.input-group, .modal-content, .dropdown-menu,
+.alert, .toast, .popover, .tooltip-inner,
+.nav-tabs .nav-link, .accordion-item,
+.list-group-item, .breadcrumb {
+  border-radius: 0 !important;
+}
 
 /* ============================================
    1. CSS VARIABLES & DESIGN TOKENS
    ============================================ */
 :root {
   /* Typography Scale */
-  --font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
-  --font-family-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+  --font-family-base: var(--font-serif, 'Source Serif 4', Georgia, serif);
+  --font-family-heading: var(--font-condensed, 'Barlow Condensed', sans-serif);
 
   /* Font Sizes (Mobile-First) */
   --font-size-xs: 0.75rem;
@@ -64,18 +82,13 @@
   --spacing-16: 4rem;
   /* 64px */
 
-  /* Border Radius */
-  --radius-sm: 0.25rem;
-  /* 4px */
-  --radius-md: 0.5rem;
-  /* 8px */
-  --radius-lg: 0.75rem;
-  /* 12px */
-  --radius-xl: 1rem;
-  /* 16px */
-  --radius-2xl: 1.5rem;
-  /* 24px */
-  --radius-full: 9999px;
+  /* Border Radius — zero for brutalist design */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
+  --radius-full: 0;
 
   /* Shadows (Elevation System) */
   --shadow-sm: 0 1px 2px 0 rgba(41, 37, 36, 0.05);
@@ -132,12 +145,12 @@ html {
 }
 
 body {
-  font-family: var(--font-family-base);
+  font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-normal);
-  color: var(--text-primary);
-  background-color: var(--bg-primary);
+  color: var(--ink, #0f0f0f);
+  background-color: var(--stone, #f2ede4);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -264,17 +277,17 @@ a:hover {
    ============================================ */
 .card {
   background: #ffffff;
-  border-radius: var(--radius-lg);
-  border: 1px solid #e2e8f0;
-  box-shadow: var(--shadow-md);
+  border-radius: 0 !important;
+  border: 1px solid var(--fog, #d4cec4);
+  box-shadow: none;
   overflow: hidden;
   transition: all var(--transition-base);
   margin-bottom: var(--spacing-6);
 }
 
 .card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
+  box-shadow: none;
+  background: var(--parchment, #faf7f2);
 }
 
 .card-header {
@@ -422,8 +435,8 @@ a:hover {
 .form-control:focus,
 .form-select:focus {
   outline: none;
-  border-color: var(--primary-color);
-  box-shadow: 0 0 0 3px rgba(0, 150, 57, 0.1);
+  border-color: var(--skn-green, #009e60);
+  box-shadow: none;
 }
 
 .form-control::placeholder {
@@ -719,7 +732,12 @@ html {
    13. FOCUS STYLES (Accessibility)
    ============================================ */
 *:focus-visible {
-  outline: 2px solid var(--primary-color);
+  outline: 2px solid var(--skn-green, #009e60);
+  outline-offset: 2px;
+}
+
+button:focus-visible {
+  outline: 2px solid var(--skn-green, #009e60);
   outline-offset: 2px;
 }
 
@@ -735,4 +753,63 @@ html {
     box-shadow: none;
     border: 1px solid #e2e8f0;
   }
+}
+
+/* ============================================
+   15. SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track  { background: var(--parchment, #faf7f2); }
+::-webkit-scrollbar-thumb  { background: var(--fog, #d4cec4); }
+::-webkit-scrollbar-thumb:hover { background: var(--skn-green, #009e60); }
+
+/* ============================================
+   16. ANIMATIONS
+   ============================================ */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fade-up  { animation: fadeUp 0.45s ease both; }
+  .fd-1     { animation-delay: 0.05s; }
+  .fd-2     { animation-delay: 0.12s; }
+  .fd-3     { animation-delay: 0.19s; }
+  .fd-4     { animation-delay: 0.26s; }
+  .fd-5     { animation-delay: 0.33s; }
+  .fd-6     { animation-delay: 0.40s; }
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.5; transform: scale(0.85); }
+}
+.live-dot { animation: pulseDot 1.8s ease-in-out infinite; }
+
+/* ============================================
+   17. DARK MODE OVERRIDES
+   ============================================ */
+[data-theme="dark"] {
+  --stone: #2c3140;
+  --parchment: #1e2028;
+  --mist: #2c3140;
+  --fog: rgba(255,255,255,0.08);
+}
+
+[data-theme="dark"] body {
+  background-color: var(--charcoal, #1e2028);
+  color: rgba(255,255,255,0.88);
+}
+
+[data-theme="dark"] .card {
+  background: #2c3140;
+  border-color: rgba(255,255,255,0.08);
+}
+
+[data-theme="dark"] .form-control,
+[data-theme="dark"] .form-select {
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.12);
+  color: rgba(255,255,255,0.88);
 }

@@ -1,26 +1,15 @@
 /* ===== Top Bar — Dark Charcoal ===== */
 .topbar {
   position: fixed;
-  top: 0;
+  top: var(--tribar-h, 5px);
   left: 0;
   right: 0;
   height: var(--topbar-height);
   background: var(--charcoal, #1e2028);
   border-bottom: 1px solid rgba(255,255,255,0.06);
   box-shadow: none;
-  z-index: 1050;
+  z-index: 100;
   transition: box-shadow 0.3s ease;
-}
-
-.topbar::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--skn-green, #009639), var(--skn-yellow, #FCD116) 50%, var(--skn-red, #CE1126));
-  z-index: 1;
 }
 
 .topbar.scrolled {

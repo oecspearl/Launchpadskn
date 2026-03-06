@@ -1,176 +1,649 @@
-/* ===== Teacher Dashboard - Scoped Styles ===== */
-/* Uses global design tokens from colors.css & variables.css */
+/* ============================================
+   Teacher Dashboard — Brutalist + SKN Identity
+   ============================================ */
 
-/* Container Styling */
-.teacher-dashboard-container {
-    background: var(--bg-light, #f8f9fa);
-    min-height: 100vh;
-    padding-bottom: 3rem;
+.teacher-brutalist *,
+.teacher-brutalist *::before,
+.teacher-brutalist *::after {
+  border-radius: 0 !important;
 }
 
-
-/* Teacher Stat Cards (gradient style) */
-.teacher-dashboard-container .stat-card {
-    background: linear-gradient(135deg, var(--stat-color-start) 0%, var(--stat-color-end) 100%);
-    border: none;
-    border-radius: 16px;
-    color: white;
-    padding: 1.5rem;
-    box-shadow: var(--shadow-md);
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
+.teacher-brutalist {
+  min-height: 100vh;
+  background: var(--stone, #f2ede4);
+  font-family: var(--font-serif);
+  color: var(--ink);
 }
 
-.teacher-dashboard-container .stat-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-    pointer-events: none;
+/* Fade-up entrance */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-.teacher-dashboard-container .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-lg);
+.teacher-brutalist .fade-up {
+  animation: fadeUp 0.4s ease-out both;
+}
+.teacher-brutalist .fade-up-1 { animation-delay: 0.05s; }
+.teacher-brutalist .fade-up-2 { animation-delay: 0.10s; }
+.teacher-brutalist .fade-up-3 { animation-delay: 0.15s; }
+.teacher-brutalist .fade-up-4 { animation-delay: 0.20s; }
+.teacher-brutalist .fade-up-5 { animation-delay: 0.25s; }
+
+/* ===== Hero ===== */
+.teacher-hero {
+  position: relative;
+  background: var(--slate, #1a1a1a);
+  overflow: hidden;
+  padding: 32px;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
 }
 
-.teacher-dashboard-container .stat-card.stat-primary {
-    --stat-color-start: var(--skn-green, #009639);
-    --stat-color-end: var(--skn-green-dark, #00702B);
+.teacher-hero__bg-grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image:
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 40px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.02) 0px, rgba(255,255,255,0.02) 1px, transparent 1px, transparent 40px);
 }
 
-.teacher-dashboard-container .stat-card.stat-success {
-    --stat-color-start: #10b981;
-    --stat-color-end: #059669;
+.teacher-hero__bg-green {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(150deg, rgba(0,158,96,0.18) 0%, transparent 35%);
 }
 
-.teacher-dashboard-container .stat-card.stat-warning {
-    --stat-color-start: #f59e0b;
-    --stat-color-end: #d97706;
+.teacher-hero__bg-ink {
+  position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to right, rgba(15,15,15,0.8) 0%, rgba(15,15,15,0.2) 100%);
 }
 
-.teacher-dashboard-container .stat-card.stat-info {
-    --stat-color-start: #06b6d4;
-    --stat-color-end: #0891b2;
+.teacher-hero__bg-diag-red {
+  position: absolute; top: -20%; right: 15%; width: 120px; height: 160%;
+  background: rgba(200,0,30,0.12);
+  transform: skewX(-15deg);
+  pointer-events: none;
 }
 
-.teacher-dashboard-container .stat-card h3 {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin-bottom: 0.25rem;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.teacher-hero__bg-diag-yellow {
+  position: absolute; top: -20%; right: 25%; width: 60px; height: 160%;
+  background: rgba(252,209,22,0.08);
+  transform: skewX(-15deg);
+  pointer-events: none;
 }
 
-.teacher-dashboard-container .stat-card small {
-    font-size: 0.875rem;
-    opacity: 0.95;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+.teacher-hero__content {
+  position: relative; z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 32px;
 }
 
-.teacher-dashboard-container .stat-card svg {
-    opacity: 0.3;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+.teacher-hero__left { flex: 1; }
+
+.teacher-hero__rule {
+  width: 18px; height: 3px;
+  background: var(--skn-green);
+  margin-bottom: 10px;
 }
 
-/* Today's Lessons */
-.teacher-dashboard-container .lesson-item {
-    border-left: 4px solid var(--primary-color, #009639);
-    padding-left: 1rem;
-    margin-bottom: 1rem;
-    transition: all 0.3s ease;
+.teacher-hero__greeting {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 3px;
+  color: var(--skn-green);
+  margin-bottom: 8px;
+  text-transform: uppercase;
 }
 
-.teacher-dashboard-container .lesson-item:hover {
-    border-left-color: var(--primary-dark, #00702B);
-    background: var(--bg-green-tint, rgba(0, 150, 57, 0.04));
-    border-radius: 0 8px 8px 0;
-    padding-left: 1.25rem;
+.teacher-hero__name {
+  font-family: var(--font-condensed);
+  font-size: 40px;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+  margin: 0 0 10px;
 }
 
-.teacher-dashboard-container .lesson-item h6 {
-    font-weight: 700;
-    color: var(--gray-800, #1e293b);
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
+.teacher-hero__meta {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-style: italic;
+  color: rgba(255,255,255,0.5);
 }
 
-.teacher-dashboard-container .lesson-item .text-muted svg {
-    color: var(--primary-color, #009639);
-    opacity: 0.7;
+.teacher-hero__right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-shrink: 0;
 }
 
-/* Class Cards */
-.class-card {
-    border: 1px solid var(--border-color, #e2e8f0);
-    border-radius: 12px;
-    transition: all 0.3s ease;
-    height: 100%;
-    background: white;
+.teacher-hero__date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-.class-card:hover {
-    border-color: var(--primary-color, #009639);
-    box-shadow: var(--shadow-md);
-    transform: translateY(-2px);
+.teacher-hero__date-num {
+  font-family: var(--font-condensed);
+  font-size: 34px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
 }
 
-.class-card h6 {
-    font-weight: 700;
-    color: var(--gray-800, #1e293b);
-    font-size: 1.1rem;
-    margin-bottom: 0.75rem;
+.teacher-hero__date-month {
+  font-family: var(--font-condensed);
+  font-size: 20px;
+  font-weight: 700;
+  color: white;
+  line-height: 1;
+  margin-top: 2px;
 }
 
-/* Assessment Items */
-.teacher-dashboard-container .assessment-item {
-    transition: all 0.3s ease;
+.teacher-hero__date-day {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 6px;
 }
 
-.teacher-dashboard-container .assessment-item:hover {
-    background: var(--bg-green-tint, rgba(0, 150, 57, 0.04));
-    border-radius: 8px;
-    padding-left: 0.5rem;
+/* ===== Page Layout ===== */
+.teacher-page {
+  padding: 24px 32px 40px;
 }
 
-.teacher-dashboard-container .assessment-item h6 {
-    font-weight: 700;
-    color: var(--gray-800, #1e293b);
-    margin-bottom: 0.5rem;
+/* ===== Section Headers ===== */
+.teacher-section {
+  margin-bottom: 28px;
 }
 
-/* Animations */
-@keyframes teacherFadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+.teacher-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
 }
 
-.teacher-dashboard-container .card {
-    animation: teacherFadeIn 0.4s ease-out;
+.teacher-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-condensed);
+  font-size: 20px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--ink);
+  margin: 0;
 }
 
-/* Responsive */
+.teacher-section-title::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 20px;
+  background: var(--skn-green);
+  flex-shrink: 0;
+}
+
+.teacher-section-link {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(0,0,0,0.4);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s;
+}
+
+.teacher-section-link:hover {
+  color: var(--skn-green);
+}
+
+/* ===== Stat Row ===== */
+.teacher-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border: 1px solid var(--fog);
+  background: white;
+}
+
+.teacher-stat {
+  position: relative;
+  padding: 20px 24px;
+  border-right: 1px solid var(--fog);
+  overflow: hidden;
+}
+
+.teacher-stat:last-child { border-right: none; }
+
+.teacher-stat::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--mist);
+  transition: background 0.15s;
+}
+
+.teacher-stat:hover::after {
+  background: var(--stat-accent, var(--mist));
+}
+
+.teacher-stat__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: rgba(0,0,0,0.45);
+  margin-bottom: 6px;
+}
+
+.teacher-stat__value {
+  font-family: var(--font-condensed);
+  font-size: 38px;
+  font-weight: 800;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.teacher-stat__delta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+
+.teacher-stat__delta--up { color: var(--forest, #006b3f); }
+.teacher-stat__delta--warn { color: var(--amber, #c9a500); }
+
+/* ===== Two Column ===== */
+.teacher-two-col {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+}
+
+/* ===== Today's Lessons Panel ===== */
+.teacher-lessons-panel {
+  border: 1px solid var(--fog);
+  background: white;
+}
+
+.teacher-lessons-panel__header {
+  background: var(--ink);
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.teacher-lessons-panel__title {
+  font-family: var(--font-condensed);
+  font-size: 16px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+}
+
+.teacher-lessons-panel__count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--skn-yellow);
+}
+
+/* Lesson slot */
+.teacher-lesson-slot {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.teacher-lesson-slot:last-child { border-bottom: none; }
+.teacher-lesson-slot:hover { background: var(--parchment); }
+
+.teacher-lesson-slot__time {
+  width: 72px;
+  padding: 12px 10px;
+  border-right: 1px solid var(--fog);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.teacher-lesson-slot__time-hour {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.teacher-lesson-slot__time-end {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(0,0,0,0.35);
+}
+
+.teacher-lesson-slot__band {
+  width: 5px;
+  flex-shrink: 0;
+  background: var(--skn-green);
+}
+
+.teacher-lesson-slot__body {
+  flex: 1;
+  padding: 10px 14px;
+}
+
+.teacher-lesson-slot__subject {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.teacher-lesson-slot__class {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(0,0,0,0.5);
+}
+
+.teacher-lesson-slot__room {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(0,0,0,0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.teacher-lesson-slot__action {
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+}
+
+.teacher-lesson-slot__btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--skn-green);
+  background: none;
+  border: 1px solid rgba(0,158,96,0.2);
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.teacher-lesson-slot__btn:hover {
+  background: rgba(0,158,96,0.08);
+  border-color: var(--skn-green);
+}
+
+/* Empty state */
+.teacher-empty {
+  padding: 32px 18px;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(0,0,0,0.3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ===== Side Panels ===== */
+.teacher-panel {
+  border: 1px solid var(--fog);
+  background: white;
+  margin-bottom: 20px;
+}
+
+.teacher-panel__header {
+  background: var(--mist);
+  border-bottom: 1px solid var(--fog);
+  padding: 10px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.teacher-panel__title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(0,0,0,0.55);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin: 0;
+}
+
+.teacher-panel__body {
+  padding: 12px 16px;
+}
+
+/* Assessment due rows */
+.teacher-assess-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.04);
+}
+
+.teacher-assess-row:last-child { border-bottom: none; }
+
+.teacher-assess-row__dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+}
+
+.teacher-assess-row__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.teacher-assess-row__name {
+  font-family: var(--font-serif);
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.teacher-assess-row__type {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(0,0,0,0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.teacher-assess-row__due {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.teacher-assess-row__due--urgent { color: var(--skn-red); }
+.teacher-assess-row__due--soon { color: var(--amber); }
+.teacher-assess-row__due--ok { color: rgba(0,0,0,0.4); }
+
+/* ===== Class Cards Grid ===== */
+.teacher-classes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--fog);
+  background: white;
+}
+
+.teacher-class-card {
+  border-right: 1px solid var(--fog);
+  border-bottom: 1px solid var(--fog);
+  padding: 20px;
+  cursor: pointer;
+  transition: background 0.1s;
+  position: relative;
+}
+
+.teacher-class-card:nth-child(3n) { border-right: none; }
+.teacher-class-card:hover { background: var(--parchment); }
+
+.teacher-class-card:hover::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--skn-green);
+}
+
+.teacher-class-card__name {
+  font-family: var(--font-condensed);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.teacher-class-card__form {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(0,0,0,0.4);
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin-bottom: 12px;
+}
+
+.teacher-class-card__subjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.teacher-class-card__subject-tag {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid rgba(0,0,0,0.1);
+  color: rgba(0,0,0,0.5);
+}
+
+.teacher-class-card__btn {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: white;
+  background: var(--skn-green);
+  border: none;
+  padding: 8px 16px;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.teacher-class-card__btn:hover {
+  background: var(--forest, #006b3f);
+}
+
+/* ===== Tab Navigation ===== */
+.teacher-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--fog);
+  margin-bottom: 24px;
+  background: var(--mist);
+}
+
+.teacher-tab {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.teacher-tab:hover {
+  color: rgba(0,0,0,0.7);
+}
+
+.teacher-tab.active {
+  color: var(--ink);
+  border-bottom-color: var(--skn-green);
+  font-weight: 600;
+}
+
+/* ===== Alert Banner ===== */
+.teacher-alert {
+  padding: 14px 18px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  border: 1px solid;
+  margin-bottom: 20px;
+  background: rgba(252,209,22,0.06);
+  border-color: rgba(252,209,22,0.2);
+  color: var(--amber, #c9a500);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1024px) {
+  .teacher-two-col {
+    grid-template-columns: 1fr;
+  }
+
+  .teacher-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .teacher-stat:nth-child(2) { border-right: none; }
+  .teacher-stat:nth-child(1),
+  .teacher-stat:nth-child(2) { border-bottom: 1px solid var(--fog); }
+
+  .teacher-classes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .teacher-class-card:nth-child(3n) { border-right: 1px solid var(--fog); }
+  .teacher-class-card:nth-child(2n) { border-right: none; }
+}
+
 @media (max-width: 768px) {
-    .teacher-dashboard-container .stat-card h3 {
-        font-size: 2rem;
-    }
-}
+  .teacher-page { padding: 16px; }
+  .teacher-hero { padding: 20px 16px; }
+  .teacher-hero__name { font-size: 30px; }
+  .teacher-hero__content { flex-direction: column; align-items: flex-start; }
+  .teacher-hero__right { margin-top: 16px; }
 
-/* Utility Classes */
-.text-gradient {
-    background: var(--primary-gradient, linear-gradient(135deg, #009639 0%, #00702B 100%));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .teacher-stats { grid-template-columns: 1fr 1fr; }
+  .teacher-stat__value { font-size: 28px; }
+
+  .teacher-classes-grid { grid-template-columns: 1fr; }
+  .teacher-class-card { border-right: none !important; }
 }

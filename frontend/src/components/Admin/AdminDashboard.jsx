@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container, Spinner, Alert
-} from 'react-bootstrap';
-import {
   FaUsers, FaBook, FaChalkboardTeacher, FaUserGraduate,
-  FaBell, FaCalendarAlt, FaUserFriends,
-  FaUserShield
+  FaBell, FaCalendarAlt, FaUserFriends, FaUserShield
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
+import SkeletonLoader from '../common/SkeletonLoader';
 import './AdminDashboard.css';
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'GOOD MORNING';
+  if (h < 17) return 'GOOD AFTERNOON';
+  return 'GOOD EVENING';
+}
 
 function AdminDashboard() {
   const { user, isAuthenticated } = useAuth();
 
-  // State to store dashboard statistics
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCourses: 0,
@@ -27,23 +30,18 @@ function AdminDashboard() {
     recentActivity: []
   });
 
-  // Loading and error states
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Function to fetch dashboard statistics using Supabase
   const fetchDashboardStats = async () => {
     try {
       console.log('[AdminDashboard] Starting to fetch stats...');
 
-      // Fetch stats with reasonable timeout (5 seconds max)
-      // Use Promise.race only to prevent infinite loading, not to replace data
       const statsPromise = supabaseService.getDashboardStats().catch(err => {
         console.warn('[AdminDashboard] Stats fetch error:', err);
         return { totalUsers: 0, totalSubjects: 0, totalInstructors: 0, totalStudents: 0, totalAdmins: 0, totalParents: 0, totalForms: 0, totalClasses: 0 };
       });
 
-      // Timeout to prevent infinite loading, but don't replace data if it's still loading
       let statsResolved = false;
       const statsTimeout = setTimeout(() => {
         if (!statsResolved) {
@@ -57,7 +55,6 @@ function AdminDashboard() {
 
       console.log('[AdminDashboard] Stats received:', data);
 
-      // Fetch recent activity with reasonable timeout (3 seconds max)
       let recentActivity = [];
       try {
         let activityResolved = false;
@@ -82,7 +79,6 @@ function AdminDashboard() {
         recentActivity = [];
       }
 
-      // Update state with actual data
       setStats({
         totalUsers: data?.totalUsers || 0,
         totalCourses: data?.totalSubjects || data?.totalCourses || 0,
@@ -101,7 +97,6 @@ function AdminDashboard() {
     } catch (err) {
       console.error('[AdminDashboard] Error fetching data:', err);
 
-      // Set defaults only on actual error - dashboard should still display
       setStats({
         totalUsers: 0,
         totalCourses: 0,
@@ -114,24 +109,20 @@ function AdminDashboard() {
         recentActivity: []
       });
       setIsLoading(false);
-      setError(null); // Don't show error, just show empty dashboard
+      setError(null);
     }
   };
 
-  // Fetch dashboard statistics when component mounts
   useEffect(() => {
     console.log('[AdminDashboard] Component mounted, user:', user?.email, 'isAuthenticated:', isAuthenticated);
 
-    // If no user AND not authenticated, don't fetch
-    // But also check localStorage as fallback (auth state might be loading)
     if (!user && !isAuthenticated) {
       const storedUser = localStorage.getItem('user');
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
           console.log('[AdminDashboard] Found stored user, using it:', parsedUser.email);
-          // Use stored user temporarily until auth context updates
-          setStats(prev => ({ ...prev })); // Trigger a re-render
+          setStats(prev => ({ ...prev }));
         } catch (e) {
           console.warn('[AdminDashboard] Could not parse stored user');
         }
@@ -144,7 +135,6 @@ function AdminDashboard() {
       }
     }
 
-    // If we have a user or stored auth, proceed with fetch
     const userId = user?.userId || user?.id || (() => {
       try {
         const stored = localStorage.getItem('user');
@@ -160,156 +150,129 @@ function AdminDashboard() {
       return;
     }
 
-    // Fetch data - let fetchDashboardStats handle its own timeout logic
-    // The function will set isLoading to false when done, so we don't need an outer timeout
     fetchDashboardStats();
 
-  }, [user, isAuthenticated]); // Re-run when user or auth state changes
+  }, [user, isAuthenticated]);
 
-  // Show loading spinner while fetching data (max 3 seconds)
   if (isLoading) {
     return (
-      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '70vh' }}>
-        <div className="text-center">
-          <Spinner animation="border" variant="primary" style={{ width: '3rem', height: '3rem' }} />
-          <p className="mt-3">Loading dashboard...</p>
+      <div className="admin-brutalist">
+        <div style={{ padding: 32 }}>
+          <SkeletonLoader variant="dashboard" />
         </div>
-      </Container>
+      </div>
     );
   }
 
-  // Show error message if data fetching failed (but we won't show this usually)
   if (error) {
     return (
-      <Container className="mt-5">
-        <Alert variant="warning">
-          <Alert.Heading>Unable to Load Dashboard Data</Alert.Heading>
-          <p>Dashboard is showing with default values. Some statistics may not be available.</p>
-          <Button onClick={fetchDashboardStats} variant="outline-primary">Retry</Button>
-        </Alert>
-      </Container>
+      <div className="admin-brutalist">
+        <div className="admin-page">
+          <div className="admin-alert">
+            Dashboard is showing with default values. Some statistics may not be available.
+          </div>
+        </div>
+      </div>
     );
   }
 
+  const statItems = [
+    { icon: <FaUsers />, label: 'Total Users', value: stats.totalUsers, accent: 'var(--skn-green)' },
+    { icon: <FaBook />, label: 'Total Subjects', value: stats.totalCourses, accent: '#3b82f6' },
+    { icon: <FaChalkboardTeacher />, label: 'Instructors', value: stats.totalInstructors, accent: 'var(--skn-green)' },
+    { icon: <FaUserGraduate />, label: 'Students', value: stats.totalStudents, accent: 'var(--skn-yellow)' },
+    { icon: <FaCalendarAlt />, label: 'Total Forms', value: stats.totalForms, accent: 'var(--skn-green)' },
+    { icon: <FaUsers />, label: 'Total Classes', value: stats.totalClasses, accent: '#3b82f6' },
+    { icon: <FaUserFriends />, label: 'Parents', value: stats.totalParents, accent: '#06b6d4' },
+    { icon: <FaUserShield />, label: 'Admins', value: stats.totalAdmins, accent: 'var(--skn-red)' },
+  ];
+
   return (
-    <div className="admin-dashboard">
-      <Container className="pt-4 px-4">
-        {/* Header */}
-        <div className="mb-4">
-          <h4 className="mb-1">Welcome back, {user?.name || user?.email || 'Admin'}</h4>
-          <p className="text-muted mb-0">System overview and recent activity</p>
-        </div>
+    <div className="admin-brutalist">
+      {/* Hero */}
+      <div className="admin-hero">
+        <div className="admin-hero__bg-grid" />
+        <div className="admin-hero__bg-green" />
+        <div className="admin-hero__bg-ink" />
+        <div className="admin-hero__bg-diag-red" />
 
-        {/* Stats Cards */}
-        <div className="grid-responsive mb-4 slide-up">
-          <div className="stat-card-modern">
-            <div className="stat-icon-circle">
-              <FaUsers />
-            </div>
-            <div className="stat-card-title">Total Users</div>
-            <div className="stat-value-large">{stats.totalUsers}</div>
-          </div>
-          <div className="stat-card-modern">
-            <div className="stat-icon-circle icon-blue">
-              <FaBook />
-            </div>
-            <div className="stat-card-title">Total Subjects</div>
-            <div className="stat-value-large">{stats.totalCourses}</div>
-          </div>
-          <div className="stat-card-modern">
-            <div className="stat-icon-circle">
-              <FaChalkboardTeacher />
-            </div>
-            <div className="stat-card-title">Instructors</div>
-            <div className="stat-value-large">{stats.totalInstructors}</div>
-          </div>
-          <div className="stat-card-modern">
-            <div className="stat-icon-circle icon-amber">
-              <FaUserGraduate />
-            </div>
-            <div className="stat-card-title">Students</div>
-            <div className="stat-value-large">{stats.totalStudents}</div>
-          </div>
+        <div className="admin-hero__content">
+          <div className="admin-hero__rule" />
+          <div className="admin-hero__greeting">{getGreeting()}</div>
+          <h1 className="admin-hero__name">{user?.name || user?.email || 'Admin'}</h1>
+          <div className="admin-hero__meta">System overview and recent activity</div>
         </div>
+      </div>
 
-        <div className="grid-responsive mb-4">
-          <div className="stat-card-modern">
-            <div className="stat-icon-circle">
-              <FaCalendarAlt />
-            </div>
-            <div className="stat-card-title">Total Forms</div>
-            <div className="stat-value-large">{stats.totalForms}</div>
+      {/* Page Content */}
+      <div className="admin-page">
+        {/* Stats Grid */}
+        <div className="admin-section fade-up fade-up-1">
+          <div className="admin-section-header">
+            <h2 className="admin-section-title">System Statistics</h2>
           </div>
-          <div className="stat-card-modern">
-            <div className="stat-icon-circle">
-              <FaUsers />
-            </div>
-            <div className="stat-card-title">Total Classes</div>
-            <div className="stat-value-large">{stats.totalClasses}</div>
-          </div>
-          <div className="stat-card-modern">
-            <div className="stat-icon-circle icon-teal">
-              <FaUserFriends />
-            </div>
-            <div className="stat-card-title">Parents</div>
-            <div className="stat-value-large">{stats.totalParents}</div>
-          </div>
-          <div className="stat-card-modern">
-            <div className="stat-icon-circle icon-red">
-              <FaUserShield />
-            </div>
-            <div className="stat-card-title">Admins</div>
-            <div className="stat-value-large">{stats.totalAdmins}</div>
+
+          <div className="admin-stats">
+            {statItems.map((item, idx) => (
+              <div key={idx} className="admin-stat" style={{ '--stat-accent': item.accent }}>
+                <div className="admin-stat__icon">{item.icon}</div>
+                <div className="admin-stat__label">{item.label}</div>
+                <div className="admin-stat__value">{item.value}</div>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Recent Activity */}
-        <div className="mb-5">
-          <h5 className="section-title mb-3">Recent Activity</h5>
-          <div className="card-modern">
-            <div className="card-body">
+        <div className="admin-section fade-up fade-up-2">
+          <div className="admin-section-header">
+            <h2 className="admin-section-title">Recent Activity</h2>
+          </div>
+
+          <div className="admin-activity">
+            <div className="admin-activity__header">
+              <h4 className="admin-activity__title">Activity Log</h4>
+            </div>
+            <div className="admin-activity__body">
               {stats.recentActivity && stats.recentActivity.length > 0 ? (
-                <div>
-                  {stats.recentActivity.map((activity, index) => (
-                    <div key={activity.id || index} className="activity-item">
-                      <div className={`activity-icon ${activity.type === 'user' ? 'user' :
-                        activity.type === 'subject' ? 'subject' :
-                          activity.type === 'class' ? 'class' :
-                            activity.type === 'form' ? 'form' : 'user'
-                        }`}>
-                        {activity.type === 'user' ? <FaUserGraduate /> :
-                          activity.type === 'subject' ? <FaBook /> :
-                            activity.type === 'class' ? <FaUsers /> :
-                              activity.type === 'form' ? <FaChalkboardTeacher /> :
-                                <FaBell />}
+                stats.recentActivity.map((activity, index) => {
+                  const iconClass = activity.type === 'user' ? 'admin-activity-row__icon--user' :
+                    activity.type === 'subject' ? 'admin-activity-row__icon--subject' :
+                    activity.type === 'class' ? 'admin-activity-row__icon--class' :
+                    activity.type === 'form' ? 'admin-activity-row__icon--form' :
+                    'admin-activity-row__icon--user';
+
+                  const IconComponent = activity.type === 'user' ? FaUserGraduate :
+                    activity.type === 'subject' ? FaBook :
+                    activity.type === 'class' ? FaUsers :
+                    activity.type === 'form' ? FaChalkboardTeacher :
+                    FaBell;
+
+                  return (
+                    <div key={activity.id || index} className="admin-activity-row">
+                      <div className={`admin-activity-row__icon ${iconClass}`}>
+                        <IconComponent />
                       </div>
-                      <div className="activity-content">
-                        <div className="activity-text">
+                      <div className="admin-activity-row__content">
+                        <div className="admin-activity-row__text">
                           <strong>{activity.user}</strong> {activity.action} <strong>{activity.target}</strong>
                         </div>
-                        <div className="activity-time">
-                          <FaCalendarAlt className="me-1" />
-                          {activity.time}
-                        </div>
+                        <div className="admin-activity-row__time">{activity.time}</div>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })
               ) : (
-                <div className="empty-state">
-                  <div className="empty-state-icon">
-                    <FaBell />
-                  </div>
-                  <div className="empty-state-text">
-                    <p className="mb-1">No recent activity</p>
-                    <small>Start by creating forms, classes, and subjects</small>
-                  </div>
+                <div className="admin-empty">
+                  <div className="admin-empty__icon"><FaBell /></div>
+                  <div className="admin-empty__text">No recent activity</div>
+                  <div className="admin-empty__hint">Start by creating forms, classes, and subjects</div>
                 </div>
               )}
             </div>
           </div>
         </div>
-      </Container>
+      </div>
     </div>
   );
 }

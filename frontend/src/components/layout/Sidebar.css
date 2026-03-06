@@ -1,7 +1,7 @@
 /* ===== Sidebar — Dark SKN Theme ===== */
 .sidebar {
   position: fixed;
-  top: var(--topbar-height);
+  top: calc(var(--topbar-height) + var(--tribar-h, 5px));
   left: 0;
   bottom: 0;
   width: var(--sidebar-width);
@@ -261,7 +261,7 @@
 .sidebar-backdrop {
   position: fixed;
   inset: 0;
-  top: var(--topbar-height);
+  top: calc(var(--topbar-height) + var(--tribar-h, 5px));
   background: rgba(0, 0, 0, 0.5);
   z-index: 1039;
   animation: sidebarFadeIn 0.2s ease;

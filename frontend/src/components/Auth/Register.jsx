@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Form, Button, Container, Row, Col, Card, Alert, InputGroup } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaLock, FaUserGraduate, FaChalkboardTeacher, FaUserPlus } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { FaBook, FaChartLine, FaUsers, FaGraduationCap } from 'react-icons/fa';
+import SKNFlagLogo from '../common/SKNFlagLogo';
+import './Auth.css';
 
 function Register() {
   const { register: registerUser } = useAuth();
@@ -137,201 +138,194 @@ function Register() {
   };
 
   return (
-    <Container className="py-5 register-container bg-light min-vh-100 d-flex align-items-center">
-      <Row className="justify-content-center w-100">
-        <Col md={10} lg={8} xl={6}>
-          <Card className="shadow border-0 rounded-lg overflow-hidden">
-            <Card.Header className="bg-success text-white text-center py-4">
-              <h2 className="fw-bold mb-0">
-                <FaUserGraduate className="me-2" />
-                Student Registration
-              </h2>
-              <p className="text-white-50 mt-2 mb-0">Create your student account to access courses</p>
-            </Card.Header>
+    <div className="auth-page">
+      {/* Left Panel — Brand */}
+      <div className="auth-left">
+        <div className="auth-left-border" />
+        <div className="auth-left-content">
+          <div className="auth-brand-logo">
+            <SKNFlagLogo width={56} height={38} />
+          </div>
+          <h1 className="auth-brand-name">
+            Launch<span className="skn-highlight">Pad</span>
+          </h1>
+          <p className="auth-brand-tagline">
+            SKN Learning Management System
+          </p>
 
-            <Card.Body className="p-4">
-              {apiError && (
-                <Alert variant="danger" className="animate__animated animate__shakeX">
-                  {apiError}
-                </Alert>
-              )}
-
-              <Form onSubmit={handleSubmit}>
-                <Row>
-                  <Col md={12} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Full Name</Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>
-                          <FaUser />
-                        </InputGroup.Text>
-                        <Form.Control
-                          type="text"
-                          placeholder="Enter your full name"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          isInvalid={!!errors.name}
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {errors.name}
-                        </Form.Control.Feedback>
-                      </InputGroup>
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={12} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Email Address</Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>
-                          <FaEnvelope />
-                        </InputGroup.Text>
-                        <Form.Control
-                          type="email"
-                          placeholder="Enter your email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          isInvalid={!!errors.email}
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {errors.email}
-                        </Form.Control.Feedback>
-                      </InputGroup>
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={6} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Password</Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>
-                          <FaLock />
-                        </InputGroup.Text>
-                        <Form.Control
-                          type="password"
-                          placeholder="Create password"
-                          name="password"
-                          value={formData.password}
-                          onChange={handleChange}
-                          isInvalid={!!errors.password}
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {errors.password}
-                        </Form.Control.Feedback>
-                      </InputGroup>
-                      <Form.Text className="text-muted">
-                        Password must be at least 8 characters long
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={6} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Confirm Password</Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>
-                          <FaLock />
-                        </InputGroup.Text>
-                        <Form.Control
-                          type="password"
-                          placeholder="Confirm password"
-                          name="confirmPassword"
-                          value={formData.confirmPassword}
-                          onChange={handleChange}
-                          isInvalid={!!errors.confirmPassword}
-                        />
-                        <Form.Control.Feedback type="invalid">
-                          {errors.confirmPassword}
-                        </Form.Control.Feedback>
-                      </InputGroup>
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={6} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Phone Number</Form.Label>
-                      <Form.Control
-                        type="tel"
-                        placeholder="Enter your phone number"
-                        name="phone"
-                        value={formData.phone}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={6} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Date of Birth</Form.Label>
-                      <Form.Control
-                        type="date"
-                        name="dateOfBirth"
-                        value={formData.dateOfBirth}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={12} className="mb-3">
-                    <Form.Group>
-                      <Form.Label>Address</Form.Label>
-                      <Form.Control
-                        as="textarea"
-                        rows={2}
-                        placeholder="Enter your address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleChange}
-                      />
-                    </Form.Group>
-                  </Col>
-
-                  <Col md={12} className="mb-4">
-                    <Form.Group>
-                      <Form.Label>Emergency Contact</Form.Label>
-                      <Form.Control
-                        type="text"
-                        placeholder="Emergency contact name and phone"
-                        name="emergencyContact"
-                        value={formData.emergencyContact}
-                        onChange={handleChange}
-                      />
-                      <Form.Text className="text-muted">
-                        e.g., "John Doe - (555) 123-4567"
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                </Row>
-
-                <Button
-                  variant="primary"
-                  type="submit"
-                  disabled={isLoading}
-                  className="w-100 py-2 mt-2 fw-bold"
-                >
-                  {isLoading ? (
-                    <>
-                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                      Creating Account...
-                    </>
-                  ) : (
-                    'Create Account'
-                  )}
-                </Button>
-              </Form>
-            </Card.Body>
-
-            <Card.Footer className="text-center py-3 bg-light">
-              <div>
-                Already have an account? <Link to="/login" className="text-primary fw-bold text-decoration-none">Login here</Link>
+          <ul className="auth-features">
+            <li className="auth-feature-item">
+              <div className="auth-feature-icon"><FaBook /></div>
+              <div className="auth-feature-text">
+                <strong>Course Management</strong>
+                Access and manage your courses, assignments, and resources
               </div>
-            </Card.Footer>
-          </Card>
-        </Col>
-      </Row>
-    </Container>
+            </li>
+            <li className="auth-feature-item">
+              <div className="auth-feature-icon"><FaChartLine /></div>
+              <div className="auth-feature-text">
+                <strong>Progress Tracking</strong>
+                Monitor performance with real-time analytics and insights
+              </div>
+            </li>
+            <li className="auth-feature-item">
+              <div className="auth-feature-icon"><FaUsers /></div>
+              <div className="auth-feature-text">
+                <strong>Collaboration</strong>
+                Connect with instructors and peers through integrated tools
+              </div>
+            </li>
+            <li className="auth-feature-item">
+              <div className="auth-feature-icon"><FaGraduationCap /></div>
+              <div className="auth-feature-text">
+                <strong>AI-Powered Learning</strong>
+                Personalized tutoring and adaptive content delivery
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      {/* Right Panel — Form */}
+      <div className="auth-right">
+        <div className="auth-form-container" style={{ maxWidth: 520 }}>
+          <h2 className="auth-form-title">Student Registration</h2>
+          <p className="auth-form-subtitle">Create your student account to access courses</p>
+
+          {apiError && (
+            <div className="auth-alert auth-alert--error">{apiError}</div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="auth-field">
+              <label className="auth-label">Full Name</label>
+              <input
+                type="text"
+                className={`auth-input ${errors.name ? 'is-invalid' : ''}`}
+                placeholder="Enter your full name"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+              />
+              {errors.name && <div className="auth-field-error">{errors.name}</div>}
+            </div>
+
+            <div className="auth-field">
+              <label className="auth-label">Email Address</label>
+              <input
+                type="email"
+                className={`auth-input ${errors.email ? 'is-invalid' : ''}`}
+                placeholder="Enter your email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+              />
+              {errors.email && <div className="auth-field-error">{errors.email}</div>}
+            </div>
+
+            <div className="auth-field-row">
+              <div className="auth-field">
+                <label className="auth-label">Password</label>
+                <input
+                  type="password"
+                  className={`auth-input ${errors.password ? 'is-invalid' : ''}`}
+                  placeholder="Create password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+                {errors.password
+                  ? <div className="auth-field-error">{errors.password}</div>
+                  : <div className="auth-field-hint">Minimum 8 characters</div>
+                }
+              </div>
+              <div className="auth-field">
+                <label className="auth-label">Confirm Password</label>
+                <input
+                  type="password"
+                  className={`auth-input ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                  placeholder="Confirm password"
+                  name="confirmPassword"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                />
+                {errors.confirmPassword && <div className="auth-field-error">{errors.confirmPassword}</div>}
+              </div>
+            </div>
+
+            <div className="auth-field-row">
+              <div className="auth-field">
+                <label className="auth-label">Phone Number</label>
+                <input
+                  type="tel"
+                  className="auth-input"
+                  placeholder="Enter phone number"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                />
+              </div>
+              <div className="auth-field">
+                <label className="auth-label">Date of Birth</label>
+                <input
+                  type="date"
+                  className="auth-input"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                />
+              </div>
+            </div>
+
+            <div className="auth-field">
+              <label className="auth-label">Address</label>
+              <textarea
+                className="auth-input auth-textarea"
+                placeholder="Enter your address"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                rows={2}
+              />
+            </div>
+
+            <div className="auth-field">
+              <label className="auth-label">Emergency Contact</label>
+              <input
+                type="text"
+                className="auth-input"
+                placeholder="Emergency contact name and phone"
+                name="emergencyContact"
+                value={formData.emergencyContact}
+                onChange={handleChange}
+              />
+              <div className="auth-field-hint">e.g., "John Doe - (555) 123-4567"</div>
+            </div>
+
+            <button
+              type="submit"
+              className="auth-submit"
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                  Creating Account...
+                </>
+              ) : (
+                'Create Account'
+              )}
+            </button>
+          </form>
+
+          <div className="auth-footer">
+            <p className="auth-footer-text">
+              Already have an account? <Link to="/login" className="auth-footer-link">Sign In</Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
