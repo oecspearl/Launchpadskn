@@ -1,13 +1,13 @@
-/* ===== Top Bar ===== */
+/* ===== Top Bar — Dark Charcoal ===== */
 .topbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   height: var(--topbar-height);
-  background: #ffffff;
-  border-bottom: 1px solid var(--border-color, #e7e5e4);
-  box-shadow: 0 1px 3px rgba(41, 37, 36, 0.04);
+  background: var(--charcoal, #1e2028);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none;
   z-index: 1050;
   transition: box-shadow 0.3s ease;
 }
@@ -24,7 +24,7 @@
 }
 
 .topbar.scrolled {
-  box-shadow: 0 4px 6px -1px rgba(41, 37, 36, 0.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .topbar-inner {
@@ -50,13 +50,14 @@
   border: none;
   cursor: pointer;
   padding: 8px;
-  border-radius: var(--radius-md, 0.5rem);
-  color: var(--gray-700, #334155);
+  border-radius: 0;
+  color: rgba(255,255,255,0.6);
   transition: all 0.15s ease;
 }
 
 .topbar-hamburger:hover {
-  background: var(--gray-100, #f1f5f9);
+  background: rgba(255,255,255,0.06);
+  color: white;
 }
 
 .topbar-brand {
@@ -79,9 +80,12 @@
 }
 
 .topbar-brand-name {
+  font-family: var(--font-condensed, 'Barlow Condensed', sans-serif);
   font-weight: 700;
-  font-size: 0.875rem;
-  color: var(--gray-800, #1e293b);
+  font-size: 15px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: white;
   max-width: 200px;
   white-space: nowrap;
   overflow: hidden;
@@ -97,8 +101,8 @@
 
 .topbar-divider {
   width: 1px;
-  height: 20px;
-  background: var(--gray-200, #e2e8f0);
+  height: 28px;
+  background: rgba(255,255,255,0.08);
   margin: 0 4px;
 }
 
@@ -110,23 +114,25 @@
 }
 
 .topbar-avatar {
-  width: 32px;
-  height: 32px;
-  background-color: var(--primary-light-bg, #E8F5ED);
-  color: var(--primary-color, #009639);
-  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  background-color: var(--skn-green, #009e60);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 600;
-  font-size: 0.875rem;
+  font-family: var(--font-condensed, 'Barlow Condensed', sans-serif);
+  font-weight: 700;
+  font-size: 13px;
   flex-shrink: 0;
 }
 
 .topbar-user-name {
-  font-weight: 500;
-  font-size: 0.875rem;
-  color: var(--gray-700, #334155);
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 400;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  letter-spacing: 0.5px;
   white-space: nowrap;
   max-width: 150px;
   overflow: hidden;
@@ -139,47 +145,48 @@
 
 .topbar-profile-dropdown .dropdown-toggle {
   padding: 4px 8px !important;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: 0 !important;
   background: transparent !important;
-  border: none !important;
+  border: 1px solid rgba(255,255,255,0.1) !important;
 }
 
 .topbar-profile-dropdown .dropdown-toggle:hover {
-  background: var(--gray-100, #f1f5f9) !important;
+  background: rgba(255,255,255,0.05) !important;
 }
 
 /* ===== Dropdown Menu ===== */
 .topbar-profile-dropdown .dropdown-menu {
-  background: white;
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 0.75rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+  background: var(--ink, #0f0f0f);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 0;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   padding: 0.5rem;
   margin-top: 4px;
 }
 
 .topbar-profile-dropdown .dropdown-item {
-  color: var(--gray-700, #334155);
+  color: rgba(255,255,255,0.6);
   padding: 0.5rem 1rem;
-  border-radius: 0.5rem;
+  border-radius: 0;
   transition: all 0.15s ease;
   border-left: 3px solid transparent;
-  font-size: 0.875rem;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-size: 12px;
 }
 
 .topbar-profile-dropdown .dropdown-item:hover {
-  background-color: var(--primary-light-bg, #E8F5ED);
-  color: var(--primary-color, #009639);
-  border-left-color: var(--primary-color, #009639);
+  background-color: rgba(0,158,96,0.1);
+  color: white;
+  border-left-color: var(--skn-green, #009e60);
 }
 
 /* ===== Public Nav Links ===== */
 .topbar-nav-link {
-  color: var(--gray-700, #334155) !important;
+  color: rgba(255,255,255,0.6) !important;
   font-weight: 500;
   font-size: 0.875rem;
   padding: 0.5rem 1rem !important;
-  border-radius: var(--radius-md, 0.5rem);
+  border-radius: 0;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
@@ -187,22 +194,24 @@
 }
 
 .topbar-nav-link:hover {
-  color: var(--primary-color, #009639) !important;
-  background-color: var(--primary-light-bg, #E8F5ED);
+  color: white !important;
+  background-color: rgba(255,255,255,0.06);
 }
 
 .topbar-btn-primary {
-  background-color: var(--primary-color, #009639);
+  background-color: var(--skn-green, #009e60);
   color: white !important;
   padding: 0.5rem 1.25rem !important;
-  border-radius: var(--radius-full, 9999px);
-  font-weight: 500;
-  font-size: 0.875rem;
+  border-radius: 0;
+  font-family: var(--font-mono, 'IBM Plex Mono', monospace);
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .topbar-btn-primary:hover {
-  background-color: var(--primary-dark, #00702B);
-  transform: translateY(-1px);
+  background-color: var(--forest, #006b40);
 }
 
 /* ===== Mobile ===== */
@@ -217,7 +226,7 @@
 
   .topbar-brand-name {
     max-width: 120px;
-    font-size: 0.8rem;
+    font-size: 13px;
   }
 }
 
@@ -228,7 +237,7 @@
 
   .topbar-brand-name {
     max-width: 80px;
-    font-size: 0.75rem;
+    font-size: 11px;
   }
 
   .topbar-divider {
@@ -236,56 +245,17 @@
   }
 }
 
-/* ===== Dark Mode ===== */
-[data-theme="dark"] .topbar {
-  background: rgba(45, 55, 72, 0.9);
-  border-bottom-color: rgba(74, 85, 104, 0.5);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-}
-
-[data-theme="dark"] .topbar.scrolled {
-  background: rgba(45, 55, 72, 0.95);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-}
-
-[data-theme="dark"] .topbar-brand-name {
-  color: #f7fafc;
-}
-
-[data-theme="dark"] .topbar-hamburger {
-  color: #f7fafc;
-}
-
-[data-theme="dark"] .topbar-hamburger:hover {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-[data-theme="dark"] .topbar-user-name {
-  color: #f7fafc;
-}
-
-[data-theme="dark"] .topbar-nav-link {
-  color: #f7fafc !important;
-}
-
-[data-theme="dark"] .topbar-divider {
-  background: #4a5568;
-}
-
-[data-theme="dark"] .topbar-profile-dropdown .dropdown-toggle:hover {
-  background: rgba(255, 255, 255, 0.1) !important;
-}
-
+/* ===== Dark Mode — topbar is already dark, minimal overrides ===== */
 [data-theme="dark"] .topbar-profile-dropdown .dropdown-menu {
-  background: #1e293b;
-  border-color: #334155;
+  background: var(--ink, #0f0f0f);
+  border-color: rgba(255,255,255,0.1);
 }
 
 [data-theme="dark"] .topbar-profile-dropdown .dropdown-item {
-  color: #e2e8f0;
+  color: rgba(255,255,255,0.7);
 }
 
 [data-theme="dark"] .topbar-profile-dropdown .dropdown-item:hover {
   background-color: rgba(0, 150, 57, 0.15);
-  color: var(--primary-color, #009639);
+  color: var(--skn-green, #009e60);
 }

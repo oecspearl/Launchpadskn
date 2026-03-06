@@ -80,8 +80,8 @@
 
 .brutalist-section-link {
   font-family: var(--font-mono);
-  font-size: 9.5px;
-  color: rgba(0,0,0,0.3);
+  font-size: 12px;
+  color: rgba(0,0,0,0.5);
   text-decoration: none;
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -159,7 +159,7 @@
 
 .brutalist-hero__greeting {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 3px;
   color: var(--skn-green);
   margin-bottom: 8px;
@@ -181,9 +181,9 @@
 
 .brutalist-hero__meta {
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: 14px;
   font-style: italic;
-  color: rgba(255,255,255,0.4);
+  color: rgba(255,255,255,0.6);
 }
 
 .brutalist-hero__right {
@@ -218,16 +218,16 @@
 
 .brutalist-hero__date-day {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   letter-spacing: 2px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.5);
   margin-top: 6px;
 }
 
 .brutalist-hero__divider {
   width: 1px;
   height: 50px;
-  background: rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.2);
 }
 
 .brutalist-hero__streak {
@@ -248,9 +248,9 @@
 
 .brutalist-hero__streak-label {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 2px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.5);
   margin-top: 4px;
 }
 
@@ -258,7 +258,7 @@
    Breadcrumb Bar
    ============================================ */
 .brutalist-breadcrumb {
-  height: 36px;
+  height: 40px;
   background: var(--mist);
   border-bottom: 1px solid var(--fog);
   padding: 0 32px;
@@ -269,10 +269,10 @@
 
 .brutalist-breadcrumb__item {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 12px;
   letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: rgba(0,0,0,0.35);
+  color: rgba(0,0,0,0.5);
   text-decoration: none;
   background: none;
   border: none;
@@ -284,7 +284,7 @@
 
 .brutalist-breadcrumb__item--active {
   color: var(--ink);
-  font-weight: 500;
+  font-weight: 600;
   cursor: default;
 }
 
@@ -292,9 +292,9 @@
 
 .brutalist-breadcrumb__sep {
   padding: 0 10px;
-  color: rgba(0,0,0,0.2);
+  color: rgba(0,0,0,0.3);
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 12px;
 }
 
 .brutalist-breadcrumb__pill {
@@ -303,7 +303,7 @@
   color: var(--forest);
   border: 1px solid rgba(0,158,96,0.2);
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 1px;
   text-transform: uppercase;
@@ -342,10 +342,10 @@
 
 .brutalist-stat__label {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 11px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  color: rgba(0,0,0,0.35);
+  color: rgba(0,0,0,0.55);
   margin-bottom: 6px;
 }
 
@@ -360,7 +360,7 @@
 
 .brutalist-stat__delta {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .brutalist-stat__delta--up { color: var(--forest); }
@@ -414,7 +414,7 @@
 
 .brutalist-ai-banner__available {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   color: var(--skn-green);
   letter-spacing: 2px;
   text-transform: uppercase;
@@ -432,9 +432,9 @@
 
 .brutalist-ai-banner__desc {
   font-family: var(--font-serif);
-  font-size: 12px;
+  font-size: 13px;
   font-style: italic;
-  color: rgba(255,255,255,0.35);
+  color: rgba(255,255,255,0.6);
   margin-top: 4px;
 }
 
@@ -454,16 +454,16 @@
 
 .brutalist-ai-banner__chip {
   font-family: var(--font-mono);
-  font-size: 8.5px;
-  color: rgba(255,255,255,0.35);
-  border: 1px solid rgba(255,255,255,0.12);
-  padding: 2px 8px;
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 3px 10px;
   white-space: nowrap;
 }
 
 .brutalist-ai-banner__btn {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 2px;
@@ -513,7 +513,7 @@
 
 .brutalist-timetable__subtitle {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   color: var(--skn-yellow);
 }
 
@@ -553,8 +553,8 @@
 
 .brutalist-timetable__time-ampm {
   font-family: var(--font-mono);
-  font-size: 8px;
-  color: rgba(0,0,0,0.3);
+  font-size: 10px;
+  color: rgba(0,0,0,0.5);
 }
 
 .brutalist-timetable__band {
@@ -577,14 +577,14 @@
 
 .brutalist-timetable__teacher {
   font-family: var(--font-mono);
-  font-size: 10px;
-  color: rgba(0,0,0,0.35);
+  font-size: 12px;
+  color: rgba(0,0,0,0.55);
 }
 
 .brutalist-timetable__room {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: rgba(0,0,0,0.25);
+  font-size: 11px;
+  color: rgba(0,0,0,0.45);
   text-transform: uppercase;
 }
 
@@ -600,14 +600,14 @@
 
 .brutalist-timetable__duration {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: rgba(0,0,0,0.25);
+  font-size: 11px;
+  color: rgba(0,0,0,0.45);
 }
 
 /* Status chips (shared) */
 .brutalist-chip {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1.5px;
@@ -628,14 +628,14 @@
 }
 
 .brutalist-chip--done {
-  background: rgba(0,0,0,0.05);
-  color: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.06);
+  color: rgba(0,0,0,0.45);
   border: 1px solid transparent;
 }
 
 .brutalist-chip--free {
   background: transparent;
-  color: rgba(0,0,0,0.2);
+  color: rgba(0,0,0,0.35);
   border: 1px solid transparent;
 }
 
@@ -716,7 +716,7 @@
 
 .brutalist-assignment__eyebrow {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   color: var(--skn-green);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -725,7 +725,7 @@
 
 .brutalist-assignment__title {
   font-family: var(--font-serif);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ink);
   margin: 0 0 4px;
@@ -733,10 +733,10 @@
 
 .brutalist-assignment__desc {
   font-family: var(--font-serif);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 300;
   font-style: italic;
-  color: rgba(0,0,0,0.4);
+  color: rgba(0,0,0,0.55);
   margin: 0 0 8px;
 }
 
@@ -748,9 +748,9 @@
 
 .brutalist-assignment__tag {
   font-family: var(--font-mono);
-  font-size: 8.5px;
-  border: 1px solid rgba(0,0,0,0.1);
-  color: rgba(0,0,0,0.4);
+  font-size: 11px;
+  border: 1px solid rgba(0,0,0,0.15);
+  color: rgba(0,0,0,0.55);
   padding: 2px 8px;
 }
 
@@ -766,18 +766,18 @@
 
 .brutalist-assignment__due {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
 }
 
 .brutalist-assignment__due--urgent { color: var(--skn-red); }
 .brutalist-assignment__due--soon { color: var(--amber); }
-.brutalist-assignment__due--ok { color: rgba(0,0,0,0.35); }
+.brutalist-assignment__due--ok { color: rgba(0,0,0,0.5); }
 
 .brutalist-assignment__points {
   font-family: var(--font-condensed);
   font-size: 32px;
   font-weight: 700;
-  color: rgba(0,0,0,0.08);
+  color: rgba(0,0,0,0.12);
   line-height: 1;
 }
 
@@ -824,7 +824,7 @@
 
 .brutalist-lesson__subject {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 11px;
   color: var(--skn-green);
   text-transform: uppercase;
   letter-spacing: 1px;
@@ -833,7 +833,7 @@
 
 .brutalist-lesson__title {
   font-family: var(--font-serif);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--ink);
   margin: 0 0 10px;
@@ -847,13 +847,13 @@
 
 .brutalist-lesson__pct {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: rgba(0,0,0,0.35);
+  font-size: 11px;
+  color: rgba(0,0,0,0.5);
 }
 
 .brutalist-lesson__continue {
   font-family: var(--font-mono);
-  font-size: 8.5px;
+  font-size: 11px;
   color: var(--skn-green);
   text-decoration: none;
   background: none;
@@ -884,9 +884,9 @@
 
 .brutalist-panel__title {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
-  color: rgba(0,0,0,0.5);
+  color: rgba(0,0,0,0.65);
   text-transform: uppercase;
   letter-spacing: 2px;
   margin: 0;
@@ -909,7 +909,7 @@
 
 .brutalist-grade-row__subject {
   font-family: var(--font-serif);
-  font-size: 12px;
+  font-size: 13px;
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -930,7 +930,7 @@
 
 .brutalist-grade-row__grade {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   width: 24px;
   text-align: center;
@@ -961,19 +961,19 @@
 
 .brutalist-due-row__title {
   font-family: var(--font-serif);
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink);
 }
 
 .brutalist-due-row__subject {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: rgba(0,0,0,0.3);
+  font-size: 11px;
+  color: rgba(0,0,0,0.5);
 }
 
 .brutalist-due-row__date {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12px;
   flex-shrink: 0;
 }
 

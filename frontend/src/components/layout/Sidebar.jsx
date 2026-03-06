@@ -66,6 +66,20 @@ function Sidebar() {
           })}
         </nav>
 
+        {/* XP Progress (student only) */}
+        {role === 'student' && !isCollapsed && (
+          <div className="sidebar-xp">
+            <div className="sidebar-xp__label">
+              <span className="sidebar-xp__text">Level 1 · Learner</span>
+              <span className="sidebar-xp__value">0 XP</span>
+            </div>
+            <div className="sidebar-xp__track">
+              <div className="sidebar-xp__fill" style={{ width: '0%' }} />
+            </div>
+            <div className="sidebar-xp__sublabel">Keep learning to earn XP</div>
+          </div>
+        )}
+
         {/* Desktop collapse toggle */}
         <button
           className="sidebar-collapse-btn"

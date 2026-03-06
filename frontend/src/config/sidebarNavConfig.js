@@ -7,10 +7,17 @@ import {
 
 const sidebarNavConfig = {
   student: [
+    { section: 'Learning' },
     { label: 'Dashboard', path: '/student/dashboard', icon: FaHome },
+    { label: 'My Lessons', path: '/student/timetable', icon: FaBookOpen },
+    { label: 'Assignments', path: '/student/assignments', icon: FaClipboardList },
     { label: 'My Subjects', path: '/student/subjects', icon: FaBook },
-    { label: 'Progress', path: '/student/progress', icon: FaChartLine },
+    { label: 'My Grades', path: '/student/progress', icon: FaChartLine },
     { divider: true },
+    { section: 'Tools' },
+    { label: 'AI Study Guide', path: '/student/tutor', icon: FaUserGraduate },
+    { divider: true },
+    { section: 'Community' },
     { label: 'Messages', path: '/messages', icon: FaEnvelope },
     { label: 'Help', path: '/student/help', icon: FaQuestionCircle },
   ],
