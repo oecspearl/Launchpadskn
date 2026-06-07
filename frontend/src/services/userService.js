@@ -1,12 +1,7 @@
 import { supabase } from '../config/supabase';
-import { ROLES } from '../constants/roles';
-
-// DB role values are lowercase. Normalize incoming role constants (e.g. ROLES.STUDENT='STUDENT')
-// to the lowercase enum the database expects, mapping 'TEACHER' -> 'instructor'.
-const normalizeRole = (role) => {
-    const lower = (role || '').toString().toLowerCase();
-    return lower === 'teacher' ? 'instructor' : lower;
-};
+// DB role values are lowercase; `toDbRole` maps app role constants (e.g.
+// ROLES.STUDENT='STUDENT') to the lowercase enum the database expects.
+import { ROLES, toDbRole as normalizeRole } from '../constants/roles';
 
 // Columns that actually exist on public.users. Used to sanitize update payloads
 // (the live schema has no `name`/`user_id`/`emergency_contact` columns).

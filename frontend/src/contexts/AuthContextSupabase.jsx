@@ -6,6 +6,7 @@ import React, { createContext, useState, useContext, useEffect, useRef } from 'r
 import { supabase } from '../config/supabase';
 import AuthService from '../services/authServiceSupabase';
 import supabaseService from '../services/supabaseService';
+import { normalizeRole, toDbRole } from '../constants/roles';
 
 const log = (...args) => {
   if (import.meta.env.DEV) console.log('[AuthContext]', ...args);
@@ -13,15 +14,6 @@ const log = (...args) => {
 const warn = (...args) => {
   if (import.meta.env.DEV) console.warn('[AuthContext]', ...args);
 };
-
-const VALID_ROLES = ['ADMIN', 'SCHOOL_ADMIN', 'INSTRUCTOR', 'STUDENT', 'PARENT'];
-
-function normalizeRole(role) {
-  const upper = (role || '').toUpperCase().trim();
-  if (upper === 'TEACHER') return 'INSTRUCTOR';
-  if (upper === 'SUPER_ADMIN') return 'ADMIN'; // no dedicated super-admin UI yet; treat as admin
-  return VALID_ROLES.includes(upper) ? upper : 'STUDENT';
-}
 
 // Live `users` table stores first_name/last_name (no `name` column).
 // Compose a display name, falling back to legacy `name` then the email local part.
@@ -294,7 +286,7 @@ export function AuthProvider({ children }) {
                 email: userData.email,
                 first_name: (userData.name || '').split(' ')[0] || null,
                 last_name: (userData.name || '').split(' ').slice(1).join(' ') || null,
-                role: finalRole.toLowerCase(),
+                role: toDbRole(finalRole),
                 is_active: true,
                 created_at: new Date().toISOString()
               });

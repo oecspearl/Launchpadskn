@@ -14,12 +14,13 @@ import AppLayout from './components/layout/AppLayout';
 import AppRoutes from './routes/AppRoutes';
 import queryClient from './config/queryClient';
 import { initKeyboardShortcuts, cleanupKeyboardShortcuts } from './utils/keyboardShortcuts';
+import { isRole, ROLES } from './constants/roles';
 
 const AITutorWidget = lazy(() => import('./components/Student/AITutorWidget'));
 
 function StudentTutorWidget() {
   const { user } = useAuth();
-  if (user?.role?.toUpperCase() !== 'STUDENT') return null;
+  if (!isRole(user, ROLES.STUDENT)) return null;
   return (
     <Suspense fallback={null}>
       <AITutorWidget />

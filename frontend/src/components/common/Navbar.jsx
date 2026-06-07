@@ -14,6 +14,7 @@ import GlobalSearch from './GlobalSearch';
 import NotificationCenter from './NotificationCenter';
 import MessageIcon from './MessageIcon';
 import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
+import { isRole, toDbRole, ROLES } from '../../constants/roles';
 import './Navbar.css';
 
 function AppNavbar() {
@@ -54,8 +55,7 @@ function AppNavbar() {
   const getDashboardRoute = () => {
     if (!user || !user.role) return '/login';
 
-    const role = (user.role || '').toLowerCase().trim();
-    switch (role) {
+    switch (toDbRole(user.role)) {
       case 'admin': return '/admin/dashboard';
       case 'school_admin': return '/school-admin/dashboard';
       case 'instructor': return '/teacher/dashboard';
@@ -114,7 +114,7 @@ function AppNavbar() {
               </Nav.Link>
 
               {/* Student Navigation */}
-              {user.role?.toLowerCase() === 'student' && (
+              {isRole(user, ROLES.STUDENT) && (
                 <>
                   <Nav.Link
                     as={Link}
@@ -144,7 +144,7 @@ function AppNavbar() {
               )}
 
               {/* Instructor Navigation */}
-              {user.role?.toLowerCase() === 'instructor' && (
+              {isRole(user, ROLES.INSTRUCTOR) && (
                 <>
                   <Nav.Link
                     as={Link}
@@ -182,7 +182,7 @@ function AppNavbar() {
               )}
 
               {/* Super Admin Navigation */}
-              {user.role?.toLowerCase() === 'admin' && (
+              {isRole(user, ROLES.ADMIN) && (
                 <NavDropdown title="Management" id="admin-nav-dropdown" className="nav-link-custom p-0">
                   <NavDropdown.Item as={Link} to="/admin/forms">Forms</NavDropdown.Item>
                   <NavDropdown.Item as={Link} to="/admin/classes">Classes</NavDropdown.Item>
@@ -196,7 +196,7 @@ function AppNavbar() {
               )}
 
               {/* Parent Navigation */}
-              {user.role?.toLowerCase() === 'parent' && (
+              {isRole(user, ROLES.PARENT) && (
                 <Nav.Link
                   as={Link}
                   to="/parent/dashboard"
@@ -208,7 +208,7 @@ function AppNavbar() {
               )}
 
               {/* School Admin Navigation */}
-              {user.role?.toLowerCase() === 'school_admin' && (
+              {isRole(user, ROLES.SCHOOL_ADMIN) && (
                 <NavDropdown title="Management" id="school-admin-nav-dropdown" className="nav-link-custom p-0">
                   <NavDropdown.Item as={Link} to="/school-admin/dashboard">Dashboard</NavDropdown.Item>
                   <NavDropdown.Divider />

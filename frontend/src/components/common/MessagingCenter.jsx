@@ -10,6 +10,7 @@ import { supabase } from '../../config/supabase';
 import ConversationView from './ConversationView';
 import Breadcrumb from './Breadcrumb';
 import { personName } from '../../utils/personName';
+import { isRole, ROLES } from '../../constants/roles';
 
 function MessagingCenter() {
   const { user } = useAuth();
@@ -31,8 +32,8 @@ function MessagingCenter() {
   const [studentsLoading, setStudentsLoading] = useState(false);
   const [recipientsLoading, setRecipientsLoading] = useState(false);
 
-  const isTeacher = user?.role?.toUpperCase() === 'INSTRUCTOR';
-  const isParent = user?.role?.toUpperCase() === 'PARENT';
+  const isTeacher = isRole(user, ROLES.INSTRUCTOR);
+  const isParent = isRole(user, ROLES.PARENT);
 
   const breadcrumbItems = [
     { label: 'Dashboard', path: isTeacher ? '/teacher/dashboard' : isParent ? '/parent/dashboard' : '/admin/dashboard', type: 'dashboard' },

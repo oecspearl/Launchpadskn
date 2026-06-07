@@ -5,6 +5,7 @@ import Papa from 'papaparse';
 import supabaseService from '../../services/supabaseService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { personName } from '../../utils/personName';
+import { toDbRole } from '../../constants/roles';
 
 function UserManagement() {
     const { user } = useAuth(); // ensure admin
@@ -221,7 +222,7 @@ function UserManagement() {
                             <td>
                                 <Form.Select
                                     size="sm"
-                                    value={(u.role || '').toLowerCase()}
+                                    value={toDbRole(u.role)}
                                     onChange={(e) => handleRoleChange(u.id, e.target.value)}
                                     style={{ width: '150px' }}
                                 >

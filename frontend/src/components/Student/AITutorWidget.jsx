@@ -5,6 +5,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useTutor } from '../../contexts/TutorContext';
+import { isRole, ROLES } from '../../constants/roles';
 import './AITutorWidget.css';
 
 function AITutorWidget() {
@@ -21,7 +22,7 @@ function AITutorWidget() {
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  const isStudent = user?.role?.toUpperCase() === 'STUDENT';
+  const isStudent = isRole(user, ROLES.STUDENT);
 
   const QUICK_ACTIONS = [
     { id: 'videos',     label: 'Videos',     icon: FaVideo,         color: '#e74c3c',

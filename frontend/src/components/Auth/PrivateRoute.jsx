@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { isRole, toDbRole } from '../../constants/roles';
 
 function PrivateRoute({ children, allowedRoles }) {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -59,14 +60,13 @@ function PrivateRoute({ children, allowedRoles }) {
     }
   }
 
-  // Check role permissions
+  // Check role permissions (casing-agnostic; treats teacher === instructor)
   if (allowedRoles && actualUser.role) {
-    const userRole = actualUser.role.toLowerCase();
-    const normalizedAllowedRoles = allowedRoles.map(r => r.toLowerCase());
+    const isAllowed = allowedRoles.some(r => isRole(actualUser.role, r));
 
-    if (!normalizedAllowedRoles.includes(userRole)) {
+    if (!isAllowed) {
       // Redirect to correct dashboard based on role
-      switch (userRole) {
+      switch (toDbRole(actualUser.role)) {
         case 'admin':
           return <Navigate to="/admin/dashboard" replace />;
         case 'school_admin':

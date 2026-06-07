@@ -12,6 +12,7 @@ import GlobalSearch from '../common/GlobalSearch';
 import NotificationCenter from '../common/NotificationCenter';
 import MessageIcon from '../common/MessageIcon';
 import { registerShortcutHandler, unregisterShortcutHandler } from '../../utils/keyboardShortcuts';
+import { toDbRole } from '../../constants/roles';
 import './TopBar.css';
 
 function TopBar() {
@@ -37,8 +38,7 @@ function TopBar() {
 
   const getDashboardRoute = () => {
     if (!user || !user.role) return '/login';
-    const role = (user.role || '').toLowerCase().trim();
-    switch (role) {
+    switch (toDbRole(user.role)) {
       case 'admin': return '/admin/dashboard';
       case 'school_admin': return '/school-admin/dashboard';
       case 'instructor': return '/teacher/dashboard';

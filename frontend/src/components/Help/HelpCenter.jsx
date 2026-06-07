@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaInfoCircle, FaSearch, FaArrowRight } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import helpContent from './helpContent';
+import { toDbRole } from '../../constants/roles';
 import './HelpPage.css';
 
 function HelpCenter() {
@@ -12,7 +13,7 @@ function HelpCenter() {
   const [activeKey, setActiveKey] = useState('0');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const role = (user?.role || 'student').toLowerCase();
+  const role = toDbRole(user?.role) || 'student';
   const content = helpContent[role] || helpContent.student;
   const Icon = content.icon;
 

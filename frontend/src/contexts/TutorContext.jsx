@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContextSupabase';
 import { supabase } from '../config/supabase';
 import tutorService from '../services/tutorService';
+import { isRole, ROLES } from '../constants/roles';
 
 const TutorContext = createContext(null);
 
@@ -21,7 +22,7 @@ export function TutorProvider({ children }) {
   const [error, setError] = useState(null);
   const [hideFab, setHideFab] = useState(false);
 
-  const isStudent = user?.role?.toUpperCase() === 'STUDENT';
+  const isStudent = isRole(user, ROLES.STUDENT);
   const studentId = user?.user_id;
   const prevPathRef = useRef(null);
 

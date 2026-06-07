@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { FaEnvelope, FaLock, FaBuilding, FaDatabase, FaBook, FaChartLine, FaUsers, FaGraduationCap } from 'react-icons/fa';
 import SKNFlagLogo from '../common/SKNFlagLogo';
+import { toDbRole } from '../../constants/roles';
 import './Auth.css';
 
 function getDashboardPath(role) {
@@ -66,7 +67,7 @@ function Login() {
       }
 
       if (actualIsAuthenticated && actualUser && actualUser.role) {
-        const role = (actualUser.role || '').toLowerCase().trim();
+        const role = toDbRole(actualUser.role);
 
         const dashboardPath = getDashboardPath(role);
 
@@ -101,7 +102,7 @@ function Login() {
         throw new Error('Login failed: No user data returned');
       }
 
-      const role = (userData?.role || '').toLowerCase();
+      const role = toDbRole(userData?.role);
 
       // Wait a moment for auth state to update
       await new Promise(resolve => setTimeout(resolve, 100));

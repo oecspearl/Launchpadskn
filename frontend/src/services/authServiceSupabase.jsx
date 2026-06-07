@@ -4,6 +4,7 @@
  */
 import { supabase } from '../config/supabase';
 import supabaseService from './supabaseService';
+import { normalizeRole, toDbRole } from '../constants/roles';
 
 const log = (...args) => {
   if (import.meta.env.DEV) console.log('[AuthService]', ...args);
@@ -37,7 +38,7 @@ class AuthService {
           id: authData.user.id,
           email: authData.user.email,
           name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || profile.name || authData.user.email.split('@')[0],
-          role: (profile.role || 'STUDENT').toUpperCase().trim(),
+          role: normalizeRole(profile.role),
           token: authData.session.access_token,
           refreshToken: authData.session.refresh_token,
           loginTime: Date.now()
@@ -67,7 +68,7 @@ class AuthService {
               id: authData.user.id,
               email: emailProfile.email,
               name: [emailProfile.first_name, emailProfile.last_name].filter(Boolean).join(' ').trim() || emailProfile.name || authData.user.email.split('@')[0],
-              role: (emailProfile.role || 'STUDENT').toUpperCase().trim(),
+              role: normalizeRole(emailProfile.role),
               token: authData.session.access_token,
               refreshToken: authData.session.refresh_token,
               loginTime: Date.now()
@@ -75,7 +76,7 @@ class AuthService {
           } else {
             // No profile found - create one with role from metadata or default to STUDENT
             warn('No profile found, creating new profile');
-            const role = (authData.user.user_metadata?.role || 'STUDENT').toUpperCase().trim();
+            const role = normalizeRole(authData.user.user_metadata?.role);
 
             userData = {
               userId: authData.user.id,
@@ -97,7 +98,7 @@ class AuthService {
                   email: userData.email,
                   first_name: (userData.name || '').split(' ')[0] || null,
                   last_name: (userData.name || '').split(' ').slice(1).join(' ') || null,
-                  role: (userData.role || 'student').toLowerCase(),
+                  role: toDbRole(userData.role),
                   is_active: true,
                   created_at: new Date().toISOString()
                 });
@@ -116,7 +117,7 @@ class AuthService {
             id: authData.user.id,
             email: authData.user.email,
             name: authData.user.email.split('@')[0],
-            role: (authData.user.user_metadata?.role || 'STUDENT').toUpperCase().trim(),
+            role: normalizeRole(authData.user.user_metadata?.role),
             token: authData.session.access_token,
             refreshToken: authData.session.refresh_token,
             loginTime: Date.now()
@@ -124,14 +125,9 @@ class AuthService {
         }
       }
 
-      // Validate role against known roles - default to STUDENT for unknown roles
-      const validRoles = ['ADMIN', 'SCHOOL_ADMIN', 'INSTRUCTOR', 'STUDENT'];
-      const normalizedRole = (userData.role || '').toUpperCase().trim();
-      if (normalizedRole === 'TEACHER') {
-        userData.role = 'INSTRUCTOR';
-      } else {
-        userData.role = validRoles.includes(normalizedRole) ? normalizedRole : 'STUDENT';
-      }
+      // Final guard: canonical in-app role (handles PARENT, TEACHER->INSTRUCTOR,
+      // SUPER_ADMIN->ADMIN, and unknown -> STUDENT) — same helper the context uses.
+      userData.role = normalizeRole(userData.role);
 
       log('Login successful:', { email: userData.email, role: userData.role });
 
@@ -177,7 +173,7 @@ class AuthService {
           email,
           first_name: String(name || '').trim().split(/\s+/).filter(Boolean)[0] || null,
           last_name: String(name || '').trim().split(/\s+/).filter(Boolean).slice(1).join(' ') || null,
-          role: (role || 'student').toString().toLowerCase(),
+          role: toDbRole(role),
           phone: phone || null,
           date_of_birth: dateOfBirth || null,
           address: address || null,

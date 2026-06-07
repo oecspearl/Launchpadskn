@@ -23,6 +23,7 @@ import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerCompo
 import ViewerErrorBoundary from '../InteractiveContent/Viewers/ViewerErrorBoundary';
 import DiscussionBoard from './DiscussionBoard';
 import './LessonView.css';
+import { isRole, ROLES } from '../../constants/roles';
 
 function LessonView() {
   const { lessonId } = useParams();
@@ -186,7 +187,7 @@ function LessonView() {
         }
 
         // Get student's attendance for this lesson
-        if (user && user.role?.toLowerCase() === 'student') {
+        if (user && isRole(user, ROLES.STUDENT)) {
           // Use numeric user_id, not UUID
           let studentId = user.user_id;
 

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaHome, FaChevronRight } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { toDbRole } from '../../constants/roles';
 import './Breadcrumb.css';
 
 const routeLabels = {
@@ -70,7 +71,7 @@ const routeLabels = {
 };
 
 const getDashboardRoute = (role) => {
-  switch ((role || '').toLowerCase().trim()) {
+  switch (toDbRole(role)) {
     case 'admin': return '/admin/dashboard';
     case 'school_admin': return '/school-admin/dashboard';
     case 'instructor': return '/teacher/dashboard';
