@@ -8,32 +8,31 @@ export const reportService = {
     const queries = [];
 
     // Students count
-    let studentQ = supabase.from('users').select('user_id', { count: 'exact', head: true }).eq('role', 'STUDENT').eq('is_active', true);
+    let studentQ = supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'student').eq('is_active', true);
     if (institutionId) studentQ = studentQ.eq('institution_id', institutionId);
     queries.push(studentQ);
 
     // Teachers count
-    let teacherQ = supabase.from('users').select('user_id', { count: 'exact', head: true }).eq('role', 'INSTRUCTOR').eq('is_active', true);
+    let teacherQ = supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', 'instructor').eq('is_active', true);
     if (institutionId) teacherQ = teacherQ.eq('institution_id', institutionId);
     queries.push(teacherQ);
 
     // Classes count
-    let classQ = supabase.from('classes').select('class_id', { count: 'exact', head: true }).eq('is_active', true);
+    let classQ = supabase.from('classes').select('id', { count: 'exact', head: true });
     if (institutionId) {
-      const { data: forms } = await supabase.from('forms').select('form_id').eq('school_id', institutionId).eq('is_active', true);
-      if (forms?.length) classQ = classQ.in('form_id', forms.map(f => f.form_id));
+      const { data: forms } = await supabase.from('forms').select('id').eq('institution_id', institutionId);
+      if (forms?.length) classQ = classQ.in('form_id', forms.map(f => f.id));
       else return { students: 0, teachers: 0, classes: 0, subjects: 0, forms: 0 };
     }
     queries.push(classQ);
 
     // Subjects count
-    let subjectQ = supabase.from('subjects').select('subject_id', { count: 'exact', head: true }).eq('is_active', true);
-    if (institutionId) subjectQ = subjectQ.eq('school_id', institutionId);
+    let subjectQ = supabase.from('subjects').select('id', { count: 'exact', head: true });
     queries.push(subjectQ);
 
     // Forms count
-    let formQ = supabase.from('forms').select('form_id', { count: 'exact', head: true }).eq('is_active', true);
-    if (institutionId) formQ = formQ.eq('school_id', institutionId);
+    let formQ = supabase.from('forms').select('id', { count: 'exact', head: true });
+    if (institutionId) formQ = formQ.eq('institution_id', institutionId);
     queries.push(formQ);
 
     const results = await Promise.allSettled(queries);
@@ -50,20 +49,20 @@ export const reportService = {
    * Get students grouped by form for the overview chart
    */
   async getStudentsByForm(institutionId = null) {
-    let formsQuery = supabase.from('forms').select('form_id, form_name, form_number').eq('is_active', true).order('form_number');
-    if (institutionId) formsQuery = formsQuery.eq('school_id', institutionId);
+    let formsQuery = supabase.from('forms').select('id, name, level').order('level');
+    if (institutionId) formsQuery = formsQuery.eq('institution_id', institutionId);
     const { data: forms } = await formsQuery;
     if (!forms?.length) return [];
 
-    const formIds = forms.map(f => f.form_id);
-    const { data: classes } = await supabase.from('classes').select('class_id, form_id').eq('is_active', true).in('form_id', formIds);
-    if (!classes?.length) return forms.map(f => ({ name: f.form_name || `Form ${f.form_number}`, students: 0 }));
+    const formIds = forms.map(f => f.id);
+    const { data: classes } = await supabase.from('classes').select('id, form_id').in('form_id', formIds);
+    if (!classes?.length) return forms.map(f => ({ name: f.name || `Form ${f.level}`, students: 0 }));
 
-    const classIds = classes.map(c => c.class_id);
+    const classIds = classes.map(c => c.id);
     const { data: assignments } = await supabase.from('student_class_assignments').select('class_id').eq('is_active', true).in('class_id', classIds);
 
     const classToForm = {};
-    classes.forEach(c => { classToForm[c.class_id] = c.form_id; });
+    classes.forEach(c => { classToForm[c.id] = c.form_id; });
 
     const formCounts = {};
     formIds.forEach(id => { formCounts[id] = 0; });
@@ -73,8 +72,8 @@ export const reportService = {
     });
 
     return forms.map(f => ({
-      name: f.form_name || `Form ${f.form_number}`,
-      students: formCounts[f.form_id] || 0
+      name: f.name || `Form ${f.level}`,
+      students: formCounts[f.id] || 0
     }));
   },
 
@@ -82,10 +81,10 @@ export const reportService = {
    * Get user distribution by role
    */
   async getUserDistribution(institutionId = null) {
-    const roles = ['STUDENT', 'INSTRUCTOR', 'SCHOOL_ADMIN', 'PARENT'];
+    const roles = ['student', 'instructor', 'school_admin', 'parent'];
     const results = [];
     for (const role of roles) {
-      let q = supabase.from('users').select('user_id', { count: 'exact', head: true }).eq('role', role).eq('is_active', true);
+      let q = supabase.from('users').select('id', { count: 'exact', head: true }).eq('role', role).eq('is_active', true);
       if (institutionId) q = q.eq('institution_id', institutionId);
       const { count } = await q;
       results.push({ role, count: count || 0 });
@@ -100,8 +99,8 @@ export const reportService = {
     // Get relevant class_subjects
     let classSubjectQuery = supabase.from('class_subjects').select(`
       class_subject_id,
-      class:classes(class_id, class_name, form_id, form:forms(form_name, form_number, school_id)),
-      subject_offering:subject_form_offerings(subject:subjects(subject_id, subject_name))
+      class:classes(id, name, form_id, form:forms(name, level, institution_id)),
+      subject_offering:subject_form_offerings(subject:subjects(id, name))
     `);
 
     const { data: classSubjects } = await classSubjectQuery;
@@ -109,27 +108,27 @@ export const reportService = {
 
     // Filter by institution/form/class
     let filtered = classSubjects.filter(cs => cs.class && cs.subject_offering?.subject);
-    if (institutionId) filtered = filtered.filter(cs => String(cs.class?.form?.school_id) === String(institutionId));
+    if (institutionId) filtered = filtered.filter(cs => String(cs.class?.form?.institution_id) === String(institutionId));
     if (formId) filtered = filtered.filter(cs => String(cs.class?.form_id) === String(formId));
-    if (classId) filtered = filtered.filter(cs => String(cs.class?.class_id) === String(classId));
+    if (classId) filtered = filtered.filter(cs => String(cs.class?.id) === String(classId));
     if (!filtered.length) return [];
 
     const csIds = filtered.map(cs => cs.class_subject_id);
 
     // Get assessments for these class_subjects
-    let assessmentQuery = supabase.from('subject_assessments').select('assessment_id, class_subject_id, assessment_name, total_marks, term').in('class_subject_id', csIds);
+    let assessmentQuery = supabase.from('subject_assessments').select('id, class_subject_id, title, total_marks, term').in('class_subject_id', csIds);
     if (term) assessmentQuery = assessmentQuery.eq('term', term);
     const { data: assessments } = await assessmentQuery;
     if (!assessments?.length) return [];
 
-    const assessmentIds = assessments.map(a => a.assessment_id);
+    const assessmentIds = assessments.map(a => a.id);
 
     // Get grades
     const { data: grades } = await supabase.from('student_grades').select('assessment_id, marks_obtained, percentage').in('assessment_id', assessmentIds);
 
     // Aggregate: group grades by class_subject_id
     const assessmentToCS = {};
-    assessments.forEach(a => { assessmentToCS[a.assessment_id] = a.class_subject_id; });
+    assessments.forEach(a => { assessmentToCS[a.id] = a.class_subject_id; });
 
     const csGrades = {};
     (grades || []).forEach(g => {
@@ -147,9 +146,9 @@ export const reportService = {
       const cs = csMap[csId];
       const avg = percentages.reduce((a, b) => a + b, 0) / percentages.length;
       return {
-        className: cs?.class?.class_name || '',
-        formName: cs?.class?.form?.form_name || `Form ${cs?.class?.form?.form_number}`,
-        subjectName: cs?.subject_offering?.subject?.subject_name || '',
+        className: cs?.class?.name || '',
+        formName: cs?.class?.form?.name || `Form ${cs?.class?.form?.level}`,
+        subjectName: cs?.subject_offering?.subject?.name || '',
         averageGrade: Math.round(avg * 10) / 10,
         studentCount: percentages.length,
         highest: Math.max(...percentages),
@@ -164,17 +163,17 @@ export const reportService = {
   async getGradeDistribution(institutionId, { term } = {}) {
     // Get all grades for the institution
     let assessmentQuery = supabase.from('subject_assessments').select(`
-      assessment_id, term,
-      class_subject:class_subjects(class:classes(form:forms(school_id)))
+      id, term,
+      class_subject:class_subjects(class:classes(form:forms(institution_id)))
     `);
     if (term) assessmentQuery = assessmentQuery.eq('term', term);
     const { data: assessments } = await assessmentQuery;
 
     let filtered = (assessments || []).filter(a => a.class_subject?.class?.form);
-    if (institutionId) filtered = filtered.filter(a => String(a.class_subject.class.form.school_id) === String(institutionId));
+    if (institutionId) filtered = filtered.filter(a => String(a.class_subject.class.form.institution_id) === String(institutionId));
     if (!filtered.length) return { A: 0, B: 0, C: 0, D: 0, F: 0 };
 
-    const aIds = filtered.map(a => a.assessment_id);
+    const aIds = filtered.map(a => a.id);
     const { data: grades } = await supabase.from('student_grades').select('percentage').in('assessment_id', aIds);
 
     const dist = { A: 0, B: 0, C: 0, D: 0, F: 0 };
@@ -193,12 +192,12 @@ export const reportService = {
    * Get top/bottom students by average grade
    */
   async getStudentRankings(institutionId, { term, limit = 10 } = {}) {
-    let studentQuery = supabase.from('users').select('user_id, name, email').eq('role', 'STUDENT').eq('is_active', true);
+    let studentQuery = supabase.from('users').select('id, first_name, last_name, email').eq('role', 'student').eq('is_active', true);
     if (institutionId) studentQuery = studentQuery.eq('institution_id', institutionId);
     const { data: students } = await studentQuery;
     if (!students?.length) return { top: [], bottom: [] };
 
-    const studentIds = students.map(s => s.user_id);
+    const studentIds = students.map(s => s.id);
 
     let gradeQuery = supabase.from('student_grades').select('student_id, percentage, assessment:subject_assessments(term)').in('student_id', studentIds);
     const { data: grades } = await gradeQuery;
@@ -215,11 +214,11 @@ export const reportService = {
     });
 
     const studentMap = {};
-    students.forEach(s => { studentMap[s.user_id] = s; });
+    students.forEach(s => { studentMap[s.id] = s; });
 
     const ranked = Object.entries(studentGrades).map(([sid, pcts]) => ({
       studentId: sid,
-      name: studentMap[sid]?.name || studentMap[sid]?.email || 'Unknown',
+      name: [studentMap[sid]?.first_name, studentMap[sid]?.last_name].filter(Boolean).join(' ') || studentMap[sid]?.email || 'Unknown',
       average: Math.round((pcts.reduce((a, b) => a + b, 0) / pcts.length) * 10) / 10,
       assessmentCount: pcts.length
     })).sort((a, b) => b.average - a.average);
@@ -235,16 +234,16 @@ export const reportService = {
    */
   async getAttendanceByClass(institutionId, { startDate, endDate } = {}) {
     // Get forms and classes for the institution
-    let formsQuery = supabase.from('forms').select('form_id').eq('is_active', true);
-    if (institutionId) formsQuery = formsQuery.eq('school_id', institutionId);
+    let formsQuery = supabase.from('forms').select('id');
+    if (institutionId) formsQuery = formsQuery.eq('institution_id', institutionId);
     const { data: forms } = await formsQuery;
     if (!forms?.length) return [];
 
-    const formIds = forms.map(f => f.form_id);
-    const { data: classes } = await supabase.from('classes').select('class_id, class_name, form_id, form:forms(form_name, form_number)').eq('is_active', true).in('form_id', formIds);
+    const formIds = forms.map(f => f.id);
+    const { data: classes } = await supabase.from('classes').select('id, name, form_id, form:forms(name, level)').in('form_id', formIds);
     if (!classes?.length) return [];
 
-    const classIds = classes.map(c => c.class_id);
+    const classIds = classes.map(c => c.id);
 
     // Get lessons for these classes
     let lessonQuery = supabase.from('lessons').select('lesson_id, class_subject:class_subjects(class_id)').in('class_subject_id',
@@ -253,7 +252,7 @@ export const reportService = {
     if (startDate) lessonQuery = lessonQuery.gte('lesson_date', startDate);
     if (endDate) lessonQuery = lessonQuery.lte('lesson_date', endDate);
     const { data: lessons } = await lessonQuery;
-    if (!lessons?.length) return classes.map(c => ({ className: c.class_name, formName: c.form?.form_name || `Form ${c.form?.form_number}`, totalRecords: 0, present: 0, absent: 0, late: 0, rate: 0 }));
+    if (!lessons?.length) return classes.map(c => ({ className: c.name, formName: c.form?.name || `Form ${c.form?.level}`, totalRecords: 0, present: 0, absent: 0, late: 0, rate: 0 }));
 
     const lessonIds = lessons.map(l => l.lesson_id);
     const lessonToClass = {};
@@ -278,7 +277,7 @@ export const reportService = {
     });
 
     const classMap = {};
-    classes.forEach(c => { classMap[c.class_id] = c; });
+    classes.forEach(c => { classMap[c.id] = c; });
 
     return Object.entries(classStats)
       .filter(([, s]) => s.total > 0)
@@ -286,8 +285,8 @@ export const reportService = {
         const c = classMap[cid];
         const rate = s.total > 0 ? Math.round(((s.present + s.late) / s.total) * 1000) / 10 : 0;
         return {
-          className: c?.class_name || '',
-          formName: c?.form?.form_name || `Form ${c?.form?.form_number}`,
+          className: c?.name || '',
+          formName: c?.form?.name || `Form ${c?.form?.level}`,
           totalRecords: s.total,
           present: s.present,
           absent: s.absent,
@@ -303,8 +302,8 @@ export const reportService = {
    * Get forms list for filter dropdowns
    */
   async getForms(institutionId) {
-    let q = supabase.from('forms').select('form_id, form_name, form_number').eq('is_active', true).order('form_number');
-    if (institutionId) q = q.eq('school_id', institutionId);
+    let q = supabase.from('forms').select('id, name, level').order('level');
+    if (institutionId) q = q.eq('institution_id', institutionId);
     const { data } = await q;
     return data || [];
   },
@@ -313,7 +312,7 @@ export const reportService = {
    * Get classes for a form (for filter dropdowns)
    */
   async getClassesByForm(formId) {
-    const { data } = await supabase.from('classes').select('class_id, class_name, class_code').eq('form_id', formId).eq('is_active', true).order('class_name');
+    const { data } = await supabase.from('classes').select('id, name').eq('form_id', formId).order('name');
     return data || [];
   }
 };

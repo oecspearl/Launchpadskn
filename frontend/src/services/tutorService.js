@@ -13,9 +13,9 @@ const tutorService = {
         class_subject:class_subjects(
           class_subject_id,
           subject_offering:subject_form_offerings(
-            subject:subjects(subject_name)
+            subject:subjects(name)
           ),
-          class:classes(class_name, form:forms(form_name))
+          class:classes(name, form:forms(name))
         ),
         lesson:lessons(lesson_title, topic)
       `)
@@ -209,9 +209,9 @@ const tutorService = {
       .select(`
         class_subject_id,
         subject_offering:subject_form_offerings(
-          subject:subjects(subject_name)
+          subject:subjects(name)
         ),
-        class:classes(class_name, class_id, form:forms(form_name))
+        class:classes(name, id, form:forms(name))
       `)
       .eq('teacher_id', teacherId);
 
@@ -262,7 +262,7 @@ const tutorService = {
       .from('tutor_student_overrides')
       .select(`
         *,
-        student:users!tutor_student_overrides_student_id_fkey(user_id, name, email)
+        student:users!tutor_student_overrides_student_id_fkey(id, first_name, last_name, email)
       `)
       .eq('class_subject_id', classSubjectId);
 
@@ -316,11 +316,11 @@ const tutorService = {
     // Get basic info
     const { data: user } = await supabase
       .from('users')
-      .select('name')
-      .eq('user_id', studentId)
+      .select('first_name, last_name')
+      .eq('id', studentId)
       .maybeSingle();
 
-    if (user) profile.name = user.name || '';
+    if (user) profile.name = [user.first_name, user.last_name].filter(Boolean).join(' ');
 
     // Get student profile (grade level)
     const { data: sp } = await supabase

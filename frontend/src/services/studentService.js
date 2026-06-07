@@ -468,7 +468,7 @@ export const studentService = {
             .from('student_quiz_attempts')
             .select(`
         *,
-        student:users!student_quiz_attempts_student_id_fkey(user_id, name, email),
+        student:users!student_quiz_attempts_student_id_fkey(id, first_name, last_name, email),
         responses:student_quiz_responses(
           *,
           question:quiz_questions(*),
@@ -493,7 +493,7 @@ export const studentService = {
             .from('student_quiz_attempts')
             .select(`
         *,
-        student:users!student_quiz_attempts_student_id_fkey(user_id, name, email)
+        student:users!student_quiz_attempts_student_id_fkey(id, first_name, last_name, email)
       `)
             .eq('quiz_id', quizId)
             .not('submitted_at', 'is', null)
@@ -510,7 +510,7 @@ export const studentService = {
             marks_obtained: grade.marks_obtained,
             percentage: grade.percentage,
             grade_letter: grade.grade_letter,
-            comments: grade.comments || null
+            comment: grade.comments || null
         }));
 
         const { data, error } = await supabase
@@ -525,25 +525,10 @@ export const studentService = {
     },
 
     async getStudentGrades(studentId, academicYear = null) {
-        // Handle UUID vs numeric ID
-        let numericStudentId = studentId;
-        if (typeof studentId === 'string' && studentId.includes('-')) {
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', studentId)
-                .maybeSingle();
-            if (userProfile && userProfile.user_id) {
-                numericStudentId = userProfile.user_id;
-            } else {
-                return [];
-            }
-        }
-
         const { data: classAssignment } = await supabase
             .from('student_class_assignments')
             .select('class_id')
-            .eq('student_id', numericStudentId)
+            .eq('student_id', studentId)
             .eq('is_active', true)
             .maybeSingle();
 
@@ -571,7 +556,7 @@ export const studentService = {
           )
         )
       `)
-            .eq('student_id', numericStudentId)
+            .eq('student_id', studentId)
             .in('assessment.class_subject_id', classSubjectIds);
 
         if (error) throw error;

@@ -13,27 +13,10 @@ import { supabase } from '../config/supabase';
  */
 export const getNotifications = async (userId, options = {}) => {
     try {
-        // Resolve numeric user ID if UUID is passed
-        let numericUserId = userId;
-        if (typeof userId === 'string' && userId.includes('-')) {
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', userId)
-                .maybeSingle();
-
-            if (userProfile) {
-                numericUserId = userProfile.user_id;
-            } else {
-                console.warn('Could not resolve UUID to numeric ID for notifications');
-                return [];
-            }
-        }
-
         let query = supabase
             .from('notifications')
             .select('*')
-            .eq('user_id', numericUserId)
+            .eq('user_id', userId)
             .order('created_at', { ascending: false });
 
         // Apply filters
@@ -46,10 +29,14 @@ export const getNotifications = async (userId, options = {}) => {
         }
 
         if (options.archived !== undefined) {
-            query = query.eq('is_archived', options.archived);
+            if (options.archived) {
+                query = query.not('archived_at', 'is', null);
+            } else {
+                query = query.is('archived_at', null);
+            }
         } else {
             // By default, exclude archived
-            query = query.eq('is_archived', false);
+            query = query.is('archived_at', null);
         }
 
         if (options.limit) {
@@ -74,28 +61,12 @@ export const getNotifications = async (userId, options = {}) => {
  */
 export const getUnreadCount = async (userId) => {
     try {
-        // Resolve numeric user ID if UUID is passed
-        let numericUserId = userId;
-        if (typeof userId === 'string' && userId.includes('-')) {
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', userId)
-                .maybeSingle();
-
-            if (userProfile) {
-                numericUserId = userProfile.user_id;
-            } else {
-                return 0;
-            }
-        }
-
         const { count, error } = await supabase
             .from('notifications')
             .select('*', { count: 'exact', head: true })
-            .eq('user_id', numericUserId)
+            .eq('user_id', userId)
             .eq('is_read', false)
-            .eq('is_archived', false);
+            .is('archived_at', null);
 
         if (error) throw error;
 
@@ -114,30 +85,14 @@ export const getUnreadCount = async (userId) => {
  */
 export const markAsRead = async (userId, notificationIds = null) => {
     try {
-        // Resolve numeric user ID if UUID is passed
-        let numericUserId = userId;
-        if (typeof userId === 'string' && userId.includes('-')) {
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', userId)
-                .maybeSingle();
-
-            if (userProfile) {
-                numericUserId = userProfile.user_id;
-            } else {
-                throw new Error('User not found');
-            }
-        }
-
         if (notificationIds === null) {
             // Mark all as read
             const { data, error } = await supabase
                 .from('notifications')
-                .update({ is_read: true, read_at: new Date().toISOString() })
-                .eq('user_id', numericUserId)
+                .update({ is_read: true })
+                .eq('user_id', userId)
                 .eq('is_read', false)
-                .eq('is_archived', false);
+                .is('archived_at', null);
 
             if (error) throw error;
             return { success: true, data };
@@ -147,9 +102,9 @@ export const markAsRead = async (userId, notificationIds = null) => {
 
             const { data, error } = await supabase
                 .from('notifications')
-                .update({ is_read: true, read_at: new Date().toISOString() })
-                .in('notification_id', ids)
-                .eq('user_id', numericUserId);
+                .update({ is_read: true })
+                .in('id', ids)
+                .eq('user_id', userId);
 
             if (error) throw error;
             return { success: true, data };
@@ -172,8 +127,8 @@ export const archiveNotifications = async (userId, notificationIds) => {
 
         const { data, error } = await supabase
             .from('notifications')
-            .update({ is_archived: true })
-            .in('notification_id', ids)
+            .update({ archived_at: new Date().toISOString() })
+            .in('id', ids)
             .eq('user_id', userId);
 
         if (error) throw error;
@@ -197,7 +152,7 @@ export const deleteNotifications = async (userId, notificationIds) => {
         const { data, error } = await supabase
             .from('notifications')
             .delete()
-            .in('notification_id', ids)
+            .in('id', ids)
             .eq('user_id', userId);
 
         if (error) throw error;
@@ -241,26 +196,10 @@ export const createNotification = async (notification) => {
  */
 export const getPreferences = async (userId) => {
     try {
-        // Resolve numeric user ID if UUID is passed
-        let numericUserId = userId;
-        if (typeof userId === 'string' && userId.includes('-')) {
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', userId)
-                .maybeSingle();
-
-            if (userProfile) {
-                numericUserId = userProfile.user_id;
-            } else {
-                return getDefaultPreferences();
-            }
-        }
-
         const { data, error } = await supabase
             .from('notification_preferences')
             .select('*')
-            .eq('user_id', numericUserId)
+            .eq('user_id', userId)
             .single();
 
         if (error) {
@@ -286,26 +225,10 @@ export const getPreferences = async (userId) => {
  */
 export const updatePreferences = async (userId, preferences) => {
     try {
-        // Resolve numeric user ID if UUID is passed
-        let numericUserId = userId;
-        if (typeof userId === 'string' && userId.includes('-')) {
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', userId)
-                .maybeSingle();
-
-            if (userProfile) {
-                numericUserId = userProfile.user_id;
-            } else {
-                throw new Error('User not found');
-            }
-        }
-
         const { data, error } = await supabase
             .from('notification_preferences')
             .upsert({
-                user_id: numericUserId,
+                user_id: userId,
                 ...preferences,
                 updated_at: new Date().toISOString()
             })

@@ -9,8 +9,7 @@ export const messageService = {
     const { data: participations } = await supabase
       .from('conversation_participants')
       .select('conversation_id')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+      .eq('user_id', userId);
 
     if (!participations?.length) return [];
 
@@ -21,27 +20,25 @@ export const messageService = {
       .from('conversations')
       .select(`
         *,
-        student:users!conversations_student_id_fkey(user_id, name, email),
-        creator:users!conversations_created_by_fkey(user_id, name, email)
+        student:users!conversations_student_id_fkey(id, first_name, last_name, email)
       `)
-      .in('conversation_id', convIds)
-      .order('last_message_at', { ascending: false });
+      .in('id', convIds)
+      .order('updated_at', { ascending: false });
 
     if (!conversations?.length) return [];
 
     // Get participants for each conversation
     const { data: allParticipants } = await supabase
       .from('conversation_participants')
-      .select('conversation_id, user_id, last_read_at, user:users(user_id, name, email, role)')
-      .in('conversation_id', convIds)
-      .eq('is_active', true);
+      .select('conversation_id, user_id, last_read_at, user:users(id, first_name, last_name, email, role)')
+      .in('conversation_id', convIds);
 
     // Get last message for each conversation
     const lastMessages = {};
     for (const convId of convIds) {
       const { data: msgs } = await supabase
         .from('messages')
-        .select('message_id, message_text, sender_id, created_at')
+        .select('id, content, sender_id, created_at')
         .eq('conversation_id', convId)
         .order('created_at', { ascending: false })
         .limit(1);
@@ -63,7 +60,7 @@ export const messageService = {
 
       let countQuery = supabase
         .from('messages')
-        .select('message_id', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('conversation_id', convId)
         .neq('sender_id', userId);
 
@@ -84,10 +81,10 @@ export const messageService = {
 
     return conversations.map(c => ({
       ...c,
-      participants: participantMap[c.conversation_id] || [],
-      otherParticipants: (participantMap[c.conversation_id] || []).filter(p => String(p.user_id) !== String(userId)),
-      lastMessage: lastMessages[c.conversation_id] || null,
-      unreadCount: unreadCounts[c.conversation_id] || 0
+      participants: participantMap[c.id] || [],
+      otherParticipants: (participantMap[c.id] || []).filter(p => String(p.id) !== String(userId)),
+      lastMessage: lastMessages[c.id] || null,
+      unreadCount: unreadCounts[c.id] || 0
     }));
   },
 
@@ -99,7 +96,7 @@ export const messageService = {
       .from('messages')
       .select(`
         *,
-        sender:users!messages_sender_id_fkey(user_id, name, email, role)
+        sender:users!messages_sender_id_fkey(id, first_name, last_name, email, role)
       `)
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: true })
@@ -118,21 +115,21 @@ export const messageService = {
       .insert({
         conversation_id: conversationId,
         sender_id: senderId,
-        message_text: messageText
+        content: messageText
       })
       .select(`
         *,
-        sender:users!messages_sender_id_fkey(user_id, name, email, role)
+        sender:users!messages_sender_id_fkey(id, first_name, last_name, email, role)
       `)
       .single();
 
     if (error) throw error;
 
-    // Update last_message_at on conversation
+    // Update conversation recency
     await supabase
       .from('conversations')
-      .update({ last_message_at: new Date().toISOString() })
-      .eq('conversation_id', conversationId);
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
 
     return data;
   },
@@ -145,10 +142,8 @@ export const messageService = {
     const { data: conversation, error } = await supabase
       .from('conversations')
       .insert({
-        institution_id: institutionId,
         student_id: studentId,
-        subject,
-        created_by: createdBy
+        title: subject
       })
       .select()
       .single();
@@ -158,7 +153,7 @@ export const messageService = {
     // Add participants (including creator)
     const allParticipants = [...new Set([...participantIds, createdBy])];
     const participantInserts = allParticipants.map(uid => ({
-      conversation_id: conversation.conversation_id,
+      conversation_id: conversation.id,
       user_id: uid,
       last_read_at: String(uid) === String(createdBy) ? new Date().toISOString() : null
     }));
@@ -175,8 +170,7 @@ export const messageService = {
     const { data: participations } = await supabase
       .from('conversation_participants')
       .select('conversation_id, last_read_at')
-      .eq('user_id', userId)
-      .eq('is_active', true);
+      .eq('user_id', userId);
 
     if (!participations?.length) return 0;
 
@@ -184,7 +178,7 @@ export const messageService = {
     for (const p of participations) {
       let query = supabase
         .from('messages')
-        .select('message_id', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
         .eq('conversation_id', p.conversation_id)
         .neq('sender_id', userId);
 
@@ -230,8 +224,8 @@ export const messageService = {
           // Fetch sender info
           const { data: sender } = await supabase
             .from('users')
-            .select('user_id, name, email, role')
-            .eq('user_id', payload.new.sender_id)
+            .select('id, first_name, last_name, email, role')
+            .eq('id', payload.new.sender_id)
             .single();
 
           callback({ ...payload.new, sender });
@@ -289,8 +283,8 @@ export const messageService = {
       .select(`
         student_id,
         class_id,
-        student:users!student_class_assignments_student_id_fkey(user_id, name, email),
-        class:classes(class_id, class_name, form:forms(form_name, form_number))
+        student:users!student_class_assignments_student_id_fkey(id, first_name, last_name, email),
+        class:classes(id, name, form:forms(name, level))
       `)
       .in('class_id', classIds)
       .eq('is_active', true);
@@ -320,10 +314,9 @@ export const messageService = {
       .from('parent_student_links')
       .select(`
         parent_id,
-        parent:users!parent_student_links_parent_id_fkey(user_id, name, email)
+        parent:users!parent_student_links_parent_id_fkey(id, first_name, last_name, email)
       `)
-      .eq('student_id', studentId)
-      .eq('is_active', true);
+      .eq('student_id', studentId);
 
     return (data || []).map(d => d.parent).filter(Boolean);
   },
@@ -347,8 +340,8 @@ export const messageService = {
       .from('class_subjects')
       .select(`
         teacher_id,
-        teacher:users!class_subjects_teacher_id_fkey(user_id, name, email),
-        subject_offering:subject_form_offerings(subject:subjects(subject_name))
+        teacher:users!class_subjects_teacher_id_fkey(id, first_name, last_name, email),
+        subject_offering:subject_form_offerings(subject:subjects(name))
       `)
       .eq('class_id', assignment.class_id);
 
@@ -364,7 +357,7 @@ export const messageService = {
           subjects: []
         };
       }
-      const subjectName = cs.subject_offering?.subject?.subject_name;
+      const subjectName = cs.subject_offering?.subject?.name;
       if (subjectName) teacherMap[cs.teacher_id].subjects.push(subjectName);
     });
 

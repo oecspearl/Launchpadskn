@@ -19,13 +19,15 @@ export const institutionService = {
         if (!institution) return null;
         return {
             ...institution,
-            establishedYear: institution.established_year || institution.establishedYear,
-            institutionId: institution.institution_id || institution.institutionId,
+            // institutions PK is `id` (uuid); expose it as institutionId for legacy callers
+            institutionId: institution.id || institution.institutionId,
             createdAt: institution.created_at || institution.createdAt,
-            institutionType: institution.institution_type || institution.institutionType,
+            // institutions schema uses `type` (not institution_type) and `principal_name`
+            institutionType: institution.type || institution.institutionType,
+            type: institution.type ?? institution.institutionType ?? null,
+            island: institution.island ?? null,
             logoUrl: institution.logo_url || institution.logoUrl || null,
-            principal: institution.principal || null,
-            canAddStudents: institution.can_add_students ?? institution.canAddStudents ?? false
+            principal: institution.principal_name || institution.principal || null
         };
     },
 
@@ -35,18 +37,17 @@ export const institutionService = {
     transformInstitutionForDB(institutionData) {
         const transformed = { ...institutionData };
 
-        // Handle establishedYear -> established_year
+        // establishedYear has no column in the institutions schema – drop it
         if (transformed.establishedYear !== undefined) {
-            transformed.established_year = transformed.establishedYear;
             delete transformed.establishedYear;
         }
 
-        // Handle institutionId -> institution_id (don't include in updates/inserts)
+        // institutions PK is `id`; don't include the legacy institutionId in updates/inserts
         if (transformed.institutionId !== undefined) {
             delete transformed.institutionId;
         }
 
-        // Valid DB values for institution_type CHECK constraint
+        // Valid DB values for the institution `type` column
         const VALID_DB_TYPES = ['SECONDARY_SCHOOL', 'PRIMARY_SCHOOL', 'TERTIARY_INSTITUTION', 'MINISTRY_OF_EDUCATION', 'OTHER'];
 
         const normalizeType = (val) => {
@@ -61,21 +62,15 @@ export const institutionService = {
             return 'SECONDARY_SCHOOL';
         };
 
-        // Handle institutionType (camelCase) -> institution_type (DB column)
+        // Handle institutionType (camelCase) -> `type` (DB column)
         if (transformed.institutionType !== undefined) {
-            transformed.institution_type = normalizeType(transformed.institutionType);
+            transformed.type = normalizeType(transformed.institutionType);
             delete transformed.institutionType;
         }
 
-        // Legacy 'type' field handling – map to institution_type if present
-        if (transformed.type !== undefined) {
-            transformed.institution_type = normalizeType(transformed.type);
-            delete transformed.type;
-        }
-
-        // Normalize existing institution_type if present
-        if (transformed.institution_type) {
-            transformed.institution_type = normalizeType(transformed.institution_type);
+        // Normalize existing `type` if present
+        if (transformed.type) {
+            transformed.type = normalizeType(transformed.type);
         }
 
         // Handle logoUrl -> logo_url
@@ -84,9 +79,14 @@ export const institutionService = {
             delete transformed.logoUrl;
         }
 
-        // Handle canAddStudents -> can_add_students
+        // Handle principal -> principal_name (DB column)
+        if (transformed.principal !== undefined) {
+            transformed.principal_name = transformed.principal;
+            delete transformed.principal;
+        }
+
+        // canAddStudents has no column in the institutions schema – drop it
         if (transformed.canAddStudents !== undefined) {
-            transformed.can_add_students = transformed.canAddStudents;
             delete transformed.canAddStudents;
         }
 
@@ -116,7 +116,7 @@ export const institutionService = {
         const { data, error } = await supabase
             .from('institutions')
             .select('*')
-            .eq('institution_id', id)
+            .eq('id', id)
             .single();
 
         if (error) throw error;
@@ -142,7 +142,7 @@ export const institutionService = {
         const { data, error } = await supabase
             .from('institutions')
             .update(dbUpdates)
-            .eq('institution_id', id)
+            .eq('id', id)
             .select()
             .single();
 
@@ -154,7 +154,7 @@ export const institutionService = {
         const { error } = await supabase
             .from('institutions')
             .delete()
-            .eq('institution_id', id);
+            .eq('id', id);
 
         if (error) throw error;
     },
@@ -203,9 +203,9 @@ export const institutionService = {
         const { data, error } = await supabase
             .from('forms')
             .select('*')
-            .eq('school_id', schoolId)
+            .eq('institution_id', schoolId)
             .eq('is_active', true)
-            .order('form_number');
+            .order('level');
 
         if (error) throw error;
         return data;
@@ -214,14 +214,14 @@ export const institutionService = {
     async getFormsBySchool(schoolId) {
         let query = supabase
             .from('forms')
-            .select('*, coordinator:users!forms_coordinator_id_fkey(name, email), school:institutions!forms_school_id_fkey(institution_id, name)')
+            .select('*, coordinator:users!forms_coordinator_id_fkey(first_name, last_name, email), school:institutions!forms_institution_id_fkey(id, name)')
             .eq('is_active', true)
-            .order('school_id', { ascending: true })
-            .order('form_number', { ascending: true });
+            .order('institution_id', { ascending: true })
+            .order('level', { ascending: true });
 
-        // Only filter by school_id if it's provided
+        // Only filter by institution_id if it's provided
         if (schoolId !== null && schoolId !== undefined) {
-            query = query.eq('school_id', schoolId);
+            query = query.eq('institution_id', schoolId);
         }
 
         const { data, error } = await query;
@@ -234,7 +234,7 @@ export const institutionService = {
         const { data, error } = await supabase
             .from('forms')
             .select('*, coordinator:users!forms_coordinator_id_fkey(*)')
-            .eq('form_id', formId)
+            .eq('id', formId)
             .single();
 
         if (error) throw error;
@@ -255,8 +255,8 @@ export const institutionService = {
     async updateForm(formId, updates) {
         const { data, error } = await supabase
             .from('forms')
-            .update({ ...updates, updated_at: new Date().toISOString() })
-            .eq('form_id', formId)
+            .update({ ...updates })
+            .eq('id', formId)
             .select()
             .single();
 
@@ -267,8 +267,8 @@ export const institutionService = {
     async deleteForm(formId) {
         const { data, error } = await supabase
             .from('forms')
-            .update({ is_active: false, updated_at: new Date().toISOString() })
-            .eq('form_id', formId)
+            .update({ is_active: false })
+            .eq('id', formId)
             .select()
             .single();
 
@@ -284,29 +284,26 @@ export const institutionService = {
     // SUBJECTS
     // ============================================
 
-    async getAllSubjects(schoolId) {
+    async getAllSubjects(_schoolId) {
+        // NOTE: the subjects table has no school_id/institution scoping column,
+        // so the schoolId argument can no longer filter the query.
         const { data, error } = await supabase
             .from('subjects')
             .select('*')
-            .eq('school_id', schoolId)
             .eq('is_active', true)
-            .order('subject_name');
+            .order('name');
 
         if (error) throw error;
         return data;
     },
 
-    async getSubjectsBySchool(schoolId) {
-        let query = supabase
+    async getSubjectsBySchool(_schoolId) {
+        // NOTE: subjects has no school_id column, so the schoolId filter is dropped.
+        const query = supabase
             .from('subjects')
             .select('*, department:departments(*)')
             .eq('is_active', true)
-            .order('subject_name', { ascending: true });
-
-        // Only filter by school_id if it's provided
-        if (schoolId !== null && schoolId !== undefined) {
-            query = query.eq('school_id', schoolId);
-        }
+            .order('name', { ascending: true });
 
         const { data, error } = await query;
 
@@ -318,7 +315,7 @@ export const institutionService = {
         const { data, error } = await supabase
             .from('subjects')
             .select('*, department:departments(*)')
-            .eq('subject_id', subjectId)
+            .eq('id', subjectId)
             .single();
 
         if (error) throw error;
@@ -339,8 +336,8 @@ export const institutionService = {
     async updateSubject(subjectId, updates) {
         const { data, error } = await supabase
             .from('subjects')
-            .update({ ...updates, updated_at: new Date().toISOString() })
-            .eq('subject_id', subjectId)
+            .update({ ...updates })
+            .eq('id', subjectId)
             .select()
             .single();
 
@@ -351,19 +348,19 @@ export const institutionService = {
     async deleteSubject(subjectId) {
         const { error } = await supabase
             .from('subjects')
-            .update({ is_active: false, updated_at: new Date().toISOString() })
-            .eq('subject_id', subjectId);
+            .update({ is_active: false })
+            .eq('id', subjectId);
 
         if (error) throw error;
     },
 
-    async getSubjectsByInstitution(institutionId) {
+    async getSubjectsByInstitution(_institutionId) {
+        // NOTE: subjects has no school_id/institution column; institution filter dropped.
         const { data, error } = await supabase
             .from('subjects')
             .select('*')
-            .eq('school_id', institutionId)
             .eq('is_active', true)
-            .order('subject_name');
+            .order('name');
 
         if (error) throw error;
         return data || [];
@@ -379,12 +376,12 @@ export const institutionService = {
         if (schoolId) {
             const { data: forms } = await supabase
                 .from('forms')
-                .select('form_id')
-                .eq('school_id', schoolId)
+                .select('id')
+                .eq('institution_id', schoolId)
                 .eq('is_active', true);
 
             if (forms && forms.length > 0) {
-                formIds = forms.map(f => f.form_id);
+                formIds = forms.map(f => f.id);
             } else {
                 return [];
             }

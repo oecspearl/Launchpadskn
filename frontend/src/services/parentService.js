@@ -5,37 +5,20 @@ import studentInformationService from './studentInformationService';
 
 export const parentService = {
     /**
-     * Resolve UUID to numeric user_id if needed
-     */
-    async _resolveUserId(userId) {
-        if (typeof userId === 'string' && userId.includes('-')) {
-            const { data } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', userId)
-                .maybeSingle();
-            return data?.user_id || null;
-        }
-        return userId;
-    },
-
-    /**
      * Get all children linked to this parent
      */
     async getLinkedChildren(parentUserId) {
-        const numericId = await this._resolveUserId(parentUserId);
-        if (!numericId) return [];
+        if (!parentUserId) return [];
 
         const { data, error } = await supabase
             .from('parent_student_links')
             .select(`
                 *,
-                student:users!parent_student_links_student_user_id_fkey(
-                    user_id, name, email, phone, profile_image_url, is_active
+                student:users!parent_student_links_student_id_fkey(
+                    id, first_name, last_name, email, phone, profile_image_url, is_active
                 )
             `)
-            .eq('parent_user_id', numericId)
-            .eq('is_active', true);
+            .eq('parent_id', parentUserId);
 
         if (error) throw error;
         return data || [];
@@ -99,11 +82,10 @@ export const parentService = {
         const { data, error } = await supabase
             .from('parent_student_links')
             .insert({
-                parent_user_id: parentUserId,
-                student_user_id: studentUserId,
+                parent_id: parentUserId,
+                student_id: studentUserId,
                 relationship: relationship || 'PARENT',
-                is_primary_contact: isPrimary || false,
-                linked_by: linkedBy
+                is_primary: isPrimary || false
             })
             .select()
             .single();
@@ -118,8 +100,8 @@ export const parentService = {
     async unlinkParentFromStudent(linkId) {
         const { data, error } = await supabase
             .from('parent_student_links')
-            .update({ is_active: false, updated_at: new Date().toISOString() })
-            .eq('link_id', linkId)
+            .delete()
+            .eq('id', linkId)
             .select()
             .single();
 
@@ -135,12 +117,11 @@ export const parentService = {
             .from('parent_student_links')
             .select(`
                 *,
-                parent:users!parent_student_links_parent_user_id_fkey(
-                    user_id, name, email, phone
+                parent:users!parent_student_links_parent_id_fkey(
+                    id, first_name, last_name, email, phone
                 )
             `)
-            .eq('student_user_id', studentUserId)
-            .eq('is_active', true);
+            .eq('student_id', studentUserId);
 
         if (error) throw error;
         return data || [];

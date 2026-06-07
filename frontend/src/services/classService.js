@@ -13,7 +13,7 @@ export const classService = {
         *,
         form:forms!inner(*)
       `)
-            .eq('form.school_id', institutionId)
+            .eq('form.institution_id', institutionId)
             .eq('is_active', true)
             .order('created_at', { ascending: false });
 
@@ -24,10 +24,10 @@ export const classService = {
     async getClassesByForm(formId) {
         const { data, error } = await supabase
             .from('classes')
-            .select('*, form_tutor:users!classes_form_tutor_id_fkey(name, email)')
+            .select('*, form_tutor:users!classes_form_tutor_id_fkey(first_name, last_name, email)')
             .eq('form_id', formId)
             .eq('is_active', true)
-            .order('class_name', { ascending: true });
+            .order('name', { ascending: true });
 
         if (error) throw error;
         return data;
@@ -39,9 +39,9 @@ export const classService = {
             .select(`
         *,
         form:forms(*),
-        form_tutor:users!classes_form_tutor_id_fkey(name, email),
+        form_tutor:users!classes_form_tutor_id_fkey(first_name, last_name, email),
         instructors:class_instructors(
-          instructor:users(name, email, user_id)
+          instructor:users(first_name, last_name, email, id)
         )
       `)
             .eq('is_active', true);
@@ -60,15 +60,15 @@ export const classService = {
 
                 const { data: tutorClasses } = await supabase
                     .from('classes')
-                    .select('class_id')
+                    .select('id')
                     .eq('form_tutor_id', userId)
                     .eq('is_active', true);
 
-                const tutorClassIds = tutorClasses?.map(c => c.class_id) || [];
+                const tutorClassIds = tutorClasses?.map(c => c.id) || [];
                 const allClassIds = [...new Set([...classIds, ...tutorClassIds])];
 
                 if (allClassIds.length > 0) {
-                    query = query.or(`class_id.in.(${allClassIds.join(',')}),published.eq.true`);
+                    query = query.or(`id.in.(${allClassIds.join(',')}),published.eq.true`);
                 } else {
                     query = query.eq('published', true);
                 }
@@ -86,7 +86,7 @@ export const classService = {
                 const enrolledClassIds = enrollments?.map(e => e.class_id) || [];
 
                 if (enrolledClassIds.length > 0) {
-                    query = query.or(`class_id.in.(${enrolledClassIds.join(',')}),published.eq.true`);
+                    query = query.or(`id.in.(${enrolledClassIds.join(',')}),published.eq.true`);
                 } else {
                     query = query.eq('published', true);
                 }
@@ -109,9 +109,9 @@ export const classService = {
             .select(`
         *,
         form:forms(*),
-        form_tutor:users!classes_form_tutor_id_fkey(name, email),
+        form_tutor:users!classes_form_tutor_id_fkey(first_name, last_name, email),
         instructors:class_instructors(
-          instructor:users(name, email)
+          instructor:users(first_name, last_name, email)
         )
       `)
             .eq('published', true)
@@ -130,7 +130,7 @@ export const classService = {
         }
 
         if (filters.search) {
-            query = query.or(`class_name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+            query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
         }
 
         const { data, error } = await query.order('featured', { ascending: false }).order('created_at', { ascending: false });
@@ -147,18 +147,18 @@ export const classService = {
         form_tutor:users!classes_form_tutor_id_fkey(*),
         form:forms(*),
         instructors:class_instructors(
-          instructor:users(name, email, user_id, role),
+          instructor:users(first_name, last_name, email, id, role),
           role,
           assigned_at
         ),
         students:student_class_assignments(
-          student:users(name, email, user_id),
+          student:users(first_name, last_name, email, id),
           enrollment_type,
           enrolled_at,
           progress_percentage
         )
       `)
-            .eq('class_id', classId)
+            .eq('id', classId)
             .single();
 
         if (error) throw error;
@@ -180,7 +180,7 @@ export const classService = {
         const { data, error } = await supabase
             .from('classes')
             .update({ ...updates, updated_at: new Date().toISOString() })
-            .eq('class_id', classId)
+            .eq('id', classId)
             .select()
             .single();
 
@@ -218,7 +218,7 @@ export const classService = {
         )
       `)
                 .eq('is_active', true)
-                .eq('class.form.school_id', filters.institutionId);
+                .eq('class.form.institution_id', filters.institutionId);
         } else {
             query = supabase
                 .from('student_class_assignments')
@@ -244,18 +244,6 @@ export const classService = {
     },
 
     async getStudentClassAssignment(studentId) {
-        // Handle UUID vs numeric ID
-        let numericStudentId = studentId;
-        if (typeof studentId === 'string' && studentId.includes('-')) {
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', studentId)
-                .maybeSingle();
-            if (userProfile) numericStudentId = userProfile.user_id;
-            else return null;
-        }
-
         const { data, error } = await supabase
             .from('student_class_assignments')
             .select(`
@@ -263,10 +251,10 @@ export const classService = {
                 class:classes(
                     *,
                     form:forms(*),
-                    form_tutor:users!classes_form_tutor_id_fkey(name, email)
+                    form_tutor:users!classes_form_tutor_id_fkey(first_name, last_name, email)
                 )
             `)
-            .eq('student_id', numericStudentId)
+            .eq('student_id', studentId)
             .eq('is_active', true)
             .maybeSingle();
 
@@ -314,8 +302,8 @@ export const classService = {
     async enrollStudentInClass(studentId, classId, academicYear) {
         const { data: classData, error: classError } = await supabase
             .from('classes')
-            .select('class_id, published, capacity, current_enrollment')
-            .eq('class_id', classId)
+            .select('id, published, capacity, current_enrollment')
+            .eq('id', classId)
             .single();
 
         if (classError) throw classError;
@@ -414,7 +402,7 @@ export const classService = {
         await supabase
             .from('classes')
             .update({ current_enrollment: count || 0 })
-            .eq('class_id', classId);
+            .eq('id', classId);
     },
 
     async removeStudentFromClass(studentId, classId) {
@@ -465,7 +453,7 @@ export const classService = {
             .from('class_instructors')
             .select(`
         *,
-        instructor:users(name, email, user_id, role)
+        instructor:users(first_name, last_name, email, id, role)
       `)
             .eq('class_id', classId)
             .eq('is_active', true);
@@ -478,7 +466,7 @@ export const classService = {
         const { data, error } = await supabase
             .from('classes')
             .update({ published: true, updated_at: new Date().toISOString() })
-            .eq('class_id', classId)
+            .eq('id', classId)
             .select()
             .single();
 
@@ -490,7 +478,7 @@ export const classService = {
         const { data, error } = await supabase
             .from('classes')
             .update({ published: false, updated_at: new Date().toISOString() })
-            .eq('class_id', classId)
+            .eq('id', classId)
             .select()
             .single();
 
@@ -502,7 +490,7 @@ export const classService = {
         const { data, error } = await supabase
             .from('classes')
             .update({ featured: featured, updated_at: new Date().toISOString() })
-            .eq('class_id', classId)
+            .eq('id', classId)
             .select()
             .single();
 
@@ -544,9 +532,9 @@ export const classService = {
           *,
           subject:subjects(*)
         ),
-        teacher:users!class_subjects_teacher_id_fkey(name, email, profile_image_url)
+        teacher:users!class_subjects_teacher_id_fkey(first_name, last_name, email, profile_image_url)
       `)
-                .eq('class.form.school_id', filters.institutionId);
+                .eq('class.form.institution_id', filters.institutionId);
         } else {
             query = supabase
                 .from('class_subjects')
@@ -560,7 +548,7 @@ export const classService = {
           *,
           subject:subjects(*)
         ),
-        teacher:users!class_subjects_teacher_id_fkey(name, email, profile_image_url)
+        teacher:users!class_subjects_teacher_id_fkey(first_name, last_name, email, profile_image_url)
       `);
         }
 
@@ -575,21 +563,17 @@ export const classService = {
     },
 
     async assignSubjectToClass(classId, subjectOfferingId, teacherId) {
-        const classIdNum = parseInt(classId);
-        const subjectOfferingIdNum = parseInt(subjectOfferingId);
-        const teacherIdNum = teacherId ? parseInt(teacherId) : null;
-
-        if (isNaN(classIdNum) || isNaN(subjectOfferingIdNum)) {
+        if (!classId || !subjectOfferingId) {
             throw new Error('Invalid class or subject offering ID');
         }
 
         const insertData = {
-            class_id: classIdNum,
-            subject_offering_id: subjectOfferingIdNum
+            class_id: classId,
+            subject_offering_id: subjectOfferingId
         };
 
-        if (teacherIdNum) {
-            insertData.teacher_id = teacherIdNum;
+        if (teacherId) {
+            insertData.teacher_id = teacherId;
         }
 
         const { data, error } = await supabase
@@ -620,14 +604,6 @@ export const classService = {
     },
 
     async getClassesByTeacher(teacherId) {
-        const teacherIdNum = typeof teacherId === 'string' && !teacherId.includes('-')
-            ? parseInt(teacherId)
-            : teacherId;
-
-        if (isNaN(teacherIdNum) || typeof teacherIdNum !== 'number') {
-            throw new Error('Invalid teacher ID: must be numeric user_id, not UUID');
-        }
-
         const { data, error } = await supabase
             .from('class_subjects')
             .select(`
@@ -640,7 +616,7 @@ export const classService = {
           subject:subjects(*)
         )
       `)
-            .eq('teacher_id', teacherIdNum);
+            .eq('teacher_id', teacherId);
 
         if (error) throw error;
         return data;
@@ -681,25 +657,10 @@ export const classService = {
     },
 
     async getLessonsByStudent(studentId, startDate, endDate) {
-        let numericStudentId = studentId;
-        if (typeof studentId === 'string' && studentId.includes('-')) {
-            const { data: userProfile } = await supabase
-                .from('users')
-                .select('user_id')
-                .eq('id', studentId)
-                .maybeSingle();
-
-            if (userProfile && userProfile.user_id) {
-                numericStudentId = userProfile.user_id;
-            } else {
-                return [];
-            }
-        }
-
         const { data: classAssignment } = await supabase
             .from('student_class_assignments')
             .select('class_id')
-            .eq('student_id', numericStudentId)
+            .eq('student_id', studentId)
             .eq('is_active', true)
             .maybeSingle();
 
@@ -761,18 +722,10 @@ export const classService = {
     },
 
     async getLessonsByTeacher(teacherId, startDate, endDate) {
-        const teacherIdNum = typeof teacherId === 'string' && !teacherId.includes('-')
-            ? parseInt(teacherId)
-            : teacherId;
-
-        if (isNaN(teacherIdNum) || typeof teacherIdNum !== 'number') {
-            throw new Error('Invalid teacher ID: must be numeric user_id, not UUID');
-        }
-
         const { data: classSubjects } = await supabase
             .from('class_subjects')
             .select('class_subject_id')
-            .eq('teacher_id', teacherIdNum);
+            .eq('teacher_id', teacherId);
 
         if (!classSubjects || classSubjects.length === 0) return [];
 
@@ -877,7 +830,7 @@ export const classService = {
     async createLesson(lessonData) {
         const payload = {
             ...lessonData,
-            class_subject_id: parseInt(lessonData.class_subject_id, 10)
+            class_subject_id: lessonData.class_subject_id
         };
 
         if (payload.lesson_date) {

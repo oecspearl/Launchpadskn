@@ -48,8 +48,8 @@ function ARVRContentManager() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('subjects')
-        .select('subject_id, subject_name')
-        .order('subject_name');
+        .select('id, name')
+        .order('name');
       if (error) throw error;
       return data || [];
     }

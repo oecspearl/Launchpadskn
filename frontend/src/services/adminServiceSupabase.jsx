@@ -56,7 +56,7 @@ const adminService = {
       const { data, error } = await supabase
         .from('users')
         .update({ is_active: true })
-        .eq('user_id', id)
+        .eq('id', id)
         .select()
         .single();
       
@@ -73,7 +73,7 @@ const adminService = {
       const { data, error } = await supabase
         .from('users')
         .update({ is_active: false })
-        .eq('user_id', id)
+        .eq('id', id)
         .select()
         .single();
       
@@ -161,7 +161,7 @@ const adminService = {
       const { data, error } = await supabase
         .from('departments')
         .select('*')
-        .eq('department_id', id)
+        .eq('id', id)
         .single();
       
       if (error) throw error;
@@ -195,7 +195,7 @@ const adminService = {
       const { data, error } = await supabase
         .from('departments')
         .update(updates)
-        .eq('department_id', id)
+        .eq('id', id)
         .select()
         .single();
       
@@ -212,7 +212,7 @@ const adminService = {
       const { error } = await supabase
         .from('departments')
         .delete()
-        .eq('department_id', id);
+        .eq('id', id);
       
       if (error) throw error;
     } catch (error) {
@@ -248,7 +248,7 @@ const adminService = {
       const { data, error } = await supabase
         .from('forms')
         .update(updates)
-        .eq('form_id', id)
+        .eq('id', id)
         .select()
         .single();
       
@@ -310,7 +310,7 @@ const adminService = {
   
   async getAllInstructors() {
     try {
-      return await supabaseService.getUsersByRole('INSTRUCTOR');
+      return await supabaseService.getUsersByRole('instructor');
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error fetching instructors:', error);
       throw error;
@@ -329,21 +329,22 @@ const adminService = {
         options: {
           data: {
             name: `${instructorData.firstName} ${instructorData.lastName}`,
-            role: 'INSTRUCTOR'
+            role: 'instructor'
           }
         }
       });
-      
+
       if (authError) throw authError;
-      
-      // Create profile in users table
+
+      // Create profile in users table (no `name` column; use first_name/last_name)
       const { data: profileData, error: profileError } = await supabase
         .from('users')
         .insert({
           id: authData.user.id,
-          name: `${instructorData.firstName} ${instructorData.lastName}`,
+          first_name: instructorData.firstName,
+          last_name: instructorData.lastName,
           email: instructorData.email,
-          role: 'INSTRUCTOR',
+          role: 'instructor',
           is_active: instructorData.isActive !== false,
           department_id: instructorData.departmentId || null
         })

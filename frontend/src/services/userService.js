@@ -1,34 +1,27 @@
 import { supabase } from '../config/supabase';
 import { ROLES } from '../constants/roles';
 
-const isUUID = (val) => typeof val === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+// DB role values are lowercase. Normalize incoming role constants (e.g. ROLES.STUDENT='STUDENT')
+// to the lowercase enum the database expects, mapping 'TEACHER' -> 'instructor'.
+const normalizeRole = (role) => {
+    const lower = (role || '').toString().toLowerCase();
+    return lower === 'teacher' ? 'instructor' : lower;
+};
 
 export const userService = {
     /**
      * Get user profile from users table
-     * Uses id (UUID) or user_id (numeric) based on format
+     * Looks up by id (UUID primary key)
      */
     async getUserProfile(userId) {
-        const col = isUUID(userId) ? 'id' : 'user_id';
         const { data, error } = await supabase
             .from('users')
             .select('*')
-            .eq(col, userId)
+            .eq('id', userId)
             .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
         if (data) return data;
-
-        // Fallback: try the other column
-        const fallbackCol = col === 'id' ? 'user_id' : 'id';
-        const { data: data2, error: error2 } = await supabase
-            .from('users')
-            .select('*')
-            .eq(fallbackCol, userId)
-            .maybeSingle();
-
-        if (error2 && error2.code !== 'PGRST116') throw error2;
-        if (data2) return data2;
 
         throw new Error('User profile not found');
     },
@@ -37,33 +30,20 @@ export const userService = {
      * Update user profile
      */
     async updateUserProfile(userId, updates) {
-        const col = isUUID(userId) ? 'id' : 'user_id';
         const { data, error } = await supabase
             .from('users')
             .update(updates)
-            .eq(col, userId)
+            .eq('id', userId)
             .select()
             .maybeSingle();
 
         if (!error && data) return data;
 
-        // Fallback: try the other column
-        const fallbackCol = col === 'id' ? 'user_id' : 'id';
-        const { data: data2, error: error2 } = await supabase
-            .from('users')
-            .update(updates)
-            .eq(fallbackCol, userId)
-            .select()
-            .maybeSingle();
-
-        if (error2 && error2.code !== 'PGRST116') throw error2;
-        if (data2) return data2;
-
         // If still not found, try to insert
         const { data: data3, error: error3 } = await supabase
             .from('users')
             .insert({
-                ...(isUUID(userId) ? { id: userId } : { user_id: userId }),
+                id: userId,
                 ...updates
             })
             .select()
@@ -80,7 +60,7 @@ export const userService = {
         const { data, error } = await supabase
             .from('users')
             .select('*')
-            .eq('role', role)
+            .eq('role', normalizeRole(role))
             .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -100,7 +80,7 @@ export const userService = {
             query = query.eq('institution_id', institutionId);
         }
 
-        const { data, error } = await query.order('name');
+        const { data, error } = await query.order('first_name');
 
         if (error) throw error;
         return data;
@@ -115,7 +95,7 @@ export const userService = {
             email,
             password,
             options: {
-                data: { role: role.toUpperCase(), institution_id },
+                data: { role: normalizeRole(role), institution_id },
             },
         });
         if (authError) throw authError;
@@ -125,7 +105,7 @@ export const userService = {
         const profile = {
             id: authData.user.id,
             email,
-            role: role.toUpperCase(),
+            role: normalizeRole(role),
             institution_id,
             is_active: true,
         };
@@ -141,7 +121,7 @@ export const userService = {
         const { error } = await supabase
             .from('users')
             .update({ institution_id: institutionId })
-            .eq('user_id', userId);
+            .eq('id', userId);
         if (error) throw error;
         return true;
     },
@@ -153,7 +133,7 @@ export const userService = {
         const { error } = await supabase
             .from('users')
             .update({ is_active: false })
-            .eq('user_id', userId);
+            .eq('id', userId);
         if (error) throw error;
         return true;
     },
@@ -166,11 +146,11 @@ export const userService = {
 
         if (!user) return false;
 
-        // Super Admin has access to all institutions
-        if (user.role === ROLES.ADMIN) return true;
+        // Super Admin has access to all institutions (DB roles are lowercase)
+        if (user.role === 'admin' || user.role === 'super_admin') return true;
 
         // School Admin has access to their institution
-        if (user.role === ROLES.SCHOOL_ADMIN) {
+        if (user.role === 'school_admin') {
             return user.institution_id === institutionId;
         }
 
@@ -185,16 +165,16 @@ export const userService = {
 
         if (!user) return [];
 
-        // Super Admin can access all institutions
-        if (user.role === ROLES.ADMIN) {
+        // Super Admin can access all institutions (DB roles are lowercase)
+        if (user.role === 'admin' || user.role === 'super_admin') {
             const { data: institutions } = await supabase
                 .from('institutions')
-                .select('institution_id');
-            return institutions?.map(i => i.institution_id) || [];
+                .select('id');
+            return institutions?.map(i => i.id) || [];
         }
 
         // School Admin can access their institution
-        if (user.role === ROLES.SCHOOL_ADMIN && user.institution_id) {
+        if (user.role === 'school_admin' && user.institution_id) {
             return [user.institution_id];
         }
 
@@ -205,22 +185,12 @@ export const userService = {
      * Set force_password_change flag for a user
      */
     async setForcePasswordChange(userId, forceChange) {
-        const col = isUUID(userId) ? 'id' : 'user_id';
         const { error } = await supabase
             .from('users')
             .update({ force_password_change: forceChange })
-            .eq(col, userId);
+            .eq('id', userId);
 
-        if (error) {
-            // Fallback: try the other column
-            const fallbackCol = col === 'id' ? 'user_id' : 'id';
-            const { error: error2 } = await supabase
-                .from('users')
-                .update({ force_password_change: forceChange })
-                .eq(fallbackCol, userId);
-
-            if (error2) throw error2;
-        }
+        if (error) throw error;
         return true;
     },
 
@@ -273,10 +243,10 @@ export const userService = {
             .eq('is_active', true);
 
         if (userRole) {
-            query = query.eq('role', userRole.toUpperCase());
+            query = query.eq('role', normalizeRole(userRole));
         }
 
-        const { data, error } = await query.order('name');
+        const { data, error } = await query.order('first_name');
         if (error) throw error;
         return data || [];
     }
