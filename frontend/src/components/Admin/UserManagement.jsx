@@ -4,6 +4,7 @@ import { FaUserPlus, FaTrash, FaKey, FaEdit, FaFileUpload, FaExclamationTriangle
 import Papa from 'papaparse';
 import supabaseService from '../../services/supabaseService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { personName } from '../../utils/personName';
 
 function UserManagement() {
     const { user } = useAuth(); // ensure admin
@@ -215,19 +216,21 @@ function UserManagement() {
                 <tbody>
                     {users.map(u => (
                         <tr key={u.id}>
-                            <td>{u.name || '—'}</td>
+                            <td>{personName(u) || '—'}</td>
                             <td>{u.email}</td>
                             <td>
                                 <Form.Select
                                     size="sm"
-                                    value={u.role}
-                                    onChange={(e) => handleRoleChange(u.id || u.id, e.target.value)}
-                                    style={{ width: '130px' }}
+                                    value={(u.role || '').toLowerCase()}
+                                    onChange={(e) => handleRoleChange(u.id, e.target.value)}
+                                    style={{ width: '150px' }}
                                 >
-                                    <option value="ADMIN">ADMIN</option>
-                                    <option value="SCHOOL_ADMIN">SCHOOL_ADMIN</option>
-                                    <option value="INSTRUCTOR">INSTRUCTOR</option>
-                                    <option value="STUDENT">STUDENT</option>
+                                    <option value="super_admin">Super Admin</option>
+                                    <option value="admin">Admin</option>
+                                    <option value="school_admin">School Admin</option>
+                                    <option value="instructor">Instructor</option>
+                                    <option value="student">Student</option>
+                                    <option value="parent">Parent</option>
                                 </Form.Select>
                             </td>
                             <td>{u.institution?.institution_name || '—'}</td>
