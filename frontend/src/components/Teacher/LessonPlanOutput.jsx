@@ -7,9 +7,11 @@ import {
 } from 'react-icons/fa';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
 import TinyMCEEditor from '../Editor/TextEditor';
+import { useToast } from '../../contexts/ToastContext';
 import './LessonPlanOutput.css';
 
 function LessonPlanOutput({ onSaveLesson }) {
+  const { showSuccess } = useToast();
   const [activeTab, setActiveTab] = useState('preview');
   const [lessonPlan, setLessonPlan] = useState(null);
   const [editedContent, setEditedContent] = useState('');
@@ -411,7 +413,7 @@ function LessonPlanOutput({ onSaveLesson }) {
   const handleCopy = () => {
     const textToCopy = editedContent || lessonPlan || '';
     navigator.clipboard.writeText(textToCopy).then(() => {
-      alert('Lesson plan copied to clipboard!');
+      showSuccess('Lesson plan copied to clipboard!');
     });
   };
 

@@ -3,8 +3,10 @@ import { Container, Form, Button, Alert, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../../services/authService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 const ChangePassword = () => {
+  const { showSuccess } = useToast();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -27,7 +29,7 @@ const ChangePassword = () => {
       setError('');
       setLoading(true);
       await authService.updatePassword(password);
-      alert('Password changed successfully!');
+      showSuccess('Password changed successfully!');
       navigate('/'); // Redirect to dashboard
     } catch (err) {
       setError('Failed to update password: ' + err.message);

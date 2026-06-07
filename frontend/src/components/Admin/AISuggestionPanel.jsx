@@ -7,10 +7,12 @@ import {
 } from 'react-icons/fa';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import curriculumAIService from '../../services/curriculumAIService';
 
 function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion }) {
   const { user } = useAuth();
+  const { showError } = useToast();
   const [suggestions, setSuggestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -74,7 +76,7 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
       }
     } catch (error) {
       console.error('Error generating suggestions:', error);
-      alert('Failed to generate suggestions. Please try again.');
+      showError('Failed to generate suggestions. Please try again.');
     } finally {
       setGenerating(false);
     }

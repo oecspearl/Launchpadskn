@@ -7,9 +7,11 @@ import {
 } from 'react-icons/fa';
 import collaborationService from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function PeerToPeerLearning({ classSubjectId }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -70,10 +72,10 @@ function PeerToPeerLearning({ classSubjectId }) {
         scheduled_start: '',
         learning_objectives: ''
       });
-      alert('Tutoring session created successfully!');
+      showSuccess('Tutoring session created successfully!');
     } catch (error) {
       console.error('Error creating tutoring session:', error);
-      alert('Failed to create session. Some tables may not exist yet.');
+      showError('Failed to create session. Some tables may not exist yet.');
     }
   };
 

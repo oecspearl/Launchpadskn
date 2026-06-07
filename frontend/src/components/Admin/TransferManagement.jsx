@@ -7,9 +7,11 @@ import {
 } from 'react-icons/fa';
 import studentInformationService from '../../services/studentInformationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function TransferManagement({ studentId, student }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [transfers, setTransfers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -50,10 +52,10 @@ function TransferManagement({ studentId, student }) {
       });
       await loadTransfers();
       setShowModal(false);
-      alert('Transfer request created successfully!');
+      showSuccess('Transfer request created successfully!');
     } catch (error) {
       console.error('Error creating transfer:', error);
-      alert('Failed to create transfer. Some tables may not exist yet.');
+      showError('Failed to create transfer. Some tables may not exist yet.');
     }
   };
 

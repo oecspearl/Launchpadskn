@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import contentLibraryService from '../../services/contentLibraryService';
 import teacherCollaborationService from '../../services/teacherCollaborationService';
 import { supabase } from '../../config/supabase';
@@ -22,6 +23,7 @@ import './ContentLibrary.css';
 
 function ContentLibrary() {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const lessonId = searchParams.get('lessonId');
@@ -163,7 +165,7 @@ function ContentLibrary() {
         parseInt(targetLessonId),
         user?.user_id
       );
-      alert('Content added to lesson successfully!');
+      showSuccess('Content added to lesson successfully!');
       if (lessonId) {
         navigate(`/teacher/lessons/${targetLessonId}/content`);
       } else {
@@ -172,7 +174,7 @@ function ContentLibrary() {
       }
     } catch (err) {
       console.error('Error adding content to lesson:', err);
-      alert('Failed to add content to lesson');
+      showError('Failed to add content to lesson');
     }
   };
 
@@ -209,7 +211,7 @@ function ContentLibrary() {
       fetchContent();
     } catch (err) {
       console.error('Error rating content:', err);
-      alert('Failed to submit rating');
+      showError('Failed to submit rating');
     }
   };
 
@@ -1096,7 +1098,7 @@ function ContentLibrary() {
                 setNewComment('');
               } catch (err) {
                 console.error('Error adding comment:', err);
-                alert('Failed to add comment');
+                showError('Failed to add comment');
               }
             }}
             disabled={!newComment.trim()}
@@ -1184,13 +1186,13 @@ function ContentLibrary() {
                   form_id: filters.formId || null,
                   status: 'OPEN'
                 });
-                alert('Content request submitted! Other teachers will be notified.');
+                showSuccess('Content request submitted! Other teachers will be notified.');
                 setShowRequestModal(false);
                 setRequestTitle('');
                 setRequestDescription('');
               } catch (err) {
                 console.error('Error creating request:', err);
-                alert('Failed to submit request');
+                showError('Failed to submit request');
               }
             }}
             disabled={!requestTitle.trim() || !requestDescription.trim()}
@@ -1271,13 +1273,13 @@ function ContentLibrary() {
                   suggestion_text: suggestionText,
                   status: 'PENDING'
                 });
-                alert('Suggestion submitted! The content creator will be notified.');
+                showSuccess('Suggestion submitted! The content creator will be notified.');
                 setShowSuggestionModal(false);
                 setSuggestionText('');
                 setSuggestionType('IMPROVEMENT');
               } catch (err) {
                 console.error('Error creating suggestion:', err);
-                alert('Failed to submit suggestion');
+                showError('Failed to submit suggestion');
               }
             }}
             disabled={!suggestionText.trim()}

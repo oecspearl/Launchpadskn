@@ -7,9 +7,11 @@ import {
 } from 'react-icons/fa';
 import studentInformationService from '../../services/studentInformationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function DisciplinaryRecords({ studentId, student }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [incidents, setIncidents] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,10 +60,10 @@ function DisciplinaryRecords({ studentId, student }) {
       });
       await loadData();
       setShowModal(false);
-      alert('Disciplinary incident recorded successfully!');
+      showSuccess('Disciplinary incident recorded successfully!');
     } catch (error) {
       console.error('Error creating incident:', error);
-      alert('Failed to create incident. Some tables may not exist yet.');
+      showError('Failed to create incident. Some tables may not exist yet.');
     }
   };
 

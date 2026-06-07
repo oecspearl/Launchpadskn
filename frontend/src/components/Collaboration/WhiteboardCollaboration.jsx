@@ -7,10 +7,12 @@ import {
 } from 'react-icons/fa';
 import collaborationService from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../config/supabase';
 
 function WhiteboardCollaboration({ classSubjectId, sessions }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [whiteboards, setWhiteboards] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -68,10 +70,10 @@ function WhiteboardCollaboration({ classSubjectId, sessions }) {
       await loadWhiteboards();
       setShowCreateModal(false);
       setFormData({ title: '' });
-      alert('Whiteboard created successfully!');
+      showSuccess('Whiteboard created successfully!');
     } catch (error) {
       console.error('Error creating whiteboard:', error);
-      alert('Failed to create whiteboard. Some tables may not exist yet.');
+      showError('Failed to create whiteboard. Some tables may not exist yet.');
     }
   };
 

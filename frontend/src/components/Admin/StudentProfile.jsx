@@ -9,9 +9,11 @@ import {
 } from 'react-icons/fa';
 import studentInformationService from '../../services/studentInformationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function StudentProfile({ studentId, student, profile, onProfileUpdate }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -163,10 +165,10 @@ function StudentProfile({ studentId, student, profile, onProfileUpdate }) {
       if (onProfileUpdate) {
         onProfileUpdate();
       }
-      alert('Profile saved successfully!');
+      showSuccess('Profile saved successfully!');
     } catch (error) {
       console.error('Error saving profile:', error);
-      alert('Failed to save profile. Some tables may not exist yet.');
+      showError('Failed to save profile. Some tables may not exist yet.');
     } finally {
       setSaving(false);
     }

@@ -8,9 +8,11 @@ import {
 } from 'react-icons/fa';
 import collaborationService from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function GroupProjectManagement({ classSubjectId, sessions }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [projects, setProjects] = useState([]);
   const [selectedProject, setSelectedProject] = useState(null);
   const [tasks, setTasks] = useState([]);
@@ -96,10 +98,10 @@ function GroupProjectManagement({ classSubjectId, sessions }) {
         project_type: 'ASSIGNMENT',
         due_date: ''
       });
-      alert('Group project created successfully!');
+      showSuccess('Group project created successfully!');
     } catch (error) {
       console.error('Error creating project:', error);
-      alert('Failed to create project. Some tables may not exist yet.');
+      showError('Failed to create project. Some tables may not exist yet.');
     }
   };
 
@@ -130,10 +132,10 @@ function GroupProjectManagement({ classSubjectId, sessions }) {
         priority: 'MEDIUM',
         due_date: ''
       });
-      alert('Task created successfully!');
+      showSuccess('Task created successfully!');
     } catch (error) {
       console.error('Error creating task:', error);
-      alert('Failed to create task');
+      showError('Failed to create task');
     }
   };
 

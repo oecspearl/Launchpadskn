@@ -8,6 +8,7 @@ import {
   FaSync, FaDownload, FaFilter, FaCalendarAlt
 } from 'react-icons/fa';
 import curriculumAnalyticsService from '../../services/curriculumAnalyticsService';
+import { useToast } from '../../contexts/ToastContext';
 import CoverageTracking from './CoverageTracking';
 import TimeAllocationAnalysis from './TimeAllocationAnalysis';
 import OutcomeAchievementDashboard from './OutcomeAchievementDashboard';
@@ -15,6 +16,7 @@ import GapAnalysis from './GapAnalysis';
 import './CurriculumAnalytics.css';
 
 function CurriculumAnalytics({ classSubjectId, classSubject }) {
+  const { showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('coverage');
   const [coverageSummary, setCoverageSummary] = useState(null);
@@ -60,7 +62,7 @@ function CurriculumAnalytics({ classSubjectId, classSubject }) {
       await loadAnalytics();
     } catch (error) {
       console.error('Error refreshing analytics:', error);
-      alert('Failed to refresh analytics. Some tables may not exist yet.');
+      showError('Failed to refresh analytics. Some tables may not exist yet.');
     } finally {
       setRefreshing(false);
     }

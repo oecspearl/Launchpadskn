@@ -7,9 +7,11 @@ import {
 } from 'react-icons/fa';
 import studentInformationService from '../../services/studentInformationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function StudentLifecycle({ studentId, student }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -61,10 +63,10 @@ function StudentLifecycle({ studentId, student }) {
         reason: '',
         notes: ''
       });
-      alert('Lifecycle event created successfully!');
+      showSuccess('Lifecycle event created successfully!');
     } catch (error) {
       console.error('Error creating lifecycle event:', error);
-      alert('Failed to create lifecycle event. Some tables may not exist yet.');
+      showError('Failed to create lifecycle event. Some tables may not exist yet.');
     }
   };
 

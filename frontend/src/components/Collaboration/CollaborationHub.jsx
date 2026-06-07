@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import collaborationService from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import CollaborativeDocuments from './CollaborativeDocuments';
 import VirtualClassrooms from './VirtualClassrooms';
 import WhiteboardCollaboration from './WhiteboardCollaboration';
@@ -18,6 +19,7 @@ import './CollaborationHub.css';
 
 function CollaborationHub({ classSubjectId, classSubject }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('documents');
   const [sessions, setSessions] = useState([]);
@@ -67,10 +69,10 @@ function CollaborationHub({ classSubjectId, classSubject }) {
         description: '',
         is_public: false
       });
-      alert('Collaboration session created successfully!');
+      showSuccess('Collaboration session created successfully!');
     } catch (error) {
       console.error('Error creating session:', error);
-      alert('Failed to create session. Some tables may not exist yet.');
+      showError('Failed to create session. Some tables may not exist yet.');
     }
   };
 

@@ -14,6 +14,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, v
 import { CSS } from '@dnd-kit/utilities';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import ResourceLibrary from './ResourceLibrary';
 import CurriculumTemplateManager from './CurriculumTemplateManager';
 import AISuggestionPanel from './AISuggestionPanel';
@@ -21,6 +22,7 @@ import './InteractiveCurriculumBuilder.css';
 
 function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [curriculumData, setCurriculumData] = useState({
     frontMatter: {
       coverPage: {
@@ -352,7 +354,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
       }
     } catch (error) {
       console.error('Error saving curriculum:', error);
-      alert('Failed to save curriculum. Please try again.');
+      showError('Failed to save curriculum. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -524,7 +526,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
     newCurriculumData.topics = newTopics;
     setCurriculumData(newCurriculumData);
     setShowAISuggestions(false);
-    alert('Suggestion applied successfully!');
+    showSuccess('Suggestion applied successfully!');
   };
 
   return (
@@ -837,6 +839,7 @@ function SortableTopicItem({ topic, index, offering, isEditing, onEdit, onUpdate
 
 // Topic Editor Component (Full Implementation)
 function TopicEditor({ topic, index, offering, onUpdate, onCancel, onLinkResource, onRequestAISuggestions }) {
+  const { showWarning } = useToast();
   const initialData = useRef(topic);
 
   const [formData, setFormData] = useState({
@@ -898,7 +901,7 @@ function TopicEditor({ topic, index, offering, onUpdate, onCancel, onLinkResourc
   const handleSave = () => {
     // Validate required fields
     if (!formData.title || formData.title.trim() === '') {
-      alert('Please enter a topic title');
+      showWarning('Please enter a topic title');
       return;
     }
 
@@ -1404,6 +1407,7 @@ function SortableUnitItem({ unit, index, topicNumber, isEditing, onEdit, onUpdat
 
 // Unit Editor Component
 function UnitEditor({ unit, topicNumber, onUpdate, onCancel, onAddActivity }) {
+  const { showWarning } = useToast();
   const initialData = useRef(unit);
 
   const [formData, setFormData] = useState({
@@ -1425,7 +1429,7 @@ function UnitEditor({ unit, topicNumber, onUpdate, onCancel, onAddActivity }) {
   const handleSave = () => {
     // Validate required fields
     if (!formData.specificCurriculumOutcomes || formData.specificCurriculumOutcomes.trim() === '') {
-      alert('Please enter Specific Curriculum Outcomes (SCOs)');
+      showWarning('Please enter Specific Curriculum Outcomes (SCOs)');
       return;
     }
 
@@ -1828,6 +1832,7 @@ function ClosingFrameworkEditor({ framework, onUpdate }) {
 
 // Front Matter Editor Component
 function FrontMatterEditor({ frontMatter, offering, onUpdate }) {
+  const { showSuccess } = useToast();
   const [formData, setFormData] = useState({
     coverPage: frontMatter?.coverPage || {
       ministryBranding: true,
@@ -1853,7 +1858,7 @@ function FrontMatterEditor({ frontMatter, offering, onUpdate }) {
 
     onUpdate(updatedData);
     // Show success feedback
-    alert('Closing framework saved successfully!');
+    showSuccess('Closing framework saved successfully!');
   };
 
   return (

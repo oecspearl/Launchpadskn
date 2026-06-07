@@ -10,12 +10,14 @@ import {
 } from 'react-icons/fa';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import lessonTemplateService from '../../services/lessonTemplateService';
 import { supabase } from '../../config/supabase';
 import './LessonTemplateLibrary.css';
 
 function LessonTemplateLibrary() {
   const { user } = useAuth();
+  const { showSuccess, showError, showWarning } = useToast();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const classSubjectId = searchParams.get('classSubjectId');
@@ -153,23 +155,23 @@ function LessonTemplateLibrary() {
       setShowCreateModal(true);
     } catch (err) {
       console.error('Error loading template:', err);
-      alert('Failed to load template');
+      showError('Failed to load template');
     }
   };
 
   const handleCreateFromTemplate = async () => {
     if (!classSubjectId) {
-      alert('Please select a class-subject first');
+      showWarning('Please select a class-subject first');
       return;
     }
 
     if (!lessonDate) {
-      alert('Please select a lesson date');
+      showWarning('Please select a lesson date');
       return;
     }
 
     if (!editedLessonTitle.trim()) {
-      alert('Please enter a lesson title');
+      showWarning('Please enter a lesson title');
       return;
     }
 
@@ -242,13 +244,13 @@ function LessonTemplateLibrary() {
           });
       }
 
-      alert('Lesson created from template successfully!');
+      showSuccess('Lesson created from template successfully!');
       setShowCreateModal(false);
       setTemplateData(null);
       navigate(`/teacher/class-subjects/${classSubjectId}/lessons`);
     } catch (err) {
       console.error('Error creating lesson from template:', err);
-      alert('Failed to create lesson from template');
+      showError('Failed to create lesson from template');
     }
   };
 

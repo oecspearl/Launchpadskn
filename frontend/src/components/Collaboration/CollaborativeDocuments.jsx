@@ -8,10 +8,12 @@ import {
 } from 'react-icons/fa';
 import collaborationService from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../config/supabase';
 
 function CollaborativeDocuments({ classSubjectId, sessions }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -129,10 +131,10 @@ function CollaborativeDocuments({ classSubjectId, sessions }) {
       await loadDocuments();
       setShowCreateModal(false);
       setFormData({ title: '', content: '', content_type: 'TEXT' });
-      alert('Document created successfully!');
+      showSuccess('Document created successfully!');
     } catch (error) {
       console.error('Error creating document:', error);
-      alert('Failed to create document. Some tables may not exist yet.');
+      showError('Failed to create document. Some tables may not exist yet.');
     }
   };
 
@@ -151,10 +153,10 @@ function CollaborativeDocuments({ classSubjectId, sessions }) {
         content: documentContent,
         last_edited_by: user?.user_id
       });
-      alert('Document saved!');
+      showSuccess('Document saved!');
     } catch (error) {
       console.error('Error saving document:', error);
-      alert('Failed to save document');
+      showError('Failed to save document');
     }
   };
 

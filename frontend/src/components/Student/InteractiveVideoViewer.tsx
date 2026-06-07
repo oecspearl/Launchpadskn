@@ -7,6 +7,7 @@ import {
   FaPlay, FaPause, FaCheckCircle, FaTimesCircle, FaClock,
   FaQuestionCircle, FaExclamationCircle
 } from 'react-icons/fa';
+import { useToast } from '../../contexts/ToastContext';
 import { InteractiveVideoData, VideoCheckpoint } from '../../types/contentTypes';
 import {
   extractYouTubeVideoId,
@@ -29,6 +30,7 @@ function InteractiveVideoViewer({
   onComplete,
   onClose
 }: InteractiveVideoViewerProps) {
+  const { showInfo } = useToast();
   const [currentTime, setCurrentTime] = useState(0);
   const [videoDuration, setVideoDuration] = useState(600); // Default 10 minutes for calculation
   const [isPlaying, setIsPlaying] = useState(true); // Start as playing when video loads
@@ -533,7 +535,7 @@ function InteractiveVideoViewer({
                           handleCheckpointReached(checkpoint);
                         } else {
                           // Show alert if no checkpoint nearby
-                          alert(`No checkpoint found near current time (${formatTime(currentTime)}). Checkpoints are at: ${sortedCheckpoints.map(cp => formatTime(cp.timestamp)).join(', ')}`);
+                          showInfo(`No checkpoint found near current time (${formatTime(currentTime)}). Checkpoints are at: ${sortedCheckpoints.map(cp => formatTime(cp.timestamp)).join(', ')}`);
                         }
                       }}
                     >

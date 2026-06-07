@@ -9,6 +9,7 @@ import {
   FaUpload, FaLink
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../config/supabase';
 import {
   InteractiveBookData,
@@ -880,6 +881,7 @@ interface ContentPageEditorProps {
 
 function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps) {
   const { user } = useAuth();
+  const { showError, showWarning } = useToast();
   const [showImageModal, setShowImageModal] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
   const [imageMode, setImageMode] = useState<'upload' | 'url' | 'ai'>('upload');
@@ -929,7 +931,7 @@ function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps)
       handleInsertImage(urlData.publicUrl, selectedFile.name);
     } catch (err: any) {
       console.error('Error uploading image:', err);
-      alert('Failed to upload image: ' + (err.message || 'Unknown error'));
+      showError('Failed to upload image: ' + (err.message || 'Unknown error'));
     } finally {
       setUploading(false);
     }
@@ -943,7 +945,7 @@ function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps)
 
   const handleAIGenerate = async () => {
     if (!imagePrompt.trim()) {
-      alert('Please enter a description for the image');
+      showWarning('Please enter a description for the image');
       return;
     }
 
@@ -978,7 +980,7 @@ function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps)
       handleInsertImage(generatedImageUrl, imagePrompt.trim());
     } catch (err: any) {
       console.error('Error generating image:', err);
-      alert('Failed to generate image: ' + (err.message || 'Unknown error'));
+      showError('Failed to generate image: ' + (err.message || 'Unknown error'));
     } finally {
       setGenerating(false);
     }
@@ -988,7 +990,7 @@ function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps)
     const file = e.target.files?.[0];
     if (file) {
       if (!file.type.startsWith('image/')) {
-        alert('Please select an image file');
+        showWarning('Please select an image file');
         return;
       }
       setSelectedFile(file);
@@ -1570,6 +1572,7 @@ interface AudioRecorderProps {
 }
 
 function AudioRecorder({ audioUrl, onSave }: AudioRecorderProps) {
+  const { showError } = useToast();
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -1609,7 +1612,7 @@ function AudioRecorder({ audioUrl, onSave }: AudioRecorderProps) {
       setIsRecording(true);
     } catch (err) {
       console.error('Error accessing microphone:', err);
-      alert('Could not access microphone. Please check permissions.');
+      showError('Could not access microphone. Please check permissions.');
     }
   };
 

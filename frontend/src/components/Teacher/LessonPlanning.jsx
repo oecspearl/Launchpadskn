@@ -9,6 +9,7 @@ import {
   FaList, FaTh, FaTable, FaEye, FaEdit, FaVideo, FaCopy, FaFolderOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
 import collaborationService from '../../services/collaborationService';
@@ -21,6 +22,7 @@ import Timetable from '../common/Timetable';
 function LessonPlanning() {
   const { classSubjectId } = useParams();
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const navigate = useNavigate();
   
   const [isLoading, setIsLoading] = useState(true);
@@ -769,10 +771,10 @@ function LessonPlanning() {
                                 created_by: user?.user_id,
                                 is_public: true
                               });
-                              alert('Lesson saved as template successfully!');
+                              showSuccess('Lesson saved as template successfully!');
                             } catch (err) {
                               console.error('Error saving template:', err);
-                              alert('Failed to save template');
+                              showError('Failed to save template');
                             }
                           }}
                           title="Save as Template"
@@ -865,10 +867,10 @@ function LessonPlanning() {
                                     created_by: user?.user_id,
                                     is_public: true
                                   });
-                                  alert('Lesson saved as template successfully!');
+                                  showSuccess('Lesson saved as template successfully!');
                                 } catch (err) {
                                   console.error('Error saving template:', err);
-                                  alert('Failed to save template');
+                                  showError('Failed to save template');
                                 }
                               }}
                               title="Save as Template"

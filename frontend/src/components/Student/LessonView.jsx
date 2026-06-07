@@ -13,6 +13,7 @@ import {
   FaSearch, FaFilter, FaLock, FaArrowRight, FaHashtag, FaCube, FaVideo, FaDoorOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import supabaseService from '../../services/supabaseService';
 import collaborationService from '../../services/collaborationService';
 import { supabase } from '../../config/supabase';
@@ -28,6 +29,7 @@ import { isRole, ROLES } from '../../constants/roles';
 function LessonView() {
   const { lessonId } = useParams();
   const { user } = useAuth();
+  const { showError } = useToast();
   const navigate = useNavigate();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -1276,7 +1278,7 @@ function LessonView() {
                         const errorMsg = err.message?.includes('Bucket not found')
                           ? `Storage bucket 'course-content' not found. File path: ${contentItem.assignment_details_file_path}`
                           : `Unable to open assignment details: ${err.message || 'Unknown error'}`;
-                        alert(errorMsg);
+                        showError(errorMsg);
                       }
                     }}>
                       <div className="attachment-thumbnail">
@@ -1317,7 +1319,7 @@ function LessonView() {
                         const errorMsg = err.message?.includes('Bucket not found')
                           ? `Storage bucket 'course-content' not found. File path: ${contentItem.assignment_rubric_file_path}`
                           : `Unable to open assignment rubric: ${err.message || 'Unknown error'}`;
-                        alert(errorMsg);
+                        showError(errorMsg);
                       }
                     }}>
                       <div className="attachment-thumbnail">
@@ -1360,7 +1362,7 @@ function LessonView() {
                         const errorMsg = err.message?.includes('Bucket not found')
                           ? `Storage bucket 'course-content' not found or inaccessible. File path: ${contentItem.file_path}`
                           : `Unable to open file: ${err.message || 'Unknown error'}`;
-                        alert(errorMsg);
+                        showError(errorMsg);
                       }
                     }}>
                       <div className="attachment-thumbnail">

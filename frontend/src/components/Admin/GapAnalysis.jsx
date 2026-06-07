@@ -9,10 +9,12 @@ import {
 } from 'react-icons/fa';
 import curriculumAnalyticsService from '../../services/curriculumAnalyticsService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../config/supabase';
 
 function GapAnalysis({ classSubjectId }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [gaps, setGaps] = useState([]);
   const [filteredGaps, setFilteredGaps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,10 +69,10 @@ function GapAnalysis({ classSubjectId }) {
     try {
       const count = await curriculumAnalyticsService.identifyGaps(classSubjectId);
       await loadGaps();
-      alert(`Identified ${count} new gaps.`);
+      showSuccess(`Identified ${count} new gaps.`);
     } catch (error) {
       console.error('Error identifying gaps:', error);
-      alert('Failed to identify gaps. Some tables may not exist yet.');
+      showError('Failed to identify gaps. Some tables may not exist yet.');
     } finally {
       setIdentifying(false);
     }
@@ -93,7 +95,7 @@ function GapAnalysis({ classSubjectId }) {
       setSelectedGap(null);
     } catch (error) {
       console.error('Error resolving gap:', error);
-      alert('Failed to resolve gap');
+      showError('Failed to resolve gap');
     }
   };
 

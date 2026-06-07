@@ -5,6 +5,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
 export default defineConfig({
+  // Strip noisy console.* from production bundles only (dev keeps everything).
+  // console.warn / console.error are preserved for production diagnostics.
+  esbuild: {
+    pure: ['console.log', 'console.info', 'console.debug'],
+  },
   plugins: [
     react(),
     VitePWA({

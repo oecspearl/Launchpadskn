@@ -7,9 +7,11 @@ import {
 } from 'react-icons/fa';
 import collaborationService from '../../services/collaborationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function VirtualClassrooms({ classSubjectId, sessions }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [classrooms, setClassrooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -80,10 +82,10 @@ function VirtualClassrooms({ classSubjectId, sessions }) {
         recording_enabled: false,
         breakout_rooms_enabled: false
       });
-      alert('Virtual classroom created successfully!');
+      showSuccess('Virtual classroom created successfully!');
     } catch (error) {
       console.error('Error creating classroom:', error);
-      alert('Failed to create classroom. Some tables may not exist yet.');
+      showError('Failed to create classroom. Some tables may not exist yet.');
     }
   };
 

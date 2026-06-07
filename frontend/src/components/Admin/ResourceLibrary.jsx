@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function ResourceLibrary({ show, onHide, offering, onSelectResource }) {
   const { user } = useAuth();
@@ -259,6 +260,7 @@ function ResourceLibrary({ show, onHide, offering, onSelectResource }) {
 
 // Resource Creator Component
 function ResourceCreator({ offering, onCreate, onSuccess }) {
+  const { showError } = useToast();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -300,7 +302,7 @@ function ResourceCreator({ offering, onCreate, onSuccess }) {
         tags: []
       });
     } catch (error) {
-      alert('Failed to create resource');
+      showError('Failed to create resource');
     } finally {
       setSaving(false);
     }

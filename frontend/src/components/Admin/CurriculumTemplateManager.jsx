@@ -8,9 +8,11 @@ import {
 } from 'react-icons/fa';
 import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, onSaveTemplate }) {
   const { user } = useAuth();
+  const { showError, showWarning } = useToast();
   const [templates, setTemplates] = useState([]);
   const [filteredTemplates, setFilteredTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -115,7 +117,7 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
   const handleDeleteTemplate = async (templateId) => {
     if (!window.confirm('Are you sure you want to delete this template?')) return;
     if (!user?.user_id) {
-      alert('User not authenticated');
+      showWarning('User not authenticated');
       return;
     }
 
@@ -130,7 +132,7 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
       await loadTemplates();
     } catch (error) {
       console.error('Error deleting template:', error);
-      alert('Failed to delete template');
+      showError('Failed to delete template');
     }
   };
 
@@ -275,6 +277,7 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
 // Template Saver Component
 function TemplateSaver({ offering, onSave, onSuccess }) {
   const { user } = useAuth();
+  const { showError, showWarning } = useToast();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -304,7 +307,7 @@ function TemplateSaver({ offering, onSave, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!offering?.curriculum_structure) {
-      alert('No curriculum data to save as template');
+      showWarning('No curriculum data to save as template');
       return;
     }
 
@@ -322,7 +325,7 @@ function TemplateSaver({ offering, onSave, onSuccess }) {
         tags: []
       });
     } catch (error) {
-      alert('Failed to save template');
+      showError('Failed to save template');
     } finally {
       setSaving(false);
     }

@@ -7,9 +7,11 @@ import {
 } from 'react-icons/fa';
 import studentInformationService from '../../services/studentInformationService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { useToast } from '../../contexts/ToastContext';
 
 function SpecialNeedsTracking({ studentId, student }) {
   const { user } = useAuth();
+  const { showSuccess, showError } = useToast();
   const [needs, setNeeds] = useState([]);
   const [accommodations, setAccommodations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,10 +60,10 @@ function SpecialNeedsTracking({ studentId, student }) {
       });
       await loadData();
       setShowNeedModal(false);
-      alert('Special need recorded successfully!');
+      showSuccess('Special need recorded successfully!');
     } catch (error) {
       console.error('Error creating special need:', error);
-      alert('Failed to create special need. Some tables may not exist yet.');
+      showError('Failed to create special need. Some tables may not exist yet.');
     }
   };
 
