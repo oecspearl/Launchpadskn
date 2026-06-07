@@ -24,7 +24,7 @@ function AppLayout({ children }) {
   const hideChrome = isPublicPage && !isAuthenticated;
 
   return (
-    <div className="app-layout">
+    <div className={`app-layout ${showSidebar ? 'has-sidebar' : ''} ${showSidebar && isCollapsed ? 'sidebar-collapsed' : ''}`}>
       {!hideChrome && <SKNTribar />}
       {!hideChrome && <TopBar />}
 

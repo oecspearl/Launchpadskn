@@ -4,22 +4,22 @@
    ============================================ */
 
 :root {
-  /* Bootstrap Primary Override - align all BS utilities with SKN theme */
-  --bs-primary: #009639;
-  --bs-primary-rgb: 0, 150, 57;
+  /* Bootstrap Primary Override - align all BS utilities with editorial green */
+  --bs-primary: #1f7a3d;
+  --bs-primary-rgb: 31, 122, 61;
 
-  /* Primary Flag Colors */
-  --skn-green: #009639;
-  --skn-red: #CE1126;
-  --skn-black: #000000;
-  --skn-yellow: #FCD116;
-  --skn-white: #FFFFFF;
-  
+  /* Editorial green accent (repurposed flag green) */
+  --skn-green: #1f7a3d;
+  --skn-red: #b3261e;
+  --skn-black: #13140f;
+  --skn-yellow: #c9a227;
+  --skn-white: #fbfaf5;
+
   /* Color Variations */
-  --skn-green-light: #33AD63;
-  --skn-green-lighter: #66C88F;
-  --skn-green-dark: #00702B;
-  --skn-green-darker: #00501F;
+  --skn-green-light: #2f9450;
+  --skn-green-lighter: #5fae74;
+  --skn-green-dark: #186230;
+  --skn-green-darker: #124a25;
   
   --skn-red-light: #D84356;
   --skn-red-lighter: #E57585;

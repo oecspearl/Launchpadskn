@@ -6,6 +6,9 @@ import './styles/global.css';
 import './styles/components.css';
 import './styles/mobile-enhancements.css';
 import './index.css';
+// Design tokens — index.css's @import for this is dead (unclosed comment on
+// line 1), so load it directly here, last, so its :root tokens take effect.
+import './styles/variables.css';
 import App from './App';
 import ErrorBoundary from './components/common/ErrorBoundary';
 

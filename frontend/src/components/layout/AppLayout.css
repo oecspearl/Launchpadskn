@@ -15,11 +15,11 @@
 }
 
 .app-content.with-sidebar {
-  margin-left: var(--sidebar-width);
+  margin-left: var(--sidebar-width, 256px);
 }
 
 .app-content.with-sidebar.sidebar-collapsed {
-  margin-left: var(--sidebar-collapsed-width);
+  margin-left: var(--sidebar-collapsed-width, 76px);
 }
 
 /* Mobile: no margin, sidebar is overlay */
@@ -27,5 +27,48 @@
   .app-content.with-sidebar,
   .app-content.with-sidebar.sidebar-collapsed {
     margin-left: 0;
+  }
+}
+
+/* ===== SKN Tribar (top tricolor strip) ===== */
+.skn-tribar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--tribar-h, 5px);
+  display: flex;
+  z-index: 200;
+}
+
+/* ===== Two-column placement (desktop) =====
+   When a sidebar is present it owns the full-height left column, so the
+   topbar and tribar sit only over the content area to its right. */
+@media (min-width: 992px) {
+  .app-layout.has-sidebar .skn-tribar,
+  .app-layout.has-sidebar .topbar {
+    left: var(--sidebar-width, 256px);
+    transition: left 0.25s ease;
+  }
+
+  .app-layout.has-sidebar.sidebar-collapsed .skn-tribar,
+  .app-layout.has-sidebar.sidebar-collapsed .topbar {
+    left: var(--sidebar-collapsed-width, 76px);
+  }
+
+  /* Brand now lives in the sidebar — drop the topbar's brand cell */
+  .app-layout.has-sidebar .topbar-left {
+    display: none;
+  }
+
+  /* Let the action row span the content width: search left, actions right */
+  .app-layout.has-sidebar .topbar-inner {
+    padding-left: 24px;
+  }
+  .app-layout.has-sidebar .topbar-right {
+    flex: 1;
+  }
+  .app-layout.has-sidebar .topbar-right .quick-search-wrapper {
+    margin-right: auto;
   }
 }

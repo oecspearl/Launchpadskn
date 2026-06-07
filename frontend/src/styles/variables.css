@@ -1,60 +1,72 @@
 :root {
-  /* SKN Flag Colours */
-  --skn-green:   #009e60;
-  --skn-red:     #c8001e;
-  --skn-yellow:  #fcd116;
-  --skn-black:   #000000;
+  /* Authentic SKN Flag Colours (flag mark + tribar) */
+  --flag-green:  #009e49;
+  --flag-yellow: #fcd116;
+  --flag-red:    #c8001e;
+  --flag-black:  #000000;
 
-  /* Brand Colors - Mapped to SKN Theme */
+  /* UI palette — editorial green accent drawn from the flag.
+     --skn-green is repurposed as the app-wide accent so existing
+     components adopt the editorial direction automatically. */
+  --skn-green:   #1f7a3d;
+  --skn-red:     #b3261e;
+  --skn-yellow:  #c9a227;
+  --skn-black:   #13140f;
+
+  --accent:        #1f7a3d;
+  --accent-strong: #186230;
+  --accent-soft:   #e3efe6;
+  --gold:          #c9a227;
+
+  /* Brand Colors */
   --primary-hue: 143;
-  --primary-sat: 100%;
-  --primary-light: 29%;
+  --primary-sat: 60%;
+  --primary-light: 30%;
 
-  --primary-color: var(--skn-green);
-  --primary-dark: var(--forest);
-  --primary-light-bg: #E8F5ED;
+  --primary-color: var(--accent);
+  --primary-dark: var(--accent-strong);
+  --primary-light-bg: var(--accent-soft);
 
-  --secondary-hue: 353;
-  --secondary-sat: 85%;
-  --secondary-light: 44%;
   --secondary-color: var(--skn-red);
 
-  --accent-hue: 49;
-  --accent-color: var(--skn-yellow);
+  --accent-hue: 45;
+  --accent-color: var(--gold);
 
-  /* Neutral Palette (Warm Stone) */
-  --gray-50: #fafaf9;
-  --gray-100: #f5f5f4;
-  --gray-200: #e7e5e4;
-  --gray-300: #d6d3d1;
-  --gray-400: #a8a29e;
-  --gray-500: #78716c;
-  --gray-600: #57534e;
-  --gray-700: #44403c;
-  --gray-800: #292524;
-  --gray-900: #1c1917;
+  /* Neutral Palette (Warm Parchment / Ink) */
+  --gray-50:  #fbfaf5;
+  --gray-100: #f4f1e8;
+  --gray-200: #eae3d6;
+  --gray-300: #dcd6c6;
+  --gray-400: #b6b0a1;
+  --gray-500: #8c8779;
+  --gray-600: #6b675c;
+  --gray-700: #4a473f;
+  --gray-800: #2a2922;
+  --gray-900: #13140f;
 
   /* Neutral Colors */
-  --text-main: var(--gray-800);
+  --text-main: var(--gray-900);
   --text-secondary: var(--gray-600);
-  --text-light: var(--gray-400);
+  --text-light: var(--gray-500);
 
-  --bg-body: var(--gray-50);
-  --bg-surface: #ffffff;
-  --bg-surface-hover: var(--gray-50);
+  --bg-body: #f4f1e8;          /* parchment */
+  --bg-surface: #fbfaf5;       /* card */
+  --bg-surface-hover: #eae3d6;
 
-  --border-color: var(--gray-200);
-  --border-color-hover: var(--gray-300);
+  --border-color: #dcd6c6;
+  --border-color-hover: #cbc3b1;
 
   /* Status Colors */
-  --success: hsl(150, 70%, 40%);
-  --warning: hsl(35, 90%, 50%);
-  --danger: hsl(0, 80%, 55%);
-  --info: hsl(200, 80%, 50%);
+  --success: #1f7a3d;
+  --warning: #c9a227;
+  --danger:  #b3261e;
+  --info:    #2f6f86;
 
-  /* Typography */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-  --font-heading: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+  /* Typography — editorial: Fraunces display, Spline Sans body/mono */
+  --font-display:   'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-body:      'Spline Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-sans:      var(--font-body);
+  --font-heading:   var(--font-display);
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -64,17 +76,18 @@
   --spacing-xl: 2rem;
   --spacing-xxl: 3rem;
 
-  /* Effects */
-  --shadow-sm: 0 1px 2px rgba(41, 37, 36, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(41, 37, 36, 0.08), 0 2px 4px -2px rgba(41, 37, 36, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(41, 37, 36, 0.08), 0 4px 6px -4px rgba(41, 37, 36, 0.04);
-  --shadow-hover: 0 20px 25px -5px rgba(41, 37, 36, 0.08), 0 8px 10px -6px rgba(41, 37, 36, 0.04);
+  /* Effects — soft editorial shadows */
+  --shadow-sm: 0 1px 2px rgba(19, 20, 15, 0.04);
+  --shadow-md: 0 1px 2px rgba(19, 20, 15, 0.04), 0 8px 24px rgba(19, 20, 15, 0.06);
+  --shadow-lg: 0 12px 30px rgba(19, 20, 15, 0.10);
+  --shadow-hover: 0 16px 40px rgba(19, 20, 15, 0.12);
 
-  --radius-sm: 0;
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-xl: 0;
-  --radius-full: 0;
+  /* Radii — rounded editorial corners */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-full: 999px;
 
   --transition-fast: 150ms cubic-bezier(0.25, 0.1, 0.25, 1);
   --transition-normal: 250ms cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -82,25 +95,29 @@
   /* Layout */
   --sidebar-width: 256px;
   --sidebar-w: 256px;
-  --sidebar-collapsed-width: 64px;
-  --topbar-height: 60px;
-  --header-h: 60px;
+  --sidebar-collapsed-width: 76px;
+  --topbar-height: 68px;
+  --header-h: 68px;
   --tribar-h: 5px;
 
   /* Derived Palette */
-  --forest:      #006b40;
-  --crimson:     #9a0017;
-  --amber:       #c9a500;
-  --ink:         #0f0f0f;
-  --charcoal:    #1e2028;
-  --slate:       #2c3140;
-  --stone:       #f2ede4;
-  --parchment:   #faf7f2;
-  --mist:        #e8e2d8;
-  --fog:         #d4cec4;
+  --forest:      #186230;
+  --crimson:     #8f1d17;
+  --amber:       #c9a227;
+  --ink:         #13140f;
+  --ink-2:       #23241d;
+  --charcoal:    #1f201a;
+  --slate:       #2c2e26;
+  --stone:       #eae3d6;
+  --parchment:   #f4f1e8;
+  --card:        #fbfaf5;
+  --mist:        #eae3d6;
+  --fog:         #dcd6c6;
+  --line:        #dcd6c6;
+  --muted:       #8c8779;
 
-  /* Fonts */
-  --font-serif:      'Source Serif 4', Georgia, serif;
-  --font-mono:       'IBM Plex Mono', monospace;
-  --font-condensed:  'Barlow Condensed', sans-serif;
+  /* Fonts (legacy names remapped to editorial faces) */
+  --font-serif:      var(--font-display);
+  --font-mono:       'Spline Sans Mono', ui-monospace, monospace;
+  --font-condensed:  var(--font-display);
 }

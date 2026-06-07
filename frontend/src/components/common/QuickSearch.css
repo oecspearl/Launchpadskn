@@ -1,7 +1,8 @@
-/* Quick Search Styles */
+/* Quick Search Styles — Editorial */
 .quick-search-wrapper {
     position: relative;
-    width: 300px;
+    width: 420px;
+    max-width: 100%;
 }
 
 .quick-search-form {
@@ -16,31 +17,33 @@
 
 .quick-search-icon {
     position: absolute;
-    left: 12px;
-    color: #9ca3af;
-    font-size: 14px;
+    left: 14px;
+    color: var(--muted, #8c8779);
+    font-size: 15px;
     pointer-events: none;
     z-index: 1;
 }
 
 .quick-search-input {
-    padding-left: 36px !important;
-    height: 38px;
+    padding-left: 40px !important;
+    height: 42px;
     font-size: 14px;
-    border-radius: 8px;
-    border: 1px solid #e5e7eb;
-    background: #f9fafb;
-    transition: all 0.2s;
+    font-family: var(--font-body, 'Spline Sans', sans-serif);
+    border-radius: var(--radius-md, 10px);
+    border: 1px solid var(--line, #dcd6c6);
+    background: var(--card, #fbfaf5);
+    color: var(--ink, #13140f);
+    transition: all 0.18s;
 }
 
 .quick-search-input:focus {
-    background: white;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: var(--card, #fbfaf5);
+    border-color: var(--accent, #1f7a3d);
+    box-shadow: 0 0 0 3px var(--accent-soft, #e3efe6);
 }
 
 .quick-search-input::placeholder {
-    color: #9ca3af;
+    color: var(--muted, #8c8779);
     font-size: 14px;
 }
 
@@ -85,33 +88,4 @@
     }
 }
 
-/* Dark Mode Support */
-@media (prefers-color-scheme: dark) {
-    .quick-search-input {
-        background: #374151;
-        border-color: #4b5563;
-        color: #f3f4f6;
-    }
-
-    .quick-search-input:focus {
-        background: #1f2937;
-        border-color: #60a5fa;
-    }
-
-    .quick-search-input::placeholder {
-        color: #9ca3af;
-    }
-
-    .quick-search-dropdown {
-        background: #1f2937;
-        border-color: #374151;
-    }
-
-    .quick-search-dropdown .dropdown-item {
-        color: #f3f4f6;
-    }
-
-    .quick-search-dropdown .dropdown-item:hover {
-        background-color: #374151;
-    }
-}
+/* Editorial palette holds regardless of OS color scheme */

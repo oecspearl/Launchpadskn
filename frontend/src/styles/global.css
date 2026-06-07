@@ -1,25 +1,28 @@
 /* ============================================
    LaunchPad SKN - Global Design System
-   Hybrid Brutalist + SKN National Identity
+   Editorial / Parchment + SKN National Identity
    ============================================ */
 
 /* ============================================
-   0. BRUTALIST RESET & GLOBAL OVERRIDES
+   0. RESET & GLOBAL OVERRIDES
    ============================================ */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  border-radius: 0 !important;
 }
 
-/* Override Bootstrap radius classes */
-.btn, .card, .badge, .form-control,
-.input-group, .modal-content, .dropdown-menu,
-.alert, .toast, .popover, .tooltip-inner,
-.nav-tabs .nav-link, .accordion-item,
-.list-group-item, .breadcrumb {
-  border-radius: 0 !important;
+/* Soften Bootstrap radii to the editorial scale */
+.btn, .input-group, .form-control,
+.alert, .toast, .nav-tabs .nav-link {
+  border-radius: var(--radius-md);
+}
+.card, .modal-content, .dropdown-menu,
+.accordion-item, .list-group-item {
+  border-radius: var(--radius-lg);
+}
+.badge, .popover, .tooltip-inner, .breadcrumb {
+  border-radius: var(--radius-sm);
 }
 
 /* ============================================
@@ -27,8 +30,8 @@
    ============================================ */
 :root {
   /* Typography Scale */
-  --font-family-base: var(--font-serif, 'Source Serif 4', Georgia, serif);
-  --font-family-heading: var(--font-condensed, 'Barlow Condensed', sans-serif);
+  --font-family-base: var(--font-body, 'Spline Sans', system-ui, sans-serif);
+  --font-family-heading: var(--font-display, 'Fraunces', Georgia, serif);
 
   /* Font Sizes (Mobile-First) */
   --font-size-xs: 0.75rem;
@@ -145,12 +148,12 @@ html {
 }
 
 body {
-  font-family: var(--font-serif, 'Source Serif 4', Georgia, serif);
+  font-family: var(--font-body, 'Spline Sans', system-ui, sans-serif);
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-normal);
   line-height: var(--line-height-normal);
-  color: var(--ink, #0f0f0f);
-  background-color: var(--stone, #f2ede4);
+  color: var(--ink, #13140f);
+  background-color: var(--parchment, #f4f1e8);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -276,10 +279,10 @@ a:hover {
    4. CARDS (Modern Design)
    ============================================ */
 .card {
-  background: #ffffff;
-  border-radius: 0 !important;
-  border: 1px solid var(--fog, #d4cec4);
-  box-shadow: none;
+  background: var(--card, #fbfaf5);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line, #dcd6c6);
+  box-shadow: var(--shadow-sm);
   overflow: hidden;
   transition: all var(--transition-base);
   margin-bottom: var(--spacing-6);
