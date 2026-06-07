@@ -10,8 +10,7 @@ import {
   FaFilter, FaSearch
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { gradebookService } from '../../services/gradebookService';
 import { personName } from '../../utils/personName';
 
 function Gradebook() {
@@ -47,70 +46,26 @@ function Gradebook() {
       setError(null);
       
       // Get class-subject details
-      const { data: classSubjectData, error: csError } = await supabase
-        .from('class_subjects')
-        .select(`
-          *,
-          class:classes(
-            *,
-            form:forms(*)
-          ),
-          subject_offering:subject_form_offerings(
-            subject:subjects(*)
-          )
-        `)
-        .eq('class_subject_id', classSubjectId)
-        .single();
-      
-      if (csError) throw csError;
+      const classSubjectData = await gradebookService.getClassSubject(classSubjectId);
       setClassSubject(classSubjectData);
-      
+
       // Get students in this class
       const classId = classSubjectData.class_id;
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('student_class_assignments')
-        .select(`
-          *,
-          student:users(id, first_name, last_name, email)
-        `)
-        .eq('class_id', classId)
-        .eq('is_active', true);
-      
-      if (studentsError) throw studentsError;
-      const studentList = (studentsData || [])
-        .map(s => s.student)
-        .filter(Boolean)
+      const studentList = (await gradebookService.getActiveStudentsByClass(classId))
         .sort((a, b) => personName(a).localeCompare(personName(b)));
       setStudents(studentList);
-      
+
       // Get assessments
-      let assessmentsQuery = supabase
-        .from('subject_assessments')
-        .select('*')
-        .eq('class_subject_id', classSubjectId)
-        .order('due_date', { ascending: false });
-      
-      if (selectedTerm !== 'all') {
-        assessmentsQuery = assessmentsQuery.eq('term', parseInt(selectedTerm));
-      }
-      
-      const { data: assessmentsData, error: assessmentsError } = await assessmentsQuery;
-      if (assessmentsError) throw assessmentsError;
+      const assessmentsData = await gradebookService.getAssessments(classSubjectId, selectedTerm);
       setAssessments(assessmentsData || []);
-      
+
       // Get all grades for these students and assessments
       const studentIds = studentList.map(s => s.id);
       const assessmentIds = (assessmentsData || []).map(a => a.assessment_id);
-      
+
       if (studentIds.length > 0 && assessmentIds.length > 0) {
-        const { data: gradesData, error: gradesError } = await supabase
-          .from('student_grades')
-          .select('*')
-          .in('student_id', studentIds)
-          .in('assessment_id', assessmentIds);
-        
-        if (gradesError) throw gradesError;
-        
+        const gradesData = await gradebookService.getGrades(studentIds, assessmentIds);
+
         const gradesMap = {};
         (gradesData || []).forEach(grade => {
           if (!gradesMap[grade.student_id]) {
@@ -122,15 +77,9 @@ function Gradebook() {
       }
       
       // Get lessons for attendance
-      const { data: lessonsData, error: lessonsError } = await supabase
-        .from('lessons')
-        .select('*')
-        .eq('class_subject_id', classSubjectId)
-        .order('lesson_date', { ascending: false });
-      
-      if (lessonsError) throw lessonsError;
+      const lessonsData = await gradebookService.getLessons(classSubjectId);
       setLessons(lessonsData || []);
-      
+
       // Get attendance records
       if (studentIds.length > 0 && lessonsData && lessonsData.length > 0) {
         const lessonIds = lessonsData.map(l => l.lesson_id);
@@ -139,15 +88,9 @@ function Gradebook() {
         lessonsData.forEach(lesson => {
           lessonDateMap[lesson.lesson_id] = lesson.lesson_date;
         });
-        
-        const { data: attendanceData, error: attendanceError } = await supabase
-          .from('lesson_attendance')
-          .select('*')
-          .in('student_id', studentIds)
-          .in('lesson_id', lessonIds);
-        
-        if (attendanceError) throw attendanceError;
-        
+
+        const attendanceData = await gradebookService.getAttendance(studentIds, lessonIds);
+
         // Group attendance by student and date (not by lesson)
         const attendanceMap = {};
         (attendanceData || []).forEach(att => {

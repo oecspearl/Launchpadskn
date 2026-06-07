@@ -8,8 +8,7 @@ import {
   FaSave, FaEdit, FaTrophy, FaClipboardList
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { gradebookService } from '../../services/gradebookService';
 
 function GradeEntry() {
   const { assessmentId } = useParams();
@@ -40,46 +39,17 @@ function GradeEntry() {
       setError(null);
       
       // Get assessment details
-      const { data: assessmentData } = await supabase
-        .from('subject_assessments')
-        .select(`
-          *,
-          class_subject:class_subjects(
-            *,
-            class:classes(
-              *,
-              form:forms(*)
-            ),
-            subject_offering:subject_form_offerings(
-              subject:subjects(*)
-            )
-          )
-        `)
-        .eq('assessment_id', assessmentId)
-        .single();
-      
+      const assessmentData = await gradebookService.getAssessment(assessmentId);
       setAssessment(assessmentData);
-      
+
       // Get students for this class
       const classId = assessmentData?.class_subject?.class_id;
       if (classId) {
-        const { data: studentsData } = await supabase
-          .from('student_class_assignments')
-          .select(`
-            *,
-            student:users(*)
-          `)
-          .eq('class_id', classId)
-          .eq('is_active', true);
-        
-        setStudents((studentsData || []).map(s => s.student).filter(Boolean));
-        
+        setStudents(await gradebookService.getActiveStudentsByClass(classId));
+
         // Get existing grades
-        const { data: gradesData } = await supabase
-          .from('student_grades')
-          .select('*')
-          .eq('assessment_id', assessmentId);
-        
+        const gradesData = await gradebookService.getGradesByAssessment(assessmentId);
+
         const gradesMap = {};
         (gradesData || []).forEach(grade => {
           gradesMap[grade.student_id] = {
@@ -189,14 +159,6 @@ function GradeEntry() {
           continue; // Skip students without marks
         }
         
-        // Check if grade already exists
-        const { data: existing } = await supabase
-          .from('student_grades')
-          .select('*')
-          .eq('assessment_id', assessmentId)
-          .eq('student_id', student.user_id)
-          .maybeSingle();
-        
         const gradePayload = {
           assessment_id: parseInt(assessmentId),
           student_id: student.user_id,
@@ -208,23 +170,8 @@ function GradeEntry() {
           graded_by: user.userId,
           graded_at: new Date().toISOString()
         };
-        
-        if (existing) {
-          // Update
-          const { error } = await supabase
-            .from('student_grades')
-            .update(gradePayload)
-            .eq('grade_id', existing.grade_id);
-          
-          if (error) throw error;
-        } else {
-          // Insert
-          const { error } = await supabase
-            .from('student_grades')
-            .insert(gradePayload);
-          
-          if (error) throw error;
-        }
+
+        await gradebookService.saveGrade(gradePayload);
       }
       
       setSuccess('Grades saved successfully');

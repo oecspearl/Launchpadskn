@@ -8,8 +8,7 @@ import {
   FaCheckCircle, FaTimesCircle, FaClock, FaUserCheck, FaSave, FaSearch
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import { gradebookService } from '../../services/gradebookService';
 
 function AttendanceMarking() {
   const { lessonId } = useParams();
@@ -40,43 +39,17 @@ function AttendanceMarking() {
       setError(null);
       
       // Get lesson details
-      const { data: lessonData } = await supabase
-        .from('lessons')
-        .select(`
-          *,
-          class_subject:class_subjects(
-            *,
-            class:classes(
-              *,
-              form:forms(*)
-            )
-          )
-        `)
-        .eq('lesson_id', lessonId)
-        .single();
-      
+      const lessonData = await gradebookService.getLesson(lessonId);
       setLesson(lessonData);
-      
+
       // Get students for this class
       const classId = lessonData?.class_subject?.class_id;
       if (classId) {
-        const { data: studentsData } = await supabase
-          .from('student_class_assignments')
-          .select(`
-            *,
-            student:users(*)
-          `)
-          .eq('class_id', classId)
-          .eq('is_active', true);
-        
-        setStudents((studentsData || []).map(s => s.student).filter(Boolean));
-        
+        setStudents(await gradebookService.getActiveStudentsByClass(classId));
+
         // Get existing attendance
-        const { data: attendanceData } = await supabase
-          .from('lesson_attendance')
-          .select('*')
-          .eq('lesson_id', lessonId);
-        
+        const attendanceData = await gradebookService.getAttendanceByLesson(lessonId);
+
         const attendanceMap = {};
         const notesMap = {};
         (attendanceData || []).forEach(att => {
@@ -146,12 +119,8 @@ function AttendanceMarking() {
         marked_at: now
       }));
 
-      const { error: upsertError } = await supabase
-        .from('lesson_attendance')
-        .upsert(records, { onConflict: 'lesson_id,student_id' });
+      await gradebookService.upsertAttendance(records);
 
-      if (upsertError) throw upsertError;
-      
       setSuccess('Attendance saved successfully');
       fetchData(); // Refresh to show saved data
     } catch (err) {
