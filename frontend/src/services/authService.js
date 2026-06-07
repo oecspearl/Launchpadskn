@@ -109,26 +109,30 @@ export const authService = {
             throw new Error(`Invalid UUID format: ${userId}. Please use the user's UUID (id field), not user_id.`);
         }
 
-        // Check if admin client is available
-        if (!supabaseAdmin) {
-            throw new Error('Service role key not configured. Direct password change requires VITE_SUPABASE_SERVICE_ROLE_KEY environment variable. Please use email reset method instead.');
+        // The service-role key must never live in the browser. Delegate to a
+        // serverless function that performs the admin reset server-side after
+        // verifying the caller is an admin.
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.access_token) {
+            throw new Error('You must be signed in to reset a password.');
         }
 
-        // Use admin client with service role key
-        const { data, error } = await supabaseAdmin.auth.admin.updateUserById(userId, {
-            password: newPassword,
+        const resp = await fetch('/api/admin/reset-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session.access_token}`
+            },
+            body: JSON.stringify({ userId, newPassword })
         });
 
-        if (error) {
-            if (error.status === 403 || error.message?.includes('not allowed') || error.message?.includes('403')) {
-                throw new Error('Direct password change failed. The service role key may be invalid or expired. Please use email reset method instead.');
-            }
-            throw error;
+        const result = await resp.json().catch(() => ({}));
+        if (!resp.ok) {
+            throw new Error(result.error || 'Password reset failed. Please try again or use the email reset method.');
         }
 
         return {
-            message: 'Password changed successfully!',
-            user: data.user
+            message: result.message || 'Password changed successfully!'
         };
     }
 };
