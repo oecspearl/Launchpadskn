@@ -345,15 +345,15 @@ const adminService = {
           last_name: instructorData.lastName,
           email: instructorData.email,
           role: 'instructor',
-          is_active: instructorData.isActive !== false,
-          department_id: instructorData.departmentId || null
+          is_active: instructorData.isActive !== false
         })
         .select()
         .single();
-      
+
       if (profileError) {
-        // Rollback: delete auth user if profile creation fails
-        await authSupabase.auth.admin.deleteUser(authData.user.id);
+        // Best-effort rollback; admin.deleteUser needs the service role (not in
+        // the browser), so swallow any failure rather than masking the real error.
+        try { await authSupabase.auth.admin.deleteUser(authData.user.id); } catch (_) { /* ignore */ }
         throw profileError;
       }
       

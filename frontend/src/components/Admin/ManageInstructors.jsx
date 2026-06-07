@@ -234,9 +234,10 @@ function ManageInstructors({ institutionId }) {
         await supabase.from('users').insert({
           id: authData.user.id,
           email: currentInstructor.email,
-          name: `${currentInstructor.firstName} ${currentInstructor.lastName}`,
-          role: 'INSTRUCTOR',
-          is_active: currentInstructor.isActive
+          first_name: currentInstructor.firstName || null,
+          last_name: currentInstructor.lastName || null,
+          role: 'instructor',
+          is_active: currentInstructor.isActive !== false
         });
         
         setSuccessMessage("Instructor created successfully!");

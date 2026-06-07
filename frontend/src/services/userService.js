@@ -8,6 +8,37 @@ const normalizeRole = (role) => {
     return lower === 'teacher' ? 'instructor' : lower;
 };
 
+// Columns that actually exist on public.users. Used to sanitize update payloads
+// (the live schema has no `name`/`user_id`/`emergency_contact` columns).
+const USER_COLUMNS = new Set([
+    'email', 'first_name', 'last_name', 'role', 'phone', 'date_of_birth', 'address',
+    'profile_image_url', 'institution_id', 'is_active', 'force_password_change',
+    'consent_given', 'consent_date', 'consent_version', 'last_login_at',
+]);
+
+// Map a loose updates object to valid users columns:
+//  - `name` -> first_name/last_name
+//  - empty institution_id -> null (it is a uuid column)
+//  - lowercase role; drop any unknown keys
+const sanitizeUserUpdates = (updates = {}) => {
+    const out = {};
+    for (const [k, v] of Object.entries(updates)) {
+        if (k === 'name') {
+            const parts = String(v || '').trim().split(/\s+/).filter(Boolean);
+            if (parts[0]) out.first_name = parts[0];
+            if (parts.length > 1) out.last_name = parts.slice(1).join(' ');
+        } else if (k === 'institution_id') {
+            out.institution_id = v === '' || v === undefined ? null : v;
+        } else if (k === 'role') {
+            out.role = normalizeRole(v);
+        } else if (USER_COLUMNS.has(k)) {
+            out[k] = v;
+        }
+        // unknown keys (user_id, name handled above, etc.) are dropped
+    }
+    return out;
+};
+
 export const userService = {
     /**
      * Get user profile from users table
@@ -30,22 +61,27 @@ export const userService = {
      * Update user profile
      */
     async updateUserProfile(userId, updates) {
+        const clean = sanitizeUserUpdates(updates);
+
         const { data, error } = await supabase
             .from('users')
-            .update(updates)
+            .update(clean)
             .eq('id', userId)
             .select()
             .maybeSingle();
 
-        if (!error && data) return data;
+        if (error) throw error;
+        if (data) return data;
 
-        // If still not found, try to insert
+        // No existing profile. We can only create one if we have an email
+        // (NOT NULL). Never insert a partial row — that caused
+        // "null value in column email" errors.
+        if (!clean.email) {
+            throw new Error('User profile not found for this account. Create the user (with an email) before updating it.');
+        }
         const { data: data3, error: error3 } = await supabase
             .from('users')
-            .insert({
-                id: userId,
-                ...updates
-            })
+            .insert({ id: userId, is_active: true, ...clean })
             .select()
             .single();
 
@@ -89,24 +125,30 @@ export const userService = {
     /**
      * Create a new user (admin creates with email, password, role, institution_id)
      */
-    async createUser({ email, password, role = ROLES.STUDENT, institution_id }) {
+    async createUser({ email, password, name, role = ROLES.STUDENT, institution_id }) {
+        if (!email) throw new Error('Email is required to create a user.');
+        const inst = institution_id === '' || institution_id === undefined ? null : institution_id;
+
         // Use signUp (works with anon key) instead of admin.createUser (requires service_role)
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email,
             password,
             options: {
-                data: { role: normalizeRole(role), institution_id },
+                data: { name: name || null, role: normalizeRole(role), institution_id: inst },
             },
         });
         if (authError) throw authError;
         if (!authData.user) throw new Error('User creation failed');
 
-        // Insert profile into custom users table
+        // Insert profile into custom users table (schema uses first_name/last_name, no `name`)
+        const parts = String(name || '').trim().split(/\s+/).filter(Boolean);
         const profile = {
             id: authData.user.id,
             email,
+            first_name: parts[0] || null,
+            last_name: parts.length > 1 ? parts.slice(1).join(' ') : null,
             role: normalizeRole(role),
-            institution_id,
+            institution_id: inst,
             is_active: true,
         };
         const { error: profileError } = await supabase.from('users').insert(profile);

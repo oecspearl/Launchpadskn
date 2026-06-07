@@ -175,14 +175,14 @@ class AuthService {
         .insert({
           id: authData.user.id,
           email,
-          name,
-          role,
+          first_name: String(name || '').trim().split(/\s+/).filter(Boolean)[0] || null,
+          last_name: String(name || '').trim().split(/\s+/).filter(Boolean).slice(1).join(' ') || null,
+          role: (role || 'student').toString().toLowerCase(),
           phone: phone || null,
           date_of_birth: dateOfBirth || null,
           address: address || null,
-          emergency_contact: emergencyContact || null,
           is_active: true,
-          is_first_login: true
+          force_password_change: false
         });
 
       if (profileError) {
