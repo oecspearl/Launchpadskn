@@ -36,12 +36,12 @@ export const dashboardService = {
                     formsResult,
                     parentsResult
                 ] = await Promise.allSettled([
-                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'STUDENT'),
-                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'INSTRUCTOR'),
-                    supabase.from('subjects').select('*', { count: 'exact', head: true }).eq('school_id', institutionId),
-                    supabase.from('classes').select('*, form:forms!inner(*)', { count: 'exact', head: true }).eq('form.school_id', institutionId),
-                    supabase.from('forms').select('*', { count: 'exact', head: true }).eq('school_id', institutionId),
-                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'PARENT')
+                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'student'),
+                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'instructor'),
+                    supabase.from('subjects').select('*', { count: 'exact', head: true }),
+                    supabase.from('classes').select('*, form:forms!inner(institution_id)', { count: 'exact', head: true }).eq('form.institution_id', institutionId),
+                    supabase.from('forms').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId),
+                    supabase.from('users').select('*', { count: 'exact', head: true }).eq('institution_id', institutionId).eq('role', 'parent')
                 ]);
 
                 const totalStudents = studentsResult.status === 'fulfilled' ? (studentsResult.value.count || 0) : 0;
@@ -82,10 +82,10 @@ export const dashboardService = {
                 supabase.from('subjects').select('*', { count: 'exact', head: true }),
                 supabase.from('classes').select('*', { count: 'exact', head: true }),
                 supabase.from('forms').select('*', { count: 'exact', head: true }),
-                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'STUDENT'),
-                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'INSTRUCTOR'),
-                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'ADMIN'),
-                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'PARENT')
+                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'student'),
+                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'instructor'),
+                supabase.from('users').select('*', { count: 'exact', head: true }).in('role', ['admin', 'super_admin']),
+                supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'parent')
             ]);
 
             const totalUsers = usersResult.status === 'fulfilled' ? (usersResult.value.count || 0) : 0;
@@ -141,37 +141,36 @@ export const dashboardService = {
             // Build institution-scoped queries when institutionId is provided
             let usersQuery = supabase
                 .from('users')
-                .select('user_id, email, name, role, created_at')
+                .select('id, email, first_name, last_name, role, created_at')
                 .gte('created_at', sevenDaysAgo.toISOString())
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
             let subjectsQuery = supabase
                 .from('subjects')
-                .select('subject_id, subject_name, created_at')
+                .select('id, name, created_at')
                 .gte('created_at', sevenDaysAgo.toISOString())
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
             let classesQuery = supabase
                 .from('classes')
-                .select('class_id, class_name, created_at, form:forms!inner(school_id)')
+                .select('id, name, created_at, form:forms!inner(institution_id)')
                 .gte('created_at', sevenDaysAgo.toISOString())
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
             let formsQuery = supabase
                 .from('forms')
-                .select('form_id, form_number, form_name, created_at')
+                .select('id, name, level, created_at')
                 .gte('created_at', sevenDaysAgo.toISOString())
                 .order('created_at', { ascending: false })
                 .limit(limit);
 
             if (institutionId) {
                 usersQuery = usersQuery.eq('institution_id', institutionId);
-                subjectsQuery = subjectsQuery.eq('school_id', institutionId);
-                classesQuery = classesQuery.eq('form.school_id', institutionId);
-                formsQuery = formsQuery.eq('school_id', institutionId);
+                classesQuery = classesQuery.eq('form.institution_id', institutionId);
+                formsQuery = formsQuery.eq('institution_id', institutionId);
             }
 
             const [
@@ -190,14 +189,12 @@ export const dashboardService = {
 
             if (recentUsersResult.status === 'fulfilled' && recentUsersResult.value.data) {
                 recentUsersResult.value.data.forEach(user => {
-                    const roleText = user.role === 'ADMIN' ? 'admin' :
-                        user.role === 'INSTRUCTOR' ? 'instructor' :
-                            user.role === 'PARENT' ? 'parent' :
-                                'student';
+                    const roleText = (user.role || 'student').toLowerCase();
+                    const displayName = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
                     activities.push({
-                        id: `user-${user.user_id}`,
+                        id: `user-${user.id}`,
                         type: 'user',
-                        user: user.name || user.email,
+                        user: displayName || user.email,
                         action: 'registered as',
                         target: roleText,
                         time: formatRelativeTime(user.created_at),
@@ -209,11 +206,11 @@ export const dashboardService = {
             if (recentSubjectsResult.status === 'fulfilled' && recentSubjectsResult.value.data) {
                 recentSubjectsResult.value.data.forEach(subject => {
                     activities.push({
-                        id: `subject-${subject.subject_id}`,
+                        id: `subject-${subject.id}`,
                         type: 'subject',
                         user: 'Admin',
                         action: 'created subject',
-                        target: subject.subject_name,
+                        target: subject.name,
                         time: formatRelativeTime(subject.created_at),
                         timestamp: new Date(subject.created_at).getTime()
                     });
@@ -223,11 +220,11 @@ export const dashboardService = {
             if (recentClassesResult.status === 'fulfilled' && recentClassesResult.value.data) {
                 recentClassesResult.value.data.forEach(cls => {
                     activities.push({
-                        id: `class-${cls.class_id}`,
+                        id: `class-${cls.id}`,
                         type: 'class',
                         user: 'Admin',
                         action: 'created class',
-                        target: cls.class_name,
+                        target: cls.name,
                         time: formatRelativeTime(cls.created_at),
                         timestamp: new Date(cls.created_at).getTime()
                     });
@@ -237,11 +234,11 @@ export const dashboardService = {
             if (recentFormsResult.status === 'fulfilled' && recentFormsResult.value.data) {
                 recentFormsResult.value.data.forEach(form => {
                     activities.push({
-                        id: `form-${form.form_id}`,
+                        id: `form-${form.id}`,
                         type: 'form',
                         user: 'Admin',
                         action: 'created form',
-                        target: form.form_name || `Form ${form.form_number}`,
+                        target: form.name || `Form ${form.level}`,
                         time: formatRelativeTime(form.created_at),
                         timestamp: new Date(form.created_at).getTime()
                     });

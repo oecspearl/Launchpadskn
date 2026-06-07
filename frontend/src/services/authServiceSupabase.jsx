@@ -32,11 +32,11 @@ class AuthService {
       try {
         const profile = await supabaseService.getUserProfile(authData.user.id);
         userData = {
-          userId: profile.user_id || authData.user.id,
-          user_id: profile.user_id,
+          userId: authData.user.id,
+          user_id: authData.user.id,
           id: authData.user.id,
           email: authData.user.email,
-          name: profile.name || authData.user.email.split('@')[0],
+          name: [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim() || profile.name || authData.user.email.split('@')[0],
           role: (profile.role || 'STUDENT').toUpperCase().trim(),
           token: authData.session.access_token,
           refreshToken: authData.session.refresh_token,
@@ -59,14 +59,14 @@ class AuthService {
             await supabase
               .from('users')
               .update({ id: authData.user.id })
-              .eq('user_id', emailProfile.user_id);
+              .eq('email', authData.user.email);
 
             userData = {
-              userId: emailProfile.user_id,
-              user_id: emailProfile.user_id,
+              userId: authData.user.id,
+              user_id: authData.user.id,
               id: authData.user.id,
               email: emailProfile.email,
-              name: emailProfile.name || authData.user.email.split('@')[0],
+              name: [emailProfile.first_name, emailProfile.last_name].filter(Boolean).join(' ').trim() || emailProfile.name || authData.user.email.split('@')[0],
               role: (emailProfile.role || 'STUDENT').toUpperCase().trim(),
               token: authData.session.access_token,
               refreshToken: authData.session.refresh_token,
@@ -95,8 +95,9 @@ class AuthService {
                 .insert({
                   id: authData.user.id,
                   email: userData.email,
-                  name: userData.name,
-                  role: userData.role,
+                  first_name: (userData.name || '').split(' ')[0] || null,
+                  last_name: (userData.name || '').split(' ').slice(1).join(' ') || null,
+                  role: (userData.role || 'student').toLowerCase(),
                   is_active: true,
                   created_at: new Date().toISOString()
                 });

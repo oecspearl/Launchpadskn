@@ -19,7 +19,15 @@ const VALID_ROLES = ['ADMIN', 'SCHOOL_ADMIN', 'INSTRUCTOR', 'STUDENT', 'PARENT']
 function normalizeRole(role) {
   const upper = (role || '').toUpperCase().trim();
   if (upper === 'TEACHER') return 'INSTRUCTOR';
+  if (upper === 'SUPER_ADMIN') return 'ADMIN'; // no dedicated super-admin UI yet; treat as admin
   return VALID_ROLES.includes(upper) ? upper : 'STUDENT';
+}
+
+// Live `users` table stores first_name/last_name (no `name` column).
+// Compose a display name, falling back to legacy `name` then the email local part.
+function fullName(src, email) {
+  const composed = [src?.first_name, src?.last_name].filter(Boolean).join(' ').trim();
+  return composed || src?.name || (email ? email.split('@')[0] : 'User');
 }
 
 // Create AuthContext
@@ -204,11 +212,13 @@ export function AuthProvider({ children }) {
 
         // Build userData explicitly — don't spread profile to avoid overwriting critical fields
         const userData = {
-          userId: profile.user_id || session.user.id,
-          user_id: profile.user_id,
+          userId: session.user.id,
+          user_id: session.user.id,
           id: session.user.id,
           email: session.user.email,
-          name: profile.name || session.user.email.split('@')[0],
+          name: fullName(profile, session.user.email),
+          first_name: profile.first_name || null,
+          last_name: profile.last_name || null,
           role: finalRole,
           token: session.access_token,
           refreshToken: session.refresh_token,
@@ -226,13 +236,12 @@ export function AuthProvider({ children }) {
           try {
             const { data: inst } = await supabase
               .from('institutions')
-              .select('name, logo_url, can_add_students')
-              .eq('institution_id', profile.institution_id)
+              .select('name, logo_url')
+              .eq('id', profile.institution_id)
               .maybeSingle();
             if (inst) {
               userData.institution_name = inst.name;
               userData.institution_logo_url = inst.logo_url || null;
-              userData.can_add_students = inst.can_add_students || false;
             }
           } catch { /* institution info is optional */ }
         }
@@ -273,7 +282,7 @@ export function AuthProvider({ children }) {
         try {
           const { data: existingProfile } = await supabase
             .from('users')
-            .select('user_id')
+            .select('id')
             .eq('id', session.user.id)
             .maybeSingle();
 
@@ -283,8 +292,9 @@ export function AuthProvider({ children }) {
               .insert({
                 id: session.user.id,
                 email: userData.email,
-                name: userData.name,
-                role: finalRole,
+                first_name: (userData.name || '').split(' ')[0] || null,
+                last_name: (userData.name || '').split(' ').slice(1).join(' ') || null,
+                role: finalRole.toLowerCase(),
                 is_active: true,
                 created_at: new Date().toISOString()
               });
