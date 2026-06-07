@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Container, Row, Col, Card, Button, Form, Table, 
+import {
+  Container, Row, Col, Card, Button, Form, Table,
   Modal, Spinner, Alert, Badge, ListGroup
 } from 'react-bootstrap';
 import { FaUserPlus, FaUserMinus, FaSearch } from 'react-icons/fa';
-import { adminService } from '../../services/api';
+import { classService } from '../../services/classService';
+import { userService } from '../../services/userService';
+import { useAuth } from '../../contexts/AuthContextSupabase';
 
 function CourseAssignment() {
-  // State for courses, instructors, and UI
-  const [courses, setCourses] = useState([]);
+  const { user } = useAuth();
+
+  // State for classes, instructors, and UI
+  const [classes, setClasses] = useState([]);
   const [instructors, setInstructors] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [courseInstructors, setCourseInstructors] = useState([]);
+  const [selectedClass, setSelectedClass] = useState(null);
+  const [classInstructors, setClassInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -19,184 +23,116 @@ function CourseAssignment() {
   const [assignmentLoading, setAssignmentLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Fetch all courses and instructors when component mounts
+  // Fetch all classes and instructors when component mounts
   useEffect(() => {
-    fetchCoursesAndInstructors();
+    fetchClassesAndInstructors();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch courses and instructors
-  const fetchCoursesAndInstructors = async () => {
+  const fetchClassesAndInstructors = async () => {
     setLoading(true);
     try {
-      // Fetch courses first
-      const coursesResponse = await adminService.getAllCourses();
-      console.log('Fetched courses:', coursesResponse);
-      const coursesData = coursesResponse && coursesResponse.data ? coursesResponse.data : [];
-      setCourses(coursesData);
-      
-      // Then fetch instructors
-      const instructorsResponse = await adminService.getAllInstructors();
-      console.log('Fetched instructors:', instructorsResponse);
-      const instructorsData = instructorsResponse && instructorsResponse.data ? instructorsResponse.data : [];
-      setInstructors(instructorsData);
-      
+      const [classesData, instructorsData] = await Promise.all([
+        classService.getClasses(user?.role, user?.id),
+        userService.getUsersByRole('instructor')
+      ]);
+      setClasses(classesData || []);
+      setInstructors(instructorsData || []);
       setError(null);
     } catch (err) {
-      console.error("Error fetching data:", err);
-      setError("Failed to load courses and instructors. Please try again later.");
+      console.error('Error fetching classes and instructors:', err);
+      setError('Failed to load classes and instructors. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch instructors for a specific course
-  const fetchCourseInstructors = async (courseId) => {
+  // Fetch instructors assigned to a specific class
+  const fetchClassInstructors = async (classId) => {
     setLoading(true);
     try {
-      const response = await adminService.getCourseInstructors(courseId);
-      console.log('Fetched course instructors:', response);
-      
-      // Extract instructor data from the response
-      let instructorsList = [];
-      if (response && response.data) {
-        // Map the CourseInstructor objects to a more usable format
-        instructorsList = response.data.map(courseInstructor => {
-          const instructor = courseInstructor.instructor || {};
-          const user = instructor.user || {};
-          return {
-            userId: instructor.instructorId,
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            email: user.email || '',
-            department: instructor.department ? instructor.department.name : 'N/A',
-            role: courseInstructor.role || 'PRIMARY'
-          };
-        });
-      }
-      
-      setCourseInstructors(instructorsList);
+      const rows = await classService.getClassInstructors(classId);
+      const instructorsList = (rows || []).map(ci => ({
+        userId: ci.instructor?.id,
+        firstName: ci.instructor?.first_name || '',
+        lastName: ci.instructor?.last_name || '',
+        email: ci.instructor?.email || '',
+        role: ci.role || 'instructor'
+      }));
+      setClassInstructors(instructorsList);
       setError(null);
     } catch (err) {
-      console.error("Error fetching course instructors:", err);
-      setError("Failed to load course instructors. Please try again later.");
-      setCourseInstructors([]);
+      console.error('Error fetching class instructors:', err);
+      setError('Failed to load class instructors. Please try again later.');
+      setClassInstructors([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle course selection
-  const handleCourseSelect = async (course) => {
-    console.log('Selected course:', course);
-    setSelectedCourse(course);
-    await fetchCourseInstructors(course.courseId || course.id);
+  const handleClassSelect = async (cls) => {
+    setSelectedClass(cls);
+    setSuccessMessage('');
+    await fetchClassInstructors(cls.id);
   };
 
-  // Open modal to assign instructor
   const handleOpenAssignModal = () => {
-    if (!selectedCourse) {
-      setError("Please select a course first");
+    if (!selectedClass) {
+      setError('Please select a class first');
       return;
     }
     setSearchTerm('');
     setShowModal(true);
   };
 
-  // Close the modal
-  const handleCloseModal = () => {
-    setShowModal(false);
-  };
+  const handleCloseModal = () => setShowModal(false);
 
-  // Assign instructor to course
   const handleAssignInstructor = async (instructorId) => {
-    if (!selectedCourse) return;
-    
+    if (!selectedClass) return;
+
     setAssignmentLoading(true);
     try {
-      const courseId = selectedCourse.courseId || selectedCourse.id;
-      console.log(`Assigning instructor ${instructorId} to course ${courseId}`);
-      
-      // Log the data being sent to the API for debugging
-      console.log('Assignment data:', { instructorId, courseId, role: 'PRIMARY' });
-      
-      // Make the API call to assign the instructor to the course
-      const response = await adminService.assignInstructorToCourse(instructorId, courseId, 'PRIMARY');
-      console.log('Assignment response:', response);
-      
-      // Refresh the list of instructors for this course
-      await fetchCourseInstructors(courseId);
-      
+      await classService.addClassInstructor(selectedClass.id, instructorId);
+      await fetchClassInstructors(selectedClass.id);
       setSuccessMessage('Instructor assigned successfully!');
       handleCloseModal();
     } catch (err) {
-      console.error("Error assigning instructor:", err);
-      
-      // Provide more detailed error information
-      if (err.response) {
-        console.error('Error response:', err.response);
-        console.error('Error data:', err.response.data);
-        setError(`Failed to assign instructor: ${err.response.data?.error || err.response.statusText || 'Unknown error'}`);
-      } else if (err.request) {
-        console.error('Error request:', err.request);
-        setError("No response received from server. Please check your connection.");
-      } else {
-        console.error('Error message:', err.message);
-        setError(`Error: ${err.message || "Failed to assign instructor to course. Please try again."}`);
-      }
+      console.error('Error assigning instructor:', err);
+      setError(`Failed to assign instructor: ${err.message || 'Unknown error'}`);
     } finally {
       setAssignmentLoading(false);
     }
   };
 
-  // Remove instructor from course
   const handleRemoveInstructor = async (instructorId) => {
-    if (!selectedCourse) return;
-    
-    if (window.confirm("Are you sure you want to remove this instructor from the course?")) {
+    if (!selectedClass) return;
+
+    if (window.confirm('Are you sure you want to remove this instructor from the class?')) {
       setAssignmentLoading(true);
       try {
-        const courseId = selectedCourse.courseId || selectedCourse.id;
-        console.log(`Removing instructor ${instructorId} from course ${courseId}`);
-        
-        // Call the API to remove the instructor
-        await adminService.removeInstructorFromCourse(instructorId, courseId);
-        
-        // Refresh the list of instructors for this course
-        await fetchCourseInstructors(courseId);
-        
+        await classService.removeClassInstructor(selectedClass.id, instructorId);
+        await fetchClassInstructors(selectedClass.id);
         setSuccessMessage('Instructor removed successfully!');
       } catch (err) {
-        console.error("Error removing instructor:", err);
-        if (err.response && err.response.data) {
-          setError(`Failed to remove instructor: ${err.response.data.error || 'Unknown error'}`);
-        } else {
-          setError("Failed to remove instructor from course. Please try again.");
-        }
+        console.error('Error removing instructor:', err);
+        setError(`Failed to remove instructor: ${err.message || 'Unknown error'}`);
       } finally {
         setAssignmentLoading(false);
       }
     }
   };
 
-  // Filter instructors based on search term
+  // Instructors available to assign: match search and exclude those already assigned
+  const assignedIds = new Set(classInstructors.map(i => i.userId));
   const filteredInstructors = instructors.filter(instructor => {
-    // Extract instructor details for filtering
-    const firstName = instructor.user?.firstName || '';
-    const lastName = instructor.user?.lastName || '';
-    const fullName = `${firstName} ${lastName}`.toLowerCase();
-    const email = (instructor.user?.email || '').toLowerCase();
-    const searchTermLower = searchTerm.toLowerCase();
-    
-    // Log instructor data for debugging
-    if (searchTerm && (fullName.includes(searchTermLower) || email.includes(searchTermLower))) {
-      console.log('Filtered instructor:', instructor);
-    }
-    
-    return fullName.includes(searchTermLower) || email.includes(searchTermLower);
+    if (assignedIds.has(instructor.id)) return false;
+    const fullName = `${instructor.first_name || ''} ${instructor.last_name || ''}`.toLowerCase();
+    const email = (instructor.email || '').toLowerCase();
+    const term = searchTerm.toLowerCase();
+    return fullName.includes(term) || email.includes(term);
   });
 
-  // Render loading spinner
-  if (loading && courses.length === 0) {
+  if (loading && classes.length === 0) {
     return (
       <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '70vh' }}>
         <Spinner animation="border" variant="primary" />
@@ -210,31 +146,31 @@ function CourseAssignment() {
         <Col md={4}>
           <Card className="shadow-sm mb-4">
             <Card.Header className="bg-white">
-              <h5 className="mb-0">Courses</h5>
+              <h5 className="mb-0">Classes</h5>
             </Card.Header>
             <Card.Body className="p-0">
               <ListGroup variant="flush">
-                {courses.length === 0 ? (
+                {classes.length === 0 ? (
                   <ListGroup.Item className="text-center py-4">
-                    No courses available.
+                    No classes available.
                   </ListGroup.Item>
                 ) : (
-                  courses.map(course => (
-                    <ListGroup.Item 
-                      key={course.courseId || course.id}
+                  classes.map(cls => (
+                    <ListGroup.Item
+                      key={cls.id}
                       action
-                      active={selectedCourse && (selectedCourse.courseId === course.courseId || selectedCourse.id === course.id)}
-                      onClick={() => handleCourseSelect(course)}
+                      active={selectedClass?.id === cls.id}
+                      onClick={() => handleClassSelect(cls)}
                       className="d-flex justify-content-between align-items-center"
                     >
                       <div>
-                        <div className="fw-bold">{course.courseName || course.title}</div>
-                        <small className="text-muted">{course.courseCode || course.code}</small>
+                        <div className="fw-bold">{cls.name}</div>
+                        <small className="text-muted">{cls.form?.name || ''}</small>
                       </div>
-                      {course.isActive ? (
-                        <Badge bg="success" pill>Active</Badge>
+                      {cls.published ? (
+                        <Badge bg="success" pill>Published</Badge>
                       ) : (
-                        <Badge bg="secondary" pill>Inactive</Badge>
+                        <Badge bg="secondary" pill>Draft</Badge>
                       )}
                     </ListGroup.Item>
                   ))
@@ -249,13 +185,13 @@ function CourseAssignment() {
             <Card.Header className="bg-white">
               <div className="d-flex justify-content-between align-items-center">
                 <h5 className="mb-0">
-                  {selectedCourse ? (
-                    <>Course Instructors: <span className="text-primary">{selectedCourse.courseName || selectedCourse.title}</span></>
+                  {selectedClass ? (
+                    <>Class Instructors: <span className="text-primary">{selectedClass.name}</span></>
                   ) : (
-                    'Select a course to view instructors'
+                    'Select a class to view instructors'
                   )}
                 </h5>
-                {selectedCourse && (
+                {selectedClass && (
                   <Button variant="primary" size="sm" onClick={handleOpenAssignModal}>
                     <FaUserPlus className="me-2" /> Assign Instructor
                   </Button>
@@ -263,12 +199,12 @@ function CourseAssignment() {
               </div>
             </Card.Header>
             <Card.Body>
-              {error && <Alert variant="danger">{error}</Alert>}
-              {successMessage && <Alert variant="success">{successMessage}</Alert>}
-              
-              {!selectedCourse ? (
+              {error && <Alert variant="danger" dismissible onClose={() => setError(null)}>{error}</Alert>}
+              {successMessage && <Alert variant="success" dismissible onClose={() => setSuccessMessage('')}>{successMessage}</Alert>}
+
+              {!selectedClass ? (
                 <div className="text-center py-5 text-muted">
-                  <p>Please select a course from the list to view and manage its instructors.</p>
+                  <p>Please select a class from the list to view and manage its instructors.</p>
                 </div>
               ) : assignmentLoading ? (
                 <div className="text-center py-4">
@@ -281,24 +217,24 @@ function CourseAssignment() {
                     <tr>
                       <th>Name</th>
                       <th>Email</th>
-                      <th>Department</th>
+                      <th>Role</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {courseInstructors.length === 0 ? (
+                    {classInstructors.length === 0 ? (
                       <tr>
                         <td colSpan="4" className="text-center py-4">
-                          No instructors assigned to this course yet.
+                          No instructors assigned to this class yet.
                         </td>
                       </tr>
                     ) : (
-                      courseInstructors.map(instructor => (
+                      classInstructors.map(instructor => (
                         <tr key={instructor.userId}>
                           <td>
                             <div className="d-flex align-items-center">
                               <div className="instructor-avatar me-2">
-                                {instructor.firstName.charAt(0)}{instructor.lastName.charAt(0)}
+                                {(instructor.firstName.charAt(0) || '')}{(instructor.lastName.charAt(0) || '')}
                               </div>
                               <div>
                                 {instructor.firstName} {instructor.lastName}
@@ -306,10 +242,10 @@ function CourseAssignment() {
                             </div>
                           </td>
                           <td>{instructor.email}</td>
-                          <td>{instructor.department || 'N/A'}</td>
+                          <td><Badge bg="info">{instructor.role}</Badge></td>
                           <td>
-                            <Button 
-                              variant="outline-danger" 
+                            <Button
+                              variant="outline-danger"
                               size="sm"
                               onClick={() => handleRemoveInstructor(instructor.userId)}
                             >
@@ -330,7 +266,7 @@ function CourseAssignment() {
       {/* Modal for Assigning Instructors */}
       <Modal show={showModal} onHide={handleCloseModal} backdrop="static" size="lg">
         <Modal.Header closeButton>
-          <Modal.Title>Assign Instructor to {selectedCourse?.courseName || selectedCourse?.title}</Modal.Title>
+          <Modal.Title>Assign Instructor to {selectedClass?.name}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <Form.Group className="mb-3">
@@ -338,7 +274,7 @@ function CourseAssignment() {
             <div className="position-relative">
               <Form.Control
                 type="text"
-                placeholder="Search by name..."
+                placeholder="Search by name or email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -347,53 +283,33 @@ function CourseAssignment() {
               </div>
             </div>
           </Form.Group>
-          
+
           <ListGroup className="mt-4">
             {filteredInstructors.length === 0 ? (
               <ListGroup.Item className="text-center py-3">
-                No instructors found.
+                No available instructors found.
               </ListGroup.Item>
             ) : (
               filteredInstructors.map(instructor => {
-                // Extract instructor details for display
-                const firstName = instructor.user?.firstName || '';
-                const lastName = instructor.user?.lastName || '';
-                const fullName = `${firstName} ${lastName}`.trim() || 'Unknown';
-                const department = instructor.department?.name || 'No Department';
-                const specialization = instructor.specialization || 'No Specialization';
-                
-                // Log the instructor object for debugging
-                console.log('Rendering instructor:', {
-                  id: instructor.id,
-                  instructorId: instructor.instructorId,
-                  firstName, lastName, fullName,
-                  department, specialization
-                });
-                
+                const fullName = `${instructor.first_name || ''} ${instructor.last_name || ''}`.trim() || 'Unknown';
                 return (
-                  <ListGroup.Item 
-                    key={instructor.id} 
+                  <ListGroup.Item
+                    key={instructor.id}
                     className="d-flex justify-content-between align-items-center p-3"
                   >
                     <div className="d-flex align-items-center">
                       <div className="instructor-avatar me-3 bg-primary text-white">
-                        {firstName.charAt(0)}{lastName.charAt(0)}
+                        {(instructor.first_name?.charAt(0) || '')}{(instructor.last_name?.charAt(0) || '')}
                       </div>
                       <div>
                         <div className="fw-bold fs-5">{fullName}</div>
-                        <div className="text-muted mb-1">{department}</div>
-                        <Badge bg="info" className="me-2">Specialization: {specialization}</Badge>
+                        <div className="text-muted mb-1">{instructor.email}</div>
                       </div>
                     </div>
-                    <Button 
-                      variant="primary" 
-                      size="sm" 
-                      onClick={() => {
-                        // Use instructorId if available, otherwise fall back to id
-                        const idToUse = instructor.instructorId || instructor.id;
-                        console.log('Assigning instructor with ID:', idToUse);
-                        handleAssignInstructor(idToUse);
-                      }}
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleAssignInstructor(instructor.id)}
                       disabled={assignmentLoading}
                     >
                       Assign
