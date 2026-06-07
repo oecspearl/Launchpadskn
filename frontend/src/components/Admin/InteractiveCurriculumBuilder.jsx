@@ -169,7 +169,7 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
               .select(`
                 user_id,
                 last_seen,
-                users!curriculum_session_editors_user_id_fkey (user_id, email, first_name, last_name)
+                users!curriculum_session_editors_user_id_fkey (id, email, first_name, last_name)
               `)
               .eq('session_id', currentSessionId)
               .gte('last_seen', new Date(Date.now() - 60000).toISOString()); // Active in last minute

@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
 import { supabase } from '../../config/supabase';
+import { personName } from '../../utils/personName';
 
 function Gradebook() {
   const { classSubjectId } = useParams();
@@ -70,7 +71,7 @@ function Gradebook() {
         .from('student_class_assignments')
         .select(`
           *,
-          student:users(user_id, name, email)
+          student:users(id, first_name, last_name, email)
         `)
         .eq('class_id', classId)
         .eq('is_active', true);
@@ -79,7 +80,7 @@ function Gradebook() {
       const studentList = (studentsData || [])
         .map(s => s.student)
         .filter(Boolean)
-        .sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+        .sort((a, b) => personName(a).localeCompare(personName(b)));
       setStudents(studentList);
       
       // Get assessments
@@ -98,7 +99,7 @@ function Gradebook() {
       setAssessments(assessmentsData || []);
       
       // Get all grades for these students and assessments
-      const studentIds = studentList.map(s => s.user_id);
+      const studentIds = studentList.map(s => s.id);
       const assessmentIds = (assessmentsData || []).map(a => a.assessment_id);
       
       if (studentIds.length > 0 && assessmentIds.length > 0) {
@@ -262,7 +263,7 @@ function Gradebook() {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return (
-      (student.name || '').toLowerCase().includes(search) ||
+      personName(student).toLowerCase().includes(search) ||
       (student.email || '').toLowerCase().includes(search)
     );
   });
@@ -290,13 +291,13 @@ function Gradebook() {
     if (activeTab === 'grades') {
       const headers = ['Student Name', 'Student Email', ...assessments.map(a => a.assessment_name), 'Average'];
       const rows = filteredStudents.map(student => [
-        student.name || '',
+        personName(student),
         student.email || '',
         ...assessments.map(assessment => {
-          const grade = grades[student.user_id]?.[assessment.assessment_id];
+          const grade = grades[student.id]?.[assessment.assessment_id];
           return grade ? `${grade.marks_obtained}/${assessment.total_marks} (${grade.percentage?.toFixed(1)}%)` : '-';
         }),
-        calculateStudentAverage(student.user_id) || '-'
+        calculateStudentAverage(student.id) || '-'
       ]);
       downloadCSV(headers, rows, `gradebook_${classSubject?.subject_offering?.subject?.subject_name || 'grades'}.csv`);
     } else {
@@ -307,12 +308,12 @@ function Gradebook() {
       });
       const headers = ['Student Name', 'Student Email', ...dateHeaders, 'Attendance %'];
       const rows = filteredStudents.map(student => {
-        const studentAttendance = attendance[student.user_id] || {};
+        const studentAttendance = attendance[student.id] || {};
         return [
-          student.name || '',
+          personName(student),
           student.email || '',
           ...dates.map(dateKey => studentAttendance[dateKey]?.status || '-'),
-          calculateAttendancePercentage(student.user_id) || '0'
+          calculateAttendancePercentage(student.id) || '0'
         ];
       });
       downloadCSV(headers, rows, `attendance_${classSubject?.subject_offering?.subject?.subject_name || 'attendance'}.csv`);
@@ -450,14 +451,14 @@ function Gradebook() {
                       </tr>
                     ) : (
                       filteredStudents.map(student => {
-                        const average = calculateStudentAverage(student.user_id);
+                        const average = calculateStudentAverage(student.id);
                         return (
-                          <tr key={student.user_id}>
+                          <tr key={student.id}>
                             <td>
-                              <strong>{student.name || student.email}</strong>
+                              <strong>{personName(student, student.email)}</strong>
                             </td>
                             {assessments.map(assessment => {
-                              const grade = grades[student.user_id]?.[assessment.assessment_id];
+                              const grade = grades[student.id]?.[assessment.assessment_id];
                               return (
                                 <td key={assessment.assessment_id} className="text-center">
                                   {getGradeBadge(grade, assessment)}
@@ -524,14 +525,14 @@ function Gradebook() {
                       </tr>
                     ) : (
                       filteredStudents.map(student => {
-                        const attendancePercentage = calculateAttendancePercentage(student.user_id);
+                        const attendancePercentage = calculateAttendancePercentage(student.id);
                         return (
-                          <tr key={student.user_id}>
+                          <tr key={student.id}>
                             <td>
-                              <strong>{student.name || student.email}</strong>
+                              <strong>{personName(student, student.email)}</strong>
                             </td>
                             {uniqueDates.map(dateKey => {
-                              const att = attendance[student.user_id]?.[dateKey];
+                              const att = attendance[student.id]?.[dateKey];
                               return (
                                 <td key={dateKey} className="text-center">
                                   {getAttendanceIcon(att?.status)}
@@ -584,7 +585,7 @@ function Gradebook() {
                 <span>Students with Grades:</span>
                 <strong>
                   {filteredStudents.filter(s => {
-                    const studentGrades = grades[s.user_id] || {};
+                    const studentGrades = grades[s.id] || {};
                     return Object.keys(studentGrades).length > 0;
                   }).length}
                 </strong>
@@ -610,7 +611,7 @@ function Gradebook() {
                 <span>Students with Records:</span>
                 <strong>
                   {filteredStudents.filter(s => {
-                    const studentAttendance = attendance[s.user_id] || {};
+                    const studentAttendance = attendance[s.id] || {};
                     return Object.keys(studentAttendance).length > 0;
                   }).length}
                 </strong>
@@ -620,7 +621,7 @@ function Gradebook() {
                 <strong>
                   {(() => {
                     const percentages = filteredStudents
-                      .map(s => parseFloat(calculateAttendancePercentage(s.user_id) || 0))
+                      .map(s => parseFloat(calculateAttendancePercentage(s.id) || 0))
                       .filter(p => p > 0);
                     if (percentages.length === 0) return '0%';
                     const avg = percentages.reduce((a, b) => a + b, 0) / percentages.length;

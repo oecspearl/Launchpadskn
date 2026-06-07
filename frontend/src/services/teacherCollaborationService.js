@@ -12,14 +12,15 @@ const teacherCollaborationService = {
         .select(`
           *,
           user:users(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           ),
           parent_comment:content_comments!content_comments_parent_comment_id_fkey(
             comment_id,
             comment_text,
-            user:users(name)
+            user:users(first_name, last_name)
           )
         `)
         .order('created_at', { ascending: false });
@@ -54,8 +55,9 @@ const teacherCollaborationService = {
         .select(`
           *,
           user:users(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           )
         `)
@@ -114,13 +116,15 @@ const teacherCollaborationService = {
         .select(`
           *,
           requested_by_user:users!content_requests_requested_by_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           ),
           fulfilled_by_user:users!content_requests_fulfilled_by_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           ),
           subject:subjects(
@@ -168,8 +172,9 @@ const teacherCollaborationService = {
         .select(`
           *,
           requested_by_user:users!content_requests_requested_by_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           )
         `)
@@ -217,13 +222,15 @@ const teacherCollaborationService = {
         .select(`
           *,
           collaborator:users!content_collaboration_collaborator_id_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           ),
           invited_by_user:users!content_collaboration_invited_by_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           )
         `)
@@ -258,8 +265,9 @@ const teacherCollaborationService = {
         .select(`
           *,
           collaborator:users!content_collaboration_collaborator_id_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           )
         `)
@@ -298,13 +306,15 @@ const teacherCollaborationService = {
         .select(`
           *,
           suggested_by_user:users!content_suggestions_suggested_by_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           ),
           reviewed_by_user:users!content_suggestions_reviewed_by_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           )
         `)
@@ -339,8 +349,9 @@ const teacherCollaborationService = {
         .select(`
           *,
           suggested_by_user:users!content_suggestions_suggested_by_fkey(
-            user_id,
-            name,
+            id,
+            first_name,
+            last_name,
             email
           )
         `)

@@ -7,6 +7,7 @@ import { FaRobot, FaToggleOn, FaToggleOff, FaUsers, FaTrash } from 'react-icons/
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { supabase } from '../../config/supabase';
 import tutorService from '../../services/tutorService';
+import { personName } from '../../utils/personName';
 
 function TutorSettings() {
   const { user } = useAuth();
@@ -70,7 +71,7 @@ function TutorSettings() {
       try {
         const { data: assignments } = await supabase
           .from('student_class_assignments')
-          .select('student:users(user_id, name, email)')
+          .select('student:users(id, first_name, last_name, email)')
           .eq('class_id', cs.class.class_id)
           .eq('is_active', true);
 
@@ -247,14 +248,14 @@ function TutorSettings() {
                       </thead>
                       <tbody>
                         {students.map(student => {
-                          const overrideStatus = getStudentOverrideStatus(csId, student.user_id);
+                          const overrideStatus = getStudentOverrideStatus(csId, student.id);
                           const effectiveEnabled = overrideStatus !== null ? overrideStatus : cs.isEnabled;
                           const hasOverride = overrideStatus !== null;
-                          const key = `${csId}-${student.user_id}`;
+                          const key = `${csId}-${student.id}`;
 
                           return (
-                            <tr key={student.user_id}>
-                              <td>{student.name || student.email}</td>
+                            <tr key={student.id}>
+                              <td>{personName(student, student.email)}</td>
                               <td>
                                 {effectiveEnabled ? (
                                   <Badge bg="success">
@@ -273,7 +274,7 @@ function TutorSettings() {
                                 <Form.Check
                                   type="switch"
                                   checked={effectiveEnabled}
-                                  onChange={() => handleToggleStudentOverride(csId, student.user_id, overrideStatus)}
+                                  onChange={() => handleToggleStudentOverride(csId, student.id, overrideStatus)}
                                   disabled={savingStates[key]}
                                   label=""
                                 />
@@ -284,7 +285,7 @@ function TutorSettings() {
                                     variant="link"
                                     size="sm"
                                     className="text-danger p-0"
-                                    onClick={() => handleRemoveOverride(csId, student.user_id)}
+                                    onClick={() => handleRemoveOverride(csId, student.id)}
                                     disabled={savingStates[`${key}-rm`]}
                                     title="Remove override (revert to class default)"
                                   >

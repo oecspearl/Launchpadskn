@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { personName } from '../utils/personName';
 
 /**
  * Grade letter from percentage
@@ -21,7 +22,7 @@ export const reportCardService = {
     // 1. Get students in this class
     const { data: assignments } = await supabase
       .from('student_class_assignments')
-      .select('student_id, student:users(user_id, name, email)')
+      .select('student_id, student:users(id, first_name, last_name, email)')
       .eq('class_id', classId)
       .eq('is_active', true);
 
@@ -42,7 +43,7 @@ export const reportCardService = {
       .select(`
         class_subject_id,
         teacher_id,
-        teacher:users!class_subjects_teacher_id_fkey(user_id, name),
+        teacher:users!class_subjects_teacher_id_fkey(id, first_name, last_name),
         subject_offering:subject_form_offerings(
           subject:subjects(subject_id, subject_name)
         )
@@ -172,7 +173,7 @@ export const reportCardService = {
           subject_id: cs.subject_offering?.subject?.subject_id,
           subject_name: cs.subject_offering?.subject?.subject_name || '',
           teacher_id: cs.teacher_id,
-          teacher_name: cs.teacher?.name || '',
+          teacher_name: personName(cs.teacher),
           coursework_avg: courseworkAvg,
           exam_mark: examMark,
           final_mark: finalMark,
@@ -263,7 +264,7 @@ export const reportCardService = {
       .from('report_cards')
       .select(`
         *,
-        student:users!report_cards_student_id_fkey(user_id, name, email)
+        student:users!report_cards_student_id_fkey(id, first_name, last_name, email)
       `)
       .eq('class_id', classId)
       .order('class_rank', { ascending: true });
@@ -284,7 +285,7 @@ export const reportCardService = {
       .from('report_cards')
       .select(`
         *,
-        student:users!report_cards_student_id_fkey(user_id, name, email),
+        student:users!report_cards_student_id_fkey(id, first_name, last_name, email),
         class:classes(class_name),
         form:forms(form_name, form_number)
       `)
@@ -391,7 +392,7 @@ export const reportCardService = {
         *,
         report_card:report_cards(
           report_card_id, student_id, academic_year, term, status, class_id,
-          student:users!report_cards_student_id_fkey(user_id, name, email),
+          student:users!report_cards_student_id_fkey(id, first_name, last_name, email),
           class:classes(class_name),
           form:forms(form_name, form_number)
         )

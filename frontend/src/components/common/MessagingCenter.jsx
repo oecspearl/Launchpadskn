@@ -9,6 +9,7 @@ import { messageService } from '../../services/messageService';
 import { supabase } from '../../config/supabase';
 import ConversationView from './ConversationView';
 import Breadcrumb from './Breadcrumb';
+import { personName } from '../../utils/personName';
 
 function MessagingCenter() {
   const { user } = useAuth();
@@ -73,7 +74,7 @@ function MessagingCenter() {
         // Parent sees their children
         const { data: links } = await supabase
           .from('parent_student_links')
-          .select('student:users!parent_student_links_student_id_fkey(user_id, name, email)')
+          .select('student:users!parent_student_links_student_id_fkey(id, first_name, last_name, email)')
           .eq('parent_id', user?.user_id)
           .eq('is_active', true);
         setStudents((links || []).map(l => l.student).filter(Boolean));
@@ -93,10 +94,10 @@ function MessagingCenter() {
 
     try {
       if (isTeacher) {
-        const parents = await messageService.getStudentParents(student.user_id);
+        const parents = await messageService.getStudentParents(student.id);
         setRecipients(parents);
       } else if (isParent) {
-        const teachers = await messageService.getStudentTeachers(student.user_id);
+        const teachers = await messageService.getStudentTeachers(student.id);
         setRecipients(teachers);
       }
     } catch (err) {
@@ -113,9 +114,9 @@ function MessagingCenter() {
       setCreating(true);
       const conversation = await messageService.createConversation(
         user?.institution_id,
-        selectedStudent.user_id,
+        selectedStudent.id,
         newSubject.trim(),
-        [selectedRecipient.user_id],
+        [selectedRecipient.id],
         user?.user_id
       );
 
@@ -218,7 +219,7 @@ function MessagingCenter() {
                   <ListGroup variant="flush">
                     {conversations.map(conv => {
                       const isSelected = selectedConv?.conversation_id === conv.conversation_id;
-                      const otherName = conv.otherParticipants?.[0]?.name || 'Unknown';
+                      const otherName = personName(conv.otherParticipants?.[0], 'Unknown');
                       const lastMsg = conv.lastMessage?.message_text || '';
                       const preview = lastMsg.length > 50 ? lastMsg.substring(0, 50) + '...' : lastMsg;
 
@@ -297,14 +298,14 @@ function MessagingCenter() {
               <ListGroup>
                 {students.map(s => (
                   <ListGroup.Item
-                    key={s.user_id}
+                    key={s.id}
                     action
                     onClick={() => handleSelectStudent(s)}
                     className="d-flex align-items-center gap-2"
                   >
                     <FaChild className="text-primary" />
                     <div>
-                      <strong>{s.name || s.email}</strong>
+                      <strong>{personName(s, s.email)}</strong>
                       {s.classes?.length > 0 && (
                         <small className="d-block text-muted">
                           {s.classes.map(c => c.class_name).join(', ')}
@@ -333,19 +334,19 @@ function MessagingCenter() {
             ) : (
               <>
                 <p className="small text-muted mb-2">
-                  Student: <strong>{selectedStudent?.name}</strong>
+                  Student: <strong>{personName(selectedStudent)}</strong>
                 </p>
                 <ListGroup>
                   {recipients.map(r => (
                     <ListGroup.Item
-                      key={r.user_id}
+                      key={r.id}
                       action
                       onClick={() => { setSelectedRecipient(r); setNewConvStep(3); }}
                       className="d-flex align-items-center gap-2"
                     >
                       <FaUser className="text-success" />
                       <div>
-                        <strong>{r.name || r.email}</strong>
+                        <strong>{personName(r, r.email)}</strong>
                         {r.subjects?.length > 0 && (
                           <small className="d-block text-muted">
                             {r.subjects.join(', ')}
@@ -363,8 +364,8 @@ function MessagingCenter() {
           {newConvStep === 3 && (
             <>
               <div className="mb-3 small text-muted">
-                <p className="mb-1">Student: <strong>{selectedStudent?.name}</strong></p>
-                <p className="mb-0">To: <strong>{selectedRecipient?.name}</strong></p>
+                <p className="mb-1">Student: <strong>{personName(selectedStudent)}</strong></p>
+                <p className="mb-0">To: <strong>{personName(selectedRecipient)}</strong></p>
               </div>
               <Form.Group className="mb-3">
                 <Form.Label className="small fw-bold">Subject</Form.Label>
