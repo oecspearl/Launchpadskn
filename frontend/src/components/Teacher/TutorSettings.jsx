@@ -5,7 +5,7 @@ import {
 } from 'react-bootstrap';
 import { FaRobot, FaToggleOn, FaToggleOff, FaUsers, FaTrash } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import { supabase } from '../../config/supabase';
+import teacherToolsService from '../../services/teacherToolsService';
 import tutorService from '../../services/tutorService';
 import { personName } from '../../utils/personName';
 
@@ -69,11 +69,7 @@ function TutorSettings() {
     const cs = classSubjects.find(c => c.class_subject_id === csId);
     if (cs && !classStudents[cs.class?.class_id]) {
       try {
-        const { data: assignments } = await supabase
-          .from('student_class_assignments')
-          .select('student:users(id, first_name, last_name, email)')
-          .eq('class_id', cs.class.class_id)
-          .eq('is_active', true);
+        const assignments = await teacherToolsService.getActiveStudentAssignmentsByClass(cs.class.class_id);
 
         const students = (assignments || []).map(a => a.student).filter(Boolean);
         setClassStudents(prev => ({ ...prev, [cs.class.class_id]: students }));

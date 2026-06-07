@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import studentViewService from '../../services/studentViewService';
 import LessonsStream from './LessonsStream';
 import './SubjectView.css';
 
@@ -41,25 +41,8 @@ function SubjectView() {
       setError(null);
       
       // Get class-subject details
-      const { data: classSubjectData, error: csError } = await supabase
-        .from('class_subjects')
-        .select(`
-          *,
-          subject_offering:subject_form_offerings(
-            *,
-            subject:subjects(*)
-          ),
-          class:classes(
-            *,
-            form:forms(*)
-          ),
-          teacher:users!class_subjects_teacher_id_fkey(*)
-        `)
-        .eq('class_subject_id', classSubjectId)
-        .single();
-      
-      if (csError) throw csError;
-      
+      const classSubjectData = await studentViewService.getClassSubjectWithTeacher(classSubjectId);
+
       if (classSubjectData) {
         setClassSubject(classSubjectData);
         
@@ -74,22 +57,8 @@ function SubjectView() {
         let lessonContentAssignments = [];
         if (subjectLessons && subjectLessons.length > 0) {
           const lessonIds = subjectLessons.map(l => l.lesson_id);
-          const { data, error: lcError } = await supabase
-            .from('lesson_content')
-            .select(`
-              *,
-              lesson:lessons(
-                lesson_id,
-                lesson_date,
-                homework_due_date,
-                lesson_title,
-                class_subject_id
-              )
-            `)
-            .eq('content_type', 'ASSIGNMENT')
-            .eq('is_published', true)
-            .in('lesson_id', lessonIds);
-          
+          const { data, error: lcError } = await studentViewService.getPublishedAssignmentContentByLessonIds(lessonIds);
+
           if (lcError) {
             if (import.meta.env.DEV) console.error('Error fetching lesson content assignments:', lcError);
           } else {

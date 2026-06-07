@@ -5,6 +5,7 @@ import {
 } from 'react-bootstrap';
 import { FaEdit, FaUserPlus, FaChevronDown, FaChevronRight, FaBook, FaPlus, FaTimes } from 'react-icons/fa';
 import supabaseService from '../../services/supabaseService';
+import adminDirectoryService from '../../services/adminDirectoryService';
 
 function ManageInstructors({ institutionId }) {
   const isScoped = !!institutionId;
@@ -231,7 +232,7 @@ function ManageInstructors({ institutionId }) {
         if (!authData.user) throw new Error('User creation failed');
 
         // Create user profile in users table
-        await supabase.from('users').insert({
+        await adminDirectoryService.createUserProfile({
           id: authData.user.id,
           email: currentInstructor.email,
           first_name: currentInstructor.firstName || null,

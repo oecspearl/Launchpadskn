@@ -8,7 +8,7 @@ import {
   FaArrowUp, FaArrowDown, FaImage, FaTag, FaCog, FaMagic
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import { supabase } from '../../config/supabase';
+import teacherToolsService from '../../services/teacherToolsService';
 import { FlashcardData, Flashcard, defaultFlashcardSettings, createEmptyFlashcardData } from '../../types/contentTypes';
 import { generateFlashcards } from '../../services/aiLessonService';
 import TinyMCEEditor from '../common/TinyMCEEditor';
@@ -87,13 +87,7 @@ function FlashcardCreator({
   const loadExistingContent = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('lesson_content')
-        .select('*')
-        .eq('content_id', contentId)
-        .single();
-
-      if (error) throw error;
+      const data = await teacherToolsService.getLessonContentById(contentId);
 
       if (data) {
         setTitle(data.title || 'Flashcard Set');
@@ -144,28 +138,10 @@ function FlashcardCreator({
       let result;
       if (contentId) {
         // Update existing
-        const { data, error } = await supabase
-          .from('lesson_content')
-          .update({
-            ...contentPayload,
-            updated_at: new Date().toISOString()
-          })
-          .eq('content_id', contentId)
-          .select()
-          .single();
-
-        if (error) throw error;
-        result = data;
+        result = await teacherToolsService.updateLessonContent(contentId, contentPayload);
       } else {
         // Create new
-        const { data, error } = await supabase
-          .from('lesson_content')
-          .insert([contentPayload])
-          .select()
-          .single();
-
-        if (error) throw error;
-        result = data;
+        result = await teacherToolsService.insertLessonContent(contentPayload);
       }
 
       setLastSaved(new Date());

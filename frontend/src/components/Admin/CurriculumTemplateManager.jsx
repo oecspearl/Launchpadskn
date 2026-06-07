@@ -7,6 +7,7 @@ import {
   FaSearch, FaCopy, FaSave, FaTrash, FaBook, FaTag, FaTimes
 } from 'react-icons/fa';
 import { supabase } from '../../config/supabase';
+import curriculumDataService from '../../services/curriculumDataService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -32,31 +33,15 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
   const loadTemplates = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('curriculum_templates')
-        .select('*')
-        .order('usage_count', { ascending: false });
-
-      // Show public templates and user's own templates
-      if (user?.user_id) {
-        query = query.or(`is_public.eq.true,created_by.eq.${user.user_id}`);
-      } else {
-        query = query.eq('is_public', true);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        // Table might not exist yet
-        if (error.code === '42P01') {
-          console.warn('Templates table not created yet. Please run database migrations.');
-          setTemplates([]);
-          return;
-        }
-        throw error;
-      }
+      const data = await curriculumDataService.getTemplates(user?.user_id);
       setTemplates(data || []);
     } catch (error) {
+      // Table might not exist yet
+      if (error.code === '42P01') {
+        console.warn('Templates table not created yet. Please run database migrations.');
+        setTemplates([]);
+        return;
+      }
       console.error('Error loading templates:', error);
       setTemplates([]);
     } finally {
@@ -85,9 +70,9 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
     }
 
     try {
-      const { data, error } = await supabase
-        .from('curriculum_templates')
-        .insert({
+      let data;
+      try {
+        data = await curriculumDataService.createTemplate({
           template_name: templateData.name,
           description: templateData.description,
           subject_id: offering.subject_id,
@@ -96,11 +81,8 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
           is_public: templateData.is_public || false,
           created_by: user.user_id,
           tags: templateData.tags || []
-        })
-        .select()
-        .single();
-
-      if (error) {
+        });
+      } catch (error) {
         if (error.code === '42P01') {
           throw new Error('Templates table not created yet. Please run database migrations first.');
         }
@@ -122,13 +104,7 @@ function CurriculumTemplateManager({ show, onHide, offering, onSelectTemplate, o
     }
 
     try {
-      const { error } = await supabase
-        .from('curriculum_templates')
-        .delete()
-        .eq('template_id', templateId)
-        .eq('created_by', user.user_id); // Only allow deleting own templates
-
-      if (error) throw error;
+      await curriculumDataService.deleteTemplate(templateId, user.user_id);
       await loadTemplates();
     } catch (error) {
       console.error('Error deleting template:', error);

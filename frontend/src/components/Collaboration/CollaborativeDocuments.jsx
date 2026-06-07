@@ -7,6 +7,7 @@ import {
   FaFileAlt, FaPlus, FaEdit, FaUsers, FaClock, FaSearch
 } from 'react-icons/fa';
 import collaborationService from '../../services/collaborationService';
+import collaborationDataService from '../../services/collaborationDataService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../config/supabase';
@@ -47,11 +48,8 @@ function CollaborativeDocuments({ classSubjectId, sessions }) {
       const docs = [];
       for (const session of sessions) {
         try {
-          const { data } = await supabase
-            .from('collaborative_documents')
-            .select('*')
-            .eq('session_id', session.session_id);
-          
+          const data = await collaborationDataService.getDocumentsBySession(session.session_id);
+
           if (data && data.length > 0) {
             docs.push(...data.map(doc => ({ ...doc, session })));
           }

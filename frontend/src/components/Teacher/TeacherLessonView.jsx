@@ -10,7 +10,7 @@ import {
   FaBullseye, FaListOl, FaLightbulb, FaCheckCircle, FaVideo, FaDoorOpen
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import { supabase } from '../../config/supabase';
+import teacherToolsService from '../../services/teacherToolsService';
 import collaborationService from '../../services/collaborationService';
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
 import './TeacherLessonView.css';
@@ -36,23 +36,7 @@ function TeacherLessonView() {
       setIsLoading(true);
       setError(null);
 
-      const { data: lessonData } = await supabase
-        .from('lessons')
-        .select(`
-          *,
-          class_subject:class_subjects(
-            *,
-            subject_offering:subject_form_offerings(
-              subject:subjects(*)
-            ),
-            class:classes(
-              *,
-              form:forms(*)
-            )
-          )
-        `)
-        .eq('lesson_id', lessonId)
-        .single();
+      const lessonData = await teacherToolsService.getLessonWithContext(lessonId);
 
       setLesson(lessonData);
 

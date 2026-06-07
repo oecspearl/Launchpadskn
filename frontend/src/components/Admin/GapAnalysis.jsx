@@ -10,7 +10,7 @@ import {
 import curriculumAnalyticsService from '../../services/curriculumAnalyticsService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
-import { supabase } from '../../config/supabase';
+import curriculumDataService from '../../services/curriculumDataService';
 
 function GapAnalysis({ classSubjectId }) {
   const { user } = useAuth();
@@ -80,16 +80,7 @@ function GapAnalysis({ classSubjectId }) {
 
   const handleResolveGap = async (gapId) => {
     try {
-      const { error } = await supabase
-        .from('curriculum_gaps')
-        .update({
-          resolved: true,
-          resolved_at: new Date().toISOString(),
-          resolved_by: user?.user_id
-        })
-        .eq('gap_id', gapId);
-
-      if (error) throw error;
+      await curriculumDataService.resolveGap(gapId, user?.user_id);
       await loadGaps();
       setShowResolveModal(false);
       setSelectedGap(null);

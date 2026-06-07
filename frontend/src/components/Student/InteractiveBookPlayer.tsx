@@ -10,7 +10,7 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
 import { InteractiveBookData, BookPage, ContentType } from '../../types/contentTypes';
-import { supabase } from '../../config/supabase';
+import studentViewService from '../../services/studentViewService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import FlashcardViewer from './FlashcardViewer';
 import './InteractiveBookPlayer.css';
@@ -130,23 +130,12 @@ function InteractiveBookPlayer({
       };
 
       // Check if progress exists
-      const { data: existing } = await supabase
-        .from('learner_progress')
-        .select('*')
-        .eq('user_id', progressData.user_id)
-        .eq('content_id', contentId)
-        .single();
+      const { data: existing } = await studentViewService.getLearnerProgress(progressData.user_id, contentId);
 
       if (existing) {
-        await supabase
-          .from('learner_progress')
-          .update(progressData)
-          .eq('user_id', progressData.user_id)
-          .eq('content_id', contentId);
+        await studentViewService.updateLearnerProgress(progressData, progressData.user_id, contentId);
       } else {
-        await supabase
-          .from('learner_progress')
-          .insert([{ ...progressData, created_at: new Date().toISOString() }]);
+        await studentViewService.insertLearnerProgress({ ...progressData, created_at: new Date().toISOString() });
       }
     } catch (err) {
       console.error('Error saving progress:', err);
@@ -576,13 +565,7 @@ function EmbeddedContentRenderer({ contentId, page }: EmbeddedContentRendererPro
     enabled: !!contentId,
     queryFn: async () => {
       if (!contentId) return null;
-      const { data, error } = await supabase
-        .from('lesson_content')
-        .select('*')
-        .eq('content_id', contentId)
-        .single();
-      if (error) throw error;
-      return data;
+      return await studentViewService.getLessonContentById(contentId);
     }
   });
 

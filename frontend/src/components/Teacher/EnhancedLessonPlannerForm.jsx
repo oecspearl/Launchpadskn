@@ -5,7 +5,7 @@ import {
 } from 'react-bootstrap';
 import { FaBook, FaUsers, FaCog, FaMagic } from 'react-icons/fa';
 import { generateEnhancedLessonPlan } from '../../services/aiLessonService';
-import { supabase } from '../../config/supabase';
+import teacherToolsService from '../../services/teacherToolsService';
 
 function EnhancedLessonPlannerForm({
   subjectName = '',
@@ -90,18 +90,7 @@ function EnhancedLessonPlannerForm({
 
     try {
       // Get the class_subject with its form info to match by form_number
-      const { data: classSubjectData, error: csError } = await supabase
-        .from('class_subjects')
-        .select(`
-          subject_offering_id,
-          subject_offering:subject_form_offerings(
-            subject_id,
-            form:forms(form_number)
-          ),
-          class:classes(form:forms(form_number))
-        `)
-        .eq('class_subject_id', classSubjectId)
-        .single();
+      const { data: classSubjectData, error: csError } = await teacherToolsService.getClassSubjectCurriculumInfo(classSubjectId);
 
       if (csError || !classSubjectData) {
         console.warn('Could not fetch class subject:', csError);
@@ -114,14 +103,7 @@ function EnhancedLessonPlannerForm({
       const subjectId = classSubjectData.subject_offering?.subject_id;
 
       // Find the offering that matches this subject + form_number (national curriculum)
-      let query = supabase
-        .from('subject_form_offerings')
-        .select('*, form:forms(form_number)')
-        .eq('is_active', true);
-
-      if (subjectId) query = query.eq('subject_id', subjectId);
-
-      const { data: offerings, error: ofError } = await query;
+      const { data: offerings, error: ofError } = await teacherToolsService.getActiveSubjectFormOfferings(subjectId);
 
       // Find offering matching form_number
       let offering = offerings?.find(o => o.form?.form_number === formNumber);

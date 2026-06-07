@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import supabaseService from '../../services/supabaseService';
-import { supabase } from '../../config/supabase';
+import studentViewService from '../../services/studentViewService';
 
 function StudentQuizView() {
   const { contentId } = useParams();
@@ -105,12 +105,8 @@ function StudentQuizView() {
         const userIdToLookup = user.userId || user.id;
         if (userIdToLookup && typeof userIdToLookup === 'string' && userIdToLookup.includes('-')) {
           // It's a UUID, need to get the numeric user_id
-          const { data: userProfile, error: userError } = await supabase
-            .from('users')
-            .select('user_id')
-            .eq('id', userIdToLookup)
-            .maybeSingle();
-          
+          const { data: userProfile, error: userError } = await studentViewService.getUserByAuthId(userIdToLookup);
+
           if (userError) {
             console.error('Error fetching user profile:', userError);
             setError('Unable to identify student. Please log in again.');
@@ -205,12 +201,8 @@ function StudentQuizView() {
       const userIdToLookup = user.userId || user.id;
       if (userIdToLookup && typeof userIdToLookup === 'string' && userIdToLookup.includes('-')) {
         // It's a UUID, need to get the numeric user_id
-        const { data: userProfile, error: userError } = await supabase
-          .from('users')
-          .select('user_id')
-          .eq('id', userIdToLookup)
-          .maybeSingle();
-        
+        const { data: userProfile, error: userError } = await studentViewService.getUserByAuthId(userIdToLookup);
+
         if (userError) {
           console.error('Error fetching user profile:', userError);
           setError('Unable to identify student. Please log in again.');

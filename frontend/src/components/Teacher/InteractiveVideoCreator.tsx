@@ -8,7 +8,7 @@ import {
   FaArrowUp, FaArrowDown, FaQuestionCircle, FaPause, FaCog, FaMagic
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import { supabase } from '../../config/supabase';
+import teacherToolsService from '../../services/teacherToolsService';
 import TinyMCEEditor from '../common/TinyMCEEditor';
 import {
   InteractiveVideoData,
@@ -107,13 +107,7 @@ function InteractiveVideoCreator({
   const loadExistingContent = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('lesson_content')
-        .select('*')
-        .eq('content_id', contentId)
-        .single();
-
-      if (error) throw error;
+      const data = await teacherToolsService.getLessonContentById(contentId);
 
       if (data) {
         setTitle(data.title || 'Interactive Video');
@@ -278,27 +272,9 @@ function InteractiveVideoCreator({
 
       let result;
       if (contentId) {
-        const { data, error } = await supabase
-          .from('lesson_content')
-          .update({
-            ...contentPayload,
-            updated_at: new Date().toISOString()
-          })
-          .eq('content_id', contentId)
-          .select()
-          .single();
-
-        if (error) throw error;
-        result = data;
+        result = await teacherToolsService.updateLessonContent(contentId, contentPayload);
       } else {
-        const { data, error } = await supabase
-          .from('lesson_content')
-          .insert([contentPayload])
-          .select()
-          .single();
-
-        if (error) throw error;
-        result = data;
+        result = await teacherToolsService.insertLessonContent(contentPayload);
       }
 
       setLastSaved(new Date());

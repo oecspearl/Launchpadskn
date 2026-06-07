@@ -5,10 +5,10 @@ import {
 import {
   FaMagic, FaLightbulb, FaLink, FaGamepad, FaFileAlt, FaCheck, FaTimes
 } from 'react-icons/fa';
-import { supabase } from '../../config/supabase';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
 import curriculumAIService from '../../services/curriculumAIService';
+import curriculumDataService from '../../services/curriculumDataService';
 
 function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion }) {
   const { user } = useAuth();
@@ -28,17 +28,11 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('curriculum_ai_suggestions')
-        .select('*')
-        .eq('offering_id', offering.offering_id)
-        .eq('context_type', context.type)
-        .eq('context_path', context.path)
-        .eq('used', false)
-        .order('confidence_score', { ascending: false })
-        .limit(10);
-
-      if (error) throw error;
+      const data = await curriculumDataService.getAISuggestions(
+        offering.offering_id,
+        context.type,
+        context.path
+      );
       setSuggestions(data || []);
     } catch (error) {
       console.error('Error loading suggestions:', error);
@@ -67,11 +61,7 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
           confidence_score: s.confidence || 0.8
         }));
 
-        const { error } = await supabase
-          .from('curriculum_ai_suggestions')
-          .insert(suggestionsToInsert);
-
-        if (error) throw error;
+        await curriculumDataService.insertAISuggestions(suggestionsToInsert);
         await loadSuggestions();
       }
     } catch (error) {
@@ -157,10 +147,7 @@ function AISuggestionPanel({ show, onHide, context, offering, onApplySuggestion 
   const handleApplySuggestion = async (suggestion) => {
     try {
       // Mark suggestion as used
-      await supabase
-        .from('curriculum_ai_suggestions')
-        .update({ used: true, used_at: new Date().toISOString() })
-        .eq('suggestion_id', suggestion.suggestion_id);
+      await curriculumDataService.markAISuggestionUsed(suggestion.suggestion_id);
 
       if (onApplySuggestion) {
         onApplySuggestion(suggestion);

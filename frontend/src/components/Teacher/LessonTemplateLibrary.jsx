@@ -12,7 +12,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
 import lessonTemplateService from '../../services/lessonTemplateService';
-import { supabase } from '../../config/supabase';
+import teacherToolsService from '../../services/teacherToolsService';
 import './LessonTemplateLibrary.css';
 
 function LessonTemplateLibrary() {
@@ -75,11 +75,7 @@ function LessonTemplateLibrary() {
 
   const fetchSubjects = async () => {
     try {
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('subject_id, subject_name')
-        .order('subject_name');
-      if (error) throw error;
+      const data = await teacherToolsService.getSubjects();
       setSubjects(data || []);
     } catch (err) {
       console.error('Error fetching subjects:', err);
@@ -88,11 +84,7 @@ function LessonTemplateLibrary() {
 
   const fetchForms = async () => {
     try {
-      const { data, error } = await supabase
-        .from('forms')
-        .select('form_id, form_name')
-        .order('form_name');
-      if (error) throw error;
+      const data = await teacherToolsService.getForms();
       setForms(data || []);
     } catch (err) {
       console.error('Error fetching forms:', err);
@@ -192,13 +184,7 @@ function LessonTemplateLibrary() {
         created_by: user?.user_id
       };
 
-      const { data: lesson, error: lessonError } = await supabase
-        .from('lessons')
-        .insert(lessonPayload)
-        .select()
-        .single();
-
-      if (lessonError) throw lessonError;
+      const lesson = await teacherToolsService.insertLesson(lessonPayload);
 
       // Create lesson content from edited template content
       if (editedContent && editedContent.length > 0) {
@@ -226,22 +212,16 @@ function LessonTemplateLibrary() {
           published_at: new Date().toISOString()
         }));
 
-        const { error: contentInsertError } = await supabase
-          .from('lesson_content')
-          .insert(lessonContentItems);
-
-        if (contentInsertError) throw contentInsertError;
+        await teacherToolsService.insertLessonContentItems(lessonContentItems);
       }
 
       // Record template usage
       if (selectedTemplate) {
-        await supabase
-          .from('lesson_template_usage')
-          .insert({
-            template_id: selectedTemplate.template_id,
-            lesson_id: lesson.lesson_id,
-            used_by: user?.user_id
-          });
+        await teacherToolsService.recordTemplateUsage({
+          template_id: selectedTemplate.template_id,
+          lesson_id: lesson.lesson_id,
+          used_by: user?.user_id
+        });
       }
 
       showSuccess('Lesson created from template successfully!');

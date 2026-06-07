@@ -11,7 +11,7 @@ import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useTutor } from '../../contexts/TutorContext';
 import supabaseService from '../../services/supabaseService';
 import collaborationService from '../../services/collaborationService';
-import { supabase } from '../../config/supabase';
+import studentViewService from '../../services/studentViewService';
 import ModelViewerComponent from '../InteractiveContent/Viewers/ModelViewerComponent';
 import ViewerErrorBoundary from '../InteractiveContent/Viewers/ViewerErrorBoundary';
 import './LessonViewStream.css';
@@ -86,22 +86,7 @@ function LessonViewStream() {
     const fetchLessonData = async () => {
         try {
             setIsLoading(true);
-            const { data: lessonData, error } = await supabase
-                .from('lessons')
-                .select(`
-          *,
-          class_subject:class_subjects(
-            *,
-            subject_offering:subject_form_offerings(subject:subjects(*)),
-            class:classes(*, form:forms(*)),
-            teacher:users!class_subjects_teacher_id_fkey(*)
-          ),
-          content:lesson_content(*)
-        `)
-                .eq('lesson_id', lessonId)
-                .single();
-
-            if (error) throw error;
+            const lessonData = await studentViewService.getLessonWithContent(lessonId);
 
             if (lessonData && lessonData.content) {
                 lessonData.content = lessonData.content

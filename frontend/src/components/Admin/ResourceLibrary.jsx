@@ -7,7 +7,7 @@ import {
   FaSearch, FaFilter, FaLink, FaVideo, FaGamepad, FaFileAlt,
   FaPlus, FaExternalLinkAlt, FaStar, FaTag
 } from 'react-icons/fa';
-import { supabase } from '../../config/supabase';
+import curriculumDataService from '../../services/curriculumDataService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
 
@@ -34,31 +34,15 @@ function ResourceLibrary({ show, onHide, offering, onSelectResource }) {
   const loadResources = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('curriculum_resources')
-        .select('*')
-        .order('usage_count', { ascending: false });
-
-      // Filter by subject if offering is provided
-      if (offering?.subject_id) {
-        query = query.or(`subject_id.eq.${offering.subject_id},is_public.eq.true`);
-      } else {
-        query = query.eq('is_public', true);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        // Table might not exist yet
-        if (error.code === '42P01') {
-          console.warn('Resource library table not created yet. Please run database migrations.');
-          setResources([]);
-          return;
-        }
-        throw error;
-      }
+      const data = await curriculumDataService.getResources(offering);
       setResources(data || []);
     } catch (error) {
+      // Table might not exist yet
+      if (error.code === '42P01') {
+        console.warn('Resource library table not created yet. Please run database migrations.');
+        setResources([]);
+        return;
+      }
       console.error('Error loading resources:', error);
       setResources([]);
     } finally {
@@ -98,17 +82,14 @@ function ResourceLibrary({ show, onHide, offering, onSelectResource }) {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('curriculum_resources')
-        .insert({
+      let data;
+      try {
+        data = await curriculumDataService.createResource({
           ...resourceData,
           created_by: user.user_id,
           subject_id: offering?.subject_id
-        })
-        .select()
-        .single();
-
-      if (error) {
+        });
+      } catch (error) {
         // Table might not exist yet
         if (error.code === '42P01') {
           throw new Error('Resource library tables not created yet. Please run database migrations first.');

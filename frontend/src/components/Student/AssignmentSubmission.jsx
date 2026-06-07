@@ -9,7 +9,7 @@ import {
   FaArrowLeft, FaDownload
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import { supabase } from '../../config/supabase';
+import studentViewService from '../../services/studentViewService';
 import { createNotification } from '../../services/notificationService';
 
 function AssignmentSubmission() {
@@ -38,35 +38,14 @@ function AssignmentSubmission() {
       setError(null);
 
       // Get assessment details
-      const { data: assessmentData, error: assessmentError } = await supabase
-        .from('subject_assessments')
-        .select(`
-          *,
-          class_subject:class_subjects(
-            *,
-            subject_offering:subject_form_offerings(
-              subject:subjects(*)
-            ),
-            class:classes(
-              *,
-              form:forms(*)
-            )
-          )
-        `)
-        .eq('assessment_id', assessmentId)
-        .single();
+      const { data: assessmentData, error: assessmentError } = await studentViewService.getAssessmentById(assessmentId);
 
       if (assessmentError) throw assessmentError;
       setAssessment(assessmentData);
 
       // Check for existing submission
       if (user && user.userId) {
-        const { data: submissionData } = await supabase
-          .from('student_submissions')
-          .select('*')
-          .eq('assessment_id', assessmentId)
-          .eq('student_id', user.userId)
-          .maybeSingle();
+        const { data: submissionData } = await studentViewService.getSubmission(assessmentId, user.userId);
 
         setSubmission(submissionData);
         if (submissionData?.submission_text) {
@@ -118,19 +97,12 @@ function AssignmentSubmission() {
         const sanitizedFileName = selectedFile.name.replace(/[^a-zA-Z0-9.-]/g, '_');
         filePath = `submissions/${assessmentId}/${user.userId}/${timestamp}-${sanitizedFileName}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from(bucketName)
-          .upload(filePath, selectedFile, {
-            cacheControl: '3600',
-            upsert: false
-          });
+        const { data: uploadData, error: uploadError } = await studentViewService.uploadSubmissionFile(bucketName, filePath, selectedFile);
 
         if (uploadError) throw uploadError;
 
         // Get public URL (or signed URL for private buckets)
-        const { data: urlData } = supabase.storage
-          .from(bucketName)
-          .getPublicUrl(filePath);
+        const { data: urlData } = studentViewService.getSubmissionFilePublicUrl(bucketName, filePath);
 
         fileUrl = urlData.publicUrl;
       }
@@ -148,18 +120,13 @@ function AssignmentSubmission() {
 
       if (submission) {
         // Update existing submission
-        const { error: updateError } = await supabase
-          .from('student_submissions')
-          .update(submissionData)
-          .eq('submission_id', submission.submission_id);
+        const { error: updateError } = await studentViewService.updateSubmission(submissionData, submission.submission_id);
 
         if (updateError) throw updateError;
         setSuccess('Submission updated successfully');
       } else {
         // Create new submission
-        const { error: insertError } = await supabase
-          .from('student_submissions')
-          .insert(submissionData);
+        const { error: insertError } = await studentViewService.insertSubmission(submissionData);
 
         if (insertError) throw insertError;
         setSuccess('Assignment submitted successfully');

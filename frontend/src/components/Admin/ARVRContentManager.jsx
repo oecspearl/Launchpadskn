@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import interactiveContentService from '../../services/interactiveContentService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { supabase } from '../../config/supabase';
+import curriculumDataService from '../../services/curriculumDataService';
 
 function ARVRContentManager() {
   const { user } = useAuth();
@@ -46,12 +47,7 @@ function ARVRContentManager() {
   const { data: subjects = [] } = useQuery({
     queryKey: ['subjects'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('subjects')
-        .select('id, name')
-        .order('name');
-      if (error) throw error;
-      return data || [];
+      return await curriculumDataService.getSubjects();
     }
   });
 
@@ -59,11 +55,9 @@ function ARVRContentManager() {
   const { data: content = [], isLoading } = useQuery({
     queryKey: ['arvr-content-all'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('arvr_content')
-        .select('*, subjects:subject_id (subject_name)')
-        .order('created_at', { ascending: false });
-      if (error) {
+      try {
+        return await curriculumDataService.getAllARVRContent();
+      } catch (error) {
         if (error.code === '42P01') {
           // Table doesn't exist
           setError('The arvr_content table does not exist. Please run the database migration script: database/add-interactive-content-tables.sql');
@@ -71,7 +65,6 @@ function ARVRContentManager() {
         }
         throw error;
       }
-      return data || [];
     },
     onError: (err) => {
       if (err.code === '42P01') {
@@ -100,17 +93,7 @@ function ARVRContentManager() {
         created_by: user?.user_id
       };
 
-      const { data: result, error } = await supabase
-        .from('arvr_content')
-        .insert(cleanedData)
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Insert error:', error);
-        throw error;
-      }
-      return result;
+      return await curriculumDataService.createARVRContent(cleanedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['arvr-content-all']);
@@ -146,17 +129,7 @@ function ARVRContentManager() {
         updated_at: new Date().toISOString()
       };
 
-      const { data: result, error } = await supabase
-        .from('arvr_content')
-        .update(cleanedData)
-        .eq('content_id', id)
-        .select()
-        .single();
-      if (error) {
-        console.error('Update error details:', error);
-        throw error;
-      }
-      return result;
+      return await curriculumDataService.updateARVRContent(id, cleanedData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['arvr-content-all']);
@@ -175,11 +148,7 @@ function ARVRContentManager() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id) => {
-      const { error } = await supabase
-        .from('arvr_content')
-        .delete()
-        .eq('content_id', id);
-      if (error) throw error;
+      await curriculumDataService.deleteARVRContent(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['arvr-content-all']);

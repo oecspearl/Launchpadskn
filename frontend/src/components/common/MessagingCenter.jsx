@@ -6,7 +6,7 @@ import {
 import { FaEnvelope, FaPlus, FaUser, FaChild, FaSearch } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { messageService } from '../../services/messageService';
-import { supabase } from '../../config/supabase';
+import collaborationDataService from '../../services/collaborationDataService';
 import ConversationView from './ConversationView';
 import Breadcrumb from './Breadcrumb';
 import { personName } from '../../utils/personName';
@@ -73,11 +73,7 @@ function MessagingCenter() {
         setStudents(data);
       } else if (isParent) {
         // Parent sees their children
-        const { data: links } = await supabase
-          .from('parent_student_links')
-          .select('student:users!parent_student_links_student_id_fkey(id, first_name, last_name, email)')
-          .eq('parent_id', user?.user_id)
-          .eq('is_active', true);
+        const links = await collaborationDataService.getParentStudentLinks(user?.user_id);
         setStudents((links || []).map(l => l.student).filter(Boolean));
       }
     } catch (err) {
