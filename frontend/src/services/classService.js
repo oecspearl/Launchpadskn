@@ -179,7 +179,7 @@ export const classService = {
     async updateClass(classId, updates) {
         const { data, error } = await supabase
             .from('classes')
-            .update({ ...updates, updated_at: new Date().toISOString() })
+            .update({ ...updates })
             .eq('id', classId)
             .select()
             .single();
@@ -393,16 +393,15 @@ export const classService = {
     },
 
     async updateClassEnrollmentCount(classId) {
+        // The classes table has no current_enrollment column; enrollment is
+        // derived from student_class_assignments. Return the live count instead
+        // of writing a non-existent column.
         const { count } = await supabase
             .from('student_class_assignments')
             .select('*', { count: 'exact', head: true })
             .eq('class_id', classId)
             .eq('is_active', true);
-
-        await supabase
-            .from('classes')
-            .update({ current_enrollment: count || 0 })
-            .eq('id', classId);
+        return count || 0;
     },
 
     async removeStudentFromClass(studentId, classId) {
@@ -503,10 +502,7 @@ export const classService = {
             .from('class_subjects')
             .select(`
         *,
-        subject_offering:subject_form_offerings(
-          *,
-          subject:subjects(*)
-        ),
+        subject:subjects(*),
         teacher:users!class_subjects_teacher_id_fkey(*)
       `)
             .eq('class_id', classId);
@@ -562,14 +558,15 @@ export const classService = {
         return data || [];
     },
 
-    async assignSubjectToClass(classId, subjectOfferingId, teacherId) {
-        if (!classId || !subjectOfferingId) {
-            throw new Error('Invalid class or subject offering ID');
+    async assignSubjectToClass(classId, subjectId, teacherId) {
+        if (!classId || !subjectId) {
+            throw new Error('Invalid class or subject ID');
         }
 
+        // class_subjects links directly to subjects via subject_id (no offering id)
         const insertData = {
             class_id: classId,
-            subject_offering_id: subjectOfferingId
+            subject_id: subjectId
         };
 
         if (teacherId) {
@@ -598,7 +595,7 @@ export const classService = {
         const { error } = await supabase
             .from('class_subjects')
             .delete()
-            .eq('class_subject_id', classSubjectId);
+            .eq('id', classSubjectId);
 
         if (error) throw error;
     },

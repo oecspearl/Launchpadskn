@@ -22,8 +22,8 @@ function ClassDetailPanel({ classItem }) {
 
   // ── Subjects tab data ──
   const { data: classSubjects = [], isLoading: isLoadingSubjects } = useQuery({
-    queryKey: ['class-subjects-inline', classItem.class_id],
-    queryFn: () => classService.getSubjectsByClass(classItem.class_id),
+    queryKey: ['class-subjects-inline', classItem.id],
+    queryFn: () => classService.getSubjectsByClass(classItem.id),
     enabled: activeTab === 'subjects'
   });
 
@@ -37,7 +37,7 @@ function ClassDetailPanel({ classItem }) {
   const formOfferings = useMemo(() => {
     const seen = new Map();
     rawOfferings.forEach(o => {
-      const key = `${(o.subject?.subject_name || '').toLowerCase().trim()}_${o.form?.form_number}`;
+      const key = `${(o.subject?.name || '').toLowerCase().trim()}_${o.form?.level}`;
       const existing = seen.get(key);
       if (!existing) {
         seen.set(key, o);
@@ -56,16 +56,16 @@ function ClassDetailPanel({ classItem }) {
         userService.getUsersByRole(ROLES.INSTRUCTOR)
       ]);
       const all = [...admins, ...instructors];
-      return Array.from(new Map(all.map(item => [item.user_id, item])).values())
-        .sort((a, b) => a.name.localeCompare(b.name));
+      return Array.from(new Map(all.map(item => [item.id, item])).values())
+        .sort((a, b) => personName(a).localeCompare(personName(b)));
     },
     enabled: activeTab === 'subjects'
   });
 
   // ── Students tab data ──
   const { data: classRoster = [], isLoading: isLoadingStudents } = useQuery({
-    queryKey: ['class-roster', classItem.class_id],
-    queryFn: () => classService.getClassRoster(classItem.class_id),
+    queryKey: ['class-roster', classItem.id],
+    queryFn: () => classService.getClassRoster(classItem.id),
     enabled: activeTab === 'students'
   });
 
@@ -77,18 +77,18 @@ function ClassDetailPanel({ classItem }) {
 
   // ── Subject mutations ──
   const [showSubjectForm, setShowSubjectForm] = useState(false);
-  const [subjectFormData, setSubjectFormData] = useState({ subject_offering_id: '', teacher_id: '' });
+  const [subjectFormData, setSubjectFormData] = useState({ subject_id: '', teacher_id: '' });
   const [subjectError, setSubjectError] = useState(null);
 
   const assignSubjectMutation = useMutation({
     mutationFn: (data) => classService.assignSubjectToClass(
-      classItem.class_id, data.subject_offering_id, data.teacher_id
+      classItem.id, data.subject_id, data.teacher_id
     ),
     onSuccess: () => {
-      queryClient.invalidateQueries(['class-subjects-inline', classItem.class_id]);
+      queryClient.invalidateQueries(['class-subjects-inline', classItem.id]);
       queryClient.invalidateQueries(['class-subjects']);
       setShowSubjectForm(false);
-      setSubjectFormData({ subject_offering_id: '', teacher_id: '' });
+      setSubjectFormData({ subject_id: '', teacher_id: '' });
       setSubjectError(null);
     },
     onError: (err) => setSubjectError(err.message || 'Failed to assign subject')
@@ -97,7 +97,7 @@ function ClassDetailPanel({ classItem }) {
   const removeSubjectMutation = useMutation({
     mutationFn: (id) => classService.removeSubjectFromClass(id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['class-subjects-inline', classItem.class_id]);
+      queryClient.invalidateQueries(['class-subjects-inline', classItem.id]);
       queryClient.invalidateQueries(['class-subjects']);
     }
   });
@@ -107,12 +107,15 @@ function ClassDetailPanel({ classItem }) {
   const [studentFormData, setStudentFormData] = useState({ student_id: '' });
   const [studentError, setStudentError] = useState(null);
 
+  const academicYear = classItem.form?.academic_year
+    || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
+
   const assignStudentMutation = useMutation({
     mutationFn: (data) => classService.assignStudentToClass(
-      data.student_id, classItem.class_id, classItem.academic_year
+      data.student_id, classItem.id, academicYear
     ),
     onSuccess: () => {
-      queryClient.invalidateQueries(['class-roster', classItem.class_id]);
+      queryClient.invalidateQueries(['class-roster', classItem.id]);
       queryClient.invalidateQueries(['student-assignments']);
       queryClient.invalidateQueries(['classes']);
       setShowStudentForm(false);
@@ -123,20 +126,20 @@ function ClassDetailPanel({ classItem }) {
   });
 
   const removeStudentMutation = useMutation({
-    mutationFn: (studentId) => classService.removeStudentFromClass(studentId, classItem.class_id),
+    mutationFn: (studentId) => classService.removeStudentFromClass(studentId, classItem.id),
     onSuccess: () => {
-      queryClient.invalidateQueries(['class-roster', classItem.class_id]);
+      queryClient.invalidateQueries(['class-roster', classItem.id]);
       queryClient.invalidateQueries(['student-assignments']);
       queryClient.invalidateQueries(['classes']);
     }
   });
 
-  // Filter offerings by form_number (subjects are shared nationally, not per-school)
-  const classFormNumber = classItem.form?.form_number;
-  const relevantOfferings = formOfferings.filter(o => o.form?.form_number === classFormNumber);
+  // Filter offerings by form level (subjects are shared nationally, not per-school)
+  const classFormLevel = classItem.form?.level;
+  const relevantOfferings = formOfferings.filter(o => o.form?.level === classFormLevel);
   // Filter out students already in the roster
   const rosterStudentIds = new Set(classRoster.map(r => r.student_id));
-  const availableStudents = allStudents.filter(s => !rosterStudentIds.has(s.user_id));
+  const availableStudents = allStudents.filter(s => !rosterStudentIds.has(s.id));
 
   return (
     <div className="bg-light p-3">
@@ -157,12 +160,12 @@ function ClassDetailPanel({ classItem }) {
                 <Row className="align-items-end g-2">
                   <Col md={5}>
                     <Form.Label className="small mb-1">Subject Offering</Form.Label>
-                    <Form.Select size="sm" value={subjectFormData.subject_offering_id}
-                      onChange={(e) => setSubjectFormData({ ...subjectFormData, subject_offering_id: e.target.value })}>
+                    <Form.Select size="sm" value={subjectFormData.subject_id}
+                      onChange={(e) => setSubjectFormData({ ...subjectFormData, subject_id: e.target.value })}>
                       <option value="">Select Subject</option>
                       {relevantOfferings.map(o => (
-                        <option key={o.offering_id} value={o.offering_id}>
-                          {o.subject?.subject_name} ({o.subject?.subject_code})
+                        <option key={o.id} value={o.subject_id}>
+                          {o.subject?.name} ({o.subject?.code})
                         </option>
                       ))}
                     </Form.Select>
@@ -173,14 +176,14 @@ function ClassDetailPanel({ classItem }) {
                       onChange={(e) => setSubjectFormData({ ...subjectFormData, teacher_id: e.target.value })}>
                       <option value="">Not assigned</option>
                       {teachers.map(t => (
-                        <option key={t.user_id} value={t.user_id}>{t.name}</option>
+                        <option key={t.id} value={t.id}>{personName(t)}</option>
                       ))}
                     </Form.Select>
                   </Col>
                   <Col md={3} className="d-flex gap-2">
                     <Button size="sm" variant="primary"
                       onClick={() => assignSubjectMutation.mutate(subjectFormData)}
-                      disabled={!subjectFormData.subject_offering_id || assignSubjectMutation.isLoading}>
+                      disabled={!subjectFormData.subject_id || assignSubjectMutation.isLoading}>
                       {assignSubjectMutation.isLoading ? 'Assigning...' : 'Assign'}
                     </Button>
                     <Button size="sm" variant="outline-secondary" onClick={() => setShowSubjectForm(false)}>
@@ -201,15 +204,15 @@ function ClassDetailPanel({ classItem }) {
               <thead><tr><th>Subject</th><th>Code</th><th>Teacher</th><th style={{ width: '50px' }}></th></tr></thead>
               <tbody>
                 {classSubjects.map(cs => (
-                  <tr key={cs.class_subject_id}>
-                    <td>{cs.subject_offering?.subject?.subject_name || 'N/A'}</td>
-                    <td><Badge bg="secondary">{cs.subject_offering?.subject?.subject_code || '-'}</Badge></td>
+                  <tr key={cs.id}>
+                    <td>{cs.subject?.name || 'N/A'}</td>
+                    <td><Badge bg="secondary">{cs.subject?.code || '-'}</Badge></td>
                     <td>{personName(cs.teacher) || 'Not assigned'}</td>
                     <td>
                       <Button variant="outline-danger" size="sm"
                         onClick={() => {
                           if (window.confirm('Remove this subject from the class?')) {
-                            removeSubjectMutation.mutate(cs.class_subject_id);
+                            removeSubjectMutation.mutate(cs.id);
                           }
                         }}>
                         <FaTimes />
@@ -242,8 +245,8 @@ function ClassDetailPanel({ classItem }) {
                       onChange={(e) => setStudentFormData({ ...studentFormData, student_id: e.target.value })}>
                       <option value="">Select Student</option>
                       {availableStudents.map(s => (
-                        <option key={s.user_id} value={s.user_id}>
-                          {s.name} ({s.email})
+                        <option key={s.id} value={s.id}>
+                          {personName(s)} ({s.email})
                         </option>
                       ))}
                     </Form.Select>
@@ -312,14 +315,11 @@ function ClassManagement({ institutionId }) {
   const [modalSchoolId, setModalSchoolId] = useState('');
   const [classData, setClassData] = useState({
     form_id: '',
-    class_name: '',
-    class_code: '',
+    name: '',
     academic_year: '',
     capacity: 35,
     form_tutor_id: '',
-    room_number: '',
-    description: '',
-    published: false
+    room: ''
   });
 
   const [error, setError] = useState(null);
@@ -348,8 +348,8 @@ function ClassManagement({ institutionId }) {
         userService.getUsersByRole(ROLES.INSTRUCTOR)
       ]);
       const all = [...admins, ...instructors];
-      const unique = Array.from(new Map(all.map(item => [item.user_id, item])).values());
-      return unique.sort((a, b) => a.name.localeCompare(b.name));
+      const unique = Array.from(new Map(all.map(item => [item.id, item])).values());
+      return unique.sort((a, b) => personName(a).localeCompare(personName(b)));
     }
   });
 
@@ -393,18 +393,6 @@ function ClassManagement({ institutionId }) {
     onError: (err) => setError(err.message || 'Failed to delete class')
   });
 
-  // ── Helpers ──
-
-  const getFormPrefix = (formId) => {
-    const formObj = forms.find(f => String(f.form_id) === String(formId));
-    return formObj ? `F${formObj.form_number}` : '';
-  };
-
-  const generateClassCode = (className, formId) => {
-    const prefix = getFormPrefix(formId);
-    return `${prefix}${className.toUpperCase().replace(/\s+/g, '')}`;
-  };
-
   // Handlers
   const handleOpenModal = (classItem = null) => {
     const defaultSchoolId = schools.length === 1 ? schools[0].institutionId : '';
@@ -412,39 +400,33 @@ function ClassManagement({ institutionId }) {
     if (classItem) {
       setEditingClass(classItem);
       // Look up the school from the form
-      const formObj = forms.find(f => f.form_id === classItem.form_id);
-      setModalSchoolId(formObj?.school_id || defaultSchoolId);
+      const formObj = forms.find(f => f.id === classItem.form_id);
+      setModalSchoolId(formObj?.institution_id || defaultSchoolId);
       setClassData({
         form_id: classItem.form_id || '',
-        class_name: classItem.class_name || '',
-        class_code: classItem.class_code || '',
-        academic_year: classItem.academic_year || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
+        name: classItem.name || '',
+        academic_year: formObj?.academic_year || classItem.form?.academic_year || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1),
         capacity: classItem.capacity || 35,
         form_tutor_id: classItem.form_tutor_id || '',
-        room_number: classItem.room_number || '',
-        description: classItem.description || '',
-        published: classItem.published || false
+        room: classItem.room || ''
       });
     } else {
       setEditingClass(null);
       setModalSchoolId(defaultSchoolId);
       // If only one school, pre-select first form for that school
       const formsForSchool = defaultSchoolId
-        ? forms.filter(f => String(f.school_id) === String(defaultSchoolId))
+        ? forms.filter(f => String(f.institution_id) === String(defaultSchoolId))
         : forms;
-      const preselectedFormId = selectedForm !== 'all' ? selectedForm : (formsForSchool[0]?.form_id || '');
-      const formObj = formsForSchool.find(f => String(f.form_id) === String(preselectedFormId));
+      const preselectedFormId = selectedForm !== 'all' ? selectedForm : (formsForSchool[0]?.id || '');
+      const formObj = formsForSchool.find(f => String(f.id) === String(preselectedFormId));
       const academicYear = formObj?.academic_year || `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`;
       setClassData({
         form_id: preselectedFormId,
-        class_name: '',
-        class_code: '',
+        name: '',
         academic_year: academicYear,
         capacity: 35,
         form_tutor_id: '',
-        room_number: '',
-        description: '',
-        published: false
+        room: ''
       });
     }
     setShowModal(true);
@@ -456,14 +438,11 @@ function ClassManagement({ institutionId }) {
     setModalSchoolId('');
     setClassData({
       form_id: '',
-      class_name: '',
-      class_code: '',
+      name: '',
       academic_year: '',
       capacity: 35,
       form_tutor_id: '',
-      room_number: '',
-      description: '',
-      published: false
+      room: ''
     });
     setError(null);
     setSuccess(null);
@@ -475,13 +454,12 @@ function ClassManagement({ institutionId }) {
     setClassData(prev => ({
       ...prev,
       form_id: '',
-      academic_year: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`,
-      class_code: prev.class_name && !editingClass ? '' : prev.class_code
+      academic_year: `${new Date().getFullYear()}-${new Date().getFullYear() + 1}`
     }));
   };
 
   const handleFormChange = (newFormId) => {
-    const formObj = forms.find(f => String(f.form_id) === String(newFormId));
+    const formObj = forms.find(f => String(f.id) === String(newFormId));
     const updates = { ...classData, form_id: newFormId };
 
     // Auto-populate academic year from the selected form
@@ -489,53 +467,41 @@ function ClassManagement({ institutionId }) {
       updates.academic_year = formObj.academic_year;
     }
 
-    // Re-generate class code if class_name exists and creating new
-    if (classData.class_name && !editingClass) {
-      updates.class_code = generateClassCode(classData.class_name, newFormId);
-    }
-
     setClassData(updates);
   };
 
-  const handleClassNameChange = (className) => {
-    if (className && !editingClass) {
-      const code = generateClassCode(className, classData.form_id);
-      setClassData({ ...classData, class_name: className, class_code: code });
-    } else {
-      setClassData({ ...classData, class_name: className });
-    }
+  const handleClassNameChange = (name) => {
+    setClassData({ ...classData, name });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    const cleanedData = {
-      ...classData,
-      form_id: classData.form_id ? parseInt(classData.form_id) : null,
-      capacity: classData.capacity ? parseInt(classData.capacity) : 35,
-      form_tutor_id: classData.form_tutor_id ? parseInt(classData.form_tutor_id) : null,
-      room_number: classData.room_number || null,
-      description: classData.description || null,
-      class_code: classData.class_code || null
-    };
-
-    if (!cleanedData.form_id) {
+    if (!classData.form_id) {
       setError('Form is required');
       return;
     }
-    if (!cleanedData.class_name || cleanedData.class_name.trim() === '') {
+    if (!classData.name || classData.name.trim() === '') {
       setError('Class name is required');
       return;
     }
-    if (!cleanedData.academic_year || cleanedData.academic_year.trim() === '') {
-      setError('Academic year is required');
-      return;
-    }
+
+    // Build the classes-row payload explicitly. form_id and form_tutor_id are
+    // UUIDs — never parseInt them. Only capacity is an integer. academic_year is
+    // NOT a classes column and is intentionally excluded.
+    const payload = {
+      form_id: classData.form_id,
+      name: classData.name.trim(),
+      capacity: parseInt(classData.capacity) || null,
+      room: classData.room || null,
+      form_tutor_id: classData.form_tutor_id || null,
+      is_active: true
+    };
 
     if (editingClass) {
-      updateClassMutation.mutate({ id: editingClass.class_id, data: cleanedData });
+      updateClassMutation.mutate({ id: editingClass.id, data: payload });
     } else {
-      createClassMutation.mutate(cleanedData);
+      createClassMutation.mutate(payload);
     }
   };
 
@@ -552,7 +518,7 @@ function ClassManagement({ institutionId }) {
   // Filter classes
   const filteredClasses = classes.filter(c => {
     if (selectedForm === 'all') return true;
-    return c.form_id === parseInt(selectedForm);
+    return String(c.form_id) === String(selectedForm);
   });
 
   if (isLoading) {
@@ -586,13 +552,13 @@ function ClassManagement({ institutionId }) {
             <option value="all">All Forms</option>
             {schools.length > 1 ? (
               schools.map(school => {
-                const schoolForms = forms.filter(f => String(f.school_id) === String(school.institutionId));
+                const schoolForms = forms.filter(f => String(f.institution_id) === String(school.institutionId));
                 if (schoolForms.length === 0) return null;
                 return (
                   <optgroup key={school.institutionId} label={school.name}>
                     {schoolForms.map(form => (
-                      <option key={form.form_id} value={form.form_id}>
-                        {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                      <option key={form.id} value={form.id}>
+                        {form.name || `Form ${form.level}`} ({form.academic_year})
                       </option>
                     ))}
                   </optgroup>
@@ -600,8 +566,8 @@ function ClassManagement({ institutionId }) {
               })
             ) : (
               forms.map(form => (
-                <option key={form.form_id} value={form.form_id}>
-                  {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                <option key={form.id} value={form.id}>
+                  {form.name || `Form ${form.level}`} ({form.academic_year})
                 </option>
               ))
             )}
@@ -626,51 +592,41 @@ function ClassManagement({ institutionId }) {
               <thead>
                 <tr>
                   <th>Class Name</th>
-                  <th>Class Code</th>
                   <th>Form</th>
                   <th>Academic Year</th>
                   <th>Form Tutor</th>
-                  <th>Enrollment</th>
+                  <th>Capacity</th>
                   <th>Room</th>
-                  <th>Status</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredClasses.map((classItem) => (
-                  <React.Fragment key={classItem.class_id}>
+                  <React.Fragment key={classItem.id}>
                     <tr
                       style={{ cursor: 'pointer' }}
-                      onClick={() => toggleExpand(classItem.class_id)}
+                      onClick={() => toggleExpand(classItem.id)}
                     >
                       <td>
                         <div className="d-flex align-items-center">
-                          {expandedClassId === classItem.class_id ?
+                          {expandedClassId === classItem.id ?
                             <FaChevronDown className="me-2 text-muted" size={12} /> :
                             <FaChevronRight className="me-2 text-muted" size={12} />
                           }
-                          <strong>{classItem.class_name}</strong>
+                          <strong>{classItem.name}</strong>
                         </div>
                       </td>
-                      <td><Badge bg="secondary">{classItem.class_code}</Badge></td>
                       <td>
                         {classItem.form
-                          ? (classItem.form.form_name || `Form ${classItem.form.form_number}`)
+                          ? (classItem.form.name || `Form ${classItem.form.level}`)
                           : 'N/A'}
                       </td>
-                      <td>{classItem.academic_year}</td>
+                      <td>{classItem.form?.academic_year || '-'}</td>
                       <td>{personName(classItem.form_tutor) || 'Not assigned'}</td>
                       <td>
-                        <Badge bg={classItem.current_enrollment >= classItem.capacity ? 'danger' : 'success'}>
-                          {classItem.current_enrollment || 0} / {classItem.capacity}
-                        </Badge>
+                        <Badge bg="secondary">{classItem.capacity ?? '-'}</Badge>
                       </td>
-                      <td>{classItem.room_number || '-'}</td>
-                      <td>
-                        <Badge bg={classItem.published ? 'success' : 'secondary'}>
-                          {classItem.published ? 'Published' : 'Draft'}
-                        </Badge>
-                      </td>
+                      <td>{classItem.room || '-'}</td>
                       <td>
                         <Button
                           variant="outline-primary"
@@ -684,16 +640,16 @@ function ClassManagement({ institutionId }) {
                         <Button
                           variant="outline-danger"
                           size="sm"
-                          onClick={(e) => { e.stopPropagation(); handleDelete(classItem.class_id); }}
+                          onClick={(e) => { e.stopPropagation(); handleDelete(classItem.id); }}
                           title="Delete class"
                         >
                           <FaTrash />
                         </Button>
                       </td>
                     </tr>
-                    {expandedClassId === classItem.class_id && (
+                    {expandedClassId === classItem.id && (
                       <tr>
-                        <td colSpan="9" className="p-0 border-top-0">
+                        <td colSpan="7" className="p-0 border-top-0">
                           <ClassDetailPanel classItem={classItem} />
                         </td>
                       </tr>
@@ -747,10 +703,10 @@ function ClassManagement({ institutionId }) {
                     >
                       <option value="">{modalSchoolId ? 'Select Form' : 'Select a school first'}</option>
                       {forms
-                        .filter(f => String(f.school_id) === String(modalSchoolId))
+                        .filter(f => String(f.institution_id) === String(modalSchoolId))
                         .map(form => (
-                          <option key={form.form_id} value={form.form_id}>
-                            {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                          <option key={form.id} value={form.id}>
+                            {form.name || `Form ${form.level}`} ({form.academic_year})
                           </option>
                         ))}
                     </Form.Select>
@@ -767,8 +723,8 @@ function ClassManagement({ institutionId }) {
                 >
                   <option value="">Select Form</option>
                   {forms.map(form => (
-                    <option key={form.form_id} value={form.form_id}>
-                      {form.form_name || `Form ${form.form_number}`} ({form.academic_year})
+                    <option key={form.id} value={form.id}>
+                      {form.name || `Form ${form.level}`} ({form.academic_year})
                     </option>
                   ))}
                 </Form.Select>
@@ -781,45 +737,11 @@ function ClassManagement({ institutionId }) {
                   <Form.Label>Class Name *</Form.Label>
                   <Form.Control
                     type="text"
-                    value={classData.class_name}
+                    value={classData.name}
                     onChange={(e) => handleClassNameChange(e.target.value)}
                     placeholder="e.g., A, Blue, Science"
                     required
                   />
-                </Form.Group>
-              </Col>
-
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Class Code *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={classData.class_code}
-                    onChange={(e) => setClassData({ ...classData, class_code: e.target.value.toUpperCase() })}
-                    placeholder="e.g., F3A, F4SCI"
-                    required
-                  />
-                  <Form.Text className="text-muted">
-                    Auto-generated from form + class name
-                  </Form.Text>
-                </Form.Group>
-              </Col>
-            </Row>
-
-            <Row>
-              <Col md={6}>
-                <Form.Group className="mb-3">
-                  <Form.Label>Academic Year *</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={classData.academic_year}
-                    onChange={(e) => setClassData({ ...classData, academic_year: e.target.value })}
-                    placeholder="e.g., 2024-2025"
-                    required
-                  />
-                  <Form.Text className="text-muted">
-                    Auto-filled from the selected form
-                  </Form.Text>
                 </Form.Group>
               </Col>
 
@@ -850,8 +772,8 @@ function ClassManagement({ institutionId }) {
                   >
                     <option value="">Not assigned</option>
                     {tutors.map(tutor => (
-                      <option key={tutor.user_id} value={tutor.user_id}>
-                        {tutor.name} ({tutor.email})
+                      <option key={tutor.id} value={tutor.id}>
+                        {personName(tutor)} ({tutor.email})
                       </option>
                     ))}
                   </Form.Select>
@@ -860,37 +782,16 @@ function ClassManagement({ institutionId }) {
 
               <Col md={6}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Room Number</Form.Label>
+                  <Form.Label>Room</Form.Label>
                   <Form.Control
                     type="text"
-                    value={classData.room_number}
-                    onChange={(e) => setClassData({ ...classData, room_number: e.target.value })}
+                    value={classData.room}
+                    onChange={(e) => setClassData({ ...classData, room: e.target.value })}
                     placeholder="e.g., Room 101, Lab 2"
                   />
                 </Form.Group>
               </Col>
             </Row>
-
-            <Form.Group className="mb-3">
-              <Form.Label>Description</Form.Label>
-              <Form.Control
-                as="textarea"
-                rows={2}
-                value={classData.description}
-                onChange={(e) => setClassData({ ...classData, description: e.target.value })}
-                placeholder="Optional description"
-              />
-            </Form.Group>
-
-            <Form.Check
-              type="checkbox"
-              label="Published"
-              checked={classData.published}
-              onChange={(e) => setClassData({ ...classData, published: e.target.checked })}
-            />
-            <Form.Text className="text-muted">
-              Published classes are visible to students for enrollment
-            </Form.Text>
           </Modal.Body>
           <Modal.Footer>
             <Button variant="secondary" onClick={handleCloseModal}>
