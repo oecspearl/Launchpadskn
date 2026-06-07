@@ -322,7 +322,7 @@ const HeroSection = () => (
 // STATS BAR
 // ─────────────────────────────────────────
 const statsData = [
-  { number: '50+',  label: 'Partner Schools',  color: T.sknGreen },
+  { number: '13+',  label: 'Partner Schools',  color: T.sknGreen },
   { number: '10k+', label: 'Active Students',  color: T.sknRed },
   { number: '99%',  label: 'Satisfaction Rate', color: T.sknYellow },
 ];

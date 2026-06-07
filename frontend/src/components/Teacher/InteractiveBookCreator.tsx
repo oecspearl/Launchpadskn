@@ -947,19 +947,12 @@ function ContentPageEditor({ page, onUpdate, lessonId }: ContentPageEditorProps)
       return;
     }
 
-    const API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-    if (!API_KEY) {
-      alert('OpenAI API key is not configured. Please set VITE_OPENAI_API_KEY in your .env file.');
-      return;
-    }
-
     try {
       setGenerating(true);
-      const response = await fetch('https://api.openai.com/v1/images/generations', {
+      const response = await fetch('/api/ai/image', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           model: 'dall-e-3',

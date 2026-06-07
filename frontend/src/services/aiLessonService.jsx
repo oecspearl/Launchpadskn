@@ -1562,11 +1562,10 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
         max_tokens: 2000
       };
 
-      const response = await fetch(OPENAI_API_URL, {
+      const response = await fetch(AI_PROXY_URL, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${API_KEY}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)
       });
@@ -2566,11 +2565,10 @@ Remember: Respond with ONLY the JSON object, nothing else.`;
       if (page.pageType === 'image' && page.imageData && page.imageData.imageDescription) {
         try {
           console.log(`[AI Service] Generating image for page "${page.title}"...`);
-          const imageResponse = await fetch('https://api.openai.com/v1/images/generations', {
+          const imageResponse = await fetch('/api/ai/image', {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${API_KEY}`
+              'Content-Type': 'application/json'
             },
             body: JSON.stringify({
               model: 'dall-e-3',
