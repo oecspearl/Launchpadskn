@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatClassSubject } from './subjectCompat';
 
 export const studentService = {
     // ============================================
@@ -550,9 +551,7 @@ export const studentService = {
         assessment:subject_assessments(
           *,
           class_subject:class_subjects(
-            subject_offering:subject_form_offerings(
-              subject:subjects(*)
-            )
+            subject:subjects(*)
           )
         )
       `)
@@ -560,6 +559,11 @@ export const studentService = {
             .in('assessment.class_subject_id', classSubjectIds);
 
         if (error) throw error;
-        return data || [];
+        return (data || []).map(row => {
+            if (row && row.assessment && row.assessment.class_subject) {
+                row.assessment.class_subject = compatClassSubject(row.assessment.class_subject);
+            }
+            return row;
+        });
     }
 };

@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatClassSubject } from './subjectCompat';
 
 /**
  * Gradebook / grading / attendance data access.
@@ -19,14 +20,12 @@ export const gradebookService = {
           *,
           form:forms(*)
         ),
-        subject_offering:subject_form_offerings(
-          subject:subjects(*)
-        )
+        subject:subjects(*)
       `)
       .eq('class_subject_id', classSubjectId)
       .single();
     if (error) throw error;
-    return data;
+    return compatClassSubject(data);
   },
 
   async getAssessment(assessmentId) {
@@ -40,14 +39,13 @@ export const gradebookService = {
             *,
             form:forms(*)
           ),
-          subject_offering:subject_form_offerings(
-            subject:subjects(*)
-          )
+          subject:subjects(*)
         )
       `)
       .eq('assessment_id', assessmentId)
       .single();
     if (error) throw error;
+    if (data) data.class_subject = compatClassSubject(data.class_subject);
     return data;
   },
 

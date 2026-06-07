@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { personName } from '../utils/personName';
+import { compatClassSubject } from './subjectCompat';
 
 /**
  * Grade letter from percentage
@@ -38,20 +39,19 @@ export const reportCardService = {
     if (!classInfo) throw new Error('Class not found');
 
     // 3. Get class_subjects with teacher info
-    const { data: classSubjects } = await supabase
+    const { data: classSubjectsRaw } = await supabase
       .from('class_subjects')
       .select(`
         class_subject_id,
         teacher_id,
         teacher:users!class_subjects_teacher_id_fkey(id, first_name, last_name),
-        subject_offering:subject_form_offerings(
-          subject:subjects(subject_id, subject_name)
-        )
+        subject:subjects(subject_id, subject_name)
       `)
       .eq('class_id', classId);
 
-    if (!classSubjects?.length) throw new Error('No subjects assigned to this class');
+    if (!classSubjectsRaw?.length) throw new Error('No subjects assigned to this class');
 
+    const classSubjects = classSubjectsRaw.map(compatClassSubject);
     const csIds = classSubjects.map(cs => cs.class_subject_id);
 
     // 4. Get all assessments for this class, term

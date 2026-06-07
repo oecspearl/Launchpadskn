@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatClassSubject } from './subjectCompat';
 
 const TUTOR_API_URL = '/api/ai/tutor';
 
@@ -12,9 +13,7 @@ const tutorService = {
         *,
         class_subject:class_subjects(
           class_subject_id,
-          subject_offering:subject_form_offerings(
-            subject:subjects(name)
-          ),
+          subject:subjects(name),
           class:classes(name, form:forms(name))
         ),
         lesson:lessons(lesson_title, topic)
@@ -27,7 +26,12 @@ const tutorService = {
       console.error('[Tutor] Error loading conversations:', error);
       return [];
     }
-    return data || [];
+    return (data || []).map(row => {
+      if (row && row.class_subject) {
+        row.class_subject = compatClassSubject(row.class_subject);
+      }
+      return row;
+    });
   },
 
   async getOrCreateConversation(studentId, classSubjectId, lessonId) {
@@ -208,9 +212,7 @@ const tutorService = {
       .from('class_subjects')
       .select(`
         class_subject_id,
-        subject_offering:subject_form_offerings(
-          subject:subjects(name)
-        ),
+        subject:subjects(name),
         class:classes(name, id, form:forms(name))
       `)
       .eq('teacher_id', teacherId);
@@ -228,7 +230,7 @@ const tutorService = {
     (settings || []).forEach(s => { settingsMap[s.class_subject_id] = s; });
 
     return classSubjects.map(cs => ({
-      ...cs,
+      ...compatClassSubject(cs),
       tutorSetting: settingsMap[cs.class_subject_id] || null,
       isEnabled: settingsMap[cs.class_subject_id]?.is_enabled ?? true
     }));

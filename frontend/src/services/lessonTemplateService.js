@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatClassSubject } from './subjectCompat';
 
 const lessonTemplateService = {
   // ============================================
@@ -172,16 +173,17 @@ const lessonTemplateService = {
         .select(`
           *,
           class_subject:class_subjects(
-            subject_offering:subject_form_offerings(
-              subject:subjects(subject_id),
-              form:forms(form_id)
-            )
+            subject:subjects(subject_id)
           )
         `)
         .eq('lesson_id', lessonId)
         .single();
 
       if (lessonError) throw lessonError;
+
+      if (lesson && lesson.class_subject) {
+        lesson.class_subject = compatClassSubject(lesson.class_subject);
+      }
 
       // Get lesson content
       const { data: lessonContent, error: contentError } = await supabase

@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatClassSubject } from './subjectCompat';
 
 /**
  * Student-facing view data access.
@@ -16,10 +17,7 @@ export const studentViewService = {
       .from('class_subjects')
       .select(`
           *,
-          subject_offering:subject_form_offerings(
-            *,
-            subject:subjects(*)
-          ),
+          subject:subjects(*),
           class:classes(
             *,
             form:forms(*)
@@ -30,7 +28,7 @@ export const studentViewService = {
       .single();
 
     if (csError) throw csError;
-    return classSubjectData;
+    return compatClassSubject(classSubjectData);
   },
 
   async getPublishedAssignmentContentByLessonIds(lessonIds) {
@@ -74,9 +72,7 @@ export const studentViewService = {
           *,
           class_subject:class_subjects(
             *,
-            subject_offering:subject_form_offerings(
-              subject:subjects(*)
-            ),
+            subject:subjects(*),
             class:classes(
               *,
               form:forms(*)
@@ -86,6 +82,7 @@ export const studentViewService = {
       .eq('assessment_id', assessmentId)
       .single();
 
+    if (assessmentData) assessmentData.class_subject = compatClassSubject(assessmentData.class_subject);
     return { data: assessmentData, error: assessmentError };
   },
 
@@ -145,7 +142,7 @@ export const studentViewService = {
           *,
           class_subject:class_subjects(
             *,
-            subject_offering:subject_form_offerings(subject:subjects(*)),
+            subject:subjects(*),
             class:classes(*, form:forms(*)),
             teacher:users!class_subjects_teacher_id_fkey(*)
           ),
@@ -155,6 +152,7 @@ export const studentViewService = {
       .single();
 
     if (error) throw error;
+    if (lessonData) lessonData.class_subject = compatClassSubject(lessonData.class_subject);
     return lessonData;
   },
 

@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatClassSubject } from './subjectCompat';
 
 export const reportService = {
   /**
@@ -100,11 +101,12 @@ export const reportService = {
     let classSubjectQuery = supabase.from('class_subjects').select(`
       class_subject_id,
       class:classes(id, name, form_id, form:forms(name, level, institution_id)),
-      subject_offering:subject_form_offerings(subject:subjects(id, name))
+      subject:subjects(id, name)
     `);
 
-    const { data: classSubjects } = await classSubjectQuery;
-    if (!classSubjects?.length) return [];
+    const { data: classSubjectsRaw } = await classSubjectQuery;
+    if (!classSubjectsRaw?.length) return [];
+    const classSubjects = classSubjectsRaw.map(compatClassSubject);
 
     // Filter by institution/form/class
     let filtered = classSubjects.filter(cs => cs.class && cs.subject_offering?.subject);

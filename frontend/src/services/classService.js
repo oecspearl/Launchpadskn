@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { ROLES } from '../constants/roles';
+import { compatClassSubject } from './subjectCompat';
 
 export const classService = {
     // ============================================
@@ -524,10 +525,7 @@ export const classService = {
           *,
           form:forms!inner(*)
         ),
-        subject_offering:subject_form_offerings(
-          *,
-          subject:subjects(*)
-        ),
+        subject:subjects(*),
         teacher:users!class_subjects_teacher_id_fkey(first_name, last_name, email, profile_image_url)
       `)
                 .eq('class.form.institution_id', filters.institutionId);
@@ -540,10 +538,7 @@ export const classService = {
           *,
           form:forms(*)
         ),
-        subject_offering:subject_form_offerings(
-          *,
-          subject:subjects(*)
-        ),
+        subject:subjects(*),
         teacher:users!class_subjects_teacher_id_fkey(first_name, last_name, email, profile_image_url)
       `);
         }
@@ -555,7 +550,7 @@ export const classService = {
         const { data, error } = await query.order('class_id');
 
         if (error) throw error;
-        return data || [];
+        return (data || []).map(compatClassSubject);
     },
 
     async assignSubjectToClass(classId, subjectId, teacherId) {
@@ -682,9 +677,7 @@ export const classService = {
             .select(`
         *,
         class_subject:class_subjects(
-          subject_offering:subject_form_offerings(
-            subject:subjects(*)
-          ),
+          subject:subjects(*),
           class:classes(*)
         )
       `)
@@ -717,6 +710,7 @@ export const classService = {
                         lesson.lesson_date = dateStr;
                     }
                 }
+                lesson.class_subject = compatClassSubject(lesson.class_subject);
             });
         }
 
@@ -738,9 +732,7 @@ export const classService = {
             .select(`
         *,
         class_subject:class_subjects(
-          subject_offering:subject_form_offerings(
-            subject:subjects(*)
-          ),
+          subject:subjects(*),
           class:classes(*)
         )
       `)
@@ -773,6 +765,7 @@ export const classService = {
                         lesson.lesson_date = dateStr;
                     }
                 }
+                lesson.class_subject = compatClassSubject(lesson.class_subject);
             });
         }
 
@@ -786,10 +779,7 @@ export const classService = {
                 *,
                 class_subject:class_subjects(
                     *,
-                    subject_offering:subject_form_offerings(
-                        *,
-                        subject:subjects(*)
-                    ),
+                    subject:subjects(*),
                     class:classes(
                         *,
                         form:forms(*)
@@ -812,6 +802,10 @@ export const classService = {
             if (dateRegex.test(dateStr)) {
                 data.lesson_date = dateStr;
             }
+        }
+
+        if (data && data.class_subject) {
+            data.class_subject = compatClassSubject(data.class_subject);
         }
 
         return data;
@@ -968,9 +962,7 @@ export const classService = {
         lesson:lessons(
           *,
           class_subject:class_subjects(
-            subject_offering:subject_form_offerings(
-              subject:subjects(*)
-            )
+            subject:subjects(*)
           )
         )
       `)
@@ -987,6 +979,11 @@ export const classService = {
             .order('lesson.lesson_date', { ascending: false });
 
         if (error) throw error;
-        return data || [];
+        return (data || []).map(row => {
+            if (row.lesson && row.lesson.class_subject) {
+                row.lesson.class_subject = compatClassSubject(row.lesson.class_subject);
+            }
+            return row;
+        });
     }
 };

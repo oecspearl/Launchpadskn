@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatClassSubject } from './subjectCompat';
 
 export const messageService = {
   /**
@@ -341,7 +342,7 @@ export const messageService = {
       .select(`
         teacher_id,
         teacher:users!class_subjects_teacher_id_fkey(id, first_name, last_name, email),
-        subject_offering:subject_form_offerings(subject:subjects(name))
+        subject:subjects(name)
       `)
       .eq('class_id', assignment.class_id);
 
@@ -349,7 +350,7 @@ export const messageService = {
 
     // Deduplicate by teacher_id
     const teacherMap = {};
-    classSubjects.forEach(cs => {
+    (classSubjects || []).map(compatClassSubject).forEach(cs => {
       if (!cs.teacher) return;
       if (!teacherMap[cs.teacher_id]) {
         teacherMap[cs.teacher_id] = {

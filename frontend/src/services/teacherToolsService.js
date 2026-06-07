@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatClassSubject } from './subjectCompat';
 
 /**
  * Teacher tools data access.
@@ -17,15 +18,13 @@ export const teacherToolsService = {
       .from('class_subjects')
       .select(`
           subject_offering_id,
-          subject_offering:subject_form_offerings(
-            subject_id,
-            form:forms(form_number)
-          ),
+          subject_id,
+          subject:subjects(subject_id),
           class:classes(form:forms(form_number))
         `)
       .eq('class_subject_id', classSubjectId)
       .single();
-    return { data, error };
+    return { data: compatClassSubject(data), error };
   },
 
   /** Active subject_form_offerings, optionally filtered by subject_id. */
@@ -50,9 +49,7 @@ export const teacherToolsService = {
           *,
           class_subject:class_subjects(
             *,
-            subject_offering:subject_form_offerings(
-              subject:subjects(*)
-            ),
+            subject:subjects(*),
             class:classes(
               *,
               form:forms(*)
@@ -61,6 +58,9 @@ export const teacherToolsService = {
         `)
       .eq('lesson_id', lessonId)
       .single();
+    if (data && data.class_subject) {
+      data.class_subject = compatClassSubject(data.class_subject);
+    }
     return data;
   },
 
