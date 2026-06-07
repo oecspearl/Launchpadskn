@@ -214,14 +214,14 @@ function UserManagement() {
                 </thead>
                 <tbody>
                     {users.map(u => (
-                        <tr key={u.user_id}>
+                        <tr key={u.id}>
                             <td>{u.name || '—'}</td>
                             <td>{u.email}</td>
                             <td>
                                 <Form.Select
                                     size="sm"
                                     value={u.role}
-                                    onChange={(e) => handleRoleChange(u.user_id || u.id, e.target.value)}
+                                    onChange={(e) => handleRoleChange(u.id || u.id, e.target.value)}
                                     style={{ width: '130px' }}
                                 >
                                     <option value="ADMIN">ADMIN</option>
@@ -251,14 +251,14 @@ function UserManagement() {
                                     size="sm"
                                     className="d-inline-block w-auto me-2"
                                     value={u.institution_id || ''}
-                                    onChange={e => handleAssignInstitution(u.user_id, e.target.value)}
+                                    onChange={e => handleAssignInstitution(u.id, e.target.value)}
                                 >
                                     <option value="">Unassigned</option>
                                     {institutions.map(inst => (
-                                        <option key={inst.institution_id} value={inst.institution_id}>{inst.name}</option>
+                                        <option key={inst.institutionId} value={inst.institutionId}>{inst.name}</option>
                                     ))}
                                 </Form.Select>
-                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteUser(u.user_id)}>
+                                <Button variant="outline-danger" size="sm" onClick={() => handleDeleteUser(u.id)}>
                                     <FaTrash />
                                 </Button>
                                 <Button
@@ -266,7 +266,7 @@ function UserManagement() {
                                     size="sm"
                                     className="ms-2"
                                     title={u.force_password_change ? "Cancel Force Password Change" : "Force Password Change"}
-                                    onClick={() => handleForcePasswordChange(u.user_id || u.id, u.force_password_change)}
+                                    onClick={() => handleForcePasswordChange(u.id || u.id, u.force_password_change)}
                                 >
                                     <FaExclamationTriangle />
                                 </Button>
