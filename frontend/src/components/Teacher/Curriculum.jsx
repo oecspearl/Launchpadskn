@@ -1,896 +1,776 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  Container, Row, Col, Card, Button, Spinner, Alert,
-  Form, Badge, Accordion, ListGroup, InputGroup, Modal
+  Container, Row, Col, Card, Form, Button, Badge, Accordion,
+  Spinner, Alert, Modal, InputGroup, Table
 } from 'react-bootstrap';
 import {
-  FaBook, FaGraduationCap, FaSearch, FaFilter, FaDownload,
-  FaClock, FaCheckCircle, FaInfoCircle, FaListOl, FaEye, FaChevronRight, FaEdit
+  FaBook, FaSearch, FaFilter, FaPlus, FaEdit, FaTrash, FaLayerGroup
 } from 'react-icons/fa';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../../contexts/AuthContextSupabase';
-import supabaseService from '../../services/supabaseService';
-import { Link } from 'react-router-dom';
+import { curriculumService } from '../../services/curriculumService';
 import './Curriculum.css';
+
+const BLOOM_LEVELS = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'];
+
+const bloomBadgeVariant = (level) => {
+  switch ((level || '').trim()) {
+    case 'Remember': return 'secondary';
+    case 'Understand': return 'info';
+    case 'Apply': return 'primary';
+    case 'Analyze': return 'warning';
+    case 'Evaluate': return 'danger';
+    case 'Create': return 'success';
+    default: return 'secondary';
+  }
+};
+
+// Empty form shapes per entity type
+const emptyForms = {
+  topic: {
+    topic_number: '', code: '', title: '', strand: '',
+    elo: '', grade_level_guidelines: '', sort_order: ''
+  },
+  subtopic: { code: '', title: '', elo: '', sort_order: '' },
+  outcome: { sco_number: '', statement: '', bloom_level: '', sort_order: '' },
+  strategy: { strategy_type: '', title: '', sco_refs: '', description: '' }
+};
+
+const modalTitles = {
+  topic: 'Topic',
+  subtopic: 'Subtopic',
+  outcome: 'Outcome (SCO)',
+  strategy: 'Strategy'
+};
 
 function Curriculum() {
   const { user } = useAuth();
-  
-  // State
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  // Data
-  const [curriculumContent, setCurriculumContent] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [forms, setForms] = useState([]);
-  
-  // Filters
-  const [selectedSubject, setSelectedSubject] = useState('');
-  const [selectedForm, setSelectedForm] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  
-  // Selected curriculum for detailed view
-  const [selectedOffering, setSelectedOffering] = useState(null);
-  
-  // Fetch curriculum content (globally — curriculum is shared nationally)
-  const fetchCurriculum = useCallback(async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const isAdmin = user?.role === 'ADMIN';
+  const queryClient = useQueryClient();
 
-      // Fetch all offerings globally, filter client-side by form_number
-      const curriculum = await supabaseService.getCurriculumContent(
-        null,
-        null,
-        selectedSubject ? parseInt(selectedSubject) : null
-      );
+  // ── Filters / controls ──────────────────────────────────────────────
+  const [subjectId, setSubjectId] = useState('');
+  const [search, setSearch] = useState('');
+  const [bloomFilter, setBloomFilter] = useState('all');
+  const [strandFilter, setStrandFilter] = useState('all');
 
-      // Filter by form_number if a form is selected (not form_id, since offerings are national)
-      let filtered = curriculum || [];
-      if (selectedForm) {
-        const selectedFormObj = forms.find(f => f.form_id === parseInt(selectedForm));
-        if (selectedFormObj) {
-          filtered = filtered.filter(item => item.form?.form_number === selectedFormObj.form_number);
-        }
-      }
+  // ── Modal state ─────────────────────────────────────────────────────
+  // { type, mode, data, parentId } | null
+  const [modal, setModal] = useState(null);
+  const [formValues, setFormValues] = useState({});
+  const [mutationError, setMutationError] = useState(null);
 
-      // Deduplicate offerings by subject_name + form_number (national curriculum = one per combo)
-      const deduped = new Map();
-      filtered.forEach(item => {
-        const key = `${(item.subject?.subject_name || '').toLowerCase().trim()}_${item.form?.form_number}`;
-        const existing = deduped.get(key);
-        if (!existing) {
-          deduped.set(key, item);
-        } else {
-          // Keep the one with richer curriculum data
-          const hasStructure = item.curriculum_structure?.topics?.length > 0;
-          const existingHasStructure = existing.curriculum_structure?.topics?.length > 0;
-          if (hasStructure && !existingHasStructure) {
-            deduped.set(key, item);
-          } else if (!existingHasStructure && !hasStructure && item.curriculum_framework && !existing.curriculum_framework) {
-            deduped.set(key, item);
-          }
-        }
-      });
-      setCurriculumContent(Array.from(deduped.values()));
-
-      // Also fetch subjects and forms for filters
-      if (!subjects.length) {
-        const allSubjects = await supabaseService.getSubjectsBySchool(null);
-        // Deduplicate subjects by name (national = one per subject name)
-        const seenSubjects = new Map();
-        (allSubjects || []).forEach(s => {
-          const name = (s.subject_name || '').toLowerCase().trim();
-          if (!seenSubjects.has(name)) seenSubjects.set(name, s);
-        });
-        setSubjects(Array.from(seenSubjects.values()));
-      }
-
-      if (!forms.length) {
-        const allForms = await supabaseService.getFormsBySchool(null);
-        // Deduplicate forms by form_number for the filter dropdown
-        const seen = new Map();
-        (allForms || []).forEach(f => {
-          if (!seen.has(f.form_number)) seen.set(f.form_number, f);
-        });
-        setForms(Array.from(seen.values()).sort((a, b) => a.form_number - b.form_number));
-      }
-
-    } catch (err) {
-      console.error('[Curriculum] Error fetching curriculum:', err);
-      setError('Failed to load curriculum content. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedSubject, selectedForm, subjects.length, forms.length]);
-  
-  useEffect(() => {
-    fetchCurriculum();
-  }, [fetchCurriculum]);
-  
-  // Filter curriculum based on search query
-  const filteredCurriculum = curriculumContent.filter(item => {
-    if (!searchQuery) return true;
-    const query = searchQuery.toLowerCase();
-    const subjectName = item.subject?.subject_name?.toLowerCase() || '';
-    const formName = item.form?.form_name?.toLowerCase() || '';
-    const framework = item.curriculum_framework?.toLowerCase() || '';
-    const outcomes = item.learning_outcomes?.toLowerCase() || '';
-    
-    return subjectName.includes(query) || 
-           formName.includes(query) ||
-           framework.includes(query) ||
-           outcomes.includes(query);
+  // ── Queries ─────────────────────────────────────────────────────────
+  const {
+    data: subjects = [],
+    isLoading: loadingSubjects,
+    error: subjectsError
+  } = useQuery({
+    queryKey: ['curriculum-subjects'],
+    queryFn: () => curriculumService.getSubjects()
   });
-  
-  // Group curriculum by form_number for better organization (national = one group per form level)
-  const curriculumByForm = filteredCurriculum.reduce((acc, item) => {
-    const formLabel = item.form?.form_number ? `Form ${item.form.form_number}` : 'Unknown Form';
-    if (!acc[formLabel]) {
-      acc[formLabel] = [];
+
+  // Auto-select first subject on load
+  useEffect(() => {
+    if (!subjectId && subjects.length > 0) {
+      setSubjectId(String(subjects[0].id));
     }
-    acc[formLabel].push(item);
-    return acc;
-  }, {});
-  
-  // Group curriculum by subject for alternative view
-  const curriculumBySubject = filteredCurriculum.reduce((acc, item) => {
-    const subjectName = item.subject?.subject_name || 'Unknown Subject';
-    if (!acc[subjectName]) {
-      acc[subjectName] = [];
+  }, [subjects, subjectId]);
+
+  const {
+    data: tree,
+    isLoading: loadingTree,
+    error: treeError
+  } = useQuery({
+    queryKey: ['curriculum-tree', subjectId],
+    queryFn: () => curriculumService.getSubjectTree(subjectId),
+    enabled: !!subjectId
+  });
+
+  const topics = tree?.topics || [];
+  const totals = tree?.counts || { topics: 0, subtopics: 0, outcomes: 0, strategies: 0 };
+  const selectedSubject = subjects.find(s => String(s.id) === String(subjectId));
+
+  // Reset filters when subject changes
+  useEffect(() => {
+    setBloomFilter('all');
+    setStrandFilter('all');
+    setSearch('');
+  }, [subjectId]);
+
+  // ── Distinct values for filters (from loaded tree) ──────────────────
+  const bloomOptions = useMemo(() => {
+    const set = new Set();
+    topics.forEach(t => (t.subtopics || []).forEach(st =>
+      (st.outcomes || []).forEach(o => { if (o.bloom_level) set.add(o.bloom_level); })
+    ));
+    return Array.from(set).sort();
+  }, [topics]);
+
+  const strandOptions = useMemo(() => {
+    const set = new Set();
+    topics.forEach(t => { if (t.strand) set.add(t.strand); });
+    return Array.from(set).sort();
+  }, [topics]);
+
+  // ── Client-side filtering ───────────────────────────────────────────
+  const q = search.trim().toLowerCase();
+
+  const filteredTopics = useMemo(() => {
+    const matchText = (txt) => q && (txt || '').toLowerCase().includes(q);
+
+    return topics
+      .filter(t => strandFilter === 'all' || t.strand === strandFilter)
+      .map(topic => {
+        const topicMatches = matchText(topic.title);
+
+        const subtopics = (topic.subtopics || []).map(st => {
+          // Filter outcomes by bloom level
+          let outcomes = st.outcomes || [];
+          if (bloomFilter !== 'all') {
+            outcomes = outcomes.filter(o => o.bloom_level === bloomFilter);
+          }
+
+          const subtopicMatches =
+            matchText(st.title) || (outcomes.some(o => matchText(o.statement)));
+
+          return { ...st, _outcomes: outcomes, _subtopicMatches: subtopicMatches };
+        })
+        // When bloom filter is active, drop subtopics that have no remaining outcomes
+        .filter(st => {
+          if (bloomFilter !== 'all' && (st._outcomes || []).length === 0) return false;
+          return true;
+        })
+        // Search: keep subtopic if it or any descendant matches (only when searching)
+        .filter(st => {
+          if (!q) return true;
+          return topicMatches || st._subtopicMatches;
+        });
+
+        return { ...topic, _subtopics: subtopics, _topicMatches: topicMatches };
+      })
+      // Drop topics with no visible subtopics under active filters
+      .filter(topic => {
+        if (q && !topic._topicMatches && topic._subtopics.length === 0) return false;
+        if (bloomFilter !== 'all' && topic._subtopics.length === 0) return false;
+        return true;
+      });
+  }, [topics, q, bloomFilter, strandFilter]);
+
+  // Counts after filters
+  const filteredCounts = useMemo(() => {
+    let st = 0, out = 0;
+    filteredTopics.forEach(t => {
+      st += t._subtopics.length;
+      t._subtopics.forEach(s => { out += (s._outcomes || []).length; });
+    });
+    return { topics: filteredTopics.length, subtopics: st, outcomes: out };
+  }, [filteredTopics]);
+
+  // ── Mutations ───────────────────────────────────────────────────────
+  const invalidateTree = () =>
+    queryClient.invalidateQueries(['curriculum-tree', subjectId]);
+
+  const saveMutation = useMutation({
+    mutationFn: async ({ type, mode, data, payload }) => {
+      const svc = curriculumService;
+      if (mode === 'create') {
+        if (type === 'topic') return svc.createTopic(payload);
+        if (type === 'subtopic') return svc.createSubtopic(payload);
+        if (type === 'outcome') return svc.createOutcome(payload);
+        if (type === 'strategy') return svc.createStrategy(payload);
+      } else {
+        if (type === 'topic') return svc.updateTopic(data.id, payload);
+        if (type === 'subtopic') return svc.updateSubtopic(data.id, payload);
+        if (type === 'outcome') return svc.updateOutcome(data.id, payload);
+        if (type === 'strategy') return svc.updateStrategy(data.id, payload);
+      }
+    },
+    onSuccess: () => {
+      invalidateTree();
+      closeModal();
+    },
+    onError: (err) => setMutationError(err?.message || 'Failed to save changes')
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async ({ type, id }) => {
+      const svc = curriculumService;
+      if (type === 'topic') return svc.deleteTopic(id);
+      if (type === 'subtopic') return svc.deleteSubtopic(id);
+      if (type === 'outcome') return svc.deleteOutcome(id);
+      if (type === 'strategy') return svc.deleteStrategy(id);
+    },
+    onSuccess: () => invalidateTree(),
+    onError: (err) => setMutationError(err?.message || 'Failed to delete')
+  });
+
+  // ── Modal handlers ──────────────────────────────────────────────────
+  const openModal = (type, mode, { data = null, parentId = null } = {}) => {
+    setMutationError(null);
+    const base = emptyForms[type];
+    setFormValues(mode === 'edit' && data
+      ? { ...base, ...pickFields(type, data) }
+      : { ...base });
+    setModal({ type, mode, data, parentId });
+  };
+
+  const closeModal = () => {
+    setModal(null);
+    setFormValues({});
+    setMutationError(null);
+  };
+
+  const setField = (name, value) =>
+    setFormValues(prev => ({ ...prev, [name]: value }));
+
+  const handleSave = (e) => {
+    e.preventDefault();
+    setMutationError(null);
+    const { type, mode, data, parentId } = modal;
+    const payload = buildPayload(type, formValues);
+
+    // Inject parent ids
+    if (type === 'topic') payload.subject_id = selectedSubject?.id ?? subjectId;
+    if (type === 'subtopic') payload.topic_id = parentId;
+    if (type === 'outcome' || type === 'strategy') payload.subtopic_id = parentId;
+
+    saveMutation.mutate({ type, mode, data, payload });
+  };
+
+  const handleDelete = (type, id, label) => {
+    if (window.confirm(`Delete this ${modalTitles[type].toLowerCase()}${label ? `: "${label}"` : ''}? This cannot be undone.`)) {
+      setMutationError(null);
+      deleteMutation.mutate({ type, id });
     }
-    acc[subjectName].push(item);
-    return acc;
-  }, {});
-  
-  const handleSubjectChange = (e) => {
-    setSelectedSubject(e.target.value);
-    setSelectedForm(''); // Reset form when subject changes
   };
-  
-  const handleFormChange = (e) => {
-    setSelectedForm(e.target.value);
-    setSelectedSubject(''); // Reset subject when form changes
-  };
-  
-  const clearFilters = () => {
-    setSelectedSubject('');
-    setSelectedForm('');
-    setSearchQuery('');
-  };
-  
-  const formatCurriculumText = (text) => {
-    if (!text) return 'Not available';
-    
-    // Split by common delimiters and format as list
-    const lines = text.split(/\n|;|•|\*/).filter(line => line.trim());
-    
-    if (lines.length === 1) {
-      return <p className="mb-0">{text}</p>;
-    }
-    
+
+  // ── Render: loading / error gates ───────────────────────────────────
+  if (loadingSubjects) {
     return (
-      <ul className="curriculum-list">
-        {lines.map((line, idx) => (
-          <li key={idx}>{line.trim()}</li>
-        ))}
-      </ul>
+      <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
+        <Spinner animation="border" variant="primary" />
+      </Container>
     );
-  };
-  
-  // Check if curriculum has structured data
-  const hasStructuredCurriculum = (offering) => {
-    return offering.curriculum_structure && 
-           offering.curriculum_structure.topics && 
-           offering.curriculum_structure.topics.length > 0;
-  };
-  
-  // Get topic count from structured curriculum
-  const getTopicCount = (offering) => {
-    if (hasStructuredCurriculum(offering)) {
-      return offering.curriculum_structure.topics.length;
-    }
-    return 0;
-  };
-  
+  }
+
+  if (subjectsError) {
+    return (
+      <Container fluid className="py-4">
+        <Alert variant="danger">
+          Failed to load curriculum subjects: {subjectsError.message}
+        </Alert>
+      </Container>
+    );
+  }
+
   return (
-    <Container className="curriculum-page py-4">
+    <Container fluid className="py-4 curriculum-page">
       {/* Header */}
-      <Row className="mb-4 pt-5">
-        <Col>
-          <div className="d-flex align-items-center justify-content-between flex-wrap">
-            <div>
-              <h1 className="mb-2">
-                <FaBook className="me-2 text-primary" />
-                Curriculum Content
-              </h1>
-              <p className="text-muted">
-                Access curriculum frameworks and learning outcomes for all subjects
-              </p>
-            </div>
-          </div>
-        </Col>
-      </Row>
-      
-      {/* Filters */}
-      <Card className="mb-4 shadow-sm">
+      <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+          <h2 className="mb-1">
+            <FaBook className="me-2 text-primary" />
+            Curriculum Explorer
+          </h2>
+          <p className="text-muted mb-0">
+            Browse the national curriculum hierarchy{isAdmin ? ' — edit topics, subtopics, outcomes and strategies' : ''}.
+          </p>
+        </div>
+        {isAdmin && (
+          <Button
+            variant="primary"
+            disabled={!subjectId}
+            onClick={() => openModal('topic', 'create')}
+          >
+            <FaPlus className="me-2" /> Add Topic
+          </Button>
+        )}
+      </div>
+
+      {mutationError && (
+        <Alert variant="danger" dismissible onClose={() => setMutationError(null)}>
+          {mutationError}
+        </Alert>
+      )}
+
+      {/* Controls */}
+      <Card className="border-0 shadow-sm mb-4">
         <Card.Body>
           <Row className="g-3">
             <Col md={4}>
-              <Form.Label>
-                <FaFilter className="me-1" />
-                Filter by Subject
-              </Form.Label>
+              <Form.Label><FaBook className="me-1" /> Subject</Form.Label>
               <Form.Select
-                value={selectedSubject}
-                onChange={handleSubjectChange}
+                value={subjectId}
+                onChange={(e) => setSubjectId(e.target.value)}
               >
-                <option value="">All Subjects</option>
-                {subjects.map(subject => (
-                  <option key={subject.subject_id} value={subject.subject_id}>
-                    {subject.subject_name}
+                {subjects.length === 0 && <option value="">No subjects</option>}
+                {subjects.map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} — {s.level}
                   </option>
                 ))}
               </Form.Select>
             </Col>
-            
+
             <Col md={4}>
-              <Form.Label>
-                <FaGraduationCap className="me-1" />
-                Filter by Form
-              </Form.Label>
-              <Form.Select
-                value={selectedForm}
-                onChange={handleFormChange}
-              >
-                <option value="">All Forms</option>
-                {forms.map(form => (
-                  <option key={form.form_id} value={form.form_id}>
-                    Form {form.form_number}
-                  </option>
-                ))}
-              </Form.Select>
-            </Col>
-            
-            <Col md={4}>
-              <Form.Label>
-                <FaSearch className="me-1" />
-                Search
-              </Form.Label>
+              <Form.Label><FaSearch className="me-1" /> Search</Form.Label>
               <InputGroup>
                 <Form.Control
                   type="text"
-                  placeholder="Search curriculum content..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search topics, subtopics, outcomes…"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
                 />
-                <Button
-                  variant="outline-secondary"
-                  onClick={clearFilters}
-                  disabled={!selectedSubject && !selectedForm && !searchQuery}
-                >
-                  Clear
-                </Button>
+                {search && (
+                  <Button variant="outline-secondary" onClick={() => setSearch('')}>
+                    Clear
+                  </Button>
+                )}
               </InputGroup>
             </Col>
+
+            <Col md={2}>
+              <Form.Label><FaFilter className="me-1" /> Bloom Level</Form.Label>
+              <Form.Select
+                value={bloomFilter}
+                onChange={(e) => setBloomFilter(e.target.value)}
+              >
+                <option value="all">All levels</option>
+                {bloomOptions.map(b => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </Form.Select>
+            </Col>
+
+            <Col md={2}>
+              <Form.Label><FaLayerGroup className="me-1" /> Strand</Form.Label>
+              <Form.Select
+                value={strandFilter}
+                onChange={(e) => setStrandFilter(e.target.value)}
+                disabled={strandOptions.length === 0}
+              >
+                <option value="all">All strands</option>
+                {strandOptions.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </Form.Select>
+            </Col>
           </Row>
+
+          {/* Counts summary */}
+          {!loadingTree && topics.length > 0 && (
+            <div className="mt-3 text-muted small">
+              Showing{' '}
+              <strong>{filteredCounts.topics}</strong>/{totals.topics} topics,{' '}
+              <strong>{filteredCounts.subtopics}</strong>/{totals.subtopics} subtopics,{' '}
+              <strong>{filteredCounts.outcomes}</strong>/{totals.outcomes} outcomes
+              {' '}({totals.strategies} strategies total)
+              {selectedSubject?.framework && (
+                <Badge bg="light" text="dark" className="ms-2 border">
+                  {selectedSubject.framework}
+                </Badge>
+              )}
+            </div>
+          )}
         </Card.Body>
       </Card>
-      
-      {/* Error Alert */}
-      {error && (
-        <Alert variant="danger" dismissible onClose={() => setError(null)}>
-          <Alert.Heading>Error</Alert.Heading>
-          {error}
-        </Alert>
-      )}
-      
-      {/* Loading State */}
-      {isLoading && (
+
+      {/* Tree states */}
+      {loadingTree && (
         <div className="text-center py-5">
           <Spinner animation="border" variant="primary" />
-          <p className="mt-3 text-muted">Loading curriculum content...</p>
+          <p className="mt-3 text-muted">Loading curriculum…</p>
         </div>
       )}
-      
-      {/* Curriculum Content */}
-      {!isLoading && !error && (
-        <>
-          {filteredCurriculum.length === 0 ? (
-            <Alert variant="info">
-              <FaInfoCircle className="me-2" />
-              No curriculum content found. {selectedSubject || selectedForm || searchQuery 
-                ? 'Try adjusting your filters.' 
-                : 'Curriculum content will appear here once it\'s added by administrators.'}
-            </Alert>
-          ) : (
-            <Row>
-              <Col>
-                <Accordion defaultActiveKey="0" className="curriculum-accordion">
-                  {Object.entries(curriculumByForm).map(([formName, items], formIdx) => (
-                    <Accordion.Item 
-                      eventKey={formIdx.toString()} 
-                      key={formName}
-                      className="mb-3"
-                    >
-                      <Accordion.Header>
-                        <div className="d-flex align-items-center w-100">
-                          <FaGraduationCap className="me-2 text-primary" />
-                          <strong>{formName}</strong>
-                          <Badge bg="secondary" className="ms-auto me-3">
-                            {items.length} {items.length === 1 ? 'Subject' : 'Subjects'}
-                          </Badge>
-                        </div>
-                      </Accordion.Header>
-                      <Accordion.Body>
-                        <Row>
-                          {items.map((offering, idx) => (
-                            <Col key={offering.offering_id} md={6} lg={4} className="mb-3">
-                              <Card className="h-100 curriculum-card shadow-sm">
-                                <Card.Header className="d-flex align-items-center justify-content-between">
-                                  <div className="d-flex align-items-center">
-                                    <FaBook className="me-2 text-primary" />
-                                    <strong>{offering.subject?.subject_name}</strong>
-                                  </div>
-                                  {offering.is_compulsory && (
-                                    <Badge bg="success">Required</Badge>
-                                  )}
-                                </Card.Header>
-                                <Card.Body>
-                                  {/* Subject Code */}
-                                  {offering.subject?.cxc_code && (
-                                    <div className="mb-2">
-                                      <small className="text-muted">
-                                        <strong>CXC Code:</strong> {offering.subject.cxc_code}
-                                      </small>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Weekly Periods */}
-                                  <div className="mb-3">
-                                    <Badge bg="info" className="me-2">
-                                      <FaClock className="me-1" />
-                                      {offering.weekly_periods || 5} periods/week
-                                    </Badge>
-                                    {offering.curriculum_version && (
-                                      <Badge bg="secondary" className="me-2">
-                                        {offering.curriculum_version}
-                                      </Badge>
+
+      {treeError && !loadingTree && (
+        <Alert variant="danger">
+          Failed to load curriculum tree: {treeError.message}
+        </Alert>
+      )}
+
+      {!loadingTree && !treeError && topics.length === 0 && (
+        <Alert variant="info">
+          No topics have been added for{' '}
+          <strong>{selectedSubject ? `${selectedSubject.name} — ${selectedSubject.level}` : 'this subject'}</strong> yet.
+          {isAdmin && ' Use the “Add Topic” button to get started.'}
+        </Alert>
+      )}
+
+      {!loadingTree && !treeError && topics.length > 0 && filteredTopics.length === 0 && (
+        <Alert variant="warning">
+          No curriculum entries match the current filters. Try adjusting your search, Bloom level, or strand.
+        </Alert>
+      )}
+
+      {/* Hierarchy */}
+      {!loadingTree && !treeError && filteredTopics.length > 0 && (
+        <Accordion alwaysOpen className="curriculum-accordion">
+          {filteredTopics.map((topic, idx) => {
+            const subCount = topic._subtopics.length;
+            const outCount = topic._subtopics.reduce((n, s) => n + (s._outcomes || []).length, 0);
+            return (
+              <Accordion.Item eventKey={String(topic.id ?? idx)} key={topic.id ?? idx} className="mb-2">
+                <Accordion.Header>
+                  <div className="d-flex align-items-center w-100 flex-wrap gap-2 pe-2">
+                    <strong>Topic {topic.topic_number}: {topic.title}</strong>
+                    {topic.strand && <Badge bg="dark">{topic.strand}</Badge>}
+                    <span className="ms-auto d-flex gap-2">
+                      <Badge bg="secondary">{subCount} subtopics</Badge>
+                      <Badge bg="info">{outCount} outcomes</Badge>
+                    </span>
+                  </div>
+                </Accordion.Header>
+                <Accordion.Body>
+                  {/* Admin topic actions */}
+                  {isAdmin && (
+                    <div className="d-flex gap-2 mb-3">
+                      <Button size="sm" variant="outline-primary"
+                        onClick={() => openModal('topic', 'edit', { data: topic })}>
+                        <FaEdit className="me-1" /> Edit Topic
+                      </Button>
+                      <Button size="sm" variant="outline-danger"
+                        onClick={() => handleDelete('topic', topic.id, topic.title)}>
+                        <FaTrash className="me-1" /> Delete Topic
+                      </Button>
+                      <Button size="sm" variant="outline-success" className="ms-auto"
+                        onClick={() => openModal('subtopic', 'create', { parentId: topic.id })}>
+                        <FaPlus className="me-1" /> Add Subtopic
+                      </Button>
+                    </div>
+                  )}
+
+                  {topic.elo && (
+                    <p className="mb-2"><strong>ELO:</strong> {topic.elo}</p>
+                  )}
+                  {Array.isArray(topic.grade_level_guidelines)
+                    ? topic.grade_level_guidelines.length > 0 && (
+                      <div className="mb-3">
+                        <h6 className="text-muted">Grade Level Guidelines</h6>
+                        <ul className="mb-0 ps-3">
+                          {topic.grade_level_guidelines.map((g, i) => (
+                            <li key={i}>{typeof g === 'string' ? g : JSON.stringify(g)}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )
+                    : topic.grade_level_guidelines && (
+                      <div className="mb-3">
+                        <h6 className="text-muted">Grade Level Guidelines</h6>
+                        <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>
+                          {typeof topic.grade_level_guidelines === 'string'
+                            ? topic.grade_level_guidelines
+                            : JSON.stringify(topic.grade_level_guidelines)}
+                        </p>
+                      </div>
+                    )}
+
+                  {topic._subtopics.length === 0 ? (
+                    <p className="text-muted small mb-0">No subtopics under this topic.</p>
+                  ) : (
+                    topic._subtopics.map((st) => (
+                      <Card key={st.id} className="mb-3 border">
+                        <Card.Header className="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                          <div>
+                            {st.code && <Badge bg="primary" className="me-2">{st.code}</Badge>}
+                            <strong>{st.title}</strong>
+                          </div>
+                          {isAdmin && (
+                            <div className="d-flex gap-1">
+                              <Button size="sm" variant="outline-primary"
+                                onClick={() => openModal('subtopic', 'edit', { data: st, parentId: topic.id })}
+                                title="Edit subtopic">
+                                <FaEdit />
+                              </Button>
+                              <Button size="sm" variant="outline-danger"
+                                onClick={() => handleDelete('subtopic', st.id, st.title)}
+                                title="Delete subtopic">
+                                <FaTrash />
+                              </Button>
+                            </div>
+                          )}
+                        </Card.Header>
+                        <Card.Body>
+                          {st.elo && (
+                            <p className="mb-3"><strong>ELO:</strong> {st.elo}</p>
+                          )}
+
+                          {/* Outcomes */}
+                          <div className="d-flex align-items-center justify-content-between mb-2">
+                            <h6 className="mb-0">Outcomes (SCOs)</h6>
+                            {isAdmin && (
+                              <Button size="sm" variant="outline-success"
+                                onClick={() => openModal('outcome', 'create', { parentId: st.id })}>
+                                <FaPlus className="me-1" /> Add Outcome
+                              </Button>
+                            )}
+                          </div>
+                          {(st._outcomes || []).length === 0 ? (
+                            <p className="text-muted small">No outcomes.</p>
+                          ) : (
+                            <Table responsive size="sm" hover className="mb-3 align-middle">
+                              <thead>
+                                <tr>
+                                  <th style={{ width: '90px' }}>SCO #</th>
+                                  <th>Statement</th>
+                                  <th style={{ width: '130px' }}>Bloom</th>
+                                  {isAdmin && <th style={{ width: '90px' }}>Actions</th>}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {st._outcomes.map((o) => (
+                                  <tr key={o.id}>
+                                    <td><code>{o.sco_number}</code></td>
+                                    <td>{o.statement}</td>
+                                    <td>
+                                      {o.bloom_level && (
+                                        <Badge bg={bloomBadgeVariant(o.bloom_level)}>
+                                          {o.bloom_level}
+                                        </Badge>
+                                      )}
+                                    </td>
+                                    {isAdmin && (
+                                      <td>
+                                        <div className="d-flex gap-1">
+                                          <Button size="sm" variant="outline-primary"
+                                            onClick={() => openModal('outcome', 'edit', { data: o, parentId: st.id })}
+                                            title="Edit outcome">
+                                            <FaEdit />
+                                          </Button>
+                                          <Button size="sm" variant="outline-danger"
+                                            onClick={() => handleDelete('outcome', o.id, o.sco_number)}
+                                            title="Delete outcome">
+                                            <FaTrash />
+                                          </Button>
+                                        </div>
+                                      </td>
+                                    )}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </Table>
+                          )}
+
+                          {/* Strategies */}
+                          <div className="d-flex align-items-center justify-content-between mb-2">
+                            <h6 className="mb-0">Strategies</h6>
+                            {isAdmin && (
+                              <Button size="sm" variant="outline-success"
+                                onClick={() => openModal('strategy', 'create', { parentId: st.id })}>
+                                <FaPlus className="me-1" /> Add Strategy
+                              </Button>
+                            )}
+                          </div>
+                          {(st.strategies || []).length === 0 ? (
+                            <p className="text-muted small mb-0">No strategies.</p>
+                          ) : (
+                            <ul className="list-unstyled mb-0">
+                              {st.strategies.map((str) => (
+                                <li key={str.id} className="mb-2 d-flex align-items-start">
+                                  <div className="flex-grow-1">
+                                    {str.strategy_type && (
+                                      <Badge bg="secondary" className="me-2">{str.strategy_type}</Badge>
+                                    )}
+                                    <strong>{str.title}</strong>
+                                    {str.description && <>: <span>{str.description}</span></>}
+                                    {str.sco_refs && (
+                                      <span className="text-muted small ms-2">[refs: {str.sco_refs}]</span>
                                     )}
                                   </div>
-                                  
-                                  {/* Enhanced SKN Curriculum Link for Mathematics Form 1 */}
-                                  {offering.subject?.subject_name && 
-                                   (offering.subject.subject_name.toLowerCase().includes('math') || 
-                                    offering.subject.subject_name.toLowerCase().includes('mathematics')) &&
-                                   offering.form?.form_number === 1 && (
-                                    <div className="mb-3">
-                                      <Link 
-                                        to="/curriculum/skn-mathematics"
-                                        className="text-decoration-none"
-                                      >
-                                        <Button 
-                                          variant="outline-primary" 
-                                          size="sm" 
-                                          className="w-100"
-                                        >
-                                          <FaBook className="me-2" />
-                                          View Enhanced SKN Mathematics Curriculum
-                                        </Button>
-                                      </Link>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Enhanced SKN Curriculum Link for Social Science Form 1 */}
-                                  {offering.subject?.subject_name && 
-                                   (offering.subject.subject_name.toLowerCase().includes('social') || 
-                                    offering.subject.subject_name.toLowerCase().includes('social science') ||
-                                    offering.subject.subject_name.toLowerCase().includes('social studies')) &&
-                                   offering.form?.form_number === 1 && (
-                                    <div className="mb-3">
-                                      <Link 
-                                        to="/curriculum/skn-social-science"
-                                        className="text-decoration-none"
-                                      >
-                                        <Button 
-                                          variant="outline-primary" 
-                                          size="sm" 
-                                          className="w-100"
-                                        >
-                                          <FaBook className="me-2" />
-                                          View Enhanced SKN Social Science Curriculum
-                                        </Button>
-                                      </Link>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Enhanced SKN Curriculum Link for Mathematics Form 2 */}
-                                  {offering.subject?.subject_name && 
-                                   (offering.subject.subject_name.toLowerCase().includes('math') || 
-                                    offering.subject.subject_name.toLowerCase().includes('mathematics')) &&
-                                   offering.form?.form_number === 2 && (
-                                    <div className="mb-3">
-                                      <Link 
-                                        to="/curriculum/skn-mathematics-form2"
-                                        className="text-decoration-none"
-                                      >
-                                        <Button 
-                                          variant="outline-primary" 
-                                          size="sm" 
-                                          className="w-100"
-                                        >
-                                          <FaBook className="me-2" />
-                                          View Enhanced SKN Mathematics Curriculum (Form 2)
-                                        </Button>
-                                      </Link>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Enhanced SKN Curriculum Link for Social Science Form 2 */}
-                                  {offering.subject?.subject_name && 
-                                   (offering.subject.subject_name.toLowerCase().includes('social') || 
-                                    offering.subject.subject_name.toLowerCase().includes('social science') ||
-                                    offering.subject.subject_name.toLowerCase().includes('social studies')) &&
-                                   offering.form?.form_number === 2 && (
-                                    <div className="mb-3">
-                                      <Link 
-                                        to="/curriculum/skn-social-science-form2"
-                                        className="text-decoration-none"
-                                      >
-                                        <Button 
-                                          variant="outline-primary" 
-                                          size="sm" 
-                                          className="w-100"
-                                        >
-                                          <FaBook className="me-2" />
-                                          View Enhanced SKN Social Science Curriculum (Form 2)
-                                        </Button>
-                                      </Link>
-                                    </div>
-                                  )}
-                                  
-                                  {/* Structured Curriculum Indicator */}
-                                  {hasStructuredCurriculum(offering) ? (
-                                    <div className="mb-3">
-                                      <Alert variant="success" className="py-2 mb-3">
-                                        <div className="d-flex align-items-center justify-content-between">
-                                          <div>
-                                            <FaCheckCircle className="me-2" />
-                                            <strong>Enhanced Structured Curriculum Available</strong>
-                                            <br />
-                                            <small>
-                                              {getTopicCount(offering)} {getTopicCount(offering) === 1 ? 'Topic' : 'Topics'} with detailed units, activities, and resources
-                                            </small>
-                                          </div>
-                                        </div>
-                                      </Alert>
-                                      
-                                      {/* Front Matter Preview */}
-                                      {offering.curriculum_structure.frontMatter?.introduction && (
-                                        <div className="mb-3">
-                                          <h6 className="d-flex align-items-center mb-2">
-                                            <FaBook className="me-1 text-primary" />
-                                            Introduction
-                                          </h6>
-                                          <div className="curriculum-content">
-                                            <p>{offering.curriculum_structure.frontMatter.introduction}</p>
-                                          </div>
-                                        </div>
-                                      )}
-                                      
-                                      {/* Topics Preview */}
-                                      <div className="mb-3">
-                                        <h6 className="d-flex align-items-center mb-2">
-                                          <FaListOl className="me-1 text-primary" />
-                                          Topics ({getTopicCount(offering)})
-                                        </h6>
-                                        <ul className="curriculum-list">
-                                          {offering.curriculum_structure.topics.slice(0, 3).map((topic, idx) => (
-                                            <li key={idx}>
-                                              <strong>Topic {topic.topicNumber}:</strong> {topic.title}
-                                              {topic.instructionalUnits && (
-                                                <span className="text-muted ms-2">
-                                                  ({topic.instructionalUnits.length} {topic.instructionalUnits.length === 1 ? 'unit' : 'units'})
-                                                </span>
-                                              )}
-                                            </li>
-                                          ))}
-                                          {offering.curriculum_structure.topics.length > 3 && (
-                                            <li className="text-muted">
-                                              ... and {offering.curriculum_structure.topics.length - 3} more topics
-                                            </li>
-                                          )}
-                                        </ul>
-                                      </div>
-                                      
-                                      {/* View Full Curriculum Button */}
-                                      <Button
-                                        variant="primary"
-                                        size="sm"
-                                        className="w-100"
-                                        onClick={() => setSelectedOffering(offering)}
-                                      >
-                                        <FaEye className="me-2" />
-                                        View Full Structured Curriculum
+                                  {isAdmin && (
+                                    <div className="d-flex gap-1 ms-2">
+                                      <Button size="sm" variant="outline-primary"
+                                        onClick={() => openModal('strategy', 'edit', { data: str, parentId: st.id })}
+                                        title="Edit strategy">
+                                        <FaEdit />
+                                      </Button>
+                                      <Button size="sm" variant="outline-danger"
+                                        onClick={() => handleDelete('strategy', str.id, str.title)}
+                                        title="Delete strategy">
+                                        <FaTrash />
                                       </Button>
                                     </div>
-                                  ) : (
-                                    <>
-                                      {/* Curriculum Framework (Fallback for non-structured) */}
-                                      <div className="mb-3">
-                                        <h6 className="d-flex align-items-center mb-2">
-                                          <FaListOl className="me-1 text-primary" />
-                                          Curriculum Framework
-                                        </h6>
-                                        <div className="curriculum-content">
-                                          {formatCurriculumText(offering.curriculum_framework)}
-                                        </div>
-                                      </div>
-                                      
-                                      {/* Learning Outcomes */}
-                                      {offering.learning_outcomes && (
-                                        <div className="mb-2">
-                                          <h6 className="d-flex align-items-center mb-2">
-                                            <FaCheckCircle className="me-1 text-success" />
-                                            Learning Outcomes
-                                          </h6>
-                                          <div className="curriculum-content">
-                                            {formatCurriculumText(offering.learning_outcomes)}
-                                          </div>
-                                        </div>
-                                      )}
-                                    </>
                                   )}
-                                </Card.Body>
-                                <Card.Footer className="text-muted">
-                                  <small>
-                                    {offering.subject?.subject_code}
-                                  </small>
-                                </Card.Footer>
-                              </Card>
-                            </Col>
-                          ))}
-                        </Row>
-                      </Accordion.Body>
-                    </Accordion.Item>
-                  ))}
-                </Accordion>
-              </Col>
-            </Row>
-          )}
-          
-          {/* Summary */}
-          {filteredCurriculum.length > 0 && (
-            <Card className="mt-4 bg-light">
-              <Card.Body>
-                <Row className="text-center">
-                  <Col md={3}>
-                    <h4 className="text-primary mb-1">
-                      {Object.keys(curriculumByForm).length}
-                    </h4>
-                    <small className="text-muted">Forms</small>
-                  </Col>
-                  <Col md={3}>
-                    <h4 className="text-primary mb-1">
-                      {filteredCurriculum.length}
-                    </h4>
-                    <small className="text-muted">Subject-Form Combinations</small>
-                  </Col>
-                  <Col md={3}>
-                    <h4 className="text-primary mb-1">
-                      {new Set(filteredCurriculum.map(c => c.subject_id)).size}
-                    </h4>
-                    <small className="text-muted">Unique Subjects</small>
-                  </Col>
-                  <Col md={3}>
-                    <h4 className="text-primary mb-1">
-                      {filteredCurriculum.filter(c => c.is_compulsory).length}
-                    </h4>
-                    <small className="text-muted">Compulsory Subjects</small>
-                  </Col>
-                </Row>
-              </Card.Body>
-            </Card>
-          )}
-        </>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </Card.Body>
+                      </Card>
+                    ))
+                  )}
+                </Accordion.Body>
+              </Accordion.Item>
+            );
+          })}
+        </Accordion>
       )}
-      
-      {/* Structured Curriculum Detail Modal */}
-      {selectedOffering && selectedOffering.curriculum_structure && (
-        <StructuredCurriculumView
-          offering={selectedOffering}
-          onClose={() => setSelectedOffering(null)}
-        />
+
+      {/* ── Edit / Create Modal (admin only) ── */}
+      {isAdmin && modal && (
+        <Modal show onHide={closeModal} size="lg">
+          <Form onSubmit={handleSave}>
+            <Modal.Header closeButton>
+              <Modal.Title>
+                {modal.mode === 'create' ? 'Add' : 'Edit'} {modalTitles[modal.type]}
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {mutationError && (
+                <Alert variant="danger" dismissible onClose={() => setMutationError(null)}>
+                  {mutationError}
+                </Alert>
+              )}
+              {renderFields(modal.type, formValues, setField)}
+            </Modal.Body>
+            <Modal.Footer>
+              <Button variant="secondary" onClick={closeModal}>Cancel</Button>
+              <Button type="submit" variant="primary" disabled={saveMutation.isLoading}>
+                {saveMutation.isLoading
+                  ? 'Saving…'
+                  : (modal.mode === 'create' ? 'Create' : 'Update')}
+              </Button>
+            </Modal.Footer>
+          </Form>
+        </Modal>
       )}
     </Container>
   );
 }
 
-// Structured Curriculum Detail View Component
-function StructuredCurriculumView({ offering, onClose }) {
-  const curriculum = offering.curriculum_structure;
-  
-  // Helper to check if structured curriculum exists
-  const hasStructuredCurriculum = (offering) => {
-    return offering.curriculum_structure && 
-           offering.curriculum_structure.topics && 
-           offering.curriculum_structure.topics.length > 0;
-  };
-  
-  return (
-    <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
-      <div className="modal-dialog modal-xl modal-dialog-scrollable" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-content">
-          <div className="modal-header">
-            <div>
-              <h5 className="modal-title">
-                <FaBook className="me-2" />
-                {offering.subject?.subject_name} - {offering.form?.form_name}
-              </h5>
-              {offering.curriculum_version && (
-                <small className="text-muted">{offering.curriculum_version}</small>
-              )}
-            </div>
-            <button type="button" className="btn-close" onClick={onClose}></button>
-          </div>
-          <div className="modal-body">
-            {/* Front Matter */}
-            {curriculum.frontMatter && (
-              <div className="mb-4">
-                <h4>Front Matter</h4>
-                {curriculum.frontMatter.coverPage && (
-                  <Card className="mb-3">
-                    <Card.Body>
-                      <h5>{curriculum.frontMatter.coverPage.title}</h5>
-                      <p className="text-muted mb-0">
-                        {curriculum.frontMatter.coverPage.jurisdiction} • {curriculum.frontMatter.coverPage.series}
-                      </p>
-                    </Card.Body>
-                  </Card>
-                )}
-                {curriculum.frontMatter.introduction && (
-                  <div className="mb-3">
-                    <h6>Introduction</h6>
-                    <p>{curriculum.frontMatter.introduction}</p>
-                  </div>
-                )}
-                {curriculum.frontMatter.tableOfContents && curriculum.frontMatter.tableOfContents.length > 0 && (
-                  <div className="mb-3">
-                    <h6>Table of Contents</h6>
-                    <ul>
-                      {curriculum.frontMatter.tableOfContents.map((item, idx) => (
-                        <li key={idx}>{item}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-            
-            {/* Topics */}
-            {curriculum.topics && curriculum.topics.length > 0 && (
-              <div>
-                <h4 className="mb-3">Topics</h4>
-                <Accordion defaultActiveKey="0">
-                  {curriculum.topics.map((topic, topicIdx) => (
-                    <Accordion.Item eventKey={topicIdx.toString()} key={topicIdx}>
-                      <Accordion.Header>
-                        <div className="d-flex align-items-center w-100">
-                          <Badge bg="primary" className="me-2">
-                            Topic {topic.topicNumber}
-                          </Badge>
-                          <strong>{topic.title}</strong>
-                          {topic.instructionalUnits && (
-                            <Badge bg="secondary" className="ms-auto me-2">
-                              {topic.instructionalUnits.length} {topic.instructionalUnits.length === 1 ? 'Unit' : 'Units'}
-                            </Badge>
-                          )}
-                        </div>
-                      </Accordion.Header>
-                      <Accordion.Body>
-                        {/* Topic Overview */}
-                        {topic.overview && (
-                          <div className="mb-4">
-                            <h5>Overview</h5>
-                            {topic.overview.strandIdentification && (
-                              <p><strong>Strand:</strong> {topic.overview.strandIdentification}</p>
-                            )}
-                            {topic.overview.essentialLearningOutcomes && topic.overview.essentialLearningOutcomes.length > 0 && (
-                              <div className="mb-3">
-                                <strong>Essential Learning Outcomes:</strong>
-                                <ul>
-                                  {topic.overview.essentialLearningOutcomes.map((outcome, idx) => (
-                                    <li key={idx}>{outcome}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {topic.overview.gradeLevelGuidelines && topic.overview.gradeLevelGuidelines.length > 0 && (
-                              <div className="mb-3">
-                                <strong>Grade Level Guidelines:</strong>
-                                <ul>
-                                  {topic.overview.gradeLevelGuidelines.map((guideline, idx) => (
-                                    <li key={idx}>{guideline}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Instructional Units */}
-                        {topic.instructionalUnits && topic.instructionalUnits.length > 0 && (
-                          <div className="mb-4">
-                            <h5>Instructional Units</h5>
-                            {topic.instructionalUnits.map((unit, unitIdx) => (
-                              <Card key={unitIdx} className="mb-3">
-                                <Card.Header>
-                                  <div className="d-flex align-items-center">
-                                    <Badge bg="info" className="me-2">
-                                      {unit.scoNumber}
-                                    </Badge>
-                                    <strong>Unit {unit.unitNumber}</strong>
-                                  </div>
-                                </Card.Header>
-                                <Card.Body>
-                                  <Row>
-                                    <Col md={4}>
-                                      <h6>Specific Curriculum Outcomes (SCOs)</h6>
-                                      <p>{unit.specificCurriculumOutcomes || 'Not specified'}</p>
-                                    </Col>
-                                    <Col md={4}>
-                                      <h6>Inclusive Assessment Strategies</h6>
-                                      <p>{unit.inclusiveAssessmentStrategies || 'Not specified'}</p>
-                                    </Col>
-                                    <Col md={4}>
-                                      <h6>Inclusive Learning Strategies</h6>
-                                      <p>{unit.inclusiveLearningStrategies || 'Not specified'}</p>
-                                    </Col>
-                                  </Row>
-                                  
-                                  {/* Activities */}
-                                  {unit.activities && unit.activities.length > 0 && (
-                                    <div className="mt-3">
-                                      <h6>Activities</h6>
-                                      {unit.activities.map((activity, actIdx) => (
-                                        <div key={actIdx} className="mb-2 p-2 bg-light rounded">
-                                          <strong>{activity.title}</strong>
-                                          {activity.description && (
-                                            <p className="mb-0 text-muted small">{activity.description}</p>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </Card.Body>
-                              </Card>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Useful Content Knowledge */}
-                        {topic.usefulContentKnowledge && (
-                          <div className="mb-4">
-                            <h5>Useful Content Knowledge for Teachers</h5>
-                            <p>{topic.usefulContentKnowledge}</p>
-                          </div>
-                        )}
-                        
-                        {/* Closing Framework */}
-                        {topic.closingFramework && (
-                          <div className="mb-4">
-                            <h5>Closing Framework</h5>
-                            {topic.closingFramework.essentialEducationCompetencies && topic.closingFramework.essentialEducationCompetencies.length > 0 && (
-                              <div className="mb-3">
-                                <strong>Essential Education Competencies:</strong>
-                                <ul>
-                                  {topic.closingFramework.essentialEducationCompetencies.map((comp, idx) => (
-                                    <li key={idx}>{comp}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            {topic.closingFramework.localCultureIntegration && (
-                              <div className="mb-3">
-                                <strong>Local Culture Integration:</strong>
-                                <p>{topic.closingFramework.localCultureIntegration}</p>
-                              </div>
-                            )}
-                            {topic.closingFramework.technologyIntegration && (
-                              <div className="mb-3">
-                                <strong>Technology Integration:</strong>
-                                <p>{topic.closingFramework.technologyIntegration}</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        
-                        {/* Resources */}
-                        {topic.resources && (
-                          <div className="mb-3">
-                            <h5>Resources</h5>
-                            {(topic.resources.webLinks?.length > 0 || 
-                              topic.resources.videos?.length > 0 || 
-                              topic.resources.games?.length > 0 || 
-                              topic.resources.worksheets?.length > 0) ? (
-                              <>
-                                {topic.resources.webLinks?.length > 0 && (
-                                  <div className="mb-2">
-                                    <strong>Web Links:</strong>
-                                    <ul>
-                                      {topic.resources.webLinks.map((link, idx) => (
-                                        <li key={idx}><a href={link} target="_blank" rel="noopener noreferrer">{link}</a></li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                                {topic.resources.videos?.length > 0 && (
-                                  <div className="mb-2">
-                                    <strong>Videos:</strong>
-                                    <ul>
-                                      {topic.resources.videos.map((video, idx) => (
-                                        <li key={idx}><a href={video} target="_blank" rel="noopener noreferrer">{video}</a></li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                                {topic.resources.games?.length > 0 && (
-                                  <div className="mb-2">
-                                    <strong>Games:</strong>
-                                    <ul>
-                                      {topic.resources.games.map((game, idx) => (
-                                        <li key={idx}><a href={game} target="_blank" rel="noopener noreferrer">{game}</a></li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                                {topic.resources.worksheets?.length > 0 && (
-                                  <div className="mb-2">
-                                    <strong>Worksheets:</strong>
-                                    <ul>
-                                      {topic.resources.worksheets.map((ws, idx) => (
-                                        <li key={idx}><a href={ws} target="_blank" rel="noopener noreferrer">{ws}</a></li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                              </>
-                            ) : (
-                              <p className="text-muted">No resources added yet</p>
-                            )}
-                          </div>
-                        )}
-                      </Accordion.Body>
-                    </Accordion.Item>
-                  ))}
-                </Accordion>
-              </div>
-            )}
-          </div>
-          <div className="modal-footer">
-            <Button variant="secondary" onClick={onClose}>
-              Close
-            </Button>
-            {hasStructuredCurriculum(offering) && (
-              <Button 
-                variant="primary"
-                onClick={() => {
-                  // Navigate to admin structured editor if user is admin
-                  // For now, just show message
-                  alert('Full editing available in Admin → Subjects → Form Offerings → Structured Editor');
-                  onClose();
-                }}
-              >
-                <FaEdit className="me-2" />
-                Edit in Admin
-              </Button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
+// ── Field config-driven rendering ─────────────────────────────────────
+function renderFields(type, values, setField) {
+  const text = (name, label, opts = {}) => (
+    <Form.Group className="mb-3" key={name}>
+      <Form.Label>{label}</Form.Label>
+      <Form.Control
+        type={opts.number ? 'number' : 'text'}
+        value={values[name] ?? ''}
+        onChange={(e) => setField(name, e.target.value)}
+        placeholder={opts.placeholder || ''}
+      />
+    </Form.Group>
   );
+  const area = (name, label, rows = 3) => (
+    <Form.Group className="mb-3" key={name}>
+      <Form.Label>{label}</Form.Label>
+      <Form.Control
+        as="textarea"
+        rows={rows}
+        value={values[name] ?? ''}
+        onChange={(e) => setField(name, e.target.value)}
+      />
+    </Form.Group>
+  );
+
+  if (type === 'topic') {
+    return (
+      <>
+        <Row>
+          <Col md={4}>{text('topic_number', 'Topic Number', { number: true })}</Col>
+          <Col md={4}>{text('code', 'Code')}</Col>
+          <Col md={4}>{text('sort_order', 'Sort Order', { number: true })}</Col>
+        </Row>
+        {text('title', 'Title')}
+        {text('strand', 'Strand')}
+        {area('elo', 'Essential Learning Outcome (ELO)')}
+        {area('grade_level_guidelines', 'Grade Level Guidelines')}
+      </>
+    );
+  }
+  if (type === 'subtopic') {
+    return (
+      <>
+        <Row>
+          <Col md={8}>{text('code', 'Code')}</Col>
+          <Col md={4}>{text('sort_order', 'Sort Order', { number: true })}</Col>
+        </Row>
+        {text('title', 'Title')}
+        {area('elo', 'Essential Learning Outcome (ELO)')}
+      </>
+    );
+  }
+  if (type === 'outcome') {
+    return (
+      <>
+        <Row>
+          <Col md={4}>{text('sco_number', 'SCO Number')}</Col>
+          <Col md={4}>
+            <Form.Group className="mb-3">
+              <Form.Label>Bloom Level</Form.Label>
+              <Form.Select
+                value={values.bloom_level ?? ''}
+                onChange={(e) => setField('bloom_level', e.target.value)}
+              >
+                <option value="">—</option>
+                {BLOOM_LEVELS.map(b => <option key={b} value={b}>{b}</option>)}
+              </Form.Select>
+            </Form.Group>
+          </Col>
+          <Col md={4}>{text('sort_order', 'Sort Order', { number: true })}</Col>
+        </Row>
+        {area('statement', 'Statement')}
+      </>
+    );
+  }
+  if (type === 'strategy') {
+    return (
+      <>
+        <Row>
+          <Col md={6}>{text('strategy_type', 'Strategy Type')}</Col>
+          <Col md={6}>{text('sco_refs', 'SCO References')}</Col>
+        </Row>
+        {text('title', 'Title')}
+        {area('description', 'Description')}
+      </>
+    );
+  }
+  return null;
+}
+
+// ── Payload helpers ───────────────────────────────────────────────────
+const FIELD_MAP = {
+  topic: ['topic_number', 'code', 'title', 'strand', 'elo', 'grade_level_guidelines', 'sort_order'],
+  subtopic: ['code', 'title', 'elo', 'sort_order'],
+  outcome: ['sco_number', 'statement', 'bloom_level', 'sort_order'],
+  strategy: ['strategy_type', 'title', 'sco_refs', 'description']
+};
+const NUMERIC_FIELDS = new Set(['topic_number', 'sort_order', 'sco_number']);
+// jsonb columns the UI edits as newline-separated text <-> array of strings
+const JSON_LINE_FIELDS = new Set(['grade_level_guidelines']);
+
+// Pull only the relevant fields out of an existing row for editing
+function pickFields(type, data) {
+  const out = {};
+  (FIELD_MAP[type] || []).forEach((f) => {
+    let v = data[f];
+    if (JSON_LINE_FIELDS.has(f)) {
+      v = Array.isArray(v) ? v.join('\n') : (typeof v === 'string' ? v : '');
+    }
+    out[f] = v ?? '';
+  });
+  return out;
+}
+
+// Convert form values into a clean DB payload (numbers coerced, empties → null)
+function buildPayload(type, values) {
+  const payload = {};
+  (FIELD_MAP[type] || []).forEach((f) => {
+    const raw = values[f];
+    if (NUMERIC_FIELDS.has(f)) {
+      payload[f] = raw === '' || raw === null || raw === undefined ? null : Number(raw);
+    } else if (JSON_LINE_FIELDS.has(f)) {
+      const lines = typeof raw === 'string'
+        ? raw.split('\n').map((l) => l.trim()).filter(Boolean)
+        : (Array.isArray(raw) ? raw : []);
+      payload[f] = lines.length ? lines : null;
+    } else {
+      const trimmed = typeof raw === 'string' ? raw.trim() : raw;
+      payload[f] = trimmed === '' || trimmed === undefined ? null : trimmed;
+    }
+  });
+  return payload;
 }
 
 export default Curriculum;
-
