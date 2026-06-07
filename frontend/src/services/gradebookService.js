@@ -22,7 +22,7 @@ export const gradebookService = {
         ),
         subject:subjects(*)
       `)
-      .eq('class_subject_id', classSubjectId)
+      .eq('id', classSubjectId)
       .single();
     if (error) throw error;
     return compatClassSubject(data);
@@ -42,7 +42,7 @@ export const gradebookService = {
           subject:subjects(*)
         )
       `)
-      .eq('assessment_id', assessmentId)
+      .eq('id', assessmentId)
       .single();
     if (error) throw error;
     if (data) data.class_subject = compatClassSubject(data.class_subject);
@@ -76,7 +76,7 @@ export const gradebookService = {
           )
         )
       `)
-      .eq('lesson_id', lessonId)
+      .eq('id', lessonId)
       .single();
     if (error) throw error;
     return data;
@@ -87,7 +87,7 @@ export const gradebookService = {
       .from('lessons')
       .select('*')
       .eq('class_subject_id', classSubjectId)
-      .order('lesson_date', { ascending: false });
+      .order('date', { ascending: false });
     if (error) throw error;
     return data || [];
   },
@@ -134,7 +134,7 @@ export const gradebookService = {
   async saveGrade(payload) {
     const { data: existing } = await supabase
       .from('student_grades')
-      .select('grade_id')
+      .select('id')
       .eq('assessment_id', payload.assessment_id)
       .eq('student_id', payload.student_id)
       .maybeSingle();
@@ -143,7 +143,7 @@ export const gradebookService = {
       const { error } = await supabase
         .from('student_grades')
         .update(payload)
-        .eq('grade_id', existing.grade_id);
+        .eq('id', existing.id);
       if (error) throw error;
     } else {
       const { error } = await supabase

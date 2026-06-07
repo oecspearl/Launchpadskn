@@ -61,7 +61,7 @@ function Gradebook() {
 
       // Get all grades for these students and assessments
       const studentIds = studentList.map(s => s.id);
-      const assessmentIds = (assessmentsData || []).map(a => a.assessment_id);
+      const assessmentIds = (assessmentsData || []).map(a => a.id);
 
       if (studentIds.length > 0 && assessmentIds.length > 0) {
         const gradesData = await gradebookService.getGrades(studentIds, assessmentIds);
@@ -82,11 +82,11 @@ function Gradebook() {
 
       // Get attendance records
       if (studentIds.length > 0 && lessonsData && lessonsData.length > 0) {
-        const lessonIds = lessonsData.map(l => l.lesson_id);
-        // Create a map of lesson_id to lesson_date for quick lookup
+        const lessonIds = lessonsData.map(l => l.id);
+        // Create a map of lesson id to lesson date for quick lookup
         const lessonDateMap = {};
         lessonsData.forEach(lesson => {
-          lessonDateMap[lesson.lesson_id] = lesson.lesson_date;
+          lessonDateMap[lesson.id] = lesson.date;
         });
 
         const attendanceData = await gradebookService.getAttendance(studentIds, lessonIds);
@@ -97,7 +97,7 @@ function Gradebook() {
           if (!attendanceMap[att.student_id]) {
             attendanceMap[att.student_id] = {};
           }
-          // Use lesson_date from the map
+          // Use lesson date from the map
           const lessonDate = lessonDateMap[att.lesson_id];
           if (lessonDate) {
             const dateKey = new Date(lessonDate).toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -165,7 +165,7 @@ function Gradebook() {
     const gradedAssessments = Object.entries(studentGrades)
       .filter(([, g]) => g.marks_obtained != null)
       .map(([assessmentId, g]) => {
-        const assessment = assessments.find(a => String(a.assessment_id) === String(assessmentId));
+        const assessment = assessments.find(a => String(a.id) === String(assessmentId));
         return { marks: g.marks_obtained, total: assessment?.total_marks || 0 };
       })
       .filter(g => g.total > 0);
@@ -194,8 +194,8 @@ function Gradebook() {
   const uniqueDates = useMemo(() => {
     const dates = new Set();
     lessons.forEach(lesson => {
-      if (lesson.lesson_date) {
-        const dateKey = new Date(lesson.lesson_date).toISOString().split('T')[0];
+      if (lesson.date) {
+        const dateKey = new Date(lesson.date).toISOString().split('T')[0];
         dates.add(dateKey);
       }
     });
@@ -232,17 +232,17 @@ function Gradebook() {
 
   const exportToCSV = () => {
     if (activeTab === 'grades') {
-      const headers = ['Student Name', 'Student Email', ...assessments.map(a => a.assessment_name), 'Average'];
+      const headers = ['Student Name', 'Student Email', ...assessments.map(a => a.title), 'Average'];
       const rows = filteredStudents.map(student => [
         personName(student),
         student.email || '',
         ...assessments.map(assessment => {
-          const grade = grades[student.id]?.[assessment.assessment_id];
+          const grade = grades[student.id]?.[assessment.id];
           return grade ? `${grade.marks_obtained}/${assessment.total_marks} (${grade.percentage?.toFixed(1)}%)` : '-';
         }),
         calculateStudentAverage(student.id) || '-'
       ]);
-      downloadCSV(headers, rows, `gradebook_${classSubject?.subject_offering?.subject?.subject_name || 'grades'}.csv`);
+      downloadCSV(headers, rows, `gradebook_${classSubject?.subject_offering?.subject?.name || 'grades'}.csv`);
     } else {
       const dates = uniqueDates;
       const dateHeaders = dates.map(dateKey => {
@@ -259,7 +259,7 @@ function Gradebook() {
           calculateAttendancePercentage(student.id) || '0'
         ];
       });
-      downloadCSV(headers, rows, `attendance_${classSubject?.subject_offering?.subject?.subject_name || 'attendance'}.csv`);
+      downloadCSV(headers, rows, `attendance_${classSubject?.subject_offering?.subject?.name || 'attendance'}.csv`);
     }
   };
   
@@ -295,9 +295,9 @@ function Gradebook() {
               </h2>
               {classSubject && (
                 <p className="text-muted mb-0">
-                  {classSubject.subject_offering?.subject?.subject_name || 'Subject'} - 
-                  {classSubject.class?.class_name || 'Class'} 
-                  {classSubject.class?.form?.form_name && ` (${classSubject.class.form.form_name})`}
+                  {classSubject.subject_offering?.subject?.name || 'Subject'} -
+                  {classSubject.class?.name || 'Class'}
+                  {classSubject.class?.form?.name && ` (${classSubject.class.form.name})`}
                 </p>
               )}
             </div>
@@ -375,10 +375,10 @@ function Gradebook() {
                     <tr>
                       <th>Student Name</th>
                       {assessments.map(assessment => (
-                        <th key={assessment.assessment_id} style={{ minWidth: '150px' }}>
-                          <div>{assessment.assessment_name}</div>
+                        <th key={assessment.id} style={{ minWidth: '150px' }}>
+                          <div>{assessment.title}</div>
                           <small className="text-muted">
-                            {assessment.assessment_type} ({assessment.total_marks} pts)
+                            {assessment.type} ({assessment.total_marks} pts)
                           </small>
                         </th>
                       ))}
@@ -401,9 +401,9 @@ function Gradebook() {
                               <strong>{personName(student, student.email)}</strong>
                             </td>
                             {assessments.map(assessment => {
-                              const grade = grades[student.id]?.[assessment.assessment_id];
+                              const grade = grades[student.id]?.[assessment.id];
                               return (
-                                <td key={assessment.assessment_id} className="text-center">
+                                <td key={assessment.id} className="text-center">
                                   {getGradeBadge(grade, assessment)}
                                 </td>
                               );

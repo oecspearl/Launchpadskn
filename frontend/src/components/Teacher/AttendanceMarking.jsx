@@ -87,7 +87,7 @@ function AttendanceMarking() {
     if (!searchFilter.trim()) return students;
     const query = searchFilter.toLowerCase();
     return students.filter(student =>
-      (student.name || student.email || '').toLowerCase().includes(query)
+      (`${student.first_name || ''} ${student.last_name || ''}`.trim() || student.email || '').toLowerCase().includes(query)
     );
   };
 
@@ -95,7 +95,7 @@ function AttendanceMarking() {
     const visible = getFilteredStudents();
     const updates = {};
     visible.forEach(student => {
-      updates[student.user_id] = status;
+      updates[student.id] = status;
     });
     setAttendance(prev => ({ ...prev, ...updates }));
   };
@@ -109,14 +109,12 @@ function AttendanceMarking() {
       setSuccess(null);
       
       // Batch upsert attendance for all students
-      const now = new Date().toISOString();
       const records = students.map(student => ({
-        lesson_id: parseInt(lessonId),
-        student_id: student.user_id,
-        status: attendance[student.user_id] || 'ABSENT',
-        notes: attendanceNotes[student.user_id] || '',
-        marked_by: user.userId,
-        marked_at: now
+        lesson_id: lessonId,
+        student_id: student.id,
+        status: attendance[student.id] || 'ABSENT',
+        notes: attendanceNotes[student.id] || '',
+        marked_by: user.userId
       }));
 
       await gradebookService.upsertAttendance(records);
@@ -180,8 +178,8 @@ function AttendanceMarking() {
             <div>
               <h2>Mark Attendance</h2>
               <p className="text-muted mb-0">
-                {lesson.class_subject?.subject_offering?.subject?.subject_name} • 
-                {formatDate(lesson.lesson_date)} • 
+                {lesson.class_subject?.subject_offering?.subject?.name} •
+                {formatDate(lesson.date)} •
                 {formatTime(lesson.start_time)} - {formatTime(lesson.end_time)}
               </p>
             </div>
@@ -302,45 +300,45 @@ function AttendanceMarking() {
               </thead>
               <tbody>
                 {filteredStudents.map((student) => {
-                  const currentStatus = attendance[student.user_id] || 'ABSENT';
+                  const currentStatus = attendance[student.id] || 'ABSENT';
                   return (
-                    <tr key={student.user_id}>
+                    <tr key={student.id}>
                       <td>
-                        <strong>{student.name || student.email}</strong>
+                        <strong>{`${student.first_name || ''} ${student.last_name || ''}`.trim() || student.email}</strong>
                       </td>
                       <td className="text-center">
                         <Form.Check
                           type="radio"
-                          name={`attendance-${student.user_id}`}
+                          name={`attendance-${student.id}`}
                           checked={currentStatus === 'PRESENT'}
-                          onChange={() => handleAttendanceChange(student.user_id, 'PRESENT')}
+                          onChange={() => handleAttendanceChange(student.id, 'PRESENT')}
                           label={<FaCheckCircle className="text-success" />}
                         />
                       </td>
                       <td className="text-center">
                         <Form.Check
                           type="radio"
-                          name={`attendance-${student.user_id}`}
+                          name={`attendance-${student.id}`}
                           checked={currentStatus === 'ABSENT'}
-                          onChange={() => handleAttendanceChange(student.user_id, 'ABSENT')}
+                          onChange={() => handleAttendanceChange(student.id, 'ABSENT')}
                           label={<FaTimesCircle className="text-danger" />}
                         />
                       </td>
                       <td className="text-center">
                         <Form.Check
                           type="radio"
-                          name={`attendance-${student.user_id}`}
+                          name={`attendance-${student.id}`}
                           checked={currentStatus === 'LATE'}
-                          onChange={() => handleAttendanceChange(student.user_id, 'LATE')}
+                          onChange={() => handleAttendanceChange(student.id, 'LATE')}
                           label={<FaClock className="text-warning" />}
                         />
                       </td>
                       <td className="text-center">
                         <Form.Check
                           type="radio"
-                          name={`attendance-${student.user_id}`}
+                          name={`attendance-${student.id}`}
                           checked={currentStatus === 'EXCUSED'}
-                          onChange={() => handleAttendanceChange(student.user_id, 'EXCUSED')}
+                          onChange={() => handleAttendanceChange(student.id, 'EXCUSED')}
                           label={<Badge bg="info">Excused</Badge>}
                         />
                       </td>
@@ -348,8 +346,8 @@ function AttendanceMarking() {
                         <Form.Control
                           type="text"
                           size="sm"
-                          value={attendanceNotes[student.user_id] || ''}
-                          onChange={(e) => handleNoteChange(student.user_id, e.target.value)}
+                          value={attendanceNotes[student.id] || ''}
+                          onChange={(e) => handleNoteChange(student.id, e.target.value)}
                           placeholder="Optional notes"
                         />
                       </td>

@@ -56,7 +56,7 @@ function GradeEntry() {
             marks_obtained: grade.marks_obtained,
             percentage: grade.percentage,
             grade_letter: grade.grade_letter,
-            comments: grade.comments || ''
+            comments: grade.comment || ''
           };
         });
         
@@ -128,8 +128,8 @@ function GradeEntry() {
         const marks = parseFloat(trimmed);
         if (!isNaN(marks)) {
           students.forEach((student, index) => {
-            if (!marksList[student.user_id] && index < lines.length) {
-              marksList[student.user_id] = marks;
+            if (!marksList[student.id] && index < lines.length) {
+              marksList[student.id] = marks;
             }
           });
         }
@@ -153,20 +153,19 @@ function GradeEntry() {
       
       // Save grades for each student
       for (const student of students) {
-        const gradeData = grades[student.user_id];
-        
+        const gradeData = grades[student.id];
+
         if (!gradeData || !gradeData.marks_obtained) {
           continue; // Skip students without marks
         }
-        
+
         const gradePayload = {
-          assessment_id: parseInt(assessmentId),
-          student_id: student.user_id,
+          assessment_id: assessmentId,
+          student_id: student.id,
           marks_obtained: gradeData.marks_obtained,
-          total_marks: assessment.total_marks,
           percentage: gradeData.percentage,
           grade_letter: gradeData.grade_letter,
-          comments: gradeData.comments || null,
+          comment: gradeData.comments || null,
           graded_by: user.userId,
           graded_at: new Date().toISOString()
         };
@@ -220,8 +219,8 @@ function GradeEntry() {
             <div>
               <h2>Grade Entry</h2>
               <p className="text-muted mb-0">
-                {assessment.assessment_name} • 
-                {assessment.class_subject?.subject_offering?.subject?.subject_name} • 
+                {assessment.title} •
+                {assessment.class_subject?.subject_offering?.subject?.name} •
                 Total Marks: {assessment.total_marks}
               </p>
             </div>
@@ -300,11 +299,11 @@ function GradeEntry() {
               </thead>
               <tbody>
                 {students.map((student) => {
-                  const grade = grades[student.user_id] || { marks_obtained: 0, percentage: 0, grade_letter: '', comments: '' };
+                  const grade = grades[student.id] || { marks_obtained: 0, percentage: 0, grade_letter: '', comments: '' };
                   return (
-                    <tr key={student.user_id}>
+                    <tr key={student.id}>
                       <td>
-                        <strong>{student.name || student.email}</strong>
+                        <strong>{`${student.first_name || ''} ${student.last_name || ''}`.trim() || student.email}</strong>
                       </td>
                       <td>
                         <Form.Control
@@ -313,7 +312,7 @@ function GradeEntry() {
                           min="0"
                           max={assessment.total_marks}
                           value={grade.marks_obtained || ''}
-                          onChange={(e) => handleGradeChange(student.user_id, 'marks_obtained', e.target.value)}
+                          onChange={(e) => handleGradeChange(student.id, 'marks_obtained', e.target.value)}
                           style={{ width: '100px' }}
                         />
                       </td>
@@ -340,7 +339,7 @@ function GradeEntry() {
                           type="text"
                           size="sm"
                           value={grade.comments || ''}
-                          onChange={(e) => handleGradeChange(student.user_id, 'comments', e.target.value)}
+                          onChange={(e) => handleGradeChange(student.id, 'comments', e.target.value)}
                           placeholder="Optional comments"
                         />
                       </td>
