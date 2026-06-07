@@ -10,6 +10,7 @@ import { ROLES } from '../../constants/roles';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import Breadcrumb from '../common/Breadcrumb';
 import StudentInformationManagement from './StudentInformationManagement';
+import { personName } from '../../utils/personName';
 
 /**
  * StudentManagement - View and filter students by school, form, and class.
@@ -119,7 +120,7 @@ function StudentManagement({ institutionId }) {
       const form = cls?.form;
       return {
         userId: sid,
-        name: student.name || student.email,
+        name: personName(student, student.email),
         email: student.email,
         isActive: student.is_active !== false,
         phone: student.phone || '',
@@ -480,7 +481,7 @@ function StudentManagement({ institutionId }) {
                 {displayStudents.map((student) => (
                   <tr key={student.userId}>
                     <td>
-                      <strong>{student.name}</strong>
+                      <strong>{personName(student)}</strong>
                     </td>
                     <td>
                       <span className="small">{student.email}</span>

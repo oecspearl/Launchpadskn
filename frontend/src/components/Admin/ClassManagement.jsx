@@ -13,6 +13,7 @@ import { institutionService } from '../../services/institutionService';
 import { userService } from '../../services/userService';
 import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
+import { personName } from '../../utils/personName';
 
 // ─── Inline detail panel for expanded class rows ────────────────────────────
 function ClassDetailPanel({ classItem }) {
@@ -203,7 +204,7 @@ function ClassDetailPanel({ classItem }) {
                   <tr key={cs.class_subject_id}>
                     <td>{cs.subject_offering?.subject?.subject_name || 'N/A'}</td>
                     <td><Badge bg="secondary">{cs.subject_offering?.subject?.subject_code || '-'}</Badge></td>
-                    <td>{cs.teacher?.name || 'Not assigned'}</td>
+                    <td>{personName(cs.teacher) || 'Not assigned'}</td>
                     <td>
                       <Button variant="outline-danger" size="sm"
                         onClick={() => {
@@ -273,12 +274,12 @@ function ClassDetailPanel({ classItem }) {
                 <tbody>
                   {classRoster.map(r => (
                     <tr key={r.student_id}>
-                      <td>{r.student?.name || 'N/A'}</td>
+                      <td>{personName(r.student) || 'N/A'}</td>
                       <td>{r.student?.email || 'N/A'}</td>
                       <td>
                         <Button variant="outline-danger" size="sm"
                           onClick={() => {
-                            if (window.confirm(`Remove ${r.student?.name} from this class?`)) {
+                            if (window.confirm(`Remove ${personName(r.student)} from this class?`)) {
                               removeStudentMutation.mutate(r.student_id);
                             }
                           }}>
@@ -658,7 +659,7 @@ function ClassManagement({ institutionId }) {
                           : 'N/A'}
                       </td>
                       <td>{classItem.academic_year}</td>
-                      <td>{classItem.form_tutor?.name || 'Not assigned'}</td>
+                      <td>{personName(classItem.form_tutor) || 'Not assigned'}</td>
                       <td>
                         <Badge bg={classItem.current_enrollment >= classItem.capacity ? 'danger' : 'success'}>
                           {classItem.current_enrollment || 0} / {classItem.capacity}

@@ -11,6 +11,7 @@ import { userService } from '../../services/userService';
 import { institutionService } from '../../services/institutionService';
 import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
+import { personName } from '../../utils/personName';
 import CurriculumAnalytics from './CurriculumAnalytics';
 import CollaborationHub from '../Collaboration/CollaborationHub';
 import InteractiveContentHub from '../InteractiveContent/InteractiveContentHub';
@@ -400,7 +401,7 @@ function ClassSubjectAssignment() {
                     </td>
                     <td><strong>{classSubject.subject_offering?.subject?.subject_name || 'N/A'}</strong></td>
                     <td>{classSubject.subject_offering?.subject?.subject_code || 'N/A'}</td>
-                    <td>{classSubject.teacher?.name || 'Not assigned'}</td>
+                    <td>{personName(classSubject.teacher) || 'Not assigned'}</td>
                     <td>
                       <Button
                         variant="outline-info"
@@ -553,7 +554,7 @@ function ClassSubjectAssignment() {
                 <option value="">Not assigned</option>
                 {teachers.map(teacher => (
                   <option key={teacher.user_id} value={teacher.user_id}>
-                    {teacher.name} ({teacher.email})
+                    {personName(teacher)} ({teacher.email})
                   </option>
                 ))}
               </Form.Select>

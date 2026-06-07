@@ -11,6 +11,7 @@ import { userService } from '../../services/userService';
 import { institutionService } from '../../services/institutionService';
 import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
+import { personName } from '../../utils/personName';
 
 function StudentAssignment() {
   const queryClient = useQueryClient();
@@ -218,7 +219,7 @@ function StudentAssignment() {
       if (searchTerm) {
         const searchLower = searchTerm.toLowerCase();
         return (
-          a.student?.name?.toLowerCase().includes(searchLower) ||
+          personName(a.student)?.toLowerCase().includes(searchLower) ||
           a.student?.email?.toLowerCase().includes(searchLower)
         );
       }
@@ -365,7 +366,7 @@ function StudentAssignment() {
                     {hasMultipleSchools && (
                       <td>{getSchoolName(assignment)}</td>
                     )}
-                    <td>{assignment.student?.name || 'N/A'}</td>
+                    <td>{personName(assignment.student) || 'N/A'}</td>
                     <td>{assignment.student?.email || 'N/A'}</td>
                     <td>
                       {assignment.class?.form
@@ -417,7 +418,7 @@ function StudentAssignment() {
                 const assignment = classAssignments.find(a => a.student_id === student.user_id);
                 return (
                   <tr key={student.user_id}>
-                    <td>{student.name || 'N/A'}</td>
+                    <td>{personName(student) || 'N/A'}</td>
                     <td>{student.email}</td>
                     <td>
                       {assignment ? (
@@ -532,7 +533,7 @@ function StudentAssignment() {
                       value={student.user_id}
                       disabled={hasAssignment}
                     >
-                      {student.name} ({student.email})
+                      {personName(student)} ({student.email})
                       {hasAssignment && ' - Already assigned'}
                     </option>
                   );

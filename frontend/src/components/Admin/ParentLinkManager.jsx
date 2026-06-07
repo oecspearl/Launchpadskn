@@ -6,6 +6,7 @@ import { FaUserFriends, FaPlus, FaTrash, FaSearch, FaUserPlus } from 'react-icon
 import { parentService } from '../../services/parentService';
 import { userService } from '../../services/userService';
 import { useAuth } from '../../contexts/AuthContextSupabase';
+import { personName } from '../../utils/personName';
 
 function ParentLinkManager({ studentId, student }) {
   const { user: currentUser } = useAuth();
@@ -216,7 +217,7 @@ function ParentLinkManager({ studentId, student }) {
           <tbody>
             {linkedParents.map(link => (
               <tr key={link.link_id}>
-                <td>{link.parent?.name || '-'}</td>
+                <td>{personName(link.parent) || '-'}</td>
                 <td>{link.parent?.email || '-'}</td>
                 <td>{link.parent?.phone || '-'}</td>
                 <td><Badge bg="outline-primary" className="border">{link.relationship}</Badge></td>

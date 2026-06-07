@@ -12,6 +12,7 @@ import { institutionService } from '../../services/institutionService';
 import { userService } from '../../services/userService';
 import { classService } from '../../services/classService';
 import { ROLES } from '../../constants/roles';
+import { personName } from '../../utils/personName';
 
 function FormManagement() {
   const queryClient = useQueryClient();
@@ -296,7 +297,7 @@ function FormManagement() {
                           {!hasMultipleSchools && (
                             <td>{form.school?.name || group.schoolName}</td>
                           )}
-                          <td>{form.coordinator?.name || 'Not assigned'}</td>
+                          <td>{personName(form.coordinator) || 'Not assigned'}</td>
                           <td>
                             <Badge bg="info">
                               {classCountByForm[form.form_id] || 0}
@@ -349,7 +350,7 @@ function FormManagement() {
                                         <tr key={c.class_id}>
                                           <td><strong>{c.class_name}</strong></td>
                                           <td><Badge bg="secondary">{c.class_code}</Badge></td>
-                                          <td>{c.form_tutor?.name || 'Not assigned'}</td>
+                                          <td>{personName(c.form_tutor) || 'Not assigned'}</td>
                                           <td>
                                             <Badge bg={c.current_enrollment >= c.capacity ? 'danger' : 'success'}>
                                               {c.current_enrollment || 0} / {c.capacity}

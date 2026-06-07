@@ -170,19 +170,25 @@ export const deleteNotifications = async (userId, notificationIds) => {
  */
 export const createNotification = async (notification) => {
     try {
-        const { data, error } = await supabase.rpc('create_notification', {
-            p_user_id: notification.userId,
-            p_type: notification.type,
-            p_title: notification.title,
-            p_message: notification.message,
-            p_link_url: notification.linkUrl || null,
-            p_related_id: notification.relatedId || null,
-            p_related_type: notification.relatedType || null,
-            p_priority: notification.priority || 'normal'
-        });
+        // Direct insert against the live notifications schema
+        // (id, user_id, type, title, message, priority, is_read, link, created_at, archived_at).
+        // There is no create_notification RPC and no related_id/related_type columns.
+        const { data, error } = await supabase
+            .from('notifications')
+            .insert({
+                user_id: notification.userId,
+                type: notification.type,
+                title: notification.title,
+                message: notification.message,
+                link: notification.linkUrl || notification.link || null,
+                priority: notification.priority || 'normal',
+                is_read: false
+            })
+            .select('id')
+            .single();
 
         if (error) throw error;
-        return { success: true, notificationId: data };
+        return { success: true, notificationId: data?.id };
     } catch (error) {
         console.error('Error creating notification:', error);
         throw error;

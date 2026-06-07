@@ -14,6 +14,7 @@ import TransferManagement from './TransferManagement';
 import SpecialNeedsTracking from './SpecialNeedsTracking';
 import DisciplinaryRecords from './DisciplinaryRecords';
 import ParentLinkManager from './ParentLinkManager';
+import { personName } from '../../utils/personName';
 import './StudentInformationManagement.css';
 
 function StudentInformationManagement({ studentId, student }) {
@@ -65,7 +66,7 @@ function StudentInformationManagement({ studentId, student }) {
               </h3>
               {student && (
                 <p className="text-muted mb-0">
-                  {student.name} ({student.email})
+                  {personName(student)} ({student.email})
                 </p>
               )}
             </div>

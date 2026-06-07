@@ -7,6 +7,7 @@ import { FaCheck, FaTimes, FaEllipsisV, FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import NotificationToast from '../common/NotificationToast';
+import { personName } from '../../utils/personName';
 
 function EnrollmentApproval() {
   const navigate = useNavigate();
@@ -125,10 +126,10 @@ function EnrollmentApproval() {
                     <td>
                       <div className="d-flex align-items-center">
                         <div className="student-avatar me-2">
-                          {enrollment.student.name.charAt(0)}
+                          {personName(enrollment.student).charAt(0)}
                         </div>
                         <div>
-                          <div className="fw-bold">{enrollment.student.name}</div>
+                          <div className="fw-bold">{personName(enrollment.student)}</div>
                           <small className="text-muted">{enrollment.student.email}</small>
                         </div>
                       </div>
