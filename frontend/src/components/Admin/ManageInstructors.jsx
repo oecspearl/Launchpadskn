@@ -99,7 +99,7 @@ function ManageInstructors({ institutionId }) {
       // Transform to legacy course format
       const coursesData = (classes || []).map(cls => ({
         courseId: cls.class_id,
-        courseName: cls.class_name,
+        courseName: cls.class?.name || cls.subject?.name || 'Class',
         code: `CLS${cls.class_id}`
       }));
       return coursesData;

@@ -299,9 +299,11 @@ export const institutionService = {
 
     async getSubjectsBySchool(_schoolId) {
         // NOTE: subjects has no school_id column, so the schoolId filter is dropped.
+        // subjects.department_id has no FK constraint, so departments cannot be
+        // embedded (PostgREST 400). department_id is currently unused/null.
         const query = supabase
             .from('subjects')
-            .select('*, department:departments(*)')
+            .select('*')
             .eq('is_active', true)
             .order('name', { ascending: true });
 
@@ -314,7 +316,7 @@ export const institutionService = {
     async getSubjectById(subjectId) {
         const { data, error } = await supabase
             .from('subjects')
-            .select('*, department:departments(*)')
+            .select('*')
             .eq('id', subjectId)
             .single();
 

@@ -609,14 +609,19 @@ export const classService = {
           *,
           form:forms(*)
         ),
-        subject_offering:subject_form_offerings(
-          subject:subjects(*)
-        )
+        subject:subjects(*)
       `)
             .eq('teacher_id', teacherId);
 
         if (error) throw error;
-        return data;
+        // The live schema links class_subjects -> subjects directly via
+        // subject_id (there is no subject_form_offerings relationship).
+        // Re-expose the legacy `subject_offering.subject` shape so existing
+        // callers keep working alongside the new direct `subject`.
+        return (data || []).map(row => ({
+            ...row,
+            subject_offering: row.subject ? { subject: row.subject } : null,
+        }));
     },
 
     // ============================================
