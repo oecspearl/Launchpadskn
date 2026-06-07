@@ -41,7 +41,10 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        navigateFallbackDenylist: [/^\/auth/, /^\/rest/],
+        cleanupOutdatedCaches: true,
+        // Never serve index.html for hashed assets/api — that turns a stale
+        // chunk into an HTML response (MIME error) instead of a clean 404.
+        navigateFallbackDenylist: [/^\/auth/, /^\/rest/, /^\/assets\//, /^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/(rest|auth)\/.*/i,

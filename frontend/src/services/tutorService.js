@@ -322,24 +322,28 @@ const tutorService = {
 
     if (user) profile.name = [user.first_name, user.last_name].filter(Boolean).join(' ');
 
-    // Get student profile (grade level)
-    const { data: sp } = await supabase
-      .from('student_profiles')
-      .select('current_grade_level')
+    // Grade level — derive from the student's active class -> form (no such
+    // column on student_profiles; that table also keys on user_id, not student_id)
+    const { data: sca } = await supabase
+      .from('student_class_assignments')
+      .select('class:classes(form:forms(name, level))')
       .eq('student_id', studentId)
+      .eq('is_active', true)
+      .limit(1)
       .maybeSingle();
+    const form = sca?.class?.form;
+    if (form) profile.gradeLevel = form.name || (form.level ? `Form ${form.level}` : '');
 
-    if (sp) profile.gradeLevel = sp.current_grade_level || '';
-
-    // Get special needs
+    // Special needs (live columns are need_type/description; no diagnosis/accommodations)
     const { data: needs } = await supabase
       .from('student_special_needs')
-      .select('need_type, diagnosis, accommodations')
+      .select('need_type, description')
       .eq('student_id', studentId);
 
     if (needs && needs.length > 0) {
-      profile.specialNeeds = needs.map(n => `${n.need_type}: ${n.diagnosis || ''}`).join('; ');
-      profile.accommodations = needs.map(n => n.accommodations || '').filter(Boolean).join('; ');
+      profile.specialNeeds = needs
+        .map(n => `${n.need_type}${n.description ? ': ' + n.description : ''}`)
+        .join('; ');
     }
 
     // Get specific accommodations
