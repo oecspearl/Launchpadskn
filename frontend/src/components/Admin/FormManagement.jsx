@@ -25,12 +25,11 @@ function FormManagement() {
   const [showModal, setShowModal] = useState(false);
   const [editingForm, setEditingForm] = useState(null);
   const [formData, setFormData] = useState({
-    school_id: '',
-    form_number: '',
-    form_name: '',
+    institution_id: '',
+    name: '',
+    level: '',
     academic_year: '',
-    coordinator_id: '',
-    description: ''
+    coordinator_id: ''
   });
 
   // Queries
@@ -73,7 +72,7 @@ function FormManagement() {
   // Group forms by school for clear display
   const formsBySchool = {};
   forms.forEach(form => {
-    const schoolId = form.school_id;
+    const schoolId = form.institution_id;
     const schoolName = form.school?.name || schools.find(s => s.institutionId === schoolId)?.name || 'Unknown School';
     if (!formsBySchool[schoolId]) {
       formsBySchool[schoolId] = { schoolName, forms: [] };
@@ -122,22 +121,20 @@ function FormManagement() {
     if (form) {
       setEditingForm(form);
       setFormData({
-        school_id: form.school_id || defaultSchoolId,
-        form_number: form.form_number || '',
-        form_name: form.form_name || '',
+        institution_id: form.institution_id || defaultSchoolId,
+        name: form.name || '',
+        level: form.level || '',
         academic_year: form.academic_year || `${currentYear}-${currentYear + 1}`,
-        coordinator_id: form.coordinator_id || '',
-        description: form.description || ''
+        coordinator_id: form.coordinator_id || ''
       });
     } else {
       setEditingForm(null);
       setFormData({
-        school_id: defaultSchoolId,
-        form_number: '',
-        form_name: '',
+        institution_id: defaultSchoolId,
+        name: '',
+        level: '',
         academic_year: `${currentYear}-${currentYear + 1}`,
-        coordinator_id: '',
-        description: ''
+        coordinator_id: ''
       });
     }
     setShowModal(true);
@@ -147,12 +144,11 @@ function FormManagement() {
     setShowModal(false);
     setEditingForm(null);
     setFormData({
-      school_id: '',
-      form_number: '',
-      form_name: '',
+      institution_id: '',
+      name: '',
+      level: '',
       academic_year: '',
-      coordinator_id: '',
-      description: ''
+      coordinator_id: ''
     });
     setError(null);
     setSuccess(null);
@@ -163,34 +159,35 @@ function FormManagement() {
     if (!editingForm && num >= 1 && num <= 7) {
       setFormData({
         ...formData,
-        form_number: num,
-        form_name: `Form ${num}`
+        level: num,
+        name: `Form ${num}`
       });
     } else {
-      setFormData({ ...formData, form_number: value ? parseInt(value) : '' });
+      setFormData({ ...formData, level: value ? parseInt(value) : '' });
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    // institution_id and coordinator_id are UUIDs (do NOT parseInt); level is an integer.
     const cleanedData = {
-      ...formData,
-      school_id: formData.school_id ? parseInt(formData.school_id) : null,
-      form_number: formData.form_number ? parseInt(formData.form_number) : null,
-      coordinator_id: formData.coordinator_id ? parseInt(formData.coordinator_id) : null,
-      description: formData.description || null
+      institution_id: formData.institution_id || null,
+      name: formData.name,
+      level: formData.level ? parseInt(formData.level) : null,
+      academic_year: formData.academic_year,
+      coordinator_id: formData.coordinator_id || null
     };
 
-    if (!cleanedData.school_id) {
+    if (!cleanedData.institution_id) {
       setError('School is required');
       return;
     }
-    if (!cleanedData.form_number || cleanedData.form_number < 1 || cleanedData.form_number > 7) {
+    if (!cleanedData.level || cleanedData.level < 1 || cleanedData.level > 7) {
       setError('Form number must be between 1 and 7');
       return;
     }
-    if (!cleanedData.form_name || cleanedData.form_name.trim() === '') {
+    if (!cleanedData.name || cleanedData.name.trim() === '') {
       setError('Form name is required');
       return;
     }
@@ -200,7 +197,7 @@ function FormManagement() {
     }
 
     if (editingForm) {
-      updateFormMutation.mutate({ id: editingForm.form_id, data: cleanedData });
+      updateFormMutation.mutate({ id: editingForm.id, data: cleanedData });
     } else {
       createFormMutation.mutate(cleanedData);
     }
@@ -278,19 +275,19 @@ function FormManagement() {
                       </tr>
                     )}
                     {group.forms.map((form) => (
-                      <React.Fragment key={form.form_id}>
+                      <React.Fragment key={form.id}>
                         <tr
                           style={{ cursor: 'pointer' }}
-                          onClick={() => toggleExpand(form.form_id)}
+                          onClick={() => toggleExpand(form.id)}
                         >
                           <td>
                             <div className="d-flex align-items-center">
                               {hasMultipleSchools && <span style={{ width: 16, display: 'inline-block' }} />}
-                              {expandedFormId === form.form_id ?
+                              {expandedFormId === form.id ?
                                 <FaChevronDown className="me-2 text-muted" size={12} /> :
                                 <FaChevronRight className="me-2 text-muted" size={12} />
                               }
-                              <strong>{form.form_name || `Form ${form.form_number}`}</strong>
+                              <strong>{form.name || `Form ${form.level}`}</strong>
                             </div>
                           </td>
                           <td>{form.academic_year}</td>
@@ -300,7 +297,7 @@ function FormManagement() {
                           <td>{personName(form.coordinator) || 'Not assigned'}</td>
                           <td>
                             <Badge bg="info">
-                              {classCountByForm[form.form_id] || 0}
+                              {classCountByForm[form.id] || 0}
                             </Badge>
                           </td>
                           <td>
@@ -321,24 +318,24 @@ function FormManagement() {
                             <Button
                               variant="outline-danger"
                               size="sm"
-                              onClick={(e) => { e.stopPropagation(); handleDelete(form.form_id); }}
+                              onClick={(e) => { e.stopPropagation(); handleDelete(form.id); }}
                               title="Archive form"
                             >
                               <FaTrash />
                             </Button>
                           </td>
                         </tr>
-                        {expandedFormId === form.form_id && (
+                        {expandedFormId === form.id && (
                           <tr>
                             <td colSpan={hasMultipleSchools ? 6 : 7} className="p-0 border-top-0">
                               <div className="bg-light p-3">
                                 <div className="d-flex justify-content-between align-items-center mb-2">
-                                  <h6 className="mb-0">Classes in {form.form_name || `Form ${form.form_number}`}</h6>
+                                  <h6 className="mb-0">Classes in {form.name || `Form ${form.level}`}</h6>
                                   <Button size="sm" variant="outline-primary" onClick={() => navigate('/admin/classes')}>
                                     Manage Classes
                                   </Button>
                                 </div>
-                                {getClassesForForm(form.form_id).length === 0 ? (
+                                {getClassesForForm(form.id).length === 0 ? (
                                   <p className="text-muted small mb-0">No classes created yet for this form.</p>
                                 ) : (
                                   <Table size="sm" hover className="mb-0">
@@ -346,7 +343,7 @@ function FormManagement() {
                                       <tr><th>Class</th><th>Code</th><th>Tutor</th><th>Enrollment</th><th>Room</th></tr>
                                     </thead>
                                     <tbody>
-                                      {getClassesForForm(form.form_id).map(c => (
+                                      {getClassesForForm(form.id).map(c => (
                                         <tr key={c.class_id}>
                                           <td><strong>{c.class_name}</strong></td>
                                           <td><Badge bg="secondary">{c.class_code}</Badge></td>
@@ -391,8 +388,8 @@ function FormManagement() {
               <Form.Group className="mb-3">
                 <Form.Label>School *</Form.Label>
                 <Form.Select
-                  value={formData.school_id}
-                  onChange={(e) => setFormData({ ...formData, school_id: e.target.value })}
+                  value={formData.institution_id}
+                  onChange={(e) => setFormData({ ...formData, institution_id: e.target.value })}
                   required
                 >
                   <option value="">Select School</option>
@@ -422,7 +419,7 @@ function FormManagement() {
                     type="number"
                     min="1"
                     max="7"
-                    value={formData.form_number}
+                    value={formData.level}
                     onChange={(e) => handleFormNumberChange(e.target.value)}
                     required
                   />
@@ -434,8 +431,8 @@ function FormManagement() {
                   <Form.Label>Form Name *</Form.Label>
                   <Form.Control
                     type="text"
-                    value={formData.form_name}
-                    onChange={(e) => setFormData({ ...formData, form_name: e.target.value })}
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g., Form 3, Lower Sixth"
                     required
                   />
@@ -469,8 +466,8 @@ function FormManagement() {
                   >
                     <option value="">Not assigned</option>
                     {coordinators.map(coord => (
-                      <option key={coord.user_id} value={coord.user_id}>
-                        {coord.name} ({coord.email})
+                      <option key={coord.id} value={coord.id}>
+                        {personName(coord)} ({coord.email})
                       </option>
                     ))}
                   </Form.Select>

@@ -430,7 +430,7 @@ export const institutionService = {
       `)
             .eq('subject_id', subjectId)
             .eq('is_active', true)
-            .order('form_number', { ascending: true });
+            .order('created_at', { ascending: true });
 
         if (error) throw error;
         return data || [];
