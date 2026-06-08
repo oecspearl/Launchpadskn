@@ -19,9 +19,8 @@ function SubjectManagement() {
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [editingSubject, setEditingSubject] = useState(null);
   const [subjectData, setSubjectData] = useState({
-    school_id: '',
-    subject_name: '',
-    subject_code: '',
+    name: '',
+    code: '',
     cxc_code: '',
     department_id: '',
     description: ''
@@ -69,7 +68,7 @@ function SubjectManagement() {
   const subjects = useMemo(() => {
     const seen = new Map();
     rawSubjects.forEach(s => {
-      const name = (s.subject_name || '').toLowerCase().trim();
+      const name = (s.name || '').toLowerCase().trim();
       if (!seen.has(name)) seen.set(name, s);
     });
     return Array.from(seen.values());
@@ -79,7 +78,7 @@ function SubjectManagement() {
   const formOfferings = useMemo(() => {
     const seen = new Map();
     rawOfferings.forEach(o => {
-      const key = `${(o.subject?.subject_name || '').toLowerCase().trim()}_${o.form?.form_number}`;
+      const key = `${(o.subject?.name || '').toLowerCase().trim()}_${o.form?.form_number}`;
       const existing = seen.get(key);
       if (!existing) {
         seen.set(key, o);
@@ -174,9 +173,8 @@ function SubjectManagement() {
     setEditingSubject(null);
     setEditingOffering(null);
     setSubjectData({
-      school_id: '',
-      subject_name: '',
-      subject_code: '',
+      name: '',
+      code: '',
       cxc_code: '',
       department_id: '',
       description: ''
@@ -196,9 +194,8 @@ function SubjectManagement() {
   const handleEditSubject = (subject) => {
     setEditingSubject(subject);
     setSubjectData({
-      school_id: subject.school_id,
-      subject_name: subject.subject_name,
-      subject_code: subject.subject_code || '',
+      name: subject.name || '',
+      code: subject.code || '',
       cxc_code: subject.cxc_code || '',
       department_id: subject.department_id || '',
       description: subject.description || ''
@@ -222,13 +219,11 @@ function SubjectManagement() {
 
   const handleSaveSubject = (e) => {
     e.preventDefault();
-    // Auto-assign school_id (DB requires NOT NULL) — subjects are shared nationally
     const dataToSave = { ...subjectData };
-    if (!dataToSave.school_id && forms.length > 0) {
-      dataToSave.school_id = forms[0].school_id;
-    }
+    // department_id is a uuid column — send null rather than an empty string
+    if (!dataToSave.department_id) dataToSave.department_id = null;
     if (editingSubject) {
-      updateSubjectMutation.mutate({ id: editingSubject.subject_id, data: dataToSave });
+      updateSubjectMutation.mutate({ id: editingSubject.id, data: dataToSave });
     } else {
       createSubjectMutation.mutate(dataToSave);
     }
@@ -339,9 +334,9 @@ function SubjectManagement() {
                 </thead>
                 <tbody>
                   {subjects.map(subject => (
-                    <tr key={subject.subject_id}>
-                      <td>{subject.subject_code}</td>
-                      <td>{subject.subject_name}</td>
+                    <tr key={subject.id}>
+                      <td>{subject.code}</td>
+                      <td>{subject.name}</td>
                       <td>
                         {departments.find(d => d.department_id === subject.department_id)?.name || '-'}
                       </td>
@@ -358,7 +353,7 @@ function SubjectManagement() {
                         <Button
                           variant="outline-danger"
                           size="sm"
-                          onClick={() => handleDeleteSubject(subject.subject_id)}
+                          onClick={() => handleDeleteSubject(subject.id)}
                         >
                           <FaTrash />
                         </Button>
@@ -396,7 +391,7 @@ function SubjectManagement() {
                       <td>
                         {offering.form ? `Form ${offering.form.form_number}` : '-'}
                       </td>
-                      <td>{offering.subject?.subject_name}</td>
+                      <td>{offering.subject?.name}</td>
                       <td>{offering.weekly_periods}</td>
                       <td>
                         <Badge bg={offering.is_compulsory ? 'primary' : 'secondary'}>
@@ -505,8 +500,8 @@ function SubjectManagement() {
                   <Form.Label>Subject Name</Form.Label>
                   <Form.Control
                     type="text"
-                    value={subjectData.subject_name}
-                    onChange={(e) => setSubjectData({ ...subjectData, subject_name: e.target.value })}
+                    value={subjectData.name}
+                    onChange={(e) => setSubjectData({ ...subjectData, name: e.target.value })}
                     required
                   />
                 </Form.Group>
@@ -516,8 +511,8 @@ function SubjectManagement() {
                   <Form.Label>Subject Code</Form.Label>
                   <Form.Control
                     type="text"
-                    value={subjectData.subject_code}
-                    onChange={(e) => setSubjectData({ ...subjectData, subject_code: e.target.value })}
+                    value={subjectData.code}
+                    onChange={(e) => setSubjectData({ ...subjectData, code: e.target.value })}
                   />
                 </Form.Group>
               </Col>
@@ -588,8 +583,8 @@ function SubjectManagement() {
                   >
                     <option value="">Select Subject...</option>
                     {subjects.map(subject => (
-                      <option key={subject.subject_id} value={subject.subject_id}>
-                        {subject.subject_name}
+                      <option key={subject.id} value={subject.id}>
+                        {subject.name}
                       </option>
                     ))}
                   </Form.Select>
@@ -644,7 +639,7 @@ function SubjectManagement() {
       {/* Structured Curriculum Editor Modal */}
       <Modal show={showStructuredEditor} onHide={handleCloseModals} fullscreen>
         <Modal.Header closeButton>
-          <Modal.Title>Curriculum Editor: {editingOffering?.subject?.subject_name} (Form {editingOffering?.form?.form_number})</Modal.Title>
+          <Modal.Title>Curriculum Editor: {editingOffering?.subject?.name} (Form {editingOffering?.form?.form_number})</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <StructuredCurriculumEditor
