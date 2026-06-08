@@ -11,6 +11,9 @@
  * Refresh SCHEMA from the DB with:
  *   select table_name, string_agg(column_name, ',' order by ordinal_position)
  *   from information_schema.columns where table_schema='public' group by 1;
+ * Refresh FUNCTIONS (callable via supabase.rpc) from the DB with:
+ *   select proname from pg_proc
+ *   where pronamespace='public'::regnamespace and prokind='f' order by 1;
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
@@ -62,6 +65,48 @@ const SCHEMA_RAW = {
 
 const SCHEMA = Object.fromEntries(Object.entries(SCHEMA_RAW).map(([t, c]) => [t, new Set(c.split(','))]));
 const TABLES = new Set(Object.keys(SCHEMA));
+
+// ── Live function snapshot (public schema, callable via supabase.rpc). ────────
+// Keep in sync with the DB (see header for the refresh query). Internal trigger
+// helpers are included for completeness; the app shouldn't .rpc() them, but
+// listing them keeps the snapshot a faithful mirror of pg_proc.
+const FUNCTIONS = new Set([
+  'check_rate_limit',
+  'get_user_institution',
+  'get_user_role',
+  'is_admin',
+  'is_conversation_member',
+  'rls_auto_enable',
+  'update_curriculum_updated_at',
+  'update_updated_at',
+  'update_updated_at_column',
+]);
+
+// ── Baseline of KNOWN-missing RPCs (accepted, tracked tech debt). ─────────────
+// These functions are called by the app but do NOT exist in the DB. They power
+// feature areas (gamification, curriculum analytics, collaboration, student
+// information, interactive content) that were never finished server-side, so
+// they fail silently behind try/catch. They are baselined so CI stays green
+// while still FAILING on any *new* missing RPC. As each is resolved — the SQL
+// function is created, or the dead call is removed — delete it from this list.
+const KNOWN_MISSING_RPCS = new Set([
+  'award_points', 'calculate_time_allocation', 'create_lifecycle_event',
+  'get_active_sessions', 'get_arvr_content', 'get_coverage_summary',
+  'get_curriculum_coverage', 'get_forum_posts', 'get_forum_topics',
+  'get_gap_analysis', 'get_group_projects', 'get_leaderboard',
+  'get_learning_path_stages', 'get_outcome_achievement_summary',
+  'get_project_tasks', 'get_session_participants', 'get_student_accommodations',
+  'get_student_badges', 'get_student_disciplinary_records',
+  'get_student_disciplinary_summary', 'get_student_gamification',
+  'get_student_learning_path', 'get_student_lifecycle', 'get_student_profile',
+  'get_student_special_needs', 'get_student_transfers',
+  'get_time_allocation_analysis', 'get_tutoring_sessions', 'get_virtual_labs',
+  'identify_curriculum_gaps', 'increment_library_view_count',
+  'increment_resource_usage', 'increment_template_usage',
+  'increment_template_view_count', 'join_session', 'leave_session',
+  'update_coverage_from_lessons', 'update_learning_path_progress',
+  'update_project_progress',
+]);
 
 // Tables we don't have a snapshot for -> skip (avoid false positives).
 function known(table) { return SCHEMA[table]; }
@@ -159,8 +204,25 @@ function auditFile(path, rel, findings) {
   }
 }
 
+// Scan supabase.rpc('fn', ...) calls and flag function names that don't exist
+// in the DB (the "missing RPC" bug class — silent failures behind try/catch).
+const RPC_RE = /\.rpc\(\s*['"`]([a-zA-Z_]\w*)['"`]/g;
+function auditRpc(path, rel, out) {
+  const src = readFileSync(path, 'utf8');
+  let m;
+  RPC_RE.lastIndex = 0;
+  while ((m = RPC_RE.exec(src)) !== null) {
+    const fn = m[1];
+    if (!FUNCTIONS.has(fn)) {
+      const line = src.slice(0, m.index).split('\n').length;
+      out.push({ rel, line, fn });
+    }
+  }
+}
+
 const ROOT = join(process.cwd(), 'frontend', 'src');
 const findings = [];
+const rpcFindings = [];
 function walk(dir) {
   for (const name of readdirSync(dir)) {
     const p = join(dir, name);
@@ -169,21 +231,53 @@ function walk(dir) {
     if (!['.js', '.jsx', '.ts', '.tsx'].includes(extname(p))) continue;
     if (/subjectCompat|userCompat|lessonCompat/.test(p)) continue; // shims define aliases intentionally
     auditFile(p, p.replace(process.cwd() + '/', ''), findings);
+    auditRpc(p, p.replace(process.cwd() + '/', ''), rpcFindings);
   }
 }
 walk(ROOT);
 
-if (findings.length === 0) {
-  console.log('✅ No schema-drift column issues found.');
+// Split RPC findings: baselined (tracked debt, non-blocking) vs new (blocking).
+const newRpc = rpcFindings.filter(f => !KNOWN_MISSING_RPCS.has(f.fn));
+const baselinedRpc = rpcFindings.filter(f => KNOWN_MISSING_RPCS.has(f.fn));
+
+if (findings.length === 0 && newRpc.length === 0) {
+  console.log('✅ No schema-drift column or new missing-RPC issues found.');
+  if (baselinedRpc.length) {
+    const fns = new Set(baselinedRpc.map(f => f.fn));
+    console.log(`ℹ️  ${fns.size} known-missing RPC functions still baselined (tracked debt — see KNOWN_MISSING_RPCS).`);
+  }
   process.exit(0);
 }
-const byTable = {};
-for (const f of findings) (byTable[f.table] ??= []).push(f);
-console.log(`⚠️  ${findings.length} potential schema-drift issues across ${new Set(findings.map(f => f.rel)).size} files:\n`);
-for (const [table, list] of Object.entries(byTable).sort((a, b) => b[1].length - a[1].length)) {
-  const badCols = [...new Set(list.map(f => f.col))];
-  console.log(`■ ${table} (${list.length}) — bad columns: ${badCols.join(', ')}`);
-  for (const f of list.slice(0, 4)) console.log(`    ${f.kind} '${f.col}'  ${f.rel}:${f.line}`);
-  if (list.length > 4) console.log(`    … +${list.length - 4} more`);
+
+if (findings.length) {
+  const byTable = {};
+  for (const f of findings) (byTable[f.table] ??= []).push(f);
+  console.log(`⚠️  ${findings.length} potential schema-drift issues across ${new Set(findings.map(f => f.rel)).size} files:\n`);
+  for (const [table, list] of Object.entries(byTable).sort((a, b) => b[1].length - a[1].length)) {
+    const badCols = [...new Set(list.map(f => f.col))];
+    console.log(`■ ${table} (${list.length}) — bad columns: ${badCols.join(', ')}`);
+    for (const f of list.slice(0, 4)) console.log(`    ${f.kind} '${f.col}'  ${f.rel}:${f.line}`);
+    if (list.length > 4) console.log(`    … +${list.length - 4} more`);
+  }
+  console.log('');
 }
-process.exit(1);
+
+if (newRpc.length) {
+  const byFn = {};
+  for (const f of newRpc) (byFn[f.fn] ??= []).push(f);
+  const fns = Object.entries(byFn).sort((a, b) => b[1].length - a[1].length);
+  console.log(`❌ ${newRpc.length} calls to ${fns.length} NEW RPC function(s) that don't exist in the DB:\n`);
+  for (const [fn, list] of fns) {
+    console.log(`■ ${fn}() — ${list.length} call site(s)`);
+    for (const f of list.slice(0, 3)) console.log(`    ${f.rel}:${f.line}`);
+    if (list.length > 3) console.log(`    … +${list.length - 3} more`);
+  }
+  console.log('\n   → Create the SQL function, or remove the call. To intentionally');
+  console.log('     accept it as debt, add the name to KNOWN_MISSING_RPCS.\n');
+}
+
+if (baselinedRpc.length) {
+  const fns = new Set(baselinedRpc.map(f => f.fn));
+  console.log(`ℹ️  ${fns.size} known-missing RPC functions baselined (tracked debt, non-blocking).`);
+}
+process.exit(findings.length || newRpc.length ? 1 : 0);
