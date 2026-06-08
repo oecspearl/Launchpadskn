@@ -7,6 +7,7 @@
     "npm": "10.x"
   },
   "scripts": {
-    "build": "cd frontend && npm install && npm run build"
+    "build": "cd frontend && npm install && npm run build",
+    "audit:schema": "node scripts/audit-supabase-schema.mjs"
   }
 }
