@@ -519,12 +519,14 @@ export const institutionService = {
     },
 
     async createSubjectOffering(subjectId, formId, offeringData = {}) {
+        // subject_form_offerings only has subject_id, form_id, is_active —
+        // curriculum framework/outcomes/structure are not columns here.
         const { data, error } = await supabase
             .from('subject_form_offerings')
             .insert({
                 subject_id: subjectId,
                 form_id: formId,
-                ...offeringData
+                is_active: offeringData.is_active !== false
             })
             .select()
             .single();
@@ -537,7 +539,7 @@ export const institutionService = {
         const { error } = await supabase
             .from('subject_form_offerings')
             .delete()
-            .eq('offering_id', offeringId);
+            .eq('id', offeringId);
 
         if (error) throw error;
     }
