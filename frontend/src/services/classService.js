@@ -1,6 +1,7 @@
 import { supabase } from '../config/supabase';
 import { ROLES } from '../constants/roles';
 import { compatClassSubject } from './subjectCompat';
+import { compatLessonRead, compatLessonWrite, compatLessonContentRead } from './lessonCompat';
 
 export const classService = {
     // ============================================
@@ -277,10 +278,10 @@ export const classService = {
             .from('lessons')
             .select('*', { count: 'exact' })
             .eq('class_subject_id', classSubjectId)
-            .order('lesson_date', { ascending: true })
+            .order('date', { ascending: true })
             .range(from, to);
         if (error) throw error;
-        return { lessons: data || [], total: count || 0 };
+        return { lessons: (data || []).map(compatLessonRead), total: count || 0 };
     },
 
 
@@ -628,15 +629,15 @@ export const classService = {
             .from('lessons')
             .select('*, content:lesson_content(*)')
             .eq('class_subject_id', classSubjectId)
-            .order('lesson_date', { ascending: true })
+            .order('date', { ascending: true })
             .order('start_time', { ascending: true });
 
         if (error) throw error;
 
         if (data && Array.isArray(data)) {
             data.forEach(lesson => {
-                if (lesson.lesson_date) {
-                    let dateStr = String(lesson.lesson_date);
+                if (lesson.date) {
+                    let dateStr = String(lesson.date);
                     if (dateStr.includes('T')) {
                         dateStr = dateStr.split('T')[0];
                     } else if (dateStr.length > 10) {
@@ -644,13 +645,13 @@ export const classService = {
                     }
                     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
                     if (dateRegex.test(dateStr)) {
-                        lesson.lesson_date = dateStr;
+                        lesson.date = dateStr;
                     }
                 }
             });
         }
 
-        return data;
+        return (data || []).map(compatLessonRead);
     },
 
     async getLessonsByStudent(studentId, startDate, endDate) {
@@ -665,12 +666,12 @@ export const classService = {
 
         const { data: classSubjects } = await supabase
             .from('class_subjects')
-            .select('class_subject_id')
+            .select('id')
             .eq('class_id', classAssignment.class_id);
 
         if (!classSubjects || classSubjects.length === 0) return [];
 
-        const classSubjectIds = classSubjects.map(cs => cs.class_subject_id);
+        const classSubjectIds = classSubjects.map(cs => cs.id);
 
         let query = supabase
             .from('lessons')
@@ -684,22 +685,22 @@ export const classService = {
             .in('class_subject_id', classSubjectIds);
 
         if (startDate) {
-            query = query.gte('lesson_date', startDate);
+            query = query.gte('date', startDate);
         }
         if (endDate) {
-            query = query.lte('lesson_date', endDate);
+            query = query.lte('date', endDate);
         }
 
         const { data, error } = await query
-            .order('lesson_date', { ascending: true })
+            .order('date', { ascending: true })
             .order('start_time', { ascending: true });
 
         if (error) throw error;
 
         if (data && Array.isArray(data)) {
             data.forEach(lesson => {
-                if (lesson.lesson_date) {
-                    let dateStr = String(lesson.lesson_date);
+                if (lesson.date) {
+                    let dateStr = String(lesson.date);
                     if (dateStr.includes('T')) {
                         dateStr = dateStr.split('T')[0];
                     } else if (dateStr.length > 10) {
@@ -707,10 +708,11 @@ export const classService = {
                     }
                     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
                     if (dateRegex.test(dateStr)) {
-                        lesson.lesson_date = dateStr;
+                        lesson.date = dateStr;
                     }
                 }
                 lesson.class_subject = compatClassSubject(lesson.class_subject);
+                Object.assign(lesson, compatLessonRead(lesson));
             });
         }
 
@@ -720,12 +722,12 @@ export const classService = {
     async getLessonsByTeacher(teacherId, startDate, endDate) {
         const { data: classSubjects } = await supabase
             .from('class_subjects')
-            .select('class_subject_id')
+            .select('id')
             .eq('teacher_id', teacherId);
 
         if (!classSubjects || classSubjects.length === 0) return [];
 
-        const classSubjectIds = classSubjects.map(cs => cs.class_subject_id);
+        const classSubjectIds = classSubjects.map(cs => cs.id);
 
         let query = supabase
             .from('lessons')
@@ -739,22 +741,22 @@ export const classService = {
             .in('class_subject_id', classSubjectIds);
 
         if (startDate) {
-            query = query.gte('lesson_date', startDate);
+            query = query.gte('date', startDate);
         }
         if (endDate) {
-            query = query.lte('lesson_date', endDate);
+            query = query.lte('date', endDate);
         }
 
         const { data, error } = await query
-            .order('lesson_date', { ascending: true })
+            .order('date', { ascending: true })
             .order('start_time', { ascending: true });
 
         if (error) throw error;
 
         if (data && Array.isArray(data)) {
             data.forEach(lesson => {
-                if (lesson.lesson_date) {
-                    let dateStr = String(lesson.lesson_date);
+                if (lesson.date) {
+                    let dateStr = String(lesson.date);
                     if (dateStr.includes('T')) {
                         dateStr = dateStr.split('T')[0];
                     } else if (dateStr.length > 10) {
@@ -762,10 +764,11 @@ export const classService = {
                     }
                     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
                     if (dateRegex.test(dateStr)) {
-                        lesson.lesson_date = dateStr;
+                        lesson.date = dateStr;
                     }
                 }
                 lesson.class_subject = compatClassSubject(lesson.class_subject);
+                Object.assign(lesson, compatLessonRead(lesson));
             });
         }
 
@@ -786,13 +789,13 @@ export const classService = {
                     )
                 )
             `)
-            .eq('lesson_id', lessonId)
+            .eq('id', lessonId)
             .single();
 
         if (error) throw error;
 
-        if (data && data.lesson_date) {
-            let dateStr = String(data.lesson_date);
+        if (data && data.date) {
+            let dateStr = String(data.date);
             if (dateStr.includes('T')) {
                 dateStr = dateStr.split('T')[0];
             } else if (dateStr.length > 10) {
@@ -800,7 +803,7 @@ export const classService = {
             }
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (dateRegex.test(dateStr)) {
-                data.lesson_date = dateStr;
+                data.date = dateStr;
             }
         }
 
@@ -808,7 +811,7 @@ export const classService = {
             data.class_subject = compatClassSubject(data.class_subject);
         }
 
-        return data;
+        return compatLessonRead(data);
     },
 
     async getLessonContent(lessonId) {
@@ -816,28 +819,28 @@ export const classService = {
             .from('lesson_content')
             .select('*')
             .eq('lesson_id', lessonId)
-            .order('sequence_order', { ascending: true })
-            .order('upload_date', { ascending: true });
+            .order('order_index', { ascending: true })
+            .order('created_at', { ascending: true });
 
         if (error) throw error;
-        return data || [];
+        return (data || []).map(compatLessonContentRead);
     },
 
     async createLesson(lessonData) {
-        const payload = {
+        const payload = compatLessonWrite({
             ...lessonData,
             class_subject_id: lessonData.class_subject_id
-        };
+        });
 
-        if (payload.lesson_date) {
+        if (payload.date) {
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (!dateRegex.test(payload.lesson_date)) {
-                const date = new Date(payload.lesson_date);
+            if (!dateRegex.test(payload.date)) {
+                const date = new Date(payload.date);
                 if (!isNaN(date.getTime())) {
                     const year = date.getFullYear();
                     const month = String(date.getMonth() + 1).padStart(2, '0');
                     const day = String(date.getDate()).padStart(2, '0');
-                    payload.lesson_date = `${year}-${month}-${day}`;
+                    payload.date = `${year}-${month}-${day}`;
                 }
             }
         }
@@ -850,8 +853,8 @@ export const classService = {
 
         if (error) throw error;
 
-        if (data && data.lesson_date) {
-            let dateStr = String(data.lesson_date);
+        if (data && data.date) {
+            let dateStr = String(data.date);
             if (dateStr.includes('T')) {
                 dateStr = dateStr.split('T')[0];
             } else if (dateStr.length > 10) {
@@ -859,24 +862,24 @@ export const classService = {
             }
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (dateRegex.test(dateStr)) {
-                data.lesson_date = dateStr;
+                data.date = dateStr;
             }
         }
 
-        return data;
+        return compatLessonRead(data);
     },
 
     async updateLesson(lessonId, updates) {
-        const formattedUpdates = { ...updates };
-        if (formattedUpdates.lesson_date) {
+        const formattedUpdates = compatLessonWrite({ ...updates });
+        if (formattedUpdates.date) {
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (!dateRegex.test(formattedUpdates.lesson_date)) {
-                const date = new Date(formattedUpdates.lesson_date);
+            if (!dateRegex.test(formattedUpdates.date)) {
+                const date = new Date(formattedUpdates.date);
                 if (!isNaN(date.getTime())) {
                     const year = date.getFullYear();
                     const month = String(date.getMonth() + 1).padStart(2, '0');
                     const day = String(date.getDate()).padStart(2, '0');
-                    formattedUpdates.lesson_date = `${year}-${month}-${day}`;
+                    formattedUpdates.date = `${year}-${month}-${day}`;
                 }
             }
         }
@@ -884,14 +887,14 @@ export const classService = {
         const { data, error } = await supabase
             .from('lessons')
             .update({ ...formattedUpdates, updated_at: new Date().toISOString() })
-            .eq('lesson_id', lessonId)
+            .eq('id', lessonId)
             .select()
             .single();
 
         if (error) throw error;
 
-        if (data && data.lesson_date) {
-            let dateStr = String(data.lesson_date);
+        if (data && data.date) {
+            let dateStr = String(data.date);
             if (dateStr.includes('T')) {
                 dateStr = dateStr.split('T')[0];
             } else if (dateStr.length > 10) {
@@ -899,18 +902,18 @@ export const classService = {
             }
             const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
             if (dateRegex.test(dateStr)) {
-                data.lesson_date = dateStr;
+                data.date = dateStr;
             }
         }
 
-        return data;
+        return compatLessonRead(data);
     },
 
     async deleteLesson(lessonId) {
         const { error } = await supabase
             .from('lessons')
             .delete()
-            .eq('lesson_id', lessonId);
+            .eq('id', lessonId);
 
         if (error) throw error;
     },
@@ -969,19 +972,22 @@ export const classService = {
             .eq('student_id', studentId);
 
         if (startDate) {
-            query = query.gte('lesson.lesson_date', startDate);
+            query = query.gte('lesson.date', startDate);
         }
         if (endDate) {
-            query = query.lte('lesson.lesson_date', endDate);
+            query = query.lte('lesson.date', endDate);
         }
 
         const { data, error } = await query
-            .order('lesson.lesson_date', { ascending: false });
+            .order('lesson.date', { ascending: false });
 
         if (error) throw error;
         return (data || []).map(row => {
             if (row.lesson && row.lesson.class_subject) {
                 row.lesson.class_subject = compatClassSubject(row.lesson.class_subject);
+            }
+            if (row.lesson) {
+                row.lesson = compatLessonRead(row.lesson);
             }
             return row;
         });
