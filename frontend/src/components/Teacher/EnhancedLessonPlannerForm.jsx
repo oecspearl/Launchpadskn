@@ -6,6 +6,7 @@ import {
 import { FaBook, FaUsers, FaCog, FaMagic } from 'react-icons/fa';
 import { generateEnhancedLessonPlan } from '../../services/aiLessonService';
 import teacherToolsService from '../../services/teacherToolsService';
+import { formatStructuredLessonPlan } from '../../utils/lessonPlanFormatter';
 
 function EnhancedLessonPlannerForm({
   subjectName = '',
@@ -189,10 +190,11 @@ function EnhancedLessonPlannerForm({
 
       console.log('[EnhancedPlanner] Generated lesson plan:', lessonPlan);
 
-      // Convert lesson_plan to string if it's an object
+      // Convert a structured lesson plan (object) into readable markdown.
+      // Never JSON.stringify — that surfaces raw JSON to the user.
       let lessonPlanContent = lessonPlan.content || lessonPlan.lesson_plan || '';
-      if (typeof lessonPlanContent === 'object') {
-        lessonPlanContent = JSON.stringify(lessonPlanContent, null, 2);
+      if (lessonPlanContent && typeof lessonPlanContent === 'object') {
+        lessonPlanContent = formatStructuredLessonPlan(lessonPlan);
       }
 
       // Build curriculum reference metadata

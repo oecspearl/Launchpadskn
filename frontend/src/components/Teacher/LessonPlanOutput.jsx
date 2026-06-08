@@ -8,6 +8,7 @@ import {
 import StructuredLessonPlanDisplay from './StructuredLessonPlanDisplay';
 import TinyMCEEditor from '../Editor/TextEditor';
 import { useToast } from '../../contexts/ToastContext';
+import { lessonPlanToString } from '../../utils/lessonPlanFormatter';
 import './LessonPlanOutput.css';
 
 function LessonPlanOutput({ onSaveLesson }) {
@@ -23,98 +24,9 @@ function LessonPlanOutput({ onSaveLesson }) {
   });
   const [saved, setSaved] = useState(false);
 
-  // Turn a structured lesson-plan object (any nesting the AI returns) into
-  // readable markdown. Sections become headings, sub_activities become
-  // subsections, an objectives "columns" array becomes a table, plain
-  // key/value pairs become bold labels.
-  const humanizeKey = (k) =>
-    String(k)
-      .replace(/^\s*\d+[.)]\s*/, '')   // strip "1. " / "2) " prefixes
-      .replace(/[_-]+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim()
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-
-  const objectivesTable = (columns) => {
-    if (!Array.isArray(columns) || columns.length === 0) return '';
-    const keys = Object.keys(columns[0] || {});
-    if (keys.length === 0) return '';
-    const esc = (v) => String(v ?? '').replace(/\r?\n/g, ' ').replace(/\|/g, '\\|');
-    let md = '| ' + keys.map(humanizeKey).join(' | ') + ' |\n';
-    md += '| ' + keys.map(() => '---').join(' | ') + ' |\n';
-    columns.forEach((row) => {
-      md += '| ' + keys.map((k) => esc(row[k])).join(' | ') + ' |\n';
-    });
-    return md + '\n';
-  };
-
-  const toMarkdown = (value, depth = 2) => {
-    if (value == null) return '';
-    if (typeof value === 'string' || typeof value === 'number') {
-      return `${value}\n\n`;
-    }
-    if (Array.isArray(value)) {
-      let md = '';
-      value.forEach((item, i) => {
-        if (item && typeof item === 'object' && !Array.isArray(item)) {
-          const title = item.name || item.title || `Item ${i + 1}`;
-          md += `${'#'.repeat(Math.min(depth, 6))} ${humanizeKey(title)}\n\n`;
-          const rest = { ...item };
-          delete rest.name;
-          delete rest.title;
-          md += toMarkdown(rest, depth + 1);
-        } else {
-          md += `- ${item}\n`;
-        }
-      });
-      return md + '\n';
-    }
-    if (typeof value === 'object') {
-      if (Array.isArray(value.columns)) return objectivesTable(value.columns);
-      let md = '';
-      for (const [k, v] of Object.entries(value)) {
-        const label = humanizeKey(k);
-        if (v && typeof v === 'object') {
-          md += `${'#'.repeat(Math.min(depth, 6))} ${label}\n\n`;
-          md += toMarkdown(v, depth + 1);
-        } else if (v != null && String(v).trim()) {
-          md += `**${label}:** ${v}\n\n`;
-        }
-      }
-      return md;
-    }
-    return '';
-  };
-
-  const formatStructuredLessonPlan = (planObj) => {
-    if (!planObj || typeof planObj !== 'object') return String(planObj || '');
-    let md = '';
-    if (planObj.lesson_title) md += `# ${planObj.lesson_title}\n\n`;
-    if (planObj.learning_objectives) {
-      md += `## Learning Objectives\n\n${planObj.learning_objectives}\n\n`;
-    }
-    const body = planObj.lesson_plan;
-    if (body && typeof body === 'object') {
-      md += toMarkdown(body, 2);
-    } else if (typeof body === 'string') {
-      md += body;
-    } else {
-      // planObj itself is the structured plan body
-      const { lesson_title, learning_objectives, ...rest } = planObj;
-      md += toMarkdown(rest, 2);
-    }
-    return md.trim() || JSON.stringify(planObj, null, 2);
-  };
-
-  // Helper function to convert lesson plan to string
-  const lessonPlanToString = (plan) => {
-    if (!plan) return '';
-    if (typeof plan === 'string') return plan;
-    if (typeof plan === 'object') {
-      return formatStructuredLessonPlan(plan);
-    }
-    return String(plan);
-  };
+  // Lesson-plan formatting lives in ../../utils/lessonPlanFormatter (shared
+  // with EnhancedLessonPlannerForm and LessonPlanning) so the object->markdown
+  // logic has a single source of truth.
 
   useEffect(() => {
     // Listen for lesson plan generation event

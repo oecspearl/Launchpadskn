@@ -18,6 +18,7 @@ import AILessonPlanner from './AILessonPlanner';
 import EnhancedLessonPlannerForm from './EnhancedLessonPlannerForm';
 import LessonPlanOutput from './LessonPlanOutput';
 import Timetable from '../common/Timetable';
+import { formatStructuredLessonPlan } from '../../utils/lessonPlanFormatter';
 
 function LessonPlanning() {
   const { classSubjectId } = useParams();
@@ -338,9 +339,14 @@ function LessonPlanning() {
   };
 
   // Format lesson plan object to readable text for form field
-  const formatLessonPlanForForm = (planObj) => {
+  // Use the shared object->markdown formatter (single source of truth) so the
+  // generated plan is never shown as raw JSON and no content is dropped.
+  const formatLessonPlanForForm = (planObj) => formatStructuredLessonPlan(planObj);
+
+  // eslint-disable-next-line no-unused-vars
+  const _legacyFormatLessonPlanForForm = (planObj) => {
     if (!planObj || typeof planObj !== 'object') return '';
-    
+
     let formatted = '';
     
     // Handle different object structures
