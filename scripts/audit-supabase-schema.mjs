@@ -102,11 +102,20 @@ const FUNCTIONS = new Set([
   'increment_resource_usage',
   'increment_template_usage',
   'increment_template_view_count',
+  'get_active_sessions',
+  'get_arvr_content',
+  'get_learning_path_stages',
+  'get_session_participants',
+  'get_student_learning_path',
+  'get_virtual_labs',
   'is_admin',
   'is_conversation_member',
+  'join_session',
+  'leave_session',
   'rls_auto_enable',
   'update_coverage_from_lessons',
   'update_curriculum_updated_at',
+  'update_learning_path_progress',
   'update_project_progress',
   'update_updated_at',
   'update_updated_at_column',
@@ -120,9 +129,9 @@ const FUNCTIONS = new Set([
 // while still FAILING on any *new* missing RPC. As each is resolved — the SQL
 // function is created, or the dead call is removed — delete it from this list.
 const KNOWN_MISSING_RPCS = new Set([
-  'get_active_sessions', 'get_arvr_content', 'get_learning_path_stages',
-  'get_session_participants', 'get_student_learning_path', 'get_virtual_labs',
-  'join_session', 'leave_session', 'update_learning_path_progress',
+  // ✅ All 39 originally-missing RPCs have been resolved (functions created in
+  //    the DB across Tiers A–D). This baseline is now empty: any NEW missing
+  //    RPC introduced anywhere in the frontend will fail CI.
 ]);
 
 // Tables we don't have a snapshot for -> skip (avoid false positives).
