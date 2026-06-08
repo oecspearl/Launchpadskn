@@ -72,10 +72,18 @@ const TABLES = new Set(Object.keys(SCHEMA));
 // listing them keeps the snapshot a faithful mirror of pg_proc.
 const FUNCTIONS = new Set([
   'check_rate_limit',
+  'create_lifecycle_event',
   'get_forum_posts',
   'get_forum_topics',
   'get_group_projects',
   'get_project_tasks',
+  'get_student_accommodations',
+  'get_student_disciplinary_records',
+  'get_student_disciplinary_summary',
+  'get_student_lifecycle',
+  'get_student_profile',
+  'get_student_special_needs',
+  'get_student_transfers',
   'get_tutoring_sessions',
   'get_user_institution',
   'get_user_role',
@@ -100,16 +108,12 @@ const FUNCTIONS = new Set([
 // while still FAILING on any *new* missing RPC. As each is resolved — the SQL
 // function is created, or the dead call is removed — delete it from this list.
 const KNOWN_MISSING_RPCS = new Set([
-  'award_points', 'calculate_time_allocation', 'create_lifecycle_event',
+  'award_points', 'calculate_time_allocation',
   'get_active_sessions', 'get_arvr_content', 'get_coverage_summary',
   'get_curriculum_coverage', 'get_gap_analysis', 'get_leaderboard',
   'get_learning_path_stages', 'get_outcome_achievement_summary',
-  'get_session_participants', 'get_student_accommodations',
-  'get_student_badges', 'get_student_disciplinary_records',
-  'get_student_disciplinary_summary', 'get_student_gamification',
-  'get_student_learning_path', 'get_student_lifecycle', 'get_student_profile',
-  'get_student_special_needs', 'get_student_transfers',
-  'get_time_allocation_analysis', 'get_virtual_labs',
+  'get_session_participants', 'get_student_badges', 'get_student_gamification',
+  'get_student_learning_path', 'get_time_allocation_analysis', 'get_virtual_labs',
   'identify_curriculum_gaps', 'join_session', 'leave_session',
   'update_coverage_from_lessons', 'update_learning_path_progress',
 ]);
