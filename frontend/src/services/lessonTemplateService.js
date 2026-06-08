@@ -134,7 +134,7 @@ const lessonTemplateService = {
 
       // Sort content by sequence_order
       if (data && data.content) {
-        data.content = data.content.sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
+        data.content = data.content.sort((a, b) => (a.sequence_order ?? a.order_index ?? 0) - (b.sequence_order ?? b.order_index ?? 0));
       }
 
       // Increment view count
@@ -173,10 +173,10 @@ const lessonTemplateService = {
         .select(`
           *,
           class_subject:class_subjects(
-            subject:subjects(subject_id)
+            subject:subjects(id)
           )
         `)
-        .eq('lesson_id', lessonId)
+        .eq('id', lessonId)
         .single();
 
       if (lessonError) throw lessonError;
@@ -190,21 +190,21 @@ const lessonTemplateService = {
         .from('lesson_content')
         .select('*')
         .eq('lesson_id', lessonId)
-        .order('sequence_order', { ascending: true });
+        .order('order_index', { ascending: true });
 
       if (contentError) throw contentError;
 
-      const subjectId = lesson?.class_subject?.subject_offering?.subject?.subject_id;
-      const formId = lesson?.class_subject?.subject_offering?.form?.form_id;
+      const subjectId = lesson?.class_subject?.subject_offering?.subject?.id;
+      const formId = lesson?.class_subject?.subject_offering?.form?.id;
 
       // Create template
       const templatePayload = {
-        template_name: templateData.template_name || lesson.lesson_title || 'Untitled Template',
+        template_name: templateData.template_name || lesson.title || 'Untitled Template',
         description: templateData.description || '',
         subject_id: subjectId,
         form_id: formId,
         topic: lesson.topic || templateData.topic || '',
-        lesson_title: lesson.lesson_title,
+        lesson_title: lesson.title,
         learning_objectives: lesson.learning_objectives,
         lesson_plan: lesson.lesson_plan,
         homework_description: lesson.homework_description,
@@ -230,8 +230,8 @@ const lessonTemplateService = {
           content_type: content.content_type,
           title: content.title,
           description: content.description,
-          url: content.url,
-          original_content_id: content.content_id,
+          url: content.external_url || content.file_url,
+          original_content_id: content.id,
           instructions: content.instructions,
           learning_outcomes: content.learning_outcomes,
           learning_activities: content.learning_activities,
@@ -278,7 +278,7 @@ const lessonTemplateService = {
       const lessonPayload = {
         class_subject_id: classSubjectId,
         lesson_title: lessonData.lesson_title || template.lesson_title || template.template_name,
-        lesson_date: lessonData.lesson_date || new Date().toISOString().split('T')[0],
+        date: lessonData.lesson_date || new Date().toISOString().split('T')[0],
         start_time: lessonData.start_time || '08:00:00',
         end_time: lessonData.end_time || '08:45:00',
         topic: lessonData.topic || template.topic,
@@ -301,28 +301,22 @@ const lessonTemplateService = {
       // Create lesson content from template content
       if (template.content && template.content.length > 0) {
         const lessonContentItems = template.content.map((templateContent) => {
+          // Only columns that exist on lesson_content (live schema).
           const contentItem = {
-            lesson_id: lesson.lesson_id,
+            lesson_id: lesson.id,
             content_type: templateContent.content_type,
             title: templateContent.title,
             description: templateContent.description,
-            url: templateContent.url,
+            external_url: templateContent.url || templateContent.external_url,
             instructions: templateContent.instructions,
             learning_outcomes: templateContent.learning_outcomes,
-            learning_activities: templateContent.learning_activities,
             key_concepts: templateContent.key_concepts,
-            reflection_questions: templateContent.reflection_questions,
             discussion_prompts: templateContent.discussion_prompts,
-            summary: templateContent.summary,
             content_section: templateContent.content_section,
             is_required: templateContent.is_required,
             estimated_minutes: templateContent.estimated_minutes,
-            sequence_order: templateContent.sequence_order,
-            content_data: templateContent.content_data,
-            metadata: templateContent.metadata,
-            uploaded_by: lessonData.created_by,
-            is_published: true,
-            published_at: new Date().toISOString()
+            order_index: templateContent.sequence_order ?? templateContent.order_index,
+            content_data: templateContent.content_data
           };
 
           // If template content references library content, try to copy from library
@@ -346,7 +340,7 @@ const lessonTemplateService = {
         .from('lesson_template_usage')
         .insert({
           template_id: templateId,
-          lesson_id: lesson.lesson_id,
+          lesson_id: lesson.id,
           used_by: lessonData.created_by
         });
 

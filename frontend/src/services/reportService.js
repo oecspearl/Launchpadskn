@@ -248,17 +248,17 @@ export const reportService = {
     const classIds = classes.map(c => c.id);
 
     // Get lessons for these classes
-    let lessonQuery = supabase.from('lessons').select('lesson_id, class_subject:class_subjects(class_id)').in('class_subject_id',
-      (await supabase.from('class_subjects').select('class_subject_id').in('class_id', classIds)).data?.map(cs => cs.class_subject_id) || []
+    let lessonQuery = supabase.from('lessons').select('id, class_subject:class_subjects(class_id)').in('class_subject_id',
+      (await supabase.from('class_subjects').select('id').in('class_id', classIds)).data?.map(cs => cs.id) || []
     );
-    if (startDate) lessonQuery = lessonQuery.gte('lesson_date', startDate);
-    if (endDate) lessonQuery = lessonQuery.lte('lesson_date', endDate);
+    if (startDate) lessonQuery = lessonQuery.gte('date', startDate);
+    if (endDate) lessonQuery = lessonQuery.lte('date', endDate);
     const { data: lessons } = await lessonQuery;
     if (!lessons?.length) return classes.map(c => ({ className: c.name, formName: c.form?.name || `Form ${c.form?.level}`, totalRecords: 0, present: 0, absent: 0, late: 0, rate: 0 }));
 
-    const lessonIds = lessons.map(l => l.lesson_id);
+    const lessonIds = lessons.map(l => l.id);
     const lessonToClass = {};
-    lessons.forEach(l => { if (l.class_subject) lessonToClass[l.lesson_id] = l.class_subject.class_id; });
+    lessons.forEach(l => { if (l.class_subject) lessonToClass[l.id] = l.class_subject.class_id; });
 
     // Get attendance
     const { data: attendance } = await supabase.from('lesson_attendance').select('lesson_id, status').in('lesson_id', lessonIds);

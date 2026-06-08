@@ -24,7 +24,7 @@ export const studentViewService = {
           ),
           teacher:users!class_subjects_teacher_id_fkey(*)
         `)
-      .eq('class_subject_id', classSubjectId)
+      .eq('id', classSubjectId)
       .single();
 
     if (csError) throw csError;
@@ -37,10 +37,10 @@ export const studentViewService = {
       .select(`
               *,
               lesson:lessons(
-                lesson_id,
-                lesson_date,
+                lesson_id:id,
+                lesson_date:date,
                 homework_due_date,
-                lesson_title,
+                lesson_title:title,
                 class_subject_id
               )
             `)
@@ -148,7 +148,7 @@ export const studentViewService = {
           ),
           content:lesson_content(*)
         `)
-      .eq('lesson_id', lessonId)
+      .eq('id', lessonId)
       .single();
 
     if (error) throw error;
@@ -187,7 +187,7 @@ export const studentViewService = {
     const { data, error } = await supabase
       .from('lesson_content')
       .select('*')
-      .eq('content_id', contentId)
+      .eq('id', contentId)
       .single();
     if (error) throw error;
     return data;
