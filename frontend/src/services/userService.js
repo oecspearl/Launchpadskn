@@ -2,6 +2,7 @@ import { supabase } from '../config/supabase';
 // DB role values are lowercase; `toDbRole` maps app role constants (e.g.
 // ROLES.STUDENT='STUDENT') to the lowercase enum the database expects.
 import { ROLES, toDbRole as normalizeRole } from '../constants/roles';
+import { compatUser } from './userCompat';
 
 // Columns that actually exist on public.users. Used to sanitize update payloads
 // (the live schema has no `name`/`user_id`/`emergency_contact` columns).
@@ -47,7 +48,7 @@ export const userService = {
             .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
-        if (data) return data;
+        if (data) return compatUser(data);
 
         throw new Error('User profile not found');
     },
@@ -66,7 +67,7 @@ export const userService = {
             .maybeSingle();
 
         if (error) throw error;
-        if (data) return data;
+        if (data) return compatUser(data);
 
         // No existing profile. We can only create one if we have an email
         // (NOT NULL). Never insert a partial row — that caused
@@ -81,7 +82,7 @@ export const userService = {
             .single();
 
         if (error3) throw error3;
-        return data3;
+        return compatUser(data3);
     },
 
     /**
@@ -95,7 +96,7 @@ export const userService = {
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return data;
+        return (data || []).map(compatUser);
     },
 
     /**
@@ -114,7 +115,7 @@ export const userService = {
         const { data, error } = await query.order('first_name');
 
         if (error) throw error;
-        return data;
+        return (data || []).map(compatUser);
     },
 
     /**
@@ -285,6 +286,6 @@ export const userService = {
 
         const { data, error } = await query.order('first_name');
         if (error) throw error;
-        return data || [];
+        return (data || []).map(compatUser);
     }
 };
