@@ -430,3 +430,66 @@
         page-break-inside: avoid;
     }
 }
+/* ── Markdown rendering (generated lesson plans) ───────────────────────── */
+.structured-lesson-plan.markdown-body {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #212529;
+  word-wrap: break-word;
+}
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3,
+.markdown-body h4 {
+  font-weight: 700;
+  margin: 1.1rem 0 0.5rem;
+  line-height: 1.25;
+}
+.markdown-body h1 { font-size: 1.5rem; border-bottom: 2px solid #e9ecef; padding-bottom: 0.3rem; }
+.markdown-body h2 { font-size: 1.25rem; border-bottom: 1px solid #e9ecef; padding-bottom: 0.25rem; }
+.markdown-body h3 { font-size: 1.1rem; color: #0d6efd; }
+.markdown-body h4 { font-size: 1rem; }
+.markdown-body p { margin: 0 0 0.75rem; }
+.markdown-body ul,
+.markdown-body ol { margin: 0 0 0.75rem 1.25rem; padding-left: 0.75rem; }
+.markdown-body li { margin-bottom: 0.25rem; }
+.markdown-body strong { font-weight: 700; }
+.markdown-body blockquote {
+  border-left: 4px solid #0d6efd;
+  background: #f8f9fa;
+  margin: 0 0 0.75rem;
+  padding: 0.5rem 0.9rem;
+  color: #495057;
+}
+.markdown-body code {
+  background: #f1f3f5;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  font-size: 0.875em;
+}
+.markdown-body pre {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+  padding: 0.75rem;
+  overflow-x: auto;
+}
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #dee2e6;
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  vertical-align: top;
+}
+.markdown-body thead th {
+  background: #f1f3f5;
+  font-weight: 700;
+}
+.markdown-body tbody tr:nth-child(even) { background: #fbfcfd; }
+.markdown-body hr { border: 0; border-top: 1px solid #e9ecef; margin: 1rem 0; }

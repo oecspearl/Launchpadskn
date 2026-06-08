@@ -6,7 +6,7 @@ import {
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   FaCalendarAlt, FaClock, FaMapMarkerAlt, FaBook, FaSave, FaPlus, FaMagic,
-  FaList, FaTh, FaTable, FaEye, FaEdit, FaVideo, FaCopy, FaFolderOpen
+  FaList, FaTh, FaTable, FaEye, FaEdit, FaVideo, FaCopy, FaFolderOpen, FaArrowLeft
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
@@ -572,7 +572,59 @@ function LessonPlanning() {
     const dateB = new Date(b.lesson_date + 'T' + b.start_time);
     return viewMode === 'calendar' ? dateA - dateB : dateB - dateA;
   });
-  
+
+  // Full-page AI Lesson Plan Generator (form + output) — rendered as a page,
+  // not a modal.
+  if (showEnhancedPlanner) {
+    return (
+      <Container fluid className="mt-4 px-md-4">
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <h3 className="mb-0">
+            <FaMagic className="me-2 text-primary" />
+            AI Lesson Plan Generator
+          </h3>
+          <Button variant="outline-secondary" onClick={() => setShowEnhancedPlanner(false)}>
+            <FaArrowLeft className="me-1" /> Back to Lessons
+          </Button>
+        </div>
+        <Row className="g-4">
+          <Col lg={5}>
+            <EnhancedLessonPlannerForm
+              subjectName={classSubject?.subject_offering?.subject?.subject_name || ''}
+              formName={classSubject?.class?.form?.form_name || ''}
+              className={classSubject?.class?.class_name || ''}
+              classSubjectId={classSubjectId}
+              onPlanGenerated={(plan) => {
+                let topicValue = plan.metadata?.topic || '';
+                const ref = plan.metadata?.curriculumRef;
+                if (ref?.sco_number && topicValue && !topicValue.startsWith('[')) {
+                  topicValue = `[${ref.sco_number}] ${topicValue}`;
+                }
+                setLessonData(prev => ({
+                  ...prev,
+                  lesson_title: plan.lesson_title || prev.lesson_title,
+                  topic: topicValue || prev.topic,
+                  learning_objectives: plan.learning_objectives || prev.learning_objectives,
+                  lesson_plan: plan.lesson_plan || prev.lesson_plan,
+                  homework_description: plan.homework_description || prev.homework_description
+                }));
+              }}
+            />
+          </Col>
+          <Col lg={7}>
+            <LessonPlanOutput
+              onSaveLesson={(ld) => {
+                setLessonData(prev => ({ ...prev, ...ld }));
+                setShowEnhancedPlanner(false);
+                setShowModal(true);
+              }}
+            />
+          </Col>
+        </Row>
+      </Container>
+    );
+  }
+
   return (
     <Container className="mt-4">
       <Row className="mb-4 pt-5">
@@ -1163,78 +1215,6 @@ function LessonPlanning() {
         </Form>
       </Modal>
 
-      {/* Enhanced AI Lesson Planner Modal */}
-      <Modal 
-        show={showEnhancedPlanner} 
-        onHide={() => setShowEnhancedPlanner(false)} 
-        size="xl"
-        fullscreen="lg-down"
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>
-            <FaMagic className="me-2" />
-            AI Lesson Plan Generator
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body style={{ minHeight: '70vh', maxHeight: '80vh', overflow: 'hidden' }}>
-          <Row className="g-3" style={{ height: '100%' }}>
-            {/* Left Column - Form */}
-            <Col lg={5} className="d-flex flex-column" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
-              <EnhancedLessonPlannerForm
-                subjectName={classSubject?.subject_offering?.subject?.subject_name || ''}
-                formName={classSubject?.class?.form?.form_name || ''}
-                className={classSubject?.class?.class_name || ''}
-                classSubjectId={classSubjectId}
-                onPlanGenerated={(plan) => {
-                  // Auto-populate lesson form when plan is generated
-                  let topicValue = plan.metadata?.topic || '';
-                  const ref = plan.metadata?.curriculumRef;
-                  if (ref?.sco_number && topicValue && !topicValue.startsWith('[')) {
-                    topicValue = `[${ref.sco_number}] ${topicValue}`;
-                  }
-                  setLessonData(prev => ({
-                    ...prev,
-                    lesson_title: plan.lesson_title || prev.lesson_title,
-                    topic: topicValue || prev.topic,
-                    learning_objectives: plan.learning_objectives || prev.learning_objectives,
-                    lesson_plan: plan.lesson_plan || prev.lesson_plan,
-                    homework_description: plan.homework_description || prev.homework_description
-                  }));
-                }}
-              />
-            </Col>
-
-            {/* Right Column - Output */}
-            <Col lg={7} className="d-flex flex-column" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
-              <LessonPlanOutput
-                onSaveLesson={(lessonData) => {
-                  // Populate the main lesson form and close enhanced planner
-                  setLessonData(prev => ({
-                    ...prev,
-                    ...lessonData
-                  }));
-                  setShowEnhancedPlanner(false);
-                  setShowModal(true);
-                }}
-              />
-            </Col>
-          </Row>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowEnhancedPlanner(false)}>
-            Close
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={() => {
-              setShowEnhancedPlanner(false);
-              setShowModal(true);
-            }}
-          >
-            Use in Lesson Form
-          </Button>
-        </Modal.Footer>
-      </Modal>
 
       {/* Create Virtual Classroom Modal */}
       <Modal 
