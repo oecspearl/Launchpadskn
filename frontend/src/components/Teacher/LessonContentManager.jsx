@@ -468,8 +468,8 @@ function LessonContentManager() {
       try {
         const { data: quiz } = await supabase
           .from('quizzes')
-          .select('quiz_id')
-          .eq('content_id', contentItem.content_id)
+          .select('quiz_id:id')
+          .eq('lesson_content_id', contentItem.content_id)
           .single();
 
         if (quiz) {
@@ -1012,15 +1012,9 @@ function LessonContentManager() {
             .insert(optionsData);
 
           if (optionsError) throw optionsError;
-        } else if (q.correct_answer) {
-          // For SHORT_ANSWER or FILL_BLANK, store correct answer
-          const { error: answerError } = await supabase
-            .from('quiz_questions')
-            .update({ correct_answer: q.correct_answer })
-            .eq('question_id', question.question_id);
-
-          if (answerError) throw answerError;
         }
+        // Note: SHORT_ANSWER / FILL_BLANK correct answers are not persisted
+        // here — the quiz_questions table has no correct_answer column.
       }
 
       setSuccess(`Quiz "${quizTitle}" created successfully with ${generatedQuiz.quiz_questions.length} questions!`);

@@ -45,7 +45,6 @@ export const studentViewService = {
               )
             `)
       .eq('content_type', 'ASSIGNMENT')
-      .eq('is_published', true)
       .in('lesson_id', lessonIds);
 
     return { data, error: lcError };
@@ -56,7 +55,7 @@ export const studentViewService = {
   async getUserByAuthId(userIdToLookup) {
     const { data: userProfile, error: userError } = await supabase
       .from('users')
-      .select('user_id')
+      .select('user_id:id')
       .eq('id', userIdToLookup)
       .maybeSingle();
 
@@ -79,7 +78,7 @@ export const studentViewService = {
             )
           )
         `)
-      .eq('assessment_id', assessmentId)
+      .eq('id', assessmentId)
       .single();
 
     if (assessmentData) assessmentData.class_subject = compatClassSubject(assessmentData.class_subject);

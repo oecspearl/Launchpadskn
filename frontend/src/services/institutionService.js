@@ -453,8 +453,7 @@ export const institutionService = {
         )
       `)
             .eq('form_id', formId)
-            .eq('is_active', true)
-            .order('subject_name', { ascending: true });
+            .eq('is_active', true);
 
         if (error) throw error;
         return data || [];
@@ -471,7 +470,7 @@ export const institutionService = {
           school:institutions(*)
         )
       `)
-            .eq('offering_id', offeringId)
+            .eq('id', offeringId)
             .single();
 
         if (error) throw error;
@@ -500,7 +499,7 @@ export const institutionService = {
         const { data, error } = await supabase
             .from('subject_form_offerings')
             .update(updateData)
-            .eq('offering_id', offeringId)
+            .eq('id', offeringId)
             .select()
             .single();
 

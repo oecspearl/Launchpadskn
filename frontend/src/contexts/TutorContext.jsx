@@ -56,15 +56,15 @@ export function TutorProvider({ children }) {
         const { data: lesson } = await supabase
           .from('lessons')
           .select(`
-            lesson_id, lesson_title, topic, learning_objectives,
+            lesson_id:id, lesson_title:title, topic, learning_objectives,
             class_subject:class_subjects(
-              class_subject_id,
+              class_subject_id:id,
               subject_offering:subject_form_offerings(
-                subject:subjects(subject_name)
+                subject:subjects(subject_name:name)
               )
             )
           `)
-          .eq('lesson_id', lessonId)
+          .eq('id', lessonId)
           .single();
 
         if (lesson) {
@@ -91,12 +91,12 @@ export function TutorProvider({ children }) {
         const { data: cs } = await supabase
           .from('class_subjects')
           .select(`
-            class_subject_id,
+            class_subject_id:id,
             subject_offering:subject_form_offerings(
-              subject:subjects(subject_name)
+              subject:subjects(subject_name:name)
             )
           `)
-          .eq('class_subject_id', classSubjectId)
+          .eq('id', classSubjectId)
           .single();
 
         if (cs) {

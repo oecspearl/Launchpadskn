@@ -60,7 +60,7 @@ export const studentService = {
         const { data: quizData, error: quizError } = await supabase
             .from('quizzes')
             .select('*')
-            .eq('content_id', contentId)
+            .eq('lesson_content_id', contentId)
             .eq('is_published', true)
             .single();
 
@@ -73,8 +73,8 @@ export const studentService = {
         const { data: questions, error: questionsError } = await supabase
             .from('quiz_questions')
             .select('*')
-            .eq('quiz_id', quizData.quiz_id)
-            .order('question_order', { ascending: true });
+            .eq('quiz_id', quizData.id)
+            .order('order_index', { ascending: true });
 
         if (questionsError) throw questionsError;
 
@@ -125,7 +125,7 @@ export const studentService = {
         const { data: quizData, error: quizError } = await supabase
             .from('quizzes')
             .select('*')
-            .eq('quiz_id', quizId)
+            .eq('id', quizId)
             .single();
 
         if (quizError) throw quizError;
@@ -135,7 +135,7 @@ export const studentService = {
             .from('quiz_questions')
             .select('*')
             .eq('quiz_id', quizId)
-            .order('question_order', { ascending: true });
+            .order('order_index', { ascending: true });
 
         if (questionsError) throw questionsError;
 
@@ -186,7 +186,7 @@ export const studentService = {
         const { data, error } = await supabase
             .from('quizzes')
             .update(quizData)
-            .eq('quiz_id', quizId)
+            .eq('id', quizId)
             .select()
             .single();
 
@@ -198,7 +198,7 @@ export const studentService = {
         const { error } = await supabase
             .from('quizzes')
             .delete()
-            .eq('quiz_id', quizId);
+            .eq('id', quizId);
 
         if (error) throw error;
     },
@@ -218,7 +218,7 @@ export const studentService = {
         const { data, error } = await supabase
             .from('quiz_questions')
             .update(questionData)
-            .eq('question_id', questionId)
+            .eq('id', questionId)
             .select()
             .single();
 
@@ -230,7 +230,7 @@ export const studentService = {
         const { error } = await supabase
             .from('quiz_questions')
             .delete()
-            .eq('question_id', questionId);
+            .eq('id', questionId);
 
         if (error) throw error;
     },
@@ -537,12 +537,12 @@ export const studentService = {
 
         const { data: classSubjects } = await supabase
             .from('class_subjects')
-            .select('class_subject_id')
+            .select('id')
             .eq('class_id', classAssignment.class_id);
 
         if (!classSubjects || classSubjects.length === 0) return [];
 
-        const classSubjectIds = classSubjects.map(cs => cs.class_subject_id);
+        const classSubjectIds = classSubjects.map(cs => cs.id);
 
         const { data, error } = await supabase
             .from('student_grades')

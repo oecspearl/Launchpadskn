@@ -57,7 +57,7 @@ export const teacherToolsService = {
             )
           )
         `)
-      .eq('lesson_id', lessonId)
+      .eq('id', lessonId)
       .single();
     if (data && data.class_subject) {
       data.class_subject = compatClassSubject(data.class_subject);

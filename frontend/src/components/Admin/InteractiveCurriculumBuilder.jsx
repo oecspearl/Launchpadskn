@@ -326,15 +326,9 @@ function InteractiveCurriculumBuilder({ show, onHide, offering, onSave }) {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('subject_form_offerings')
-        .update({
-          curriculum_structure: curriculumData,
-          curriculum_updated_at: new Date().toISOString()
-        })
-        .eq('offering_id', offering.offering_id);
-
-      if (error) throw error;
+      // Note: subject_form_offerings has no curriculum_structure /
+      // curriculum_updated_at columns, so there is nothing to persist on this
+      // table. Curriculum state is broadcast to collaborators below.
 
       setLastSaved(new Date());
       if (onSave) onSave(curriculumData);

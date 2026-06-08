@@ -16,7 +16,7 @@ const learnerProgressService = {
         .select('content_id')
         .eq('user_id', userId)
         .in('content_id', contentIds)
-        .eq('completed', true);
+        .eq('completion_percentage', 100);
 
       if (error) {
         console.error('[LearnerProgress] Error loading progress:', error);
@@ -54,8 +54,7 @@ const learnerProgressService = {
         await supabase
           .from('learner_progress')
           .update({
-            completed,
-            progress_percentage: completed ? 100 : 0,
+            completion_percentage: completed ? 100 : 0,
             updated_at: now
           })
           .eq('user_id', userId)
@@ -66,8 +65,7 @@ const learnerProgressService = {
           .insert({
             user_id: userId,
             content_id: contentId,
-            completed,
-            progress_percentage: completed ? 100 : 0,
+            completion_percentage: completed ? 100 : 0,
             created_at: now,
             updated_at: now
           });

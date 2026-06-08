@@ -13,17 +13,17 @@ const lessonTemplateService = {
         .select(`
           *,
           created_by_user:users!lesson_templates_created_by_fkey(
-            user_id,
-            name,
+            user_id:id,
+            name:first_name,
             email
           ),
           subject:subjects(
-            subject_id,
-            subject_name
+            subject_id:id,
+            subject_name:name
           ),
           form:forms(
-            form_id,
-            form_name
+            form_id:id,
+            form_name:name
           )
         `)
         .eq('status', 'ACTIVE');
@@ -104,17 +104,17 @@ const lessonTemplateService = {
         .select(`
           *,
           created_by_user:users!lesson_templates_created_by_fkey(
-            user_id,
-            name,
+            user_id:id,
+            name:first_name,
             email
           ),
           subject:subjects(
-            subject_id,
-            subject_name
+            subject_id:id,
+            subject_name:name
           ),
           form:forms(
-            form_id,
-            form_name
+            form_id:id,
+            form_name:name
           ),
           content:lesson_template_content(
             *
@@ -122,8 +122,8 @@ const lessonTemplateService = {
           ratings:lesson_template_ratings(
             *,
             user:users(
-              user_id,
-              name
+              user_id:id,
+              name:first_name
             )
           )
         `)

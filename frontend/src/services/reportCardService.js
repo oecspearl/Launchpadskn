@@ -32,8 +32,8 @@ export const reportCardService = {
     // 2. Get class info
     const { data: classInfo } = await supabase
       .from('classes')
-      .select('class_id, class_name, form_id, form:forms(form_id, form_name, form_number)')
-      .eq('class_id', classId)
+      .select('class_id:id, class_name:name, form_id, form:forms(form_id:id, form_name:name, form_number:level)')
+      .eq('id', classId)
       .single();
 
     if (!classInfo) throw new Error('Class not found');
@@ -42,10 +42,10 @@ export const reportCardService = {
     const { data: classSubjectsRaw } = await supabase
       .from('class_subjects')
       .select(`
-        class_subject_id,
+        class_subject_id:id,
         teacher_id,
         teacher:users!class_subjects_teacher_id_fkey(id, first_name, last_name),
-        subject:subjects(subject_id, subject_name)
+        subject:subjects(subject_id:id, subject_name:name)
       `)
       .eq('class_id', classId);
 
@@ -57,7 +57,7 @@ export const reportCardService = {
     // 4. Get all assessments for this class, term
     const { data: assessments } = await supabase
       .from('subject_assessments')
-      .select('assessment_id, class_subject_id, assessment_type, total_marks, weight, term')
+      .select('assessment_id:id, class_subject_id, assessment_type:type, total_marks, weight, term')
       .in('class_subject_id', csIds)
       .eq('term', term);
 
@@ -88,7 +88,7 @@ export const reportCardService = {
     // 6. Get attendance for all students (via lessons linked to class_subjects)
     const { data: lessons } = await supabase
       .from('lessons')
-      .select('lesson_id, class_subject_id')
+      .select('lesson_id:id, class_subject_id')
       .in('class_subject_id', csIds);
 
     const lessonIds = (lessons || []).map(l => l.lesson_id);
@@ -104,7 +104,7 @@ export const reportCardService = {
     // 7. Check for existing draft report cards (prevent duplicates)
     const { data: existing } = await supabase
       .from('report_cards')
-      .select('report_card_id, student_id')
+      .select('report_card_id:id, student_id')
       .eq('class_id', classId)
       .eq('academic_year', academicYear)
       .eq('term', term);
@@ -233,7 +233,7 @@ export const reportCardService = {
       if (grades.length) {
         const gradeInserts = grades.map(g => ({
           ...g,
-          report_card_id: inserted.report_card_id
+          report_card_id: inserted.id
         }));
         await supabase.from('report_card_grades').insert(gradeInserts);
       }
@@ -249,7 +249,7 @@ export const reportCardService = {
         await supabase
           .from('report_cards')
           .update({ class_rank: i + 1 })
-          .eq('report_card_id', allCards[i].report_card_id);
+          .eq('id', allCards[i].id);
       }
     }
 
@@ -286,10 +286,10 @@ export const reportCardService = {
       .select(`
         *,
         student:users!report_cards_student_id_fkey(id, first_name, last_name, email),
-        class:classes(class_name),
-        form:forms(form_name, form_number)
+        class:classes(class_name:name),
+        form:forms(form_name:name, form_number:level)
       `)
-      .eq('report_card_id', reportCardId)
+      .eq('id', reportCardId)
       .single();
 
     if (error) throw error;
@@ -297,8 +297,7 @@ export const reportCardService = {
     const { data: grades } = await supabase
       .from('report_card_grades')
       .select('*')
-      .eq('report_card_id', reportCardId)
-      .order('subject_name');
+      .eq('report_card_id', reportCardId);
 
     return { ...data, grades: grades || [] };
   },
@@ -311,8 +310,8 @@ export const reportCardService = {
       .from('report_cards')
       .select(`
         *,
-        class:classes(class_name),
-        form:forms(form_name, form_number)
+        class:classes(class_name:name),
+        form:forms(form_name:name, form_number:level)
       `)
       .eq('student_id', studentId)
       .eq('status', 'PUBLISHED')
@@ -335,7 +334,7 @@ export const reportCardService = {
     const { data, error } = await supabase
       .from('report_cards')
       .update(filtered)
-      .eq('report_card_id', reportCardId)
+      .eq('id', reportCardId)
       .select()
       .single();
 
@@ -351,8 +350,7 @@ export const reportCardService = {
       .from('report_card_grades')
       .update({
         teacher_comment: teacherComment,
-        effort_grade: effortGrade,
-        updated_at: new Date().toISOString()
+        effort_grade: effortGrade
       })
       .eq('id', gradeId)
       .select()
@@ -375,7 +373,7 @@ export const reportCardService = {
     const { error } = await supabase
       .from('report_cards')
       .update(updates)
-      .in('report_card_id', reportCardIds);
+      .in('id', reportCardIds);
 
     if (error) throw error;
     return true;
@@ -391,10 +389,10 @@ export const reportCardService = {
       .select(`
         *,
         report_card:report_cards(
-          report_card_id, student_id, academic_year, term, status, class_id,
+          report_card_id:id, student_id, academic_year, term, status, class_id,
           student:users!report_cards_student_id_fkey(id, first_name, last_name, email),
-          class:classes(class_name),
-          form:forms(form_name, form_number)
+          class:classes(class_name:name),
+          form:forms(form_name:name, form_number:level)
         )
       `)
       .eq('teacher_id', teacherId);
@@ -434,7 +432,7 @@ export const reportCardService = {
   async deleteDraftReportCards(classId, academicYear, term) {
     const { data: cards } = await supabase
       .from('report_cards')
-      .select('report_card_id')
+      .select('report_card_id:id')
       .eq('class_id', classId)
       .eq('academic_year', academicYear)
       .eq('term', term)
@@ -446,7 +444,7 @@ export const reportCardService = {
     const { error } = await supabase
       .from('report_cards')
       .delete()
-      .in('report_card_id', ids);
+      .in('id', ids);
 
     if (error) throw error;
     return ids.length;
@@ -456,8 +454,8 @@ export const reportCardService = {
    * Get forms and classes for dropdown filters
    */
   async getForms(institutionId) {
-    let q = supabase.from('forms').select('form_id, form_name, form_number').eq('is_active', true).order('form_number');
-    if (institutionId) q = q.eq('school_id', institutionId);
+    let q = supabase.from('forms').select('form_id:id, form_name:name, form_number:level').eq('is_active', true).order('level');
+    if (institutionId) q = q.eq('institution_id', institutionId);
     const { data } = await q;
     return data || [];
   },
@@ -465,10 +463,10 @@ export const reportCardService = {
   async getClassesByForm(formId) {
     const { data } = await supabase
       .from('classes')
-      .select('class_id, class_name, class_code')
+      .select('class_id:id, class_name:name')
       .eq('form_id', formId)
       .eq('is_active', true)
-      .order('class_name');
+      .order('name');
     return data || [];
   }
 };

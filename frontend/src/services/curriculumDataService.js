@@ -56,7 +56,7 @@ export const curriculumDataService = {
   async getAllARVRContent() {
     const { data, error } = await supabase
       .from('arvr_content')
-      .select('*, subjects:subject_id (subject_name)')
+      .select('*, subjects:subject_id (subject_name:name)')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];
@@ -80,7 +80,7 @@ export const curriculumDataService = {
     const { data: result, error } = await supabase
       .from('arvr_content')
       .update(cleanedData)
-      .eq('content_id', id)
+      .eq('id', id)
       .select()
       .single();
     if (error) {
@@ -94,7 +94,7 @@ export const curriculumDataService = {
     const { error } = await supabase
       .from('arvr_content')
       .delete()
-      .eq('content_id', id);
+      .eq('id', id);
     if (error) throw error;
   },
 

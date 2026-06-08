@@ -12,14 +12,13 @@ const tutorService = {
       .select(`
         *,
         class_subject:class_subjects(
-          class_subject_id,
+          id,
           subject:subjects(name),
           class:classes(name, form:forms(name))
-        ),
-        lesson:lessons(lesson_title, topic)
+        )
       `)
       .eq('student_id', studentId)
-      .order('last_message_at', { ascending: false })
+      .order('updated_at', { ascending: false })
       .limit(limit);
 
     if (error) {
@@ -39,18 +38,15 @@ const tutorService = {
     let query = supabase
       .from('tutor_conversations')
       .select('*')
-      .eq('student_id', studentId)
-      .eq('is_active', true);
+      .eq('student_id', studentId);
 
-    if (lessonId) {
-      query = query.eq('lesson_id', lessonId);
-    } else if (classSubjectId) {
-      query = query.eq('class_subject_id', classSubjectId).is('lesson_id', null);
+    if (classSubjectId) {
+      query = query.eq('class_subject_id', classSubjectId);
     } else {
-      query = query.is('class_subject_id', null).is('lesson_id', null);
+      query = query.is('class_subject_id', null);
     }
 
-    const { data: existing } = await query.order('last_message_at', { ascending: false }).limit(1);
+    const { data: existing } = await query.order('updated_at', { ascending: false }).limit(1);
 
     if (existing && existing.length > 0) {
       return existing[0];
@@ -62,10 +58,7 @@ const tutorService = {
       .insert({
         student_id: studentId,
         class_subject_id: classSubjectId || null,
-        lesson_id: lessonId || null,
-        title: 'Tutoring Session',
-        is_active: true,
-        message_count: 0
+        title: 'Tutoring Session'
       })
       .select()
       .single();
@@ -113,29 +106,12 @@ const tutorService = {
       throw error;
     }
 
-    // Update conversation metadata
+    // Touch the conversation's updated_at (no last_message_at/message_count
+    // columns exist on tutor_conversations; PK is id).
     await supabase
       .from('tutor_conversations')
-      .update({
-        last_message_at: new Date().toISOString(),
-        message_count: supabase.rpc ? undefined : undefined, // handled below
-        updated_at: new Date().toISOString()
-      })
-      .eq('conversation_id', conversationId);
-
-    // Increment message count
-    const { data: conv } = await supabase
-      .from('tutor_conversations')
-      .select('message_count')
-      .eq('conversation_id', conversationId)
-      .single();
-
-    if (conv) {
-      await supabase
-        .from('tutor_conversations')
-        .update({ message_count: (conv.message_count || 0) + 1 })
-        .eq('conversation_id', conversationId);
-    }
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', conversationId);
 
     return data;
   },
@@ -211,7 +187,7 @@ const tutorService = {
     const { data: classSubjects } = await supabase
       .from('class_subjects')
       .select(`
-        class_subject_id,
+        class_subject_id:id,
         subject:subjects(name),
         class:classes(name, id, form:forms(name))
       `)
@@ -239,7 +215,7 @@ const tutorService = {
   async updateTutorSetting(classSubjectId, teacherId, isEnabled) {
     const { data: existing } = await supabase
       .from('tutor_settings')
-      .select('setting_id')
+      .select('id')
       .eq('class_subject_id', classSubjectId)
       .maybeSingle();
 
@@ -253,7 +229,6 @@ const tutorService = {
         .from('tutor_settings')
         .insert({
           class_subject_id: classSubjectId,
-          teacher_id: teacherId,
           is_enabled: isEnabled
         });
     }

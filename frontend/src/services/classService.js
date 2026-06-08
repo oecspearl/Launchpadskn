@@ -70,12 +70,11 @@ export const classService = {
                 const allClassIds = [...new Set([...classIds, ...tutorClassIds])];
 
                 if (allClassIds.length > 0) {
-                    query = query.or(`id.in.(${allClassIds.join(',')}),published.eq.true`);
+                    query = query.in('id', allClassIds);
                 } else {
-                    query = query.eq('published', true);
+                    // No classes for this instructor; return none.
+                    query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
                 }
-            } else {
-                query = query.eq('published', true);
             }
         } else if (userRole === ROLES.STUDENT) {
             if (userId) {
@@ -88,15 +87,12 @@ export const classService = {
                 const enrolledClassIds = enrollments?.map(e => e.class_id) || [];
 
                 if (enrolledClassIds.length > 0) {
-                    query = query.or(`id.in.(${enrolledClassIds.join(',')}),published.eq.true`);
+                    query = query.in('id', enrolledClassIds);
                 } else {
-                    query = query.eq('published', true);
+                    // No enrollments; return none.
+                    query = query.in('id', ['00000000-0000-0000-0000-000000000000']);
                 }
-            } else {
-                query = query.eq('published', true);
             }
-        } else {
-            query = query.eq('published', true);
         }
 
         const { data, error } = await query.order('created_at', { ascending: false });
@@ -116,26 +112,17 @@ export const classService = {
           instructor:users(first_name, last_name, email)
         )
       `)
-            .eq('published', true)
             .eq('is_active', true);
 
         if (filters.form_id) {
             query = query.eq('form_id', filters.form_id);
         }
 
-        if (filters.difficulty) {
-            query = query.eq('difficulty', filters.difficulty);
-        }
-
-        if (filters.featured) {
-            query = query.eq('featured', true);
-        }
-
         if (filters.search) {
             query = query.or(`name.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
         }
 
-        const { data, error } = await query.order('featured', { ascending: false }).order('created_at', { ascending: false });
+        const { data, error } = await query.order('created_at', { ascending: false });
 
         if (error) throw error;
         return data || [];
@@ -150,14 +137,10 @@ export const classService = {
         form:forms(*),
         instructors:class_instructors(
           instructor:users(first_name, last_name, email, id, role),
-          role,
-          assigned_at
+          role
         ),
         students:student_class_assignments(
-          student:users(first_name, last_name, email, id),
-          enrollment_type,
-          enrolled_at,
-          progress_percentage
+          student:users(first_name, last_name, email, id)
         )
       `)
             .eq('id', classId)
@@ -304,23 +287,22 @@ export const classService = {
     async enrollStudentInClass(studentId, classId, academicYear) {
         const { data: classData, error: classError } = await supabase
             .from('classes')
-            .select('id, published, capacity, current_enrollment')
+            .select('id, capacity')
             .eq('id', classId)
             .single();
 
         if (classError) throw classError;
 
-        if (!classData.published) {
-            throw new Error('Class is not available for enrollment');
-        }
-
-        if (classData.current_enrollment >= classData.capacity) {
+        // Enrollment is derived from student_class_assignments; check live count
+        // against capacity instead of a non-existent current_enrollment column.
+        const currentEnrollment = await this.updateClassEnrollmentCount(classId);
+        if (classData.capacity != null && currentEnrollment >= classData.capacity) {
             throw new Error('Class is at full capacity');
         }
 
         const { data: existing } = await supabase
             .from('student_class_assignments')
-            .select('assignment_id, is_active')
+            .select('id, is_active')
             .eq('student_id', studentId)
             .eq('class_id', classId)
             .maybeSingle();
@@ -333,11 +315,9 @@ export const classService = {
                     .from('student_class_assignments')
                     .update({
                         is_active: true,
-                        enrollment_type: 'enrolled',
-                        enrolled_at: new Date().toISOString(),
                         academic_year: academicYear
                     })
-                    .eq('assignment_id', existing.assignment_id)
+                    .eq('id', existing.id)
                     .select()
                     .single();
 
@@ -353,8 +333,6 @@ export const classService = {
                 student_id: studentId,
                 class_id: classId,
                 academic_year: academicYear,
-                enrollment_type: 'enrolled',
-                enrolled_at: new Date().toISOString(),
                 is_active: true
             })
             .select()
@@ -369,8 +347,7 @@ export const classService = {
         const { data, error } = await supabase
             .from('student_class_assignments')
             .update({
-                is_active: false,
-                enrollment_type: 'dropped'
+                is_active: false
             })
             .eq('student_id', studentId)
             .eq('class_id', classId)
@@ -385,7 +362,7 @@ export const classService = {
     async checkEnrollment(studentId, classId) {
         const { data, error } = await supabase
             .from('student_class_assignments')
-            .select('assignment_id, is_active, enrollment_type')
+            .select('id, is_active')
             .eq('student_id', studentId)
             .eq('class_id', classId)
             .maybeSingle();
@@ -464,11 +441,12 @@ export const classService = {
     },
 
     async publishClass(classId) {
+        // The classes table has no published/updated_at columns; classes are not
+        // publish-gated. Return the class row unchanged.
         const { data, error } = await supabase
             .from('classes')
-            .update({ published: true, updated_at: new Date().toISOString() })
-            .eq('id', classId)
             .select()
+            .eq('id', classId)
             .single();
 
         if (error) throw error;
@@ -476,23 +454,23 @@ export const classService = {
     },
 
     async unpublishClass(classId) {
+        // No published column to toggle; return the class row unchanged.
         const { data, error } = await supabase
             .from('classes')
-            .update({ published: false, updated_at: new Date().toISOString() })
-            .eq('id', classId)
             .select()
+            .eq('id', classId)
             .single();
 
         if (error) throw error;
         return data;
     },
 
-    async toggleClassFeatured(classId, featured) {
+    async toggleClassFeatured(classId) {
+        // No featured column to toggle; return the class row unchanged.
         const { data, error } = await supabase
             .from('classes')
-            .update({ featured: featured, updated_at: new Date().toISOString() })
-            .eq('id', classId)
             .select()
+            .eq('id', classId)
             .single();
 
         if (error) throw error;

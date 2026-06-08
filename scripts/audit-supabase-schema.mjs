@@ -114,7 +114,11 @@ function auditFile(path, rel, findings) {
   for (let i = 0; i < froms.length; i++) {
     const { table, idx } = froms[i];
     if (!known(table)) continue;
-    const end = i + 1 < froms.length ? froms[i + 1].idx : Math.min(src.length, idx + 1600);
+    // Bound the query chain at its statement end (`;`) so filters belonging to a
+    // later statement / an inline subquery's table aren't mis-attributed.
+    const semi = src.indexOf(';', idx);
+    const nextFrom = i + 1 < froms.length ? froms[i + 1].idx : Infinity;
+    const end = Math.min(nextFrom, semi === -1 ? src.length : semi + 1, idx + 1600);
     const chunk = src.slice(idx, end);
     const lineOf = (off) => src.slice(0, idx + off).split('\n').length;
 

@@ -18,13 +18,12 @@ export const collaborationDataService = {
     return data;
   },
 
-  /** Active parent-student links (returns the joined student records). */
+  /** Parent-student links (returns the joined student records). */
   async getParentStudentLinks(parentId) {
     const { data, error } = await supabase
       .from('parent_student_links')
       .select('student:users!parent_student_links_student_id_fkey(id, first_name, last_name, email)')
-      .eq('parent_id', parentId)
-      .eq('is_active', true);
+      .eq('parent_id', parentId);
     if (error) throw error;
     return data;
   },

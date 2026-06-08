@@ -80,7 +80,7 @@ function LessonView() {
         if (userIdToLookup && typeof userIdToLookup === 'string' && userIdToLookup.includes('-')) {
           const { data: userProfile } = await supabase
             .from('users')
-            .select('user_id')
+            .select('user_id:id')
             .eq('id', userIdToLookup)
             .maybeSingle();
 
@@ -117,7 +117,7 @@ function LessonView() {
         .from('learner_progress')
         .select('content_id')
         .eq('user_id', user.id)
-        .eq('completed', true);
+        .eq('completion_percentage', 100);
       if (data && data.length > 0) {
         setCompletedContent(new Set(data.map(r => r.content_id)));
       }
@@ -149,7 +149,7 @@ function LessonView() {
           ),
           content:lesson_content(*)
         `)
-        .eq('lesson_id', lessonId)
+        .eq('id', lessonId)
         .single();
 
       if (lessonError) throw lessonError;
@@ -173,8 +173,8 @@ function LessonView() {
               try {
                 const { data: quiz } = await supabase
                   .from('quizzes')
-                  .select('quiz_id, is_published')
-                  .eq('content_id', item.content_id)
+                  .select('quiz_id:id, is_published')
+                  .eq('lesson_content_id', item.content_id)
                   .eq('is_published', true)
                   .single();
                 if (quiz) {
@@ -200,7 +200,7 @@ function LessonView() {
             if (userIdToLookup && typeof userIdToLookup === 'string' && userIdToLookup.includes('-')) {
               const { data: userProfile } = await supabase
                 .from('users')
-                .select('user_id')
+                .select('user_id:id')
                 .eq('id', userIdToLookup)
                 .maybeSingle();
 
@@ -316,13 +316,13 @@ function LessonView() {
         if (existing) {
           await supabase
             .from('learner_progress')
-            .update({ completed: !isCompleted, progress_percentage: isCompleted ? 0 : 100, updated_at: new Date().toISOString() })
+            .update({ completion_percentage: isCompleted ? 0 : 100, updated_at: new Date().toISOString() })
             .eq('user_id', user.id)
             .eq('content_id', contentId);
         } else {
           await supabase
             .from('learner_progress')
-            .insert([{ user_id: user.id, content_id: contentId, completed: true, progress_percentage: 100, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]);
+            .insert([{ user_id: user.id, content_id: contentId, completion_percentage: 100, created_at: new Date().toISOString(), updated_at: new Date().toISOString() }]);
         }
       } catch (err) {
         console.error('Error saving progress:', err);

@@ -99,7 +99,7 @@ export const reportService = {
   async getAcademicPerformanceReport(institutionId, { term, formId, classId } = {}) {
     // Get relevant class_subjects
     let classSubjectQuery = supabase.from('class_subjects').select(`
-      class_subject_id,
+      class_subject_id:id,
       class:classes(id, name, form_id, form:forms(name, level, institution_id)),
       subject:subjects(id, name)
     `);
