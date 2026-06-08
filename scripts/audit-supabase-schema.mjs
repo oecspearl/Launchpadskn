@@ -72,6 +72,11 @@ const TABLES = new Set(Object.keys(SCHEMA));
 // listing them keeps the snapshot a faithful mirror of pg_proc.
 const FUNCTIONS = new Set([
   'check_rate_limit',
+  'get_forum_posts',
+  'get_forum_topics',
+  'get_group_projects',
+  'get_project_tasks',
+  'get_tutoring_sessions',
   'get_user_institution',
   'get_user_role',
   'increment_library_view_count',
@@ -82,6 +87,7 @@ const FUNCTIONS = new Set([
   'is_conversation_member',
   'rls_auto_enable',
   'update_curriculum_updated_at',
+  'update_project_progress',
   'update_updated_at',
   'update_updated_at_column',
 ]);
@@ -96,18 +102,16 @@ const FUNCTIONS = new Set([
 const KNOWN_MISSING_RPCS = new Set([
   'award_points', 'calculate_time_allocation', 'create_lifecycle_event',
   'get_active_sessions', 'get_arvr_content', 'get_coverage_summary',
-  'get_curriculum_coverage', 'get_forum_posts', 'get_forum_topics',
-  'get_gap_analysis', 'get_group_projects', 'get_leaderboard',
+  'get_curriculum_coverage', 'get_gap_analysis', 'get_leaderboard',
   'get_learning_path_stages', 'get_outcome_achievement_summary',
-  'get_project_tasks', 'get_session_participants', 'get_student_accommodations',
+  'get_session_participants', 'get_student_accommodations',
   'get_student_badges', 'get_student_disciplinary_records',
   'get_student_disciplinary_summary', 'get_student_gamification',
   'get_student_learning_path', 'get_student_lifecycle', 'get_student_profile',
   'get_student_special_needs', 'get_student_transfers',
-  'get_time_allocation_analysis', 'get_tutoring_sessions', 'get_virtual_labs',
+  'get_time_allocation_analysis', 'get_virtual_labs',
   'identify_curriculum_gaps', 'join_session', 'leave_session',
   'update_coverage_from_lessons', 'update_learning_path_progress',
-  'update_project_progress',
 ]);
 
 // Tables we don't have a snapshot for -> skip (avoid false positives).
