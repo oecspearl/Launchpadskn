@@ -3,7 +3,7 @@
 const {
   TUTOR_TOOLS,
   executeTutorToolCall,
-  callOpenAIWithRetry,
+  callChat,
   buildTutorSystemPrompt
 } = require('../_lib/aiProxy');
 
@@ -12,9 +12,8 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return res.status(500).json({ error: 'OpenAI API key not configured on server' });
+  if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'No AI provider configured (set OPENAI_API_KEY or ANTHROPIC_API_KEY)' });
   }
 
   const { messages, studentProfile, currentContext } = req.body || {};
@@ -53,7 +52,7 @@ module.exports = async (req, res) => {
     requestBody.tool_choice = 'auto';
   }
 
-  let result = await callOpenAIWithRetry(apiKey, requestBody);
+  let result = await callChat(requestBody);
   if (result.error) {
     return res.status(result.status).json({ error: result.error });
   }
@@ -85,7 +84,7 @@ module.exports = async (req, res) => {
       frequency_penalty: 0.2
     };
 
-    result = await callOpenAIWithRetry(apiKey, followUpBody);
+    result = await callChat(followUpBody);
     if (result.error) {
       return res.status(result.status).json({ error: result.error });
     }

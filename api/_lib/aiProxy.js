@@ -205,6 +205,184 @@ async function callOpenAIWithRetry(apiKey, requestBody) {
   }
 }
 
+// ─── Anthropic provider ───────────────────────────────────────────────
+// Translates an OpenAI chat-completions request/response to/from Anthropic's
+// Messages API so callers (chat + tutor, incl. tool-calling) stay unchanged.
+
+function mapModelToAnthropic(model) {
+  const m = (model || '').toLowerCase();
+  if (m.startsWith('claude')) return model;
+  return process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+}
+
+function toAnthropicRequest(body) {
+  const systemParts = [];
+  const messages = [];
+
+  for (const m of body.messages || []) {
+    if (m.role === 'system') {
+      if (typeof m.content === 'string') systemParts.push(m.content);
+      continue;
+    }
+    if (m.role === 'tool') {
+      // OpenAI tool result -> Anthropic tool_result block (in a user turn)
+      messages.push({
+        role: 'user',
+        content: [{ type: 'tool_result', tool_use_id: m.tool_call_id, content: m.content }]
+      });
+      continue;
+    }
+    if (m.role === 'assistant' && Array.isArray(m.tool_calls)) {
+      const content = [];
+      if (m.content) content.push({ type: 'text', text: m.content });
+      for (const tc of m.tool_calls) {
+        let input = {};
+        try { input = JSON.parse(tc.function.arguments || '{}'); } catch { /* ignore */ }
+        content.push({ type: 'tool_use', id: tc.id, name: tc.function.name, input });
+      }
+      messages.push({ role: 'assistant', content });
+      continue;
+    }
+    messages.push({ role: m.role, content: m.content });
+  }
+
+  const req = {
+    model: mapModelToAnthropic(body.model),
+    max_tokens: body.max_tokens || 1024,
+    messages
+  };
+  if (systemParts.length) req.system = systemParts.join('\n\n');
+  if (body.temperature != null) req.temperature = body.temperature;
+  if (Array.isArray(body.tools) && body.tools.length) {
+    req.tools = body.tools.map(t => ({
+      name: t.function.name,
+      description: t.function.description,
+      input_schema: t.function.parameters
+    }));
+  }
+  return req;
+}
+
+function fromAnthropicResponse(data) {
+  const blocks = Array.isArray(data.content) ? data.content : [];
+  const text = blocks.filter(b => b.type === 'text').map(b => b.text).join('');
+  const toolUses = blocks.filter(b => b.type === 'tool_use');
+
+  const message = { role: 'assistant', content: text || null };
+  if (toolUses.length) {
+    message.tool_calls = toolUses.map(tu => ({
+      id: tu.id,
+      type: 'function',
+      function: { name: tu.name, arguments: JSON.stringify(tu.input || {}) }
+    }));
+  }
+
+  const finishMap = { tool_use: 'tool_calls', end_turn: 'stop', max_tokens: 'length', stop_sequence: 'stop' };
+  const usage = data.usage
+    ? {
+        prompt_tokens: data.usage.input_tokens,
+        completion_tokens: data.usage.output_tokens,
+        total_tokens: (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0)
+      }
+    : undefined;
+
+  return {
+    id: data.id,
+    choices: [{ index: 0, message, finish_reason: finishMap[data.stop_reason] || 'stop' }],
+    usage
+  };
+}
+
+async function callAnthropicWithRetry(apiKey, requestBody) {
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [1000, 3000, 6000];
+  const anthropicBody = toAnthropicRequest(requestBody);
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(anthropicBody)
+      });
+
+      if ((response.status === 529 || response.status === 429 || response.status === 503) && attempt < MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt] || 6000));
+        continue;
+      }
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        return { error: errorData, status: response.status };
+      }
+
+      const data = await response.json();
+      return { data: fromAnthropicResponse(data), status: 200 };
+    } catch (error) {
+      if (attempt < MAX_RETRIES) {
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAYS[attempt] || 6000));
+        continue;
+      }
+      console.error('[AI Proxy] Anthropic error after retries:', error.message);
+      return { error: 'AI proxy request failed', status: 500 };
+    }
+  }
+}
+
+// ─── Provider dispatcher (OpenAI + Anthropic, with fallback) ───────────
+function pickProvider(body) {
+  if (body && body.provider) return String(body.provider).toLowerCase();
+  const model = ((body && body.model) || '').toLowerCase();
+  if (model.startsWith('claude')) return 'anthropic';
+  if (/^(gpt|o1|o3|o4)/.test(model)) return 'openai';
+  if (process.env.AI_PROVIDER) return process.env.AI_PROVIDER.toLowerCase();
+  return process.env.OPENAI_API_KEY ? 'openai' : 'anthropic';
+}
+
+function isFallbackError(result) {
+  return [401, 403, 429, 500, 502, 503, 529].includes(result.status);
+}
+
+/**
+ * Unified chat call. Routes to OpenAI or Anthropic based on the request's
+ * `provider`/model (or AI_PROVIDER env), and falls back to the other provider
+ * on auth/availability errors. Returns an OpenAI-shaped { data, status } / { error, status }.
+ */
+async function callChat(requestBody) {
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+  let provider = pickProvider(requestBody);
+  if (provider === 'openai' && !openaiKey && anthropicKey) provider = 'anthropic';
+  if (provider === 'anthropic' && !anthropicKey && openaiKey) provider = 'openai';
+
+  const tryProvider = (p) => {
+    if (p === 'anthropic') {
+      if (!anthropicKey) return Promise.resolve({ error: 'Anthropic API key not configured', status: 500 });
+      return callAnthropicWithRetry(anthropicKey, requestBody);
+    }
+    if (!openaiKey) return Promise.resolve({ error: 'OpenAI API key not configured', status: 500 });
+    const { provider: _p, ...openaiBody } = requestBody; // OpenAI rejects unknown fields
+    return callOpenAIWithRetry(openaiKey, openaiBody);
+  };
+
+  let result = await tryProvider(provider);
+  if (result.error && isFallbackError(result)) {
+    const other = provider === 'openai' ? 'anthropic' : 'openai';
+    const otherKey = other === 'openai' ? openaiKey : anthropicKey;
+    if (otherKey) {
+      console.log(`[AI Proxy] ${provider} failed (${result.status}); falling back to ${other}`);
+      const fb = await tryProvider(other);
+      if (!fb.error) return fb;
+    }
+  }
+  return result;
+}
+
 // Build Socratic tutor system prompt server-side
 function buildTutorSystemPrompt(studentProfile, currentContext) {
   const name = studentProfile?.name || 'Student';
@@ -342,5 +520,7 @@ module.exports = {
   TUTOR_TOOLS,
   executeTutorToolCall,
   callOpenAIWithRetry,
+  callAnthropicWithRetry,
+  callChat,
   buildTutorSystemPrompt
 };
