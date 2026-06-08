@@ -18,12 +18,12 @@ export const teacherToolsService = {
     const { data, error } = await supabase
       .from('class_subjects')
       .select(`
-          subject_offering_id,
+          id,
           subject_id,
-          subject:subjects(subject_id),
-          class:classes(form:forms(form_number))
+          subject:subjects(subject_id:id),
+          class:classes(form:forms(form_number:level))
         `)
-      .eq('class_subject_id', classSubjectId)
+      .eq('id', classSubjectId)
       .single();
     return { data: compatClassSubject(data), error };
   },
@@ -32,7 +32,7 @@ export const teacherToolsService = {
   async getActiveSubjectFormOfferings(subjectId) {
     let query = supabase
       .from('subject_form_offerings')
-      .select('*, form:forms(form_number)')
+      .select('*, form:forms(form_number:level)')
       .eq('is_active', true);
 
     if (subjectId) query = query.eq('subject_id', subjectId);
