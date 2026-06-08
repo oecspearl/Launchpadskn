@@ -246,9 +246,15 @@ function toAnthropicRequest(body) {
     messages.push({ role: m.role, content: m.content });
   }
 
+  // Large JSON generations (lesson plans/content) were written against the
+  // GPT-3.5 token caps and truncate (-> invalid JSON). Claude supports more,
+  // so give big requests headroom; leave small ones (e.g. the tutor) as-is.
+  let maxTokens = body.max_tokens || 1024;
+  if (maxTokens >= 2000) maxTokens = Math.max(maxTokens, 8192);
+
   const req = {
     model: mapModelToAnthropic(body.model),
-    max_tokens: body.max_tokens || 1024,
+    max_tokens: maxTokens,
     messages
   };
   if (systemParts.length) req.system = systemParts.join('\n\n');

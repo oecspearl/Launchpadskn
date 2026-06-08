@@ -210,16 +210,12 @@ function LessonPlanning() {
         return timeStr.includes(':') && timeStr.split(':').length === 3 ? timeStr : timeStr + ':00';
       };
       
-      // Ensure class_subject_id is a valid integer
-      // Use the classSubjectId from useParams if lessonData doesn't have it
-      const classSubjectIdValue = lessonData.class_subject_id || classSubjectId;
-      console.log('[LessonPlanning] class_subject_id value:', classSubjectIdValue, 'type:', typeof classSubjectIdValue);
-      const validClassSubjectId = parseInt(classSubjectIdValue, 10);
-      console.log('[LessonPlanning] Parsed class_subject_id:', validClassSubjectId);
-      
-      if (!validClassSubjectId || isNaN(validClassSubjectId)) {
-        console.error('[LessonPlanning] Invalid class_subject_id:', classSubjectIdValue);
-        setError(`Invalid class subject (${classSubjectIdValue}). Please refresh the page and try again.`);
+      // class_subject_id is a uuid (not an integer). Use the param if missing.
+      const validClassSubjectId = lessonData.class_subject_id || classSubjectId;
+
+      if (!validClassSubjectId) {
+        console.error('[LessonPlanning] Invalid class_subject_id:', validClassSubjectId);
+        setError(`Invalid class subject. Please refresh the page and try again.`);
         return;
       }
       
