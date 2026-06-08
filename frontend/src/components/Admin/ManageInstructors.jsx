@@ -182,8 +182,8 @@ function ManageInstructors({ institutionId }) {
     if (!currentInstructor.lastName.trim()) errors.lastName = "Last name is required";
     if (!currentInstructor.email.trim()) errors.email = "Email is required";
     if (!currentInstructor.email.includes('@')) errors.email = "Invalid email format";
-    if (!currentInstructor.departmentId) errors.departmentId = "Department is required";
-    
+    // Department is optional (institutions may not have departments set up yet)
+
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -609,14 +609,14 @@ function ManageInstructors({ institutionId }) {
             </Form.Group>
             
             <Form.Group className="mb-3">
-              <Form.Label>Department</Form.Label>
+              <Form.Label>Department <span className="text-muted">(optional)</span></Form.Label>
               <Form.Select
                 name="departmentId"
                 value={currentInstructor.departmentId}
                 onChange={handleInputChange}
                 isInvalid={!!formErrors.departmentId}
               >
-                <option value="">Select Department</option>
+                <option value="">No department</option>
                 {departments.map(dept => (
                   <option key={dept.departmentId} value={dept.departmentId}>
                     {dept.name}
