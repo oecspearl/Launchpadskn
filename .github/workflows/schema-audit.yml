@@ -1,0 +1,22 @@
+name: Schema Audit
+
+# Guardrail: fail if any Supabase query references a column that doesn't exist
+# on the target table (the schema-drift bug class). Keep the schema snapshot in
+# scripts/audit-supabase-schema.mjs in sync with the live DB.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Audit Supabase schema usage
+        run: node scripts/audit-supabase-schema.mjs
