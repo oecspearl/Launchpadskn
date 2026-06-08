@@ -114,8 +114,8 @@ export const teacherToolsService = {
   async getSubjects() {
     const { data, error } = await supabase
       .from('subjects')
-      .select('subject_id, subject_name')
-      .order('subject_name');
+      .select('subject_id:id, subject_name:name')
+      .order('name');
     if (error) throw error;
     return data;
   },
@@ -123,8 +123,8 @@ export const teacherToolsService = {
   async getForms() {
     const { data, error } = await supabase
       .from('forms')
-      .select('form_id, form_name')
-      .order('form_name');
+      .select('form_id:id, form_name:name')
+      .order('name');
     if (error) throw error;
     return data;
   },

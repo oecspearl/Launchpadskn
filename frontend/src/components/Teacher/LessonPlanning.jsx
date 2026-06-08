@@ -85,14 +85,16 @@ function LessonPlanning() {
       const { data } = await supabase
         .from('class_subjects')
         .select(`
-          class_subject_id,
-          subject_offering:subject_form_offerings(
-            subject:subjects(subject_name, subject_code)
-          ),
-          class:classes(class_name, form:forms(form_name))
+          class_subject_id:id,
+          subject:subjects(subject_name:name, subject_code:code),
+          class:classes(class_name:name, form:forms(form_name:name))
         `)
         .eq('teacher_id', userId);
-      setTeacherClassSubjects(data || []);
+      // Re-expose the legacy subject_offering.subject shape for the render.
+      setTeacherClassSubjects((data || []).map(cs => ({
+        ...cs,
+        subject_offering: cs.subject ? { subject: cs.subject } : null,
+      })));
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching teacher class subjects:', err);
@@ -120,18 +122,13 @@ function LessonPlanning() {
         .from('class_subjects')
         .select(`
           *,
-          subject_offering:subject_form_offerings(
-            subject:subjects(*)
-          ),
-          class:classes(
-            *,
-            form:forms(*)
-          )
+          subject:subjects(subject_name:name, subject_code:code),
+          class:classes(class_name:name, form:forms(form_name:name))
         `)
-        .eq('class_subject_id', classSubjectId)
+        .eq('id', classSubjectId)
         .single();
-      
-      setClassSubject(csData);
+
+      setClassSubject(csData ? { ...csData, subject_offering: csData.subject ? { subject: csData.subject } : null } : csData);
       
       // Get lessons
       const lessonList = await supabaseService.getLessonsByClassSubject(classSubjectId);

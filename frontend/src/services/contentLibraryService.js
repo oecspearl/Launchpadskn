@@ -13,17 +13,17 @@ const contentLibraryService = {
         .select(`
           *,
           shared_by_user:users!content_library_shared_by_fkey(
-            user_id,
-            name,
+            user_id:id,
+            name:first_name,
             email
           ),
           subject:subjects(
-            subject_id,
-            subject_name
+            subject_id:id,
+            subject_name:name
           ),
           form:forms(
-            form_id,
-            form_name
+            form_id:id,
+            form_name:name
           )
         `)
         .eq('status', 'ACTIVE');
@@ -108,17 +108,17 @@ const contentLibraryService = {
         .select(`
           *,
           shared_by_user:users!content_library_shared_by_fkey(
-            user_id,
-            name,
+            user_id:id,
+            name:first_name,
             email
           ),
           subject:subjects(
-            subject_id,
-            subject_name
+            subject_id:id,
+            subject_name:name
           ),
           form:forms(
-            form_id,
-            form_name
+            form_id:id,
+            form_name:name
           ),
           ratings:content_library_ratings(
             *,

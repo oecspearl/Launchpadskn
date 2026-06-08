@@ -86,8 +86,8 @@ function ContentLibrary() {
     try {
       const { data, error } = await supabase
         .from('subjects')
-        .select('subject_id, subject_name')
-        .order('subject_name');
+        .select('subject_id:id, subject_name:name')
+        .order('name');
       if (error) throw error;
       setSubjects(data || []);
     } catch (err) {
@@ -99,8 +99,8 @@ function ContentLibrary() {
     try {
       const { data, error } = await supabase
         .from('forms')
-        .select('form_id, form_name')
-        .order('form_name');
+        .select('form_id:id, form_name:name')
+        .order('name');
       if (error) throw error;
       setForms(data || []);
     } catch (err) {
