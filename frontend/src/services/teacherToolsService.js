@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { compatClassSubject } from './subjectCompat';
+import { sanitizeLessonContentWrite, compatLessonContentRead } from './lessonCompat';
 
 /**
  * Teacher tools data access.
@@ -70,34 +71,31 @@ export const teacherToolsService = {
     const { data, error } = await supabase
       .from('lesson_content')
       .select('*')
-      .eq('content_id', contentId)
+      .eq('id', contentId)
       .single();
     if (error) throw error;
-    return data;
+    return compatLessonContentRead(data);
   },
 
   async updateLessonContent(contentId, contentPayload) {
     const { data, error } = await supabase
       .from('lesson_content')
-      .update({
-        ...contentPayload,
-        updated_at: new Date().toISOString()
-      })
-      .eq('content_id', contentId)
+      .update(sanitizeLessonContentWrite(contentPayload))
+      .eq('id', contentId)
       .select()
       .single();
     if (error) throw error;
-    return data;
+    return compatLessonContentRead(data);
   },
 
   async insertLessonContent(contentPayload) {
     const { data, error } = await supabase
       .from('lesson_content')
-      .insert([contentPayload])
+      .insert([sanitizeLessonContentWrite(contentPayload)])
       .select()
       .single();
     if (error) throw error;
-    return data;
+    return compatLessonContentRead(data);
   },
 
   // ── TutorSettings ──────────────────────────────────────────────────────────
@@ -144,7 +142,7 @@ export const teacherToolsService = {
   async insertLessonContentItems(lessonContentItems) {
     const { error: contentInsertError } = await supabase
       .from('lesson_content')
-      .insert(lessonContentItems);
+      .insert(lessonContentItems.map(sanitizeLessonContentWrite));
     if (contentInsertError) throw contentInsertError;
   },
 

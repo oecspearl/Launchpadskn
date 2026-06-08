@@ -35,6 +35,7 @@ import {
 } from './lessonContentHelpers';
 import TinyMCEEditor from '../Editor/TextEditor';
 import DOMPurify from 'dompurify';
+import { sanitizeLessonContentWrite, compatLessonContentRead, compatLessonRead } from '../../services/lessonCompat';
 import './LessonContentManager-redesign.css';
 
 // Ensure html2pdf is available globally for compatibility
@@ -242,11 +243,11 @@ function LessonContentManager() {
             )
           )
         `)
-        .eq('lesson_id', lessonId)
+        .eq('id', lessonId)
         .single();
 
       if (error) throw error;
-      setLessonData(data);
+      setLessonData(compatLessonRead(data));
     } catch (err) {
       console.error('Error fetching lesson data:', err);
     }
@@ -332,11 +333,11 @@ function LessonContentManager() {
         .from('lesson_content')
         .select('*')
         .eq('lesson_id', lessonId)
-        .order('sequence_order', { ascending: true })
-        .order('upload_date', { ascending: true });
+        .order('order_index', { ascending: true })
+        .order('created_at', { ascending: true });
 
       if (fetchError) throw fetchError;
-      setContent(data || []);
+      setContent((data || []).map(compatLessonContentRead));
       setIsLoading(false);
     } catch (err) {
       console.error('Error fetching content:', err);
@@ -943,7 +944,7 @@ function LessonContentManager() {
 
       const { data: contentItem, error: contentError } = await supabase
         .from('lesson_content')
-        .insert([contentData])
+        .insert([sanitizeLessonContentWrite(contentData)])
         .select()
         .single();
 
@@ -951,7 +952,7 @@ function LessonContentManager() {
 
       // Create quiz
       const quizData = {
-        content_id: contentItem.content_id,
+        content_id: contentItem.id,
         title: generatedQuiz.quiz_title || `Quiz: ${lessonData.topic || 'Lesson Quiz'}`,
         description: generatedQuiz.quiz_description || '',
         instructions: 'Complete all questions. Read each question carefully before answering.',
@@ -1380,7 +1381,7 @@ function LessonContentManager() {
 
             const { error: insertError } = await supabase
               .from('lesson_content')
-              .insert([contentData]);
+              .insert([sanitizeLessonContentWrite(contentData)]);
 
             if (insertError) throw insertError;
             successCount++;
@@ -1391,7 +1392,7 @@ function LessonContentManager() {
 
             const { data: contentResult, error: contentError } = await supabase
               .from('lesson_content')
-              .insert([contentData])
+              .insert([sanitizeLessonContentWrite(contentData)])
               .select()
               .single();
 
@@ -1400,7 +1401,7 @@ function LessonContentManager() {
             // Create quiz
             const totalPoints = item.quiz_questions?.reduce((sum, q) => sum + (q.points || 1), 0) || 0;
             const quizData = {
-              content_id: contentResult.content_id,
+              content_id: contentResult.id,
               title: item.title,
               description: item.content_text || '',
               instructions: 'Complete this quiz to test your understanding.',
@@ -1575,7 +1576,7 @@ function LessonContentManager() {
 
             const { data: contentResult, error: contentError } = await supabase
               .from('lesson_content')
-              .insert([contentData])
+              .insert([sanitizeLessonContentWrite(contentData)])
               .select()
               .single();
 
@@ -1609,8 +1610,8 @@ function LessonContentManager() {
                 // Update the content with rubric
                 const { error: updateError } = await supabase
                   .from('lesson_content')
-                  .update({ instructions: contentData.instructions })
-                  .eq('content_id', contentResult.content_id);
+                  .update(sanitizeLessonContentWrite({ instructions: contentData.instructions }))
+                  .eq('id', contentResult.id);
 
                 if (updateError) {
                   console.warn('Failed to update assignment with rubric text:', updateError);
@@ -1631,7 +1632,7 @@ function LessonContentManager() {
 
             const { error: insertError } = await supabase
               .from('lesson_content')
-              .insert([contentData]);
+              .insert([sanitizeLessonContentWrite(contentData)]);
 
             if (insertError) throw insertError;
             successCount++;
@@ -2002,8 +2003,8 @@ function LessonContentManager() {
 
         const { error: updateError } = await supabase
           .from('lesson_content')
-          .update(updateData)
-          .eq('content_id', editingContent.content_id);
+          .update(sanitizeLessonContentWrite(updateData))
+          .eq('id', editingContent.id);
 
         if (updateError) {
           console.error('Update error details:', updateError);
@@ -2024,7 +2025,7 @@ function LessonContentManager() {
 
         const { data: result, error: insertError } = await supabase
           .from('lesson_content')
-          .insert(insertData)
+          .insert(sanitizeLessonContentWrite(insertData))
           .select()
           .single();
 
@@ -2038,7 +2039,7 @@ function LessonContentManager() {
         if (contentType === 'QUIZ' && !url && result) {
           setTimeout(() => {
             if (window.confirm('Would you like to create an in-app quiz for this content?')) {
-              setCurrentQuizContentId(result.content_id);
+              setCurrentQuizContentId(result.id);
               setCurrentQuizId(null);
               setShowQuizBuilder(true);
             }
@@ -2079,7 +2080,7 @@ function LessonContentManager() {
       const { error } = await supabase
         .from('lesson_content')
         .delete()
-        .eq('content_id', contentId);
+        .eq('id', contentId);
 
       if (error) {
         console.error('Supabase delete error:', error);
@@ -2168,14 +2169,14 @@ function LessonContentManager() {
 
     try {
       // Prepare updates for Supabase
-      const updates = updatedContent.map(item => ({
-        ...item,
-        updated_at: new Date().toISOString()
+      const updates = updatedContent.map((item, index) => ({
+        id: item.id,
+        order_index: index + 1
       }));
 
       const { error } = await supabase
         .from('lesson_content')
-        .upsert(updates, { onConflict: 'content_id' });
+        .upsert(updates, { onConflict: 'id' });
 
       if (error) throw error;
     } catch (err) {
@@ -3563,7 +3564,7 @@ function LessonContentManager() {
 
                     const { data: result, error: insertError } = await supabase
                       .from('lesson_content')
-                      .insert(contentData)
+                      .insert(sanitizeLessonContentWrite(contentData))
                       .select()
                       .single();
 
@@ -3573,7 +3574,7 @@ function LessonContentManager() {
                     fetchContent();
 
                     // Open quiz builder
-                    setCurrentQuizContentId(result.content_id);
+                    setCurrentQuizContentId(result.id);
                     setCurrentQuizId(null);
                     setShowQuizBuilder(true);
                   } catch (err) {
@@ -4068,13 +4069,13 @@ function LessonContentManager() {
                           // Update existing assignment immediately
                           const { error: updateError } = await supabase
                             .from('lesson_content')
-                            .update({
+                            .update(sanitizeLessonContentWrite({
                               assignment_rubric_file_path: filePath,
                               assignment_rubric_file_name: file.name,
                               assignment_rubric_file_size: file.size,
                               assignment_rubric_mime_type: file.type
-                            })
-                            .eq('content_id', editingContent.content_id);
+                            }))
+                            .eq('id', editingContent.id);
 
                           if (updateError) {
                             console.error('Update error:', updateError);
@@ -4092,11 +4093,11 @@ function LessonContentManager() {
                             const { data: updatedContentData, error: fetchError } = await supabase
                               .from('lesson_content')
                               .select('*')
-                              .eq('content_id', editingContent.content_id)
+                              .eq('id', editingContent.id)
                               .single();
 
                             if (!fetchError && updatedContentData) {
-                              setEditingContent(updatedContentData);
+                              setEditingContent(compatLessonContentRead(updatedContentData));
                             }
                           }
 

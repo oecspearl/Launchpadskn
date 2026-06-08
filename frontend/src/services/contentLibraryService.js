@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { sanitizeLessonContentWrite, compatLessonContentRead } from './lessonCompat';
 
 const contentLibraryService = {
   // ============================================
@@ -232,7 +233,7 @@ const contentLibraryService = {
       // Insert lesson content
       const { data: lessonContent, error: contentError } = await supabase
         .from('lesson_content')
-        .insert(lessonContentData)
+        .insert(sanitizeLessonContentWrite(lessonContentData))
         .select()
         .single();
 
@@ -244,13 +245,13 @@ const contentLibraryService = {
         .insert({
           library_id: libraryId,
           lesson_id: lessonId,
-          content_id: lessonContent.content_id,
+          content_id: lessonContent.id,
           used_by: userId
         });
 
       if (usageError) throw usageError;
 
-      return lessonContent;
+      return compatLessonContentRead(lessonContent);
     } catch (error) {
       if (import.meta.env.DEV) console.error('Error adding library content to lesson:', error);
       throw error;

@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import teacherToolsService from '../../services/teacherToolsService';
+import { sanitizeLessonContentWrite } from '../../services/lessonCompat';
 import { FlashcardData, Flashcard, defaultFlashcardSettings, createEmptyFlashcardData } from '../../types/contentTypes';
 import { generateFlashcards } from '../../services/aiLessonService';
 import TinyMCEEditor from '../common/TinyMCEEditor';
@@ -121,7 +122,7 @@ function FlashcardCreator({
       setIsSaving(true);
       setError(null);
 
-      const contentPayload = {
+      const contentPayload = sanitizeLessonContentWrite({
         lesson_id: lessonId,
         content_type: 'FLASHCARD',
         title: title.trim(),
@@ -133,7 +134,7 @@ function FlashcardCreator({
         is_published: isPublish,
         published_at: isPublish ? new Date().toISOString() : null,
         uploaded_by: user?.user_id || user?.userId
-      };
+      });
 
       let result;
       if (contentId) {

@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import teacherToolsService from '../../services/teacherToolsService';
+import { sanitizeLessonContentWrite } from '../../services/lessonCompat';
 import TinyMCEEditor from '../common/TinyMCEEditor';
 import {
   InteractiveVideoData,
@@ -255,7 +256,7 @@ function InteractiveVideoCreator({
         }))
       });
 
-      const contentPayload = {
+      const contentPayload = sanitizeLessonContentWrite({
         lesson_id: lessonId,
         content_type: 'INTERACTIVE_VIDEO',
         title: title.trim(),
@@ -268,7 +269,7 @@ function InteractiveVideoCreator({
         is_published: isPublish,
         published_at: isPublish ? new Date().toISOString() : null,
         uploaded_by: user?.user_id || user?.userId
-      };
+      });
 
       let result;
       if (contentId) {

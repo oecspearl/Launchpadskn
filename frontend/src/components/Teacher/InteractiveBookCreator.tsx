@@ -11,6 +11,7 @@ import {
 import { useAuth } from '../../contexts/AuthContextSupabase';
 import { useToast } from '../../contexts/ToastContext';
 import { supabase } from '../../config/supabase';
+import { sanitizeLessonContentWrite, compatLessonContentRead } from '../../services/lessonCompat';
 import {
   InteractiveBookData,
   BookPage,
@@ -97,13 +98,14 @@ function InteractiveBookCreator({
   const loadExistingContent = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      const { data: rawData, error } = await supabase
         .from('lesson_content')
         .select('*')
-        .eq('content_id', contentId)
+        .eq('id', contentId)
         .single();
 
       if (error) throw error;
+      const data = compatLessonContentRead(rawData);
 
       if (data) {
         setTitle(data.title || 'Interactive Book');
@@ -155,25 +157,22 @@ function InteractiveBookCreator({
       if (contentId) {
         const { data, error } = await supabase
           .from('lesson_content')
-          .update({
-            ...contentPayload,
-            updated_at: new Date().toISOString()
-          })
-          .eq('content_id', contentId)
+          .update(sanitizeLessonContentWrite(contentPayload))
+          .eq('id', contentId)
           .select()
           .single();
 
         if (error) throw error;
-        result = data;
+        result = compatLessonContentRead(data);
       } else {
         const { data, error } = await supabase
           .from('lesson_content')
-          .insert([contentPayload])
+          .insert([sanitizeLessonContentWrite(contentPayload)])
           .select()
           .single();
 
         if (error) throw error;
-        result = data;
+        result = compatLessonContentRead(data);
       }
 
       setLastSaved(new Date());

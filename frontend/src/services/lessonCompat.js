@@ -45,3 +45,34 @@ export function compatLessonContentRead(content) {
   if (out.order_index != null && out.sequence_order == null) out.sequence_order = out.order_index;
   return out;
 }
+
+// Columns that actually exist on public.lesson_content (live schema).
+const LESSON_CONTENT_COLUMNS = new Set([
+  'lesson_id', 'content_type', 'title', 'description', 'file_url', 'external_url',
+  'order_index', 'is_required', 'instructions', 'learning_outcomes', 'key_concepts',
+  'discussion_prompts', 'content_data', 'content_section', 'estimated_minutes',
+  'file_path', 'file_name', 'file_size', 'mime_type', 'edu_content_id', 'lesson_phase',
+]);
+
+/**
+ * Write: sanitize a lesson_content insert/update payload to columns that exist.
+ * Maps legacy keys (sequence_order/content_order -> order_index, url/content_url
+ * -> external_url) and DROPS everything else (content_id/id PK, uploaded_by,
+ * is_published, published_at, metadata, upload_date, and the text-block fields
+ * learning_activities/reflection_questions/summary which are not real columns).
+ */
+export function sanitizeLessonContentWrite(payload) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const out = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (LESSON_CONTENT_COLUMNS.has(k)) {
+      out[k] = v;
+    } else if ((k === 'sequence_order' || k === 'content_order') && out.order_index == null) {
+      out.order_index = v;
+    } else if ((k === 'url' || k === 'content_url') && out.external_url == null) {
+      out.external_url = v;
+    }
+    // otherwise: drop (non-existent column)
+  }
+  return out;
+}
