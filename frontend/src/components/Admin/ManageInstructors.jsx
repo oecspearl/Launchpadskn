@@ -94,15 +94,15 @@ function ManageInstructors({ institutionId }) {
   // Function to fetch instructor courses (now classes/subjects)
   const fetchInstructorCourses = async (instructorId) => {
     try {
-      // Fetch classes assigned to this instructor
-      const classes = await supabaseService.getClassesByTeacher(instructorId);
-      // Transform to legacy course format
-      const coursesData = (classes || []).map(cls => ({
-        courseId: cls.class_id,
-        courseName: cls.class?.name || cls.subject?.name || 'Class',
-        code: `CLS${cls.class_id}`
+      // Fetch the class_subjects this instructor teaches
+      const classSubjects = await supabaseService.getClassesByTeacher(instructorId);
+      return (classSubjects || []).map(cs => ({
+        courseId: cs.id,                              // class_subject id (unique per row)
+        subjectName: cs.subject?.name || 'Subject',
+        subjectCode: cs.subject?.code || '',
+        className: cs.class?.name || '',
+        isActive: cs.is_active !== false
       }));
-      return coursesData;
     } catch (error) {
       console.error('Error fetching instructor courses (classes):', error);
       return [];
@@ -411,7 +411,7 @@ function ManageInstructors({ institutionId }) {
                   <div className="d-flex justify-content-between align-items-center mb-3">
                     <h6 className="mb-0">
                       <FaBook className="me-2" />
-                      Assigned Courses ({instructorCourses[instructor.instructorId]?.length || 0})
+                      Assigned Subjects ({instructorCourses[instructor.instructorId]?.length || 0})
                     </h6>
                     <Button
                       variant="primary"
@@ -420,7 +420,7 @@ function ManageInstructors({ institutionId }) {
                       disabled={!isActive}
                     >
                       <FaPlus className="me-1" />
-                      Assign Course
+                      Assign Subject
                     </Button>
                   </div>
                   {instructorCourses[instructor.instructorId]?.length > 0 ? (
@@ -428,18 +428,15 @@ function ManageInstructors({ institutionId }) {
                       {instructorCourses[instructor.instructorId].map(courseInstructor => {
                         const course = courseInstructor.course || courseInstructor;
                         const courseId = course.id || course.courseId;
-                        const courseCode = course.code || course.courseCode;
-                        const courseTitle = course.title || course.courseName;
-                        
+
                         return (
                           <Col md={4} key={courseId} className="mb-2">
                             <Card size="sm">
                               <Card.Body className="p-2">
                                 <div className="d-flex justify-content-between align-items-start">
                                   <div>
-                                    <strong>{courseCode}</strong>
-                                    <div className="small">{courseTitle}</div>
-                                    <div className="small text-muted">{courseInstructor.role}</div>
+                                    <strong>{course.subjectName}{course.subjectCode ? ` (${course.subjectCode})` : ''}</strong>
+                                    {course.className && <div className="small text-muted">Class {course.className}</div>}
                                     {course.isActive ? (
                                       <div className="small text-success">Active</div>
                                     ) : (
@@ -462,7 +459,7 @@ function ManageInstructors({ institutionId }) {
                     </Row>
                   ) : (
                     <div className="text-center py-3">
-                      <p className="text-muted mb-2">No courses assigned</p>
+                      <p className="text-muted mb-2">No subjects assigned</p>
                       <Button
                         variant="outline-primary"
                         size="sm"
@@ -470,7 +467,7 @@ function ManageInstructors({ institutionId }) {
                         disabled={!(user.isActive ?? true)}
                       >
                         <FaPlus className="me-1" />
-                        Assign First Course
+                        Assign First Subject
                       </Button>
                     </div>
                   )}
