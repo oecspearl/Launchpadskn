@@ -306,19 +306,18 @@ function ManageInstructors({ institutionId }) {
       firstName = nameParts[0] || '';
       lastName = nameParts.slice(1).join(' ') || '';
     } else {
-      firstName = user.firstName || '';
-      lastName = user.lastName || '';
+      firstName = user.first_name || user.firstName || '';
+      lastName = user.last_name || user.lastName || '';
     }
-    
-    // Handle the active status - backend consistently uses 'isActive'
-    const isActive = user.isActive ?? true;
-    
+
+    const isActive = user.is_active ?? user.isActive ?? true;
+
     // Get departmentId from user.departmentId (primary source) or fallback to instructor.department
     const departmentId = user.departmentId || instructor.department?.departmentId || '';
-    
+
     const instructorData = {
       instructorId: instructor.instructorId,
-      userId: user.userId,
+      userId: user.id || user.userId,
       firstName,
       lastName,
       email: user.email,
@@ -360,7 +359,7 @@ function ManageInstructors({ institutionId }) {
       const isActive = user.isActive ?? true;
       
       return (
-        <React.Fragment key={user.userId}>
+        <React.Fragment key={user.id || user.userId}>
           <tr>
             <td>
               <div className="d-flex align-items-center">
@@ -375,7 +374,7 @@ function ManageInstructors({ institutionId }) {
                   }
                 </Button>
                 <div className="fw-bold">
-                  {user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown'}
+                  {user.name || `${user.first_name || user.firstName || ''} ${user.last_name || user.lastName || ''}`.trim() || 'Unknown'}
                 </div>
               </div>
             </td>
@@ -384,7 +383,7 @@ function ManageInstructors({ institutionId }) {
             <td>
               <Form.Check
                 type="switch"
-                id={`instructor-status-${user.userId}`}
+                id={`instructor-status-${user.id || user.userId}`}
                 checked={isActive}
                 onChange={(e) => handleToggleInstructorStatus(instructor, e.target.checked)}
                 label={isActive ? 'Active' : 'Inactive'}
@@ -427,7 +426,7 @@ function ManageInstructors({ institutionId }) {
                   {instructorCourses[instructor.instructorId]?.length > 0 ? (
                     <Row>
                       {instructorCourses[instructor.instructorId].map(courseInstructor => {
-                        const course = courseInstructor.course;
+                        const course = courseInstructor.course || courseInstructor;
                         const courseId = course.id || course.courseId;
                         const courseCode = course.code || course.courseCode;
                         const courseTitle = course.title || course.courseName;
