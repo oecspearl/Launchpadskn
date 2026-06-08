@@ -341,11 +341,11 @@ async function callAnthropicWithRetry(apiKey, requestBody) {
 
 // ─── Provider dispatcher (OpenAI + Anthropic, with fallback) ───────────
 function pickProvider(body) {
-  if (body && body.provider) return String(body.provider).toLowerCase();
+  if (body && body.provider) return String(body.provider).toLowerCase(); // per-request override
+  if (process.env.AI_PROVIDER) return process.env.AI_PROVIDER.toLowerCase(); // operator override
   const model = ((body && body.model) || '').toLowerCase();
   if (model.startsWith('claude')) return 'anthropic';
   if (/^(gpt|o1|o3|o4)/.test(model)) return 'openai';
-  if (process.env.AI_PROVIDER) return process.env.AI_PROVIDER.toLowerCase();
   return process.env.OPENAI_API_KEY ? 'openai' : 'anthropic';
 }
 
