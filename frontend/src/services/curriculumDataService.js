@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatSubject } from './subjectCompat';
 
 /**
  * Curriculum data access.
@@ -46,10 +47,10 @@ export const curriculumDataService = {
   async getSubjects() {
     const { data, error } = await supabase
       .from('subjects')
-      .select('id, name')
+      .select('id, name, code')
       .order('name');
     if (error) throw error;
-    return data || [];
+    return (data || []).map(compatSubject);
   },
 
   async getAllARVRContent() {

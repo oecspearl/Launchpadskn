@@ -33,6 +33,13 @@ function ClassDetailPanel({ classItem }) {
     enabled: activeTab === 'subjects'
   });
 
+  // National subjects list — class_subjects links directly to subjects.
+  const { data: subjects = [] } = useQuery({
+    queryKey: ['subjects'],
+    queryFn: () => institutionService.getSubjectsBySchool(null),
+    enabled: activeTab === 'subjects'
+  });
+
   // Deduplicate offerings by subject_name + form_number (national curriculum)
   const formOfferings = useMemo(() => {
     const seen = new Map();
@@ -159,13 +166,13 @@ function ClassDetailPanel({ classItem }) {
               <Card.Body className="py-2">
                 <Row className="align-items-end g-2">
                   <Col md={5}>
-                    <Form.Label className="small mb-1">Subject Offering</Form.Label>
+                    <Form.Label className="small mb-1">Subject</Form.Label>
                     <Form.Select size="sm" value={subjectFormData.subject_id}
                       onChange={(e) => setSubjectFormData({ ...subjectFormData, subject_id: e.target.value })}>
                       <option value="">Select Subject</option>
-                      {relevantOfferings.map(o => (
-                        <option key={o.id} value={o.subject_id}>
-                          {o.subject?.name} ({o.subject?.code})
+                      {subjects.map(s => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}{s.code ? ` (${s.code})` : ''}
                         </option>
                       ))}
                     </Form.Select>

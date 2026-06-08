@@ -1,4 +1,5 @@
 import { supabase } from '../config/supabase';
+import { compatSubject } from './subjectCompat';
 
 export const institutionService = {
     // ============================================
@@ -310,7 +311,7 @@ export const institutionService = {
         const { data, error } = await query;
 
         if (error) throw error;
-        return data;
+        return (data || []).map(compatSubject);
     },
 
     async getSubjectById(subjectId) {
@@ -321,7 +322,7 @@ export const institutionService = {
             .single();
 
         if (error) throw error;
-        return data;
+        return compatSubject(data);
     },
 
     async createSubject(subjectData) {
@@ -416,7 +417,9 @@ export const institutionService = {
         const { data, error } = await query;
 
         if (error) throw error;
-        return data || [];
+        // Alias the embedded subject (subject_name/subject_id/subject_code) for
+        // legacy curriculum-editor consumers.
+        return (data || []).map(o => (o.subject ? { ...o, subject: compatSubject(o.subject) } : o));
     },
 
     async getCurriculumBySubject(subjectId) {
