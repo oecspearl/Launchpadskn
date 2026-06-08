@@ -32,7 +32,7 @@ function ClassSubjectAssignment() {
   const [modalFormId, setModalFormId] = useState('');
   const [assignmentData, setAssignmentData] = useState({
     class_id: '',
-    subject_offering_id: '',
+    subject_id: '',
     teacher_id: ''
   });
 
@@ -53,8 +53,8 @@ function ClassSubjectAssignment() {
         userService.getUsersByRole(ROLES.INSTRUCTOR)
       ]);
       const all = [...admins, ...instructors];
-      const unique = Array.from(new Map(all.map(item => [item.user_id, item])).values());
-      return unique.sort((a, b) => a.name.localeCompare(b.name));
+      const unique = Array.from(new Map(all.map(item => [item.id, item])).values());
+      return unique.sort((a, b) => personName(a).localeCompare(personName(b)));
     }
   });
 
@@ -71,6 +71,12 @@ function ClassSubjectAssignment() {
   const { data: rawOfferings = [], isLoading: isLoadingOfferings } = useQuery({
     queryKey: ['offerings'],
     queryFn: () => institutionService.getCurriculumContent(null)
+  });
+
+  // National subjects list — class_subjects links directly to subjects.
+  const { data: subjects = [] } = useQuery({
+    queryKey: ['subjects'],
+    queryFn: () => institutionService.getSubjectsBySchool(null)
   });
 
   // Deduplicate offerings by subject_name + form_number (national curriculum)
@@ -156,7 +162,7 @@ function ClassSubjectAssignment() {
 
   // Mutations
   const assignSubjectMutation = useMutation({
-    mutationFn: (data) => classService.assignSubjectToClass(data.class_id, data.subject_offering_id, data.teacher_id),
+    mutationFn: (data) => classService.assignSubjectToClass(data.class_id, data.subject_id, data.teacher_id),
     onSuccess: () => {
       queryClient.invalidateQueries(['class-subjects']);
       queryClient.invalidateQueries(['class-subjects-inline']);
@@ -209,7 +215,7 @@ function ClassSubjectAssignment() {
     setModalFormId(preForm ? String(preForm) : '');
     setAssignmentData({
       class_id: preClass || '',
-      subject_offering_id: '',
+      subject_id: '',
       teacher_id: ''
     });
     setShowModal(true);
@@ -221,7 +227,7 @@ function ClassSubjectAssignment() {
     setModalFormId('');
     setAssignmentData({
       class_id: '',
-      subject_offering_id: '',
+      subject_id: '',
       teacher_id: ''
     });
     setError(null);
@@ -231,18 +237,18 @@ function ClassSubjectAssignment() {
   const handleModalSchoolChange = (schoolId) => {
     setModalSchoolId(schoolId);
     setModalFormId('');
-    setAssignmentData({ class_id: '', subject_offering_id: '', teacher_id: '' });
+    setAssignmentData({ class_id: '', subject_id: '', teacher_id: '' });
   };
 
   const handleModalFormChange = (formId) => {
     setModalFormId(formId);
-    setAssignmentData({ ...assignmentData, class_id: '', subject_offering_id: '' });
+    setAssignmentData({ ...assignmentData, class_id: '', subject_id: '' });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!assignmentData.class_id || !assignmentData.subject_offering_id) {
-      setError('Please select both Class and Subject Offering');
+    if (!assignmentData.class_id || !assignmentData.subject_id) {
+      setError('Please select both Class and Subject');
       return;
     }
     assignSubjectMutation.mutate(assignmentData);
@@ -399,8 +405,8 @@ function ClassSubjectAssignment() {
                     <td>
                       <Badge bg="primary">{classSubject.class?.class_name || 'N/A'}</Badge>
                     </td>
-                    <td><strong>{classSubject.subject_offering?.subject?.subject_name || 'N/A'}</strong></td>
-                    <td>{classSubject.subject_offering?.subject?.subject_code || 'N/A'}</td>
+                    <td><strong>{classSubject.subject?.name || classSubject.subject_offering?.subject?.name || 'N/A'}</strong></td>
+                    <td>{classSubject.subject?.code || classSubject.subject_offering?.subject?.code || 'N/A'}</td>
                     <td>{personName(classSubject.teacher) || 'Not assigned'}</td>
                     <td>
                       <Button
@@ -506,7 +512,7 @@ function ClassSubjectAssignment() {
               <Form.Label>Class *</Form.Label>
               <Form.Select
                 value={assignmentData.class_id}
-                onChange={(e) => setAssignmentData({ ...assignmentData, class_id: e.target.value, subject_offering_id: '' })}
+                onChange={(e) => setAssignmentData({ ...assignmentData, class_id: e.target.value, subject_id: '' })}
                 required
                 disabled={!modalFormId}
               >
@@ -521,27 +527,21 @@ function ClassSubjectAssignment() {
               </Form.Select>
             </Form.Group>
 
-            {/* Subject Offering selector */}
+            {/* Subject selector — from the national subjects list */}
             <Form.Group className="mb-3">
-              <Form.Label>Subject Offering *</Form.Label>
+              <Form.Label>Subject *</Form.Label>
               <Form.Select
-                value={assignmentData.subject_offering_id}
-                onChange={(e) => setAssignmentData({ ...assignmentData, subject_offering_id: e.target.value })}
+                value={assignmentData.subject_id}
+                onChange={(e) => setAssignmentData({ ...assignmentData, subject_id: e.target.value })}
                 required
-                disabled={!modalFormId}
               >
-                <option value="">
-                  {!modalFormId ? 'Select a form first' : 'Select Subject Offering'}
-                </option>
-                {modalOfferings.map(offering => (
-                  <option key={offering.offering_id} value={offering.offering_id}>
-                    {offering.subject?.subject_name} ({offering.subject?.subject_code})
+                <option value="">Select Subject</option>
+                {subjects.map(subject => (
+                  <option key={subject.id} value={subject.id}>
+                    {subject.name}{subject.code ? ` (${subject.code})` : ''}
                   </option>
                 ))}
               </Form.Select>
-              <Form.Text className="text-muted">
-                Only subjects offered for the selected form are shown
-              </Form.Text>
             </Form.Group>
 
             {/* Teacher selector */}
@@ -553,7 +553,7 @@ function ClassSubjectAssignment() {
               >
                 <option value="">Not assigned</option>
                 {teachers.map(teacher => (
-                  <option key={teacher.user_id} value={teacher.user_id}>
+                  <option key={teacher.id} value={teacher.id}>
                     {personName(teacher)} ({teacher.email})
                   </option>
                 ))}
