@@ -49,7 +49,7 @@
     background: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
-    padding: 2.25rem;
+    padding: 2rem 2.75rem;
     text-decoration: none;
     color: inherit;
     transition: all 0.3s ease;
@@ -175,7 +175,7 @@
     }
 
     .curriculum-card {
-        padding: 1.75rem;
+        padding: 1.5rem 1.75rem;
     }
 }
 
