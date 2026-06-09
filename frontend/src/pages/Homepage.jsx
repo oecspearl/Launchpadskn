@@ -574,18 +574,9 @@ export default function Homepage() {
         <StatsBar />
         <FeaturesSection />
 
-        {/* Curriculum Access — preserve existing component, wrap in design shell */}
-        <section style={{ background: T.parchment, borderTop: `1px solid ${T.fog}`, padding: '80px 0' }}>
+        {/* Curriculum Access — component owns its own header + parchment shell */}
+        <section style={{ background: '#ffffff', borderTop: `1px solid ${T.fog}`, padding: '80px 0' }}>
           <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 48px' }}>
-            <div style={{ marginBottom: 40 }}>
-              <div style={{ fontFamily: FONTS.mono, fontSize: 9.5, letterSpacing: 3, textTransform: 'uppercase', color: T.sknGreen, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ width: 18, height: 2, background: T.sknGreen, display: 'inline-block' }} />
-                Open Access
-              </div>
-              <div style={{ fontFamily: FONTS.condensed, fontSize: 44, fontWeight: 800, letterSpacing: 1, color: T.ink, lineHeight: 0.95 }}>
-                Explore the<br />Curriculum
-              </div>
-            </div>
             <CurriculumAccess />
           </div>
         </section>
